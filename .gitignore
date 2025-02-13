@@ -1,0 +1,5 @@
+.DS_Store
+node_modules/
+bibliography.bib
+philsci.csl
+jmarkdown.html

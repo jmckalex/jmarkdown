@@ -1,0 +1,31 @@
+{
+    "type": "module",
+    "bin": {
+        "jmarkdown": "./src/index.js"
+    },
+    "name": "jmarkdown",
+    "version": "1.0.0",
+    "main": "./src/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "dependencies": {
+        "@octokit/rest": "^21.1.0",
+        "highlight.js": "^11.11.1",
+        "jsdom": "^26.0.0",
+        "lodash": "^4.17.21",
+        "marked": "^15.0.6",
+        "marked-alert": "^2.1.2",
+        "marked-directive": "^1.0.7",
+        "marked-emoji": "^1.4.3",
+        "marked-extended-tables": "^1.1.0",
+        "marked-footnote": "^1.2.4",
+        "marked-gfm-heading-id": "^4.1.1",
+        "marked-highlight": "^2.2.1",
+        "marked-more-lists": "^1.0.0"
+    }
+}
