@@ -4,6 +4,7 @@ author: J. McKenzie Alexander
 CSS: test.css
 highlight-theme: atom-one-light
 moustache files: test.js
+script: <code>&lt;script&gt;</code>
 HTML header: <!-- This is comment 1 -->
 HTML header: <!-- This is comment 2
 	which is a multiline comment
@@ -224,6 +225,7 @@ As noted above, here are the main “ordinary” changes for `jmarkdown`:
 
 
 Two new syntax extensions are introduced for flush-right and centered text.
+Some more new text.  This is some more text.  This is more text.
 
 :::markdown-demo
 >> This text is right aligned.
@@ -527,7 +529,7 @@ after this paragraph, you should find just such an empty element.
 ::ul{#my-id}
 
 Where directives become particularly interesting is when we use them as containers.  Here’s how to
-enclose part of your markdown file in a `<section>` tag:
+enclose part of your markdown file in a `<section>` tag:  
 
 ```markdown
 :::section{#my-section .goldenrod}
@@ -889,7 +891,7 @@ Here's a simple example (we’ll see more complicated examples below).  Suppose 
 
 The `data-type='jmarkdown'` tells `jmarkdown` that the script code should actually be processed
 rather than simply passed through quietly to the output HTML file.  What `jmarkdown` does behind-the-scenes
-is to extract the code contained in the `<script>` tag and evaluate it in a Node virtual machine.  The
+is to extract the code contained in the {{script}}  tag and evaluate it in a Node virtual machine.  The
 context of that virtual machine is shared across all jmarkdown script environments, so variables and
 functions defined in one script block are accessible in all the others.  Normally, the script
 block containing the jmarkdown code is simply removed from the output.  (We will later see
@@ -1050,14 +1052,15 @@ Text after the list`;
 colorize("lightblue")
 :::
 
-What if you want to replace the jmarkdown `<script>` tag with some HTML, in addition 
+What if you want to replace the jmarkdown {{script}} tag with some HTML, in addition 
 to evaluating all the JavaScript inside it?  A global variable named `output` is defined
-which allows you to specify the html which should be inserted in place of the `<script>`
+which allows you to specify the html which should be inserted in place of the {{script}}
 element.  The value of `output` is set to the empty string before each jmarkdown
 script element is processed.  Here is an example which also shows how variables and
 function definitions declared in one script element are available to another:
 
-:::markdown-demo{type=html} 
+
+:::markdown-demo{type=html}
 <script data-type='jmarkdown'>
 	let cheer = "Hip, hip, hooray!";
 	let boo = "Hiss...";
@@ -1073,6 +1076,7 @@ function definitions declared in one script element are available to another:
 	output += "And here's something else... " + doSomething('text');
 </script>
 :::
+
 
 Here’s a fun example showing what you can do with this.  Here’s
 a function which, when given the name of an image file, embeds
@@ -1216,6 +1220,18 @@ of the DOM and the file `output.txt` is closed.
 	writeStream.end();
 </script>
 ```
+
+<script data-type='jmarkdown-postprocess'>
+	const writeStream = fs.createWriteStream('output.txt');
+	$('h1').each((index, element) => {
+		let t = $(element).text().toUpperCase();
+		writeStream.write(t + '\n');
+		$(element).text(t); 
+	});
+	html = $.html();
+	writeStream.end();
+</script>
+ 
 
 Because all of the markdown-magic has already been performed by the post-processing
 state, the above changes will not, of course, be reflected in the table of contents.

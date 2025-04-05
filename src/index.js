@@ -2,7 +2,8 @@
 
 import { marked, Marked } from 'marked';
 import fs from 'fs';
-import {runInThisContext} from 'vm';
+import { runInThisContext } from './utils.js';
+
 import { JSDOM } from 'jsdom';
 
 
@@ -838,64 +839,16 @@ register_extensions([
 ]);
 
 
-import { jmarkdownScriptExtensions } from './script-blocks.js';
+import { jmarkdownScriptExtensions, postprocessor_scripts } from './script-blocks.js';
 marked.use({
-	extensions: [ jmarkdownScriptExtensions['scripts'] ]
+	extensions: [
+		jmarkdownScriptExtensions['javascript'],
+		jmarkdownScriptExtensions['jmarkdown'],
+	]
 }) 
 
 global.output = '';
 
-/*
-	The following extension finds and extracts scripts which should
-	either be run during compile time (jmarkdown) or saved
-	for execution once the final document has been assembled (jmarkdown-postprocess).
-*/
-let postprocessor_scripts = []; // array of all the post-processor scripts
-
-const jmarkdown_script = {
-				name: 'jmarkdownScript',
-				level: 'block',
-				start(src) {
-					return src.match(/<script\s+data-type=(['"])jmarkdown\1/i)?.index; 
-				},
-				tokenizer(src) {
-					const rule = /^<script[^>]*>(\s+[\s\S]*?)<\/script>/;
-					const match = rule.exec(src);
-
-					if (match) {
-						// Check to make sure it's jmarkdown script code!
-						if (match[0].search(/<script\s+data-type=(['"])(?:jmarkdown|jmarkdown-postprocess)\1/i) == -1) {
-							return;
-						}
-						let script = match[1]
-						let [tag, ...rest] = match[0].split('>');
-						// Check if it's a postprocessor script
-						if (tag.includes("jmarkdown-postprocess") == true) {
-							global.output = '';
-							postprocessor_scripts.push(script);
-						}
-						else {
-							global.output = '';
-							runInThisContext(script);
-						}
-						const token = {
-							type: 'jmarkdownScript',
-							raw: match[0],
-							text: match[1],
-							output: global.output,
-							tokens: []
-						};
-						return token;
-					}
-				},
-				renderer(token) {
-					return `${token.output}`;
-				}
-			};
-
-marked.use({
-	extensions: [jmarkdown_script]
-});
 
 function export_to_jmarkdown(name, options = {}) {
 	const {simple = true, tokenize = false} = options;
@@ -2444,6 +2397,7 @@ function runPostprocessScripts() {
 	let configuration = `const $ = cheerio.load(html);`
 	runInThisContext(configuration);
 	for (let script of postprocessor_scripts) {
+		console.log(script);
 		runInThisContext(script);
 	}
 }

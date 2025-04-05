@@ -1,3 +1,5 @@
+import { runInThisContext } from './utils.js';
+
 /*
 	This file defines several extensions which look for blocks of the form
 
@@ -56,8 +58,62 @@ const javascript_script = {
 				}
 			};
 
+/*
+	This extension finds and extracts scripts which should either be
+	run during compile time (data-type='jmarkdown') or saved for execution once the final
+	document has been assembled (data=type='jmarkdown-postprocess').
+*/
+
+export let postprocessor_scripts = []; // array of all the post-processor scripts - this will be exported to the main programme
+
+const jmarkdown_script = {
+				name: 'jmarkdownScript',
+				level: 'block',
+				start(src) {
+					return src.match(/<script\s+data-type=(['"])jmarkdown\1/i)?.index; 
+				},
+				tokenizer(src) {
+					const rule = /^<script[^>]*>(\s+[\s\S]*?)<\/script>/;
+					const match = rule.exec(src);
+
+					if (match) {
+						// Check to make sure it's jmarkdown script code!
+						if (match[0].search(/<script\s+data-type=(['"])(?:jmarkdown|jmarkdown-postprocess)\1/i) == -1) {
+							return;
+						}
+
+						let script = match[1]
+						let [tag, ...rest] = match[0].split('>');
+
+						// Check if it's a postprocessor script
+						if (tag.includes("jmarkdown-postprocess") == true) {
+							global.output = '';
+							postprocessor_scripts.push(script);
+						}
+						else {
+							global.output = '';
+							runInThisContext(script);
+						}
+						const token = {
+							type: 'jmarkdownScript',
+							raw: match[0],
+							text: match[1],
+							output: global.output,
+							tokens: []
+						};
+						return token;
+					}
+				},
+				renderer(token) {
+					return `${token.output}`;
+				}
+			};
+
+
+
 export const jmarkdownScriptExtensions = {
-	'scripts': javascript_script
+	'javascript': javascript_script,
+	'jmarkdown': jmarkdown_script
 };
 
 
