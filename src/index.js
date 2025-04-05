@@ -1,10 +1,26 @@
 #!/usr/bin/env node
 
 import { marked, Marked } from 'marked';
-import markedFootnote from 'marked-footnote';
 import fs from 'fs';
-
+import {runInThisContext} from 'vm';
 import { JSDOM } from 'jsdom';
+
+
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+global.require = require;
+
+import { execSync } from 'child_process';
+import path from 'path';
+const globalNodeModulesPath = execSync('npm root -g').toString().trim();
+
+function requireGlobal(the_package) {
+	//console.log(the_package);
+	//console.log(path.join(globalNodeModulesPath, the_package));
+	return require(path.join(globalNodeModulesPath, the_package));
+}
+
+global.requireGlobal = requireGlobal;
 
 
 let marked_copy = new Marked({
@@ -17,291 +33,96 @@ marked.setOptions({
 
 var my_footnotes = "";
 
-// Import other extensions
+// Initialise the default footnote extension
+import markedFootnote from 'marked-footnote';
 
+// We create two versions of the marked interpreter, because if we want to 
+// call the interpreter from a <script> block in the jmarkdown code, we cannot
+// pass that markdown into the main interpreter as that can screw up the state.
+// However, we initialise the footnote extension only for the main interpreter because
+// there's no easy way to handle footnotes in markdown interpreted by the <script> interpreter
 marked.use(markedFootnote({
 	rendererOptions: {
         containerTagName: 'section',
         containerClassName: 'footnotes'
-    }
+    } 
 }));
-// Configure other extensions
-
-const latexTokenizer = {
-					name: 'latex',
-					level: 'inline',
-					priority: 1,
-					start(src) {
-						const match = src.match(/\$\$|\$|\\\(|\\\[/);
-						return match ? match.index : -1;
-					},
-					tokenizer(src, tokens) {
-						// Match block LaTeX first (since it's more specific)
-						const blockMatch = /^\$\$([^$]*?)\$\$|^\\\[(.*?)\\\]/s.exec(src);
-						if (blockMatch && blockMatch.index === 0) {
-							let math = blockMatch[1] ? blockMatch[1] : blockMatch[2];
-							return {
-								type: 'latex',
-								raw: blockMatch[0],
-								text: math,
-								block: true
-							};
-						}
-
-						// Match inline LaTeX
-						const inlineMatch = /\$([^\$]+?)\$|\\\((.*)\\\)/.exec(src);
-						if (inlineMatch && inlineMatch.index === 0) {
-							let math = inlineMatch[1] ? inlineMatch[1] : inlineMatch[2];
-							return {
-								type: 'latex',
-								raw: inlineMatch[0],
-								text: math,
-								block: false
-							};
-						}
-
-						return false;
-					},
-					renderer(token) {
-						let sanitised_text = token.text.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-						return token.block ? `$$${sanitised_text}$$` : `$${sanitised_text}$`;
-					}		
-				};
-
-const italics = {
-					name: 'italics',
-					level: 'inline',
-					start(src) { return src.match(/\//)?.index },
-					tokenizer(src) {
-						const rule = /^\/([^\/.?!]+[.?!]?)\//;
-						//const rule = /^\/([^/]+?)\/(?!/)/;
-						const match = rule.exec(src);
-						if (match) {
-							const token = {
-								type: 'italics',
-								raw: match[0],
-								text: match[1],
-								tokens: []
-							};
-							this.lexer.inline(token.text, token.tokens);
-							return token;
-						}
-					},
-					renderer(token) {
-						return `<em>${this.parser.parseInline(token.tokens)}</em>`;
-					}
-				};
-
-const strong = {
-				name: 'strong',
-				level: 'inline',
-				start(src) { return src.match(/\//)?.index },
-				tokenizer(src) {
-					const rule = /^\*([^\*]+)\*/;
-					const match = rule.exec(src);
-					if (match) {
-						const token = {
-							type: 'strong',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						this.lexer.inline(token.text, token.tokens);
-						return token;
-					}
-				},
-				renderer(token) {
-					return `<strong>${this.parser.parseInline(token.tokens)}</strong>`;
-				}
-			};
-
-const underline = {
-				name: 'underline',
-				level: 'inline',
-				start(src) { return src.match(/__/)?.index },
-				tokenizer(src) {
-					const rule = /^__([^_]+)__/;
-					const match = rule.exec(src);
-					if (match) {
-						const token = {
-							type: 'underline',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						this.lexer.inline(token.text, token.tokens);
-						return token;
-					}
-				},
-				renderer(token) {
-					return `<span style='text-decoration: underline;'>${this.parser.parseInline(token.tokens)}</span>`;
-				}
-			};			
-
-const fontawesome = {
-				name: 'fontawesome',
-				level: 'inline',
-				start(src) { return src.match(/<</)?.index },
-				tokenizer(src) {
-					const rule = /^<<([^>]+)>>/;
-					const match = rule.exec(src);
-					if (match) {
-						const token = {
-							type: 'fontawesome',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						//this.lexer.inline(token.text, token.tokens);
-						return token;
-					}
-				},
-				renderer(token) {
-					const match = token.text.match(/\((.*?)\)/);
-					const content = match ? match[1] : "";
-
-					let classes = token.text.replace(/\((.*?)\)/, '').trim().split(" ");
-					classes = classes.map( str => "fa-"+str ).join(" ");
-
-					return `<i class='fa-solid ${classes}' style='${content}'></i>`;
-				}
-			};
-
-const subscript = {
-				name: 'subscript',
-				level: 'inline',
-				start(src) { return src.match(/_/)?.index },
-				tokenizer(src) {
-					const rule = /^_([a-zA-Z0-9]|\{[^}]*\})/;
-					const match = rule.exec(src);
-					if (match) {
-						const token = {
-							type: 'subscript',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						this.lexer.inline(token.text, token.tokens);
-						return token;
-					}
-				},
-				renderer(token) {
-					let contents = this.parser.parseInline(token.tokens).replace(/[{}]/g, '');
-					return `<sub>${contents}</sub>`;
-				}
-			};		
-
-const superscript = {
-				name: 'superscript',
-				level: 'inline',
-				start(src) { return src.match(/\^/)?.index },
-				tokenizer(src) {
-					const rule = /^\^([a-zA-Z0-9]|\{[^}]*\})/;
-					const match = rule.exec(src);
-					if (match) {
-						const token = {
-							type: 'superscript',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						this.lexer.inline(token.text, token.tokens);
-						return token;
-					}
-				},
-				renderer(token) {
-					let contents = this.parser.parseInline(token.tokens).replace(/[{}]/g, '');
-					return `<sup>${contents}</sup>`;
-				}
-			};		
 
 
-/*
-marked.use({
-	extensions: [latexTokenizer, italics, strong, underline, fontawesome]
-});
+// Command-line processing of options, so that extensions can be switched on or off, as desired.
+import { Command } from 'commander';
+const program = new Command();
+program
+	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface* and revert to normal Markdown syntax')
+	.argument('<filename>', 'Markdown file to process');
 
-marked_copy.use({
-	extensions: [latexTokenizer, italics, strong, underline, fontawesome]
-});
-*/
+program.parse(process.argv);
+const options = program.opts();
 
-[marked, marked_copy].map(m => {
-	m.use({
-		extensions: [latexTokenizer, italics, strong, subscript, superscript, underline, fontawesome]
-	});
-});
+// This next function is useful for registering extensions with both versions of the markdown interpreter.
+// The argument must be an array of extensions.
+function register_extensions(exts) {
+	[marked, marked_copy].map(m => {
+		m.use({
+			extensions: exts
+		});
+	});	
+}
 
-// subscript, superscript,
+import { jmarkdownSyntaxEnhancements } from './syntax-enhancements.js';
 
-const moustache = {
-				name: 'moustache',
-				level: 'inline',
-				start(src) { return src.match(/{{/)?.index },
-				tokenizer(src) {
-					const rule = /^{{([^}]+)}}/;
-					const match = rule.exec(src);
-					if (match) {
-						const token = {
-							type: 'moustache',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						//this.lexer.inline(token.text, token.tokens);
-						return token;
-					}
-				},
-				renderer(token) {
-					if (token.text in metadata) {
-						let contents = metadata[token.text];
-						return contents.join('');
-					}
-					else {
-						try {
-							const result = runInThisContext(token.text);
-							return result;
-						}
-						catch (error) {
-							return `{{${token.text}}}`;
-						}
-					}
-				}
-			};
+register_extensions([ 
+	jmarkdownSyntaxEnhancements['latex'],
+	jmarkdownSyntaxEnhancements['moustache']
+]);
 
-marked.use({
-	extensions: [moustache]
-});
+// [marked, marked_copy].map(m => {
+// 	m.use({
+// 		extensions: [latexTokenizer, fontawesome]
+// 	});
+// });
+
+import jmarkdownSyntaxModifications from './syntax-modifications.js';
+
+if (options.normalSyntax != true) {
+	register_extensions([
+				jmarkdownSyntaxModifications['italics'], 
+				jmarkdownSyntaxModifications['strong'], 
+				jmarkdownSyntaxModifications['underline'],
+				jmarkdownSyntaxModifications['subscript'],
+				jmarkdownSyntaxModifications['superscript']
+			]);
+}
 
 
-const commentExtension = {
-  name: 'comment',
-  level: 'block',
-  start(src) {
-    return src.match(/@comment\b/)?.index;
-  },
-  tokenizer(src) {
-    const rule = /^@comment\b([\s\S]*?)@endComment/;
-    const match = rule.exec(src);
-    if (match) {
-      return {
-        type: 'comment',
-        raw: match[0],
-        text: match[1]
-      };
-    }
-  },
-  renderer(token) {
-    return '<!-- Text in markdown source commented out -->'; // Return empty string to effectively ignore the content
-  }
-};
+// const commentExtension = {
+//   name: 'comment',
+//   level: 'block',
+//   start(src) {
+//     return src.match(/@comment\b/)?.index;
+//   },
+//   tokenizer(src) {
+//     const rule = /^@comment\b([\s\S]*?)@endComment/;
+//     const match = rule.exec(src);
+//     if (match) {
+//       return {
+//         type: 'comment',
+//         raw: match[0],
+//         text: match[1]
+//       };
+//     }
+//   },
+//   renderer(token) {
+//     return '<!-- Text in markdown source commented out -->'; // Return empty string to effectively ignore the content
+//   }
+// };
 
 // Use it with marked
 //marked.use({ extensions: [commentExtension] });
 //marked_copy.use({ extensions: [commentExtension] });
-[marked, marked_copy].map(m => {
-	m.use({ extensions: [commentExtension] });
-});
+// [marked, marked_copy].map(m => {
+// 	m.use({ extensions: [commentExtension] });
+// });
 
 
 
@@ -315,7 +136,6 @@ const theoremExtension = {
     const rule = /^Theorem([^:]*:)([\s|\S]*)/;
     const match = rule.exec(src);
     if (match) {
-      console.log(match);
       let token = {
         type: 'theorem',
         raw: match[0],
@@ -332,8 +152,6 @@ const theoremExtension = {
   renderer(token) {
   	let start = this.parser.parseInline(token.start);
   	let rest = this.parser.parseInline(token.rest);
-  	console.log(start);
-  	console.log(rest);
     return `<span style='font-weight: bold'>Theorem${start}</span><span style='font-style: italic;'>${rest}</span>`;
   }
 };
@@ -363,29 +181,6 @@ import hljs from 'highlight.js';
 	);
 });
 
-/*
-marked.use(
-	markedHighlight({
-		emptyLangClass: 'hljs',
-	    langPrefix: 'hljs language-',
-	    highlight(code, lang, info) {
-	      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-	      return hljs.highlight(code, {tabReplace: '  ', language }).value;
-	    }
-	})
-);
-
-marked_copy.use(
-	markedHighlight({
-		emptyLangClass: 'hljs',
-	    langPrefix: 'hljs language-',
-	    highlight(code, lang, info) {
-	      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-	      return hljs.highlight(code, {tabReplace: '  ', language }).value;
-	    }
-	})
-);
-*/
 
 /*
 const markdown_demo_extension = {
@@ -393,14 +188,11 @@ const markdown_demo_extension = {
   level: 'block',                                     // Is this a block-level or inline-level tokenizer?
   start(src) { 
   	// if (src.match(/:::markdown-test/) != null) {
-  	// 	console.log(src);
-  	// 	console.log(src.match(/:::markdown-test/)?.index);
   	// }
     return src.match(/^:::markdown-test/)?.index; 
   }, 
   tokenizer(src, tokens) {
   	if (src.startsWith(":::")) {
-  		console.log(src);
   	}
 
     const rule = /^:::markdown-test([\s\S]*?)\n:::/;
@@ -431,7 +223,9 @@ marked.use({
 
 
 
-import { createDirectives, presetDirectiveConfigs } from 'marked-directive';
+//import { createDirectives, presetDirectiveConfigs } from 'marked-directive';
+import { createDirectives, presetDirectiveConfigs } from './extended-directives.js';
+
 
 [marked, marked_copy].map(m => {
 	m.use(createDirectives([
@@ -469,6 +263,7 @@ marked.use(createDirectives([
 	{
 		'level': 'block',
 		'marker': "::",
+		label: "title",
 		renderer(token) {
 			if (token.meta.name === "title") {
 				let html = marked.parser(token.tokens);
@@ -481,11 +276,12 @@ marked.use(createDirectives([
 	{
 		'level': 'block',
 		'marker': "::",
+		label: "subtitle",
 		renderer(token) {
 			if (token.meta.name === "subtitle") {
 				let html = marked.parser(token.tokens);
 				html = html.replace(/<\/?p>/g, '');
-				return `<div class="subtitle"${html}</div>`;
+				return `<div class="subtitle">${html}</div>`;
 			}
 			return false;
 		}
@@ -493,6 +289,7 @@ marked.use(createDirectives([
 	{
 		'level': 'block',
 		'marker': "::",
+		label: "author",
 		renderer(token) {
 			if (token.meta.name === "author") {
 				return `<div class="author">${token.text}</div>`;
@@ -503,6 +300,12 @@ marked.use(createDirectives([
 	{
 		'level': 'block',
 		'marker': "::",
+		label: "institution",
+		tokenizer(text, token) {
+			text = text.trim();
+			text = text.replaceAll("\n", "<br>");
+			token.tokens = this.lexer.inlineTokens(text);
+		},
 		renderer(token) {
 			if (token.meta.name === "institution") {
 				let html = marked.parser(token.tokens);
@@ -515,6 +318,7 @@ marked.use(createDirectives([
 	{
 		'level': 'block',
 		'marker': "::",
+		label: "date",
 		renderer(token) {
 			if (token.meta.name === "date") {
 				let html = marked.parser(token.tokens);
@@ -526,6 +330,7 @@ marked.use(createDirectives([
 	{
 		'level': 'inline',
 		'marker': ":",
+		label: "today",
 		renderer(token) {
 			if (token.meta.name === "today") {
 			    const months = ["January", "February", "March", "April", "May", "June", 
@@ -541,8 +346,31 @@ marked.use(createDirectives([
 		}
 	},
 	{
+		'level': 'inline',
+		'marker': ":",
+		label: "label",
+		renderer(token) {
+			if (token.meta.name === "label") {
+				return `<span class='xref-label' data-key='${token.text}'></span>`;
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "ref",
+		renderer(token) {
+			if (token.meta.name === "ref") {
+				return `<span class='xref-ref' data-key='${token.text}'></span>`;
+			}
+			return false;
+		}
+	},
+	{
 		'level': 'container',
 		'marker': ":::",
+		label: "abstract",
 		renderer(token) {
 			if (token.meta.name === "abstract") {
 				let html = marked.parser(token.tokens);
@@ -554,6 +382,19 @@ marked.use(createDirectives([
 	{
 		'level': 'container',
 		'marker': ":::",
+		label: "feedback",
+		renderer(token) {
+			if (token.meta.name === "feedback") {
+				let html = marked.parser(token.tokens);
+				return `<section class="feedback">${html}</section>`;
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'container',
+		'marker': ":::",
+		label: "title-box",
 		renderer(token) {
 			if (token.meta.name === "title-box") {
 				token.tokens.shift(); // Throw away the opening space token
@@ -574,6 +415,7 @@ function createMultilevelOptionals(name) {
 			{
 				'level': 'container',
 				'marker': ':'.repeat(level),
+				label: name,
 				renderer(token) {
 		      if (token.meta.name === name) {
 		        // First check if attr exists and has include property
@@ -617,6 +459,17 @@ marked.use({
   }
 });
 
+marked.use({
+  tokenizer: {
+    br() {
+      // return undefined to disable
+    }
+  }
+});
+
+
+
+
 let id = 0;
 function get_unique_id() {
 	return "${post-process-" + id++ + "}";
@@ -635,8 +488,9 @@ function register_for_postprocessing(markdown) {
 
 function rendering_function_for_markdown_demo(token, state) {
 	if (token.meta.name === "markdown-demo") {
+		let lang = token?.attrs?.type ?? "markdown"; 
 		let original_raw = token.raw.split("\n").slice(1,-1).join("\n");
-		let raw = "```markdown\n" + original_raw + "\n```\n";
+		let raw = "```" + `${lang}\n` + original_raw + "\n```\n";
 		let id = register_for_postprocessing(raw);
 		let output = `<div class='markdown-demo-container'>
 <div class='markdown-demo-code-label'>Markdown code</div>
@@ -760,7 +614,7 @@ function rendering_function_for_game(token) {
 		rest = rest.map(str => "<td class='rowLabel rowStrategies strategyLabels'>" + str + "\\)  </td></tr>");
 		let first_row = rest.shift();
 		if (row_label) {
-			first_row = `<tr'><td class='rowLabel' rowspan=${number_of_rows}>${row_label}</td>` + first_row;
+			first_row = `<tr><td class='rowLabel' rowspan=${number_of_rows}>${row_label}</td>` + first_row;
 		}
 		rest.map(row => "<tr>" + row);
 		rest.unshift(first_row);
@@ -977,138 +831,427 @@ function create_inline_comment_extension(character, include_in_comment) {
 	marked.use({ extensions: [inlineCommentExtension] });	
 }
 
-//create_inline_comment_extension('%', true);
+
+// This extension has to be registered after the directives in order for it to work.
+register_extensions([ 
+	jmarkdownSyntaxEnhancements['emojis']
+]);
 
 
-//import {markedEmoji} from "marked-emoji";
+
+
 
 /*
-	The following code downloads 180kb of URL data for the Octokit emojis.
-	Easier to just save it as a datafile rather than downloading it all the time.
+	This extension simply looks for <script> tags,
+	which it then captures and passes through to the output HTML
+	verbatim.  I needed to write this because the marked.js parser
+	occassionally mis-identifies scripts
 */
 
-//import {Octokit} from "@octokit/rest";
-//const octokit = new Octokit();
-//const res = await octokit.rest.emojis.get();
-/*
- * {
- *   ...
- *   "heart": "https://...",
- *   ...
- *   "tada": "https://...",
- *   ...
- * }
- */
-//const emojis = res.data;
+const script_regexp = /<script(?:\s+(?:src="[^"]*"|type="[^"]*"|defer|async|integrity="[^"]*"|crossorigin(?:="[^"]*")?))*\s*>[\s\S]*?<\/script>/i;
+const javascript_script = {
+				name: 'javascript',
+				level: 'block',
+				start(src) {
+					return src.match(script_regexp)?.index; 
+				},
+				tokenizer(src) {
+					const rule = new RegExp( "^" + script_regexp.source);
+					const match = rule.exec(src);
 
-//import emojis from './emoji-data.json' with { type: 'json'};
+					if (match) {
+						// Check to make sure it's jmarkdown script code!
+						let script = match[1]
+						const token = {
+							type: 'javascript',
+							raw: match[0],
+							text: match[1],
+							tokens: []
+						};
+						return token;
+					}
+				},
+				renderer(token) {
+					return `${token.raw}`;
+				}
+			};
 
-
-// The following was the code I used to save the data file.
-
-/*
-const jsonString = JSON.stringify(emojis, null, 2);
-fs.writeFile('data.json', jsonString, (err) => {
-  if (err) throw err;
-
+marked.use({
+	extensions: [javascript_script]
 });
-// Async/await version
-async function writeToFile() {
-  try {
-    await fs.promises.writeFile('data.json', jsonString);
 
-  } catch (err) {
-    console.error(err);
-  }
-}
-*/
+
+global.output = '';
 
 /*
-	This function needs to detect whether we specified a FontAwesome icon or an
-	Octokit icon.  We assume that the FontAwesome icons always have the 'fa-' prefix
-	on the icon name (but not any of the other parameters which can modify the appearance).
+	The following extension finds and extracts scripts which should
+	either be run during compile time (jmarkdown) or saved
+	for execution once the final document has been assembled (jmarkdown-postprocess).
 */
+let postprocessor_scripts = []; // array of all the post-processor scripts
 
-import emoji_data from './emoji-data.json' with { type: 'json'};
+const jmarkdown_script = {
+				name: 'jmarkdownScript',
+				level: 'block',
+				start(src) {
+					return src.match(/<script\s+data-type=(['"])jmarkdown\1/i)?.index; 
+				},
+				tokenizer(src) {
+					const rule = /^<script[^>]*>(\s+[\s\S]*?)<\/script>/;
+					const match = rule.exec(src);
 
-const emojiNames = Object.keys(emoji_data).map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + "|fa-[^:]+";
-const emojiRegex = new RegExp(`:(${emojiNames}):`);
-const tokenizerRule = new RegExp(`^${emojiRegex.source}`);
+					if (match) {
+						// Check to make sure it's jmarkdown script code!
+						if (match[0].search(/<script\s+data-type=(['"])(?:jmarkdown|jmarkdown-postprocess)\1/i) == -1) {
+							return;
+						}
+						let script = match[1]
+						let [tag, ...rest] = match[0].split('>');
+						// Check if it's a postprocessor script
+						if (tag.includes("jmarkdown-postprocess") == true) {
+							global.output = '';
+							postprocessor_scripts.push(script);
+						}
+						else {
+							global.output = '';
+							runInThisContext(script);
+						}
+						const token = {
+							type: 'jmarkdownScript',
+							raw: match[0],
+							text: match[1],
+							output: global.output,
+							tokens: []
+						};
+						return token;
+					}
+				},
+				renderer(token) {
+					return `${token.output}`;
+				}
+			};
 
-function emoji_renderer(token) {
-	let token_text = token.text;
+marked.use({
+	extensions: [jmarkdown_script]
+});
 
-	if (token_text.includes('fa-')) {
-		let classes = token_text.split(" ").map(text => (text.includes("fa-")) ? text : "fa-" + text ).join(" ");
-		return `<i class='fa-solid ${classes}'></i>`;
+function export_to_jmarkdown(name, options = {}) {
+	const {simple = true, tokenize = false} = options;
+
+	if (simple == true) {
+		construct_simple_function_extension(name, options);
+		return;
 	}
 	else {
-		let url = emoji_data[token_text];
-		return `<img alt="${token.name}" src="${url}" class="marked-emoji-img">`;
+		construct_complex_function_extension(name);
+		return;
 	}
+
+	let start_regexp = new RegExp(name + "\\(");
+	let tokenizer_regexp = new RegExp("^" + name + "\\(([^)]*?)\\)");
+
+	const new_function = {
+		name: `${name}`,
+		level: 'inline',
+		start(src) {
+			return src.match(start_regexp)?.index; 
+		},
+		tokenizer(src) {
+			const match = tokenizer_regexp.exec(src);
+			if (match) {
+				const token = {
+					type: `${name}`,
+					raw: match[0],
+					text: match[1],
+					tokens: []
+				};
+				let script = `${token.type}("${token.text}")`;
+				let output = runInThisContext(script);
+				this.lexer.inlineTokens(output, token.tokens);
+				return token;
+			}
+		},
+		renderer(token) {
+			return this.parser.parseInline(token.tokens);
+		}
+	};
+
+	marked.use({
+		extensions: [new_function]
+	});
 }
 
-const emojis = {
-				name: 'emoji',
-				level: 'inline',
-				start(src) { return src.match(emojiRegex)?.index; },
-				tokenizer(src) {
-					//const rule = /^:([^:]+):/;
-					const match = tokenizerRule.exec(src);
-					if (match) {
-						const token = {
-							type: 'emoji',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						return token;
-					}
-				},
-				renderer(token) {
-					return emoji_renderer(token);
+
+/*
+	Here, we simply assume that the function syntax in markdown is
+	of the form:
+
+		function_name(...markdown text not containing ')'...)
+
+	This allows a lot of transformations to be typed pretty simply
+	in the text.
+*/
+function construct_simple_function_extension(name, options) {
+	const {tokenize = false} = options;
+
+	let start_regexp = new RegExp(name + "\\(");
+	let tokenizer_regexp = new RegExp("^" + name + "\\(([^)]*?)\\)", 's');
+
+	let extension_level = (tokenize != false)? tokenize : 'inline';
+
+	const new_function = {
+		name: `${name}`,
+		level: extension_level,
+		start(src) {
+			return src.match(start_regexp)?.index; 
+		},
+		tokenizer(src) {
+			const match = tokenizer_regexp.exec(src);
+			if (match) {
+				let script = `${name}("${match[1]}")`;
+				script = script.replaceAll('\n', '\\n');
+				let output = runInThisContext(script);
+
+				const token = {
+					type: `${name}`,
+					raw: match[0],
+					text: output,
+					tokens: []
+				};
+				
+				if (tokenize == "inline") {
+					this.lexer.inlineTokens(output, token.tokens);
 				}
+				if (tokenize == "block") {
+					this.lexer.blockTokens(output, token.tokens);
+				}
+				return token;
+			}
+		},
+		renderer(token) {
+			if (tokenize == "inline") {
+				let html = this.parser.parseInline(token.tokens);
+				return html;
+			}
+			else if (tokenize == 'block') {
+				let html = this.parser.parse(token.tokens);
+				return html;
+			}
+			else {
+				return token.text;
+			}
+		}
+	};
+
+	marked.use({
+		extensions: [new_function]
+	});
+}
+
+/*
+	Here, we assume that the function syntax in markdown is
+	of the form:
+
+		function_name(...any permissible JavaScript function arguments...)
+
+	This requires a more complicated tokenizer, since we can have
+	nested functions, objects, and strings containing unbalanced 
+	parentheses, etc.  *However*, we assume that there is no need to
+	specify information to the tokenizer about inline/block 
+	lexing because that can be handled explicitly in the body of the function.
+
+	The scanning rule we use is the following function.
+*/
+function captureFunction(input, name) {
+  // First check if the string starts with the function name
+  if (!input.startsWith(name)) {
+      return null;
+  }
+  
+  // Start after the function name, looking for opening parenthesis
+  let pos = name.length;
+  while (pos < input.length && input[pos] !== '(') {
+      pos++;
+  }
+  if (pos >= input.length) return null;
+  
+  let openParens = 0;
+  let inString = false;
+  let stringChar = '';  // Could be ' or "
+  let escaped = false;
+  
+  // Start with the function name
+  let result = name;
+  
+  // Add everything from function name to opening parenthesis
+  result += input.substring(name.length, pos + 1);
+  
+  // Start after the opening parenthesis
+  pos++;
+  
+  while (pos < input.length) {
+      const char = input[pos];
+      
+      if (inString) {
+          result += char;
+          if (escaped) {
+              escaped = false;
+          } else if (char === '\\') {
+              escaped = true;
+          } else if (char === stringChar) {
+              inString = false;
+          }
+      } else {
+          if (char === '"' || char === "'") {
+              inString = true;
+              stringChar = char;
+              result += char;
+          } else if (char === '(') {
+              openParens++;
+              result += char;
+          } else if (char === ')') {
+              if (openParens === 0) {
+                  // We've found the matching closing parenthesis
+                  return result + char;
+              }
+              openParens--;
+              result += char;
+          } else {
+              result += char;
+          }
+      }
+      pos++;
+  }
+  
+  // If we get here, we never found the matching closing parenthesis
+  return null;
+}
+
+
+global.marked = marked;
+global.foobar = null;
+
+function construct_complex_function_extension(name, options) {
+	let start_regexp = new RegExp(name + "\\(");
+
+	const new_function = {
+		name: `${name}`,
+		level: 'inline',
+		start(src) {
+			return src.match(start_regexp)?.index; 
+		},
+		tokenizer(src) {
+			let func = captureFunction(src, name);
+			if (func == null) {
+				return undefined;
+			}
+
+			global.foobar = this;			
+			let output = runInThisContext(func);
+
+
+			const token = {
+				type: `${name}`,
+				raw: func,
+				text: output,
+				tokens: []
 			};
 
-marked.use({
-	extensions: [emojis]
-});
+			return token;
+		},
+		renderer(token) {
+			return token.text;
+		}
+	};
+
+	marked.use({
+		extensions: [new_function]
+	});
+}
 
 
 
-const title = {
-				name: 'title',
-				level: 'block',
-				start(src) { return src.match(/§title/)?.index; },
-				tokenizer(src) {
-					const rule = /^§title\[([^\]]*)\]/;
-					const match = rule.exec(src);
-					if (match) {
-						console.log("Got here!");
-						const token = {
-							type: 'title',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						this.lexer.blockTokens(token.text, token.tokens);
-						return token;
-					}
-				},
-				renderer(token) {
-					return `<div class='title'>${marked.parser(token.tokens)}</div>`;
-				}
-			};
+global.export_to_jmarkdown = export_to_jmarkdown;
 
-marked.use({
-	extensions: [title]
-});
 
-// const options = {
-// 	emojis,
-// 	renderer: (token) => `<img alt="${token.name}" src="${token.emoji}" class="marked-emoji-img">`
-// };
-// marked.use(markedEmoji(options));
+
+
+
+
+
+/*
+// Get initial set of function names
+runInThisContext(`
+    global._initialFuncs = new Set(
+        Object.entries(global)
+            .filter(([_, val]) => typeof val === 'function')
+            .map(([name]) => name)
+    );
+`);
+
+// Run some code that defines functions
+runInThisContext(`
+    function userFunc1() {}
+    global.userFunc2 = () => {};
+    var userFunc3 = function() {};
+`);
+
+// Get new functions by comparing against initial snapshot
+const userFunctions = runInThisContext(`
+    Object.entries(global)
+        .filter(([_, val]) => typeof val === 'function')
+        .map(([name]) => name)
+        .filter(name => !_initialFuncs.has(name));
+`);
+
+*/
+
+import * as cheerio from 'cheerio';
+
+const classExtension = {
+  name: 'classAndId',
+  level: 'inline',
+  start(src) {
+    return src.match(/\{[.#]/)?.index;
+  },
+  tokenizer(src) {
+    const rule = /^\{([.#][^}]+)\}/;  // Matches {.class} or {#id}
+    const match = rule.exec(src);
+    if (match) {
+      return {
+        type: 'classAndId',
+        raw: match[0],
+        selector: match[1],
+        tokens: []
+      };
+    }
+  },
+  renderer(token) {
+    // Create an empty span with data attributes
+    const attributes = [];
+    const selectors = token.selector.split(/(?=[.#])/);
+    
+    const classes = [];
+    let id = null;
+    
+    selectors.forEach(selector => {
+      if (selector.startsWith('.')) {
+        classes.push(selector.slice(1));
+      } else if (selector.startsWith('#')) {
+        id = selector.slice(1);
+      }
+    });
+    
+    return `<span data-add-classes="${classes.join(' ')}" data-add-id="${id || ''}" class="marker-to-remove"></span>`;
+  }
+};
+
+// Add the extension
+marked.use({ extensions: [classExtension] });
+
+
+
+
 
 
 import markedAlert from 'marked-alert';
@@ -1157,7 +1300,7 @@ marked.use(gfmHeadingId({prefix: "toc-"}), {
 	}
 });
 
-import {runInThisContext} from 'vm';
+
 
 function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
@@ -1215,18 +1358,18 @@ function processYAMLheader(markdown) {
 	}
 }
 
-let metadata = {};
+import metadata from './metadata-header.js';
 
 function parseKeyedData(text) {
 	const lines = text.split('\n');
-	const data = {};
+	//const data = {};
 	let currentKey = null;
 	let currentValue = [];
 
-	data['HTML footer'] = [''];
-	data['HTML header'] = [''];
-	data['title'] = '';
-	data['CSS'] = [''];
+	metadata['HTML footer'] = [''];
+	metadata['HTML header'] = [''];
+	metadata['title'] = '';
+	//data['CSS'] = [''];
 
 
 	for (const line of lines) {
@@ -1234,10 +1377,10 @@ function parseKeyedData(text) {
 		if (keyMatch) {
 			// If we have a previous key, store its data
 			if (currentKey) {
-				if (!data[currentKey]) {
-					data[currentKey] = [];
+				if (!metadata[currentKey]) {
+					metadata[currentKey] = [];
 				}
-				data[currentKey].push(currentValue.join('\n'));
+				metadata[currentKey].push(currentValue.join('\n'));
 				currentValue = [];
 			}
 
@@ -1253,14 +1396,15 @@ function parseKeyedData(text) {
 
 	// Don't forget to store the last entry
 	if (currentKey) {
-		if (!data[currentKey]) {
-			data[currentKey] = [];
+		if (!metadata[currentKey]) {
+			metadata[currentKey] = [];
 		}
-		data[currentKey].push(currentValue.join('\n'));
+		metadata[currentKey].push(currentValue.join('\n'));
 	}
 
-	metadata = data;
-	return data;
+	//metadata = data;
+	//initialiseMetadata(metadata);
+	return metadata;
 }
 
 let custom_element_string = "";
@@ -1407,14 +1551,21 @@ function addComplexExtension(delimiters, definition, name) {
 	// The following regexp matches a staticly defined regexp
 	const start_regexp = /\/(?<start>(?:[^/]|\\[\/])+)\//;
 	const tokenizer_regexp = /\/(?<tokens>(?:[^/]|\\[\/])+)\//;
-	const parse_regexp = /(?<parseInfo>true|false|\[\s*(?:true|false)(?:\s*,?\s*(?:true|false))*\s*\])/;
+	const parse_regexp = /(?<parseInfo>true|false|block|inline|\[\s*(?:true|false)(?:\s*,?\s*(?:true|false))*\s*\])/;
 	const num_arg_regexp = /(?<args>[0-9]*)/;
 	let big_regexp = new RegExp(start_regexp.source + "\\s+" + tokenizer_regexp.source + "\\s+" + parse_regexp.source + "\\s+" + num_arg_regexp.source );
 	let result = delimiters.match(big_regexp);
 
 	const src_regexp = new RegExp(result.groups['start']);
 	const token_regexp = new RegExp("^" + result.groups['tokens']);
-	const parse_info = JSON.parse(result.groups['parseInfo']);
+	//const parse_info = JSON.parse(result.groups['parseInfo']);
+	let parse_info;
+	if (result.groups['parseInfo'] == 'inline' || result.groups['parseInfo'] == 'block') {
+		parse_info = result.groups['parseInfo'];
+	}
+	else {
+		parse_info = JSON.parse(result.groups['parseInfo']);
+	}
 	const num_args = parseInt(result.groups['args']);
 
 	const extension = {
@@ -1434,6 +1585,20 @@ function addComplexExtension(delimiters, definition, name) {
 					for (let i=0; i<num_args; i++) {
 						token.tokens[i] = [];
 						this.lexer.inline(token.text[i], token.tokens[i]);
+					}
+				}
+				else if (parse_info == 'inline' || parse_info == 'block') {
+					let text = definition;
+					for (let i=0; i<num_args; i++) { 
+						//console.log(`num_args: ${num_args}`);
+						//console.log(`match: ${match}`);
+						text = text.replaceAll("$" + `{content${i+1}}`, match[i+1] );
+					}
+					if (parse_info == 'inline') {
+						this.lexer.inline(text, token.tokens);
+					}
+					else {
+						this.lexer.blockTokens(text, token.tokens); // HERE
 					}
 				}
 				else if (Array.isArray(parse_info)) {
@@ -1461,6 +1626,12 @@ function addComplexExtension(delimiters, definition, name) {
 					text = text.replaceAll("$" + `{content${i+1}}`, token.text[i]);
 				}
 				return text;
+			}
+			else if (parse_info == 'inline') {
+				return this.parser.parseInline(token.tokens);
+			}
+			else if (parse_info == 'block') {
+				return this.parser.parse(token.tokens);
 			}
 			else {
 				let text = definition;
@@ -1875,6 +2046,50 @@ function post_process_markdown(content) {
 }
 
 
+
+const pass_through = {
+  level: 'container',
+  marker: ':::',
+  label: "plaintext",
+  tokenizer: function(text, token) {
+    //console.log("Called by the plaintext tokenizer");
+  	//console.log(token);
+  },
+  renderer(token) {
+  	if (token.meta.name == "plaintext") {
+	  	//console.log("Called by the plaintext renderer");
+	  	//console.log(token);
+	  	return "Consumed plaintext";
+	  }
+	  return false;
+  }
+};
+
+marked.use( createDirectives([pass_through]) );
+
+
+const pass_through2 = {
+  level: 'container',
+  marker: ':::',
+  label: "doThis",
+  tokenizer: function(text, token) {
+    //console.log("Called by the doThis tokenizer");
+    //console.log(token);
+  },
+  renderer(token) {
+  	if (token.meta.name == "doThis") {
+	  	//console.log("Called by the doThis renderer");
+	  	//console.log(token);
+	  	return "I was told to do this";
+	  }
+	  return false;
+  }
+};
+
+marked.use( createDirectives([pass_through2]) );
+
+
+
 var content;
 function generateHTMLOutput(text) {
 	content = marked.parse(text);
@@ -1883,8 +2098,13 @@ function generateHTMLOutput(text) {
 
 	content = post_process_markdown(content);
 
+	let body_classes = '';
+	if ('Body classes' in metadata) {
+		body_classes = metadata['Body classes'];
+	}
+
 	let output = `<!DOCTYPE html>
-<html>
+<html lang='en'>
 <head>
     <meta charset="utf-8">
     <title>${metadata['title']}</title>
@@ -2068,7 +2288,7 @@ table.game td.columnLabel p {
 ${custom_element_string}
 ${insert_HTML_header()}
 </head>
-<body>
+<body class='${body_classes}'>
 ${content}
 ${insert_HTML_footer()}
 <script>
@@ -2102,7 +2322,7 @@ document.addEventListener('bibliography-ready', function() {
 }
 
 
-const filename = process.argv[2];
+const filename = program.args[0]; //process.argv[2];
 if (!filename) {
  console.error('Please provide a filename');
  process.exit(1);
@@ -2112,8 +2332,163 @@ const input = fs.readFileSync(filename, 'utf8');
 
 
 const outFile = filename.replace(/\.([^.]+)$/, '.html');
-fs.writeFileSync(outFile, generateHTMLOutput(input));
+//fs.writeFileSync(outFile, generateHTMLOutput(input));
 
-writeToFile("test-output.html", content );
+//writeToFile("test-output.html", content );
+
+
+
+let html = generateHTMLOutput(input);
+
+// try {
+//   html = fs.readFileSync(outFile, 'utf8');
+// } catch (err) {
+//   console.error('Error reading file:', err);
+// }
+
+// Post-process HTML output using cheerio
+
+function processHTML(html) {
+  // Load into cheerio
+  const $ = cheerio.load(html);
+  
+  // Find all our marker spans
+  $('span.marker-to-remove').each((i, elem) => {
+    const $elem = $(elem);
+    const classes = $elem.attr('data-add-classes');
+    const id = $elem.attr('data-add-id');
+    
+    // Add classes and id to parent
+    const $parent = $elem.parent();
+    if (classes) {
+      $parent.addClass(classes);
+    }
+    if (id) {
+      $parent.attr('id', id);
+    }
+    
+    // Remove the marker span
+    $elem.remove();
+  });
+  
+  add_labels_to_headers($);
+  process_crossrefs($);
+
+  return $.html();
+}
+
+function add_labels_to_headers($) {
+	let [h1,h2,h3,h4,h5,h6] = [0,0,0,0,0,0];
+
+	$(":header").each((i, elem) => {
+		let $elem = $(elem);
+		switch($elem.prop('tagName')) {
+		case "H1":
+			$(elem).prepend(`<span class='header-label h1-label xref'>${++h1}.</span> `);
+			break;
+		case "H2":
+			$(elem).prepend(`<span class='header-label h2-label xref'>${h1}.${++h2}.</span> `);
+			break;
+		case "H3":
+			$(elem).prepend(`<span class='header-label h3-label xref'>${h1}.${h2}.${++h3}.</span> `);
+			break;
+		case "H4":
+			$(elem).prepend(`<span class='header-label h4-label xref'>${h1}.${h2}.${h3}.${++h4}.</span> `);
+			break;
+		case "H5":
+			$(elem).prepend(`<span class='header-label h5-label xref'>${h1}.${h2}.${h3}.${h4}.${++h5}.</span> `);
+			break;
+		case "H6":
+			$(elem).prepend(`<span class='header-label h6-label xref'>${h1}.${h2}.${h3}.${h4}.${h5}.${++h6}.</span> `);
+			break;
+		}	
+	})
+}
+
+let crossrefs = {};
+function process_crossrefs($) {
+	$(".xref-label").each((i, elem) => {
+		let $elem = $(elem);
+		let key = $elem.attr('data-key');
+		let in_footnote = $elem.closest('[id^="footnote-"]').length > 0 ? true : false;
+		if (in_footnote) {
+			let $footnote = $elem.closest('[id^="footnote-"]');
+			const $ol = $footnote.closest("ol");
+			const $allItems = $ol.children('li');
+			const currentIndex = $allItems.index($footnote);
+			crossrefs[key] = `${currentIndex+1}`;
+		}
+		else {
+			let $xref =  $elem.prevAll(".xref").first();
+			crossrefs[key] = $xref.text();
+		}
+	});
+
+	$(".xref-ref").each((i, elem) => {
+		let key = $(elem).attr('data-key');
+		let str = crossrefs[key];
+		if (str != undefined && str.endsWith('.')) {
+		    str = str.slice(0, -1);
+		}
+		$(elem).text(str);
+	});
+}
+
+
+// Handle any cases of adding classes/ids to elements.
+html = processHTML(html);
+
+// import prettier from 'prettier';
+
+// const formatted = await prettier.format(processHTML(html), {
+// 	parser: 'html',
+// 	printWidth: 128,
+// 	bracketSameLine: false,  // Keep closing brackets on the same line
+// 	htmlWhitespaceSensitivity: 'strict',  // Reduce sensitivity to whitespace
+// 	tabWidth: 2
+// });
+
+import beautify from 'js-beautify';
+
+function beautify_html(html) {
+	return beautify.html(html,
+		{
+			indent_size: 2,             // Number of spaces for indentation
+			indent_char: ' ',           // Character to use for indent (usually space)
+			max_preserve_newlines: 1,   // Maximum number of line breaks to preserve
+			preserve_newlines: true,    // Whether to keep existing line breaks
+			indent_inner_html: true,    // Indent <head> and <body> sections
+			wrap_line_length: 0,        // Maximum line length (0 = no wrapping)
+			wrap_attributes: 'auto',    // 'auto', 'force', 'force-aligned', 'force-expand-multiline'
+			wrap_attributes_indent_size: 2, // Indent size for wrapped attributes
+			unformatted: ['code', 'pre'], // Tags that shouldn't be reformatted
+			content_unformatted: ['pre'], // Tags whose content shouldn't be reformatted
+			extra_liners: ['head', 'body', '/html'], // Tags that should have extra line breaks before them
+			end_with_newline: true,     // End output with newline
+			editorconfig: false,        // Use .editorconfig if present
+			eol: '\n',                  // End of line character
+			indent_scripts: 'normal'    // 'normal', 'keep', 'separate'
+		});
+}
+
+let beautified = beautify_html(html);
+
+global.fs = fs;
+
+function runPostprocessScripts() {
+	global.html = beautified;
+	global.cheerio = cheerio;
+	global.console = console;
+	let configuration = `const $ = cheerio.load(html);`
+	runInThisContext(configuration);
+	for (let script of postprocessor_scripts) {
+		runInThisContext(script);
+	}
+}
+
+runPostprocessScripts();
+
+fs.writeFileSync(outFile, beautify_html(global.html) );
+
 
 
