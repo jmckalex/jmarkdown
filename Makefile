@@ -2,7 +2,7 @@
 
 start:
 	node ./src/index.js jmarkdown.md
-	fswatch -0 jmarkdown.md | xargs -0 -n 1 node ./src/index.js jmarkdown.md & 
+	fswatch -0 jmarkdown.md | xargs -0 -n 1 node ./src/index.js & 
 	browser-sync start --server --files jmarkdown.html test.css --followSymlinks true --startPath jmarkdown.html --browser "Google Chrome" &> /dev/null &
 
 ph226:

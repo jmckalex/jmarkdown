@@ -507,6 +507,7 @@ ${marked.parser(token.tokens)}
 	return false;
 }
 
+createMultilevelDirectives(rendering_function_for_markdown_demo);
 
 /*
 	This is an attempt to create a version of the markdown-demo extension
@@ -516,7 +517,6 @@ ${marked.parser(token.tokens)}
 
 
 
-createMultilevelDirectives(rendering_function_for_markdown_demo);
 
 function extract_game_labels(text) {
     // First, normalize the keys we're looking for
@@ -838,48 +838,10 @@ register_extensions([
 ]);
 
 
-
-
-
-/*
-	This extension simply looks for <script> tags,
-	which it then captures and passes through to the output HTML
-	verbatim.  I needed to write this because the marked.js parser
-	occassionally mis-identifies scripts
-*/
-
-const script_regexp = /<script(?:\s+(?:src="[^"]*"|type="[^"]*"|defer|async|integrity="[^"]*"|crossorigin(?:="[^"]*")?))*\s*>[\s\S]*?<\/script>/i;
-const javascript_script = {
-				name: 'javascript',
-				level: 'block',
-				start(src) {
-					return src.match(script_regexp)?.index; 
-				},
-				tokenizer(src) {
-					const rule = new RegExp( "^" + script_regexp.source);
-					const match = rule.exec(src);
-
-					if (match) {
-						// Check to make sure it's jmarkdown script code!
-						let script = match[1]
-						const token = {
-							type: 'javascript',
-							raw: match[0],
-							text: match[1],
-							tokens: []
-						};
-						return token;
-					}
-				},
-				renderer(token) {
-					return `${token.raw}`;
-				}
-			};
-
+import { jmarkdownScriptExtensions } from './script-blocks.js';
 marked.use({
-	extensions: [javascript_script]
-});
-
+	extensions: [ jmarkdownScriptExtensions['scripts'] ]
+}) 
 
 global.output = '';
 
