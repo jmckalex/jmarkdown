@@ -141,6 +141,14 @@ extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 	.jmarkdown-right p:not(:first-of-type) {
 		margin-top: 12pt;
 	}
+
+	.jmarkdown-center p {
+		text-align: center;
+	}
+
+	.jmarkdown-center p:not(:first-of-type) {
+		margin-top: 12pt;
+	}
 </style>
  
 
@@ -251,8 +259,11 @@ Some more new text.
 >> Multiple lines can be included as <<
 >> line breaks are not assumed       <<
 >> to be significant.                <<
+>>                                   <<
+>> Multiple paragraphs are           <<
+>> supported, too!                   <<
 :::
-
+ 
 
 What about emojis?  For the octocat emojis, you put the name of the emoji between colons, so that
 writing `:heart:` gives :heart:.  Consult the 
@@ -1237,7 +1248,7 @@ Because all of the markdown-magic has already been performed by the post-process
 state, the above changes will not, of course, be reflected in the table of contents.
 
 While post-processing scripts don’t do anything which couldn’t already be done by
-including normal `<script>` tags to be evaluated in a browser, there are several things which
+including normal {{script}} tags to be evaluated in a browser, there are several things which
 are nice about them:
 
 1. Post-processing scripts can permanently change the HTML source which is exported,

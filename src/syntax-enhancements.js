@@ -189,20 +189,23 @@ const centerAlignExtension = {
             const text = raw.split('\n')
                 .map(line => line.replace(/^>> ?/, ''))
                 .map(line => line.replace(/<<\s*(?:\n|$)/, ''))
-                .filter(line => line.length > 0)
+                //.filter(line => line.length > 0)
                 .join('\n');
 
-            return {
+            let token = {
                 type: 'centerAlign',
                 raw: raw,
                 text: text,
-                tokens: this.lexer.inlineTokens(text)
+                tokens: []
             };
+            this.lexer.blockTokens(text, token.tokens);
+            return token;
         }
         return false;
     },
     renderer(token) {
-        return `<div style="text-align: center;">${this.parser.parseInline(token.tokens)}</div>`;
+        return `<div class='jmarkdown-center'>${marked.parser(token.tokens)}</div>`;
+        //return `<div style="text-align: center;">${this.parser.parseInline(token.tokens)}</div>`;
     }
 };
 
