@@ -904,7 +904,7 @@ Here's a simple example (we’ll see more complicated examples below).  Suppose 
 ```html
 <script data-type='jmarkdown'>
 	function reverser(str) {
-     return str.split('').reverse().join('');
+    	return str.split('').reverse().join('');
 	}
 
 	export_to_jmarkdown("reverser"); 
