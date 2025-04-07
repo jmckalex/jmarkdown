@@ -174,7 +174,7 @@ The beginning was this: I’ve always found the default syntax of markdown to be
 annoying.  Why aren't italics defined `/like this/` rather than `*like this*`?
 It also seemed like boldface was better indicated `*like this*` rather than
 `**like this**`.  And, finally, shouldn’t underlining be indicated `__like
-this__`?  That just seems more&hellip; /rational/, you know.
+this__`?  That just seems more&hellip; /rational/, you know. 
  
 From that initial goal &mdash; to create a custom markdown interpreter which catered to my own peculiar syntax
 preferences &mdash; this project has since grown into a full-featured markdown interpreter which

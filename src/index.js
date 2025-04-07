@@ -96,36 +96,6 @@ if (options.normalSyntax != true) {
 }
 
 
-// const commentExtension = {
-//   name: 'comment',
-//   level: 'block',
-//   start(src) {
-//     return src.match(/@comment\b/)?.index;
-//   },
-//   tokenizer(src) {
-//     const rule = /^@comment\b([\s\S]*?)@endComment/;
-//     const match = rule.exec(src);
-//     if (match) {
-//       return {
-//         type: 'comment',
-//         raw: match[0],
-//         text: match[1]
-//       };
-//     }
-//   },
-//   renderer(token) {
-//     return '<!-- Text in markdown source commented out -->'; // Return empty string to effectively ignore the content
-//   }
-// };
-
-// Use it with marked
-//marked.use({ extensions: [commentExtension] });
-//marked_copy.use({ extensions: [commentExtension] });
-// [marked, marked_copy].map(m => {
-// 	m.use({ extensions: [commentExtension] });
-// });
-
-
 
 const theoremExtension = {
   name: 'theorem',
@@ -160,8 +130,7 @@ const theoremExtension = {
 // marked.use({ extensions: [theoremExtension]});
 
 import extendedTables from "marked-extended-tables";
-//marked.use(extendedTables());
-//marked_copy.use(extendedTables());
+
 [marked, marked_copy].map(m => {
 	m.use(extendedTables());
 });
@@ -239,25 +208,6 @@ import { createDirectives, presetDirectiveConfigs } from './extended-directives.
 	]));
 });
 
-/*
-marked.use(createDirectives([
-	...presetDirectiveConfigs,
-	{ level: 'container', marker: '::::' },
-	{ level: 'container', marker: ':::::' },
-	{ level: 'container', marker: '::::::' },
-	{ level: 'container', marker: ':::::::' },
-	{ level: 'container', marker: '::::::::' }
-]));
-
-marked_copy.use(createDirectives([
-	...presetDirectiveConfigs,
-	{ level: 'container', marker: '::::' },
-	{ level: 'container', marker: ':::::' },
-	{ level: 'container', marker: '::::::' },
-	{ level: 'container', marker: ':::::::' },
-	{ level: 'container', marker: '::::::::' }
-]));
-*/
 
 
 marked.use(createDirectives([
@@ -1090,36 +1040,6 @@ global.export_to_jmarkdown = export_to_jmarkdown;
 
 
 
-
-
-
-
-/*
-// Get initial set of function names
-runInThisContext(`
-    global._initialFuncs = new Set(
-        Object.entries(global)
-            .filter(([_, val]) => typeof val === 'function')
-            .map(([name]) => name)
-    );
-`);
-
-// Run some code that defines functions
-runInThisContext(`
-    function userFunc1() {}
-    global.userFunc2 = () => {};
-    var userFunc3 = function() {};
-`);
-
-// Get new functions by comparing against initial snapshot
-const userFunctions = runInThisContext(`
-    Object.entries(global)
-        .filter(([_, val]) => typeof val === 'function')
-        .map(([name]) => name)
-        .filter(name => !_initialFuncs.has(name));
-`);
-
-*/
 
 import * as cheerio from 'cheerio';
 
@@ -1979,19 +1899,10 @@ const input = fs.readFileSync(filename, 'utf8');
 
 
 const outFile = filename.replace(/\.([^.]+)$/, '.html');
-//fs.writeFileSync(outFile, generateHTMLOutput(input));
-
-//writeToFile("test-output.html", content );
-
 
 
 let html = generateHTMLOutput(input);
 
-// try {
-//   html = fs.readFileSync(outFile, 'utf8');
-// } catch (err) {
-//   console.error('Error reading file:', err);
-// }
 
 // Post-process HTML output using cheerio
 
@@ -2089,16 +2000,6 @@ function process_crossrefs($) {
 
 // Handle any cases of adding classes/ids to elements.
 html = processHTML(html);
-
-// import prettier from 'prettier';
-
-// const formatted = await prettier.format(processHTML(html), {
-// 	parser: 'html',
-// 	printWidth: 128,
-// 	bracketSameLine: false,  // Keep closing brackets on the same line
-// 	htmlWhitespaceSensitivity: 'strict',  // Reduce sensitivity to whitespace
-// 	tabWidth: 2
-// });
 
 import beautify from 'js-beautify';
 

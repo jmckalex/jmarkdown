@@ -205,7 +205,6 @@ const centerAlignExtension = {
     },
     renderer(token) {
         return `<div class='jmarkdown-center'>${marked.parser(token.tokens)}</div>`;
-        //return `<div style="text-align: center;">${this.parser.parseInline(token.tokens)}</div>`;
     }
 };
 
