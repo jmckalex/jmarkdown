@@ -602,6 +602,7 @@ function writeToFile(filename, content) {
 import markedMoreLists from 'marked-more-lists';
 marked.use(markedMoreLists());
 
+
 function create_inline_comment_extension(character, include_in_comment) {
 	const start_regexp = RegExp(`${character}`);
 	const match_regexp = RegExp(`^${character}(.*?)(?:\\n|$)`);
@@ -894,53 +895,13 @@ function construct_complex_function_extension(name, options) {
 
 global.export_to_jmarkdown = export_to_jmarkdown;
 
-
-
-
+// This is needed for a number of things, including the classAndId extension
 import * as cheerio from 'cheerio';
 
-const classExtension = {
-  name: 'classAndId',
-  level: 'inline',
-  start(src) {
-    return src.match(/\{[.#]/)?.index;
-  },
-  tokenizer(src) {
-    const rule = /^\{([.#][^}]+)\}/;  // Matches {.class} or {#id}
-    const match = rule.exec(src);
-    if (match) {
-      return {
-        type: 'classAndId',
-        raw: match[0],
-        selector: match[1],
-        tokens: []
-      };
-    }
-  },
-  renderer(token) {
-    // Create an empty span with data attributes
-    const attributes = [];
-    const selectors = token.selector.split(/(?=[.#])/);
-    
-    const classes = [];
-    let id = null;
-    
-    selectors.forEach(selector => {
-      if (selector.startsWith('.')) {
-        classes.push(selector.slice(1));
-      } else if (selector.startsWith('#')) {
-        id = selector.slice(1);
-      }
-    });
-    
-    return `<span data-add-classes="${classes.join(' ')}" data-add-id="${id || ''}" class="marker-to-remove"></span>`;
-  }
-};
 
-// Add the extension
-marked.use({ extensions: [classExtension] });
-
-
+marked.use({ 
+	extensions: [ jmarkdownSyntaxEnhancements['classAndId'] ]
+});
 
 
 

@@ -175,7 +175,12 @@ const rightAlignExtension = {
 };
 
 
+/*
+    Provide support for center-aligned text with syntax as follows:
 
+    >> I'm center-aligned <<
+    >> text!              <<
+*/
 const centerAlignExtension = {
     name: 'centerAlign',
     level: 'block',
@@ -211,12 +216,65 @@ const centerAlignExtension = {
 };
 
 
+/*
+    This extension detects syntax of the following form:
+
+    {.class1 .class2 #id }
+
+    which specifies classes or an id to add to the parent element
+    containing the text where that syntax occurs.  This is not handled by jmarkdown directly.
+    Instead, jmarkdown creates an empty span element with the classes and id contained
+    in data- attributes.  Cheerio is used once the provisional HTML output has been
+    generated to iterate over all such classes and attach the classes and id to the
+    parent element, and then removing the span.
+*/
+const classExtension = {
+    name: 'classAndId',
+    level: 'inline',
+    start(src) {
+        return src.match(/\{[.#]/)?.index;
+    },
+    tokenizer(src) {
+        const rule = /^\{([.#][^}]+)\}/;  // Matches {.class} or {#id}
+        const match = rule.exec(src);
+        if (match) {
+            return {
+                type: 'classAndId',
+                raw: match[0],
+                selector: match[1],
+                tokens: []
+            };
+        }
+    },
+    renderer(token) {
+        // Create an empty span with data attributes
+        const attributes = [];
+        const selectors = token.selector.split(/(?=[.#])/);
+
+        const classes = [];
+        let id = null;
+
+        selectors.forEach(selector => {
+            if (selector.startsWith('.')) {
+                classes.push(selector.slice(1));
+            } 
+            else if (selector.startsWith('#')) {
+                id = selector.slice(1);
+            }
+        });
+
+        return `<span data-add-classes="${classes.join(' ')}" data-add-id="${id || ''}" class="marker-to-remove"></span>`;
+    }
+};
+
+
 export const jmarkdownSyntaxEnhancements = {
     'latex': latexTokenizer,
     'moustache': moustache,
     'emojis': emojis,
     'rightAlign': rightAlignExtension,
     'centerAlign': centerAlignExtension,
-    'descriptionLists': descriptionLists
+    'descriptionLists': descriptionLists,
+    'classAndId': classExtension
 };
 
