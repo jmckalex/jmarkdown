@@ -109,31 +109,99 @@ function emoji_renderer(token) {
 }
 
 const emojis = {
-                name: 'emoji',
-                level: 'inline',
-                start(src) { return src.match(emojiRegex)?.index; },
-                tokenizer(src) {
-                    //const rule = /^:([^:]+):/;
-                    const match = tokenizerRule.exec(src);
-                    if (match) {
-                        const token = {
-                            type: 'emoji',
-                            raw: match[0],
-                            text: match[1],
-                            tokens: []
-                        };
-                        return token;
-                    }
-                },
-                renderer(token) {
-                    return emoji_renderer(token);
-                }
+    name: 'emoji',
+    level: 'inline',
+    start(src) { return src.match(emojiRegex)?.index; },
+    tokenizer(src) {
+        //const rule = /^:([^:]+):/;
+        const match = tokenizerRule.exec(src);
+        if (match) {
+            const token = {
+                type: 'emoji',
+                raw: match[0],
+                text: match[1],
+                tokens: []
             };
+            return token;
+        }
+    },
+    renderer(token) {
+        return emoji_renderer(token);
+    }
+};
+
+
+const rightAlignExtension = {
+    name: 'rightAlign',
+    level: 'block',
+    start(src) {
+        return src.match(/^>>/)?.index;
+    },
+    tokenizer(src) {
+        const rule = /^(>> .*(?!<<\s*\n)(?:\n|$))+/;
+        const match = rule.exec(src);
+        if (match) {
+            const raw = match[0];
+            // Remove the >> markers and trim each line
+            const text = raw.split('\n')
+                .map(line => line.replace(/^>> ?/, ''))
+                .filter(line => line.length > 0)
+                .join('\n');
+
+            return {
+                type: 'rightAlign',
+                raw: raw,
+                text: text,
+                tokens: this.lexer.inlineTokens(text)
+            };
+        }
+        return false;
+    },
+    renderer(token) {
+        return `<div style="text-align: right;">${this.parser.parseInline(token.tokens)}</div>`;
+    }
+};
+
+
+
+const centerAlignExtension = {
+    name: 'centerAlign',
+    level: 'block',
+    start(src) {
+        return src.match(/^>> .* <</)?.index;
+    },
+    tokenizer(src) {
+        const rule = /^(>> .*<<\s*(?:\n|$))+/;
+        const match = rule.exec(src);
+        if (match) {
+            const raw = match[0];
+            // Remove the >> markers and trim each line
+            const text = raw.split('\n')
+                .map(line => line.replace(/^>> ?/, ''))
+                .map(line => line.replace(/<<\s*(?:\n|$)/, ''))
+                .filter(line => line.length > 0)
+                .join('\n');
+
+            return {
+                type: 'centerAlign',
+                raw: raw,
+                text: text,
+                tokens: this.lexer.inlineTokens(text)
+            };
+        }
+        return false;
+    },
+    renderer(token) {
+        return `<div style="text-align: center;">${this.parser.parseInline(token.tokens)}</div>`;
+    }
+};
 
 
 export const jmarkdownSyntaxEnhancements = {
     'latex': latexTokenizer,
     'moustache': moustache,
-    'emojis': emojis
+    'emojis': emojis,
+    'rightAlign': rightAlignExtension,
+    'centerAlign': centerAlignExtension
 };
 

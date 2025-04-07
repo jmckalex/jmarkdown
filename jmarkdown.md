@@ -225,7 +225,7 @@ As noted above, here are the main “ordinary” changes for `jmarkdown`:
 
 
 Two new syntax extensions are introduced for flush-right and centered text.
-Some more new text.  This is some more text.  This is more text.
+Some more new text. 
 
 :::markdown-demo
 >> This text is right aligned.
