@@ -133,6 +133,14 @@ extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 	sup, sub {
 		line-height: 0pt;
 	}
+
+	.jmarkdown-right p {
+		text-align: right;
+	}
+
+	.jmarkdown-right p:not(:first-of-type) {
+		margin-top: 12pt;
+	}
 </style>
  
 
@@ -232,6 +240,9 @@ Some more new text.
 >> Multiple lines can be included as
 >> line breaks are not assumed 
 >> to be significant.
+>> 
+>> And multiple paragraphs can be included
+>> as well!
 :::
 
 

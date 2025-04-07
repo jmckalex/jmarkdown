@@ -6,84 +6,84 @@
 // is that '<' and '>' symbols need to be transformed to '&lt;' or '&gt;' as they
 // can cause errors when the HTML is interpreted.
 const latexTokenizer = {
-                    name: 'latex',
-                    level: 'inline',
-                    priority: 1,
-                    start(src) {
-                        const match = src.match(/\$\$|\$|\\\(|\\\[/);
-                        return match ? match.index : -1;
-                    },
-                    tokenizer(src, tokens) {
-                        // Match block LaTeX first (since it's more specific)
-                        const blockMatch = /^\$\$([^$]*?)\$\$|^\\\[(.*?)\\\]/s.exec(src);
-                        if (blockMatch && blockMatch.index === 0) {
-                            let math = blockMatch[1] ? blockMatch[1] : blockMatch[2];
-                            return {
-                                type: 'latex',
-                                raw: blockMatch[0],
-                                text: math,
-                                block: true
-                            };
-                        }
+    name: 'latex',
+    level: 'inline',
+    priority: 1,
+    start(src) {
+        const match = src.match(/\$\$|\$|\\\(|\\\[/);
+        return match ? match.index : -1;
+    },
+    tokenizer(src, tokens) {
+        // Match block LaTeX first (since it's more specific)
+        const blockMatch = /^\$\$([^$]*?)\$\$|^\\\[(.*?)\\\]/s.exec(src);
+        if (blockMatch && blockMatch.index === 0) {
+            let math = blockMatch[1] ? blockMatch[1] : blockMatch[2];
+            return {
+                type: 'latex',
+                raw: blockMatch[0],
+                text: math,
+                block: true
+            };
+        }
 
-                        // Match inline LaTeX
-                        const inlineMatch = /\$([^\$]+?)\$|\\\((.*)\\\)/.exec(src);
-                        if (inlineMatch && inlineMatch.index === 0) {
-                            let math = inlineMatch[1] ? inlineMatch[1] : inlineMatch[2];
-                            return {
-                                type: 'latex',
-                                raw: inlineMatch[0],
-                                text: math,
-                                block: false
-                            };
-                        }
+        // Match inline LaTeX
+        const inlineMatch = /\$([^\$]+?)\$|\\\((.*)\\\)/.exec(src);
+        if (inlineMatch && inlineMatch.index === 0) {
+            let math = inlineMatch[1] ? inlineMatch[1] : inlineMatch[2];
+            return {
+                type: 'latex',
+                raw: inlineMatch[0],
+                text: math,
+                block: false
+            };
+        }
 
-                        return false;
-                    },
-                    renderer(token) {
-                        let sanitised_text = token.text.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-                        return token.block ? `$$${sanitised_text}$$` : `$${sanitised_text}$`;
-                    }       
-                };
+        return false;
+    },
+    renderer(token) {
+        let sanitised_text = token.text.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        return token.block ? `$$${sanitised_text}$$` : `$${sanitised_text}$`;
+    }       
+};
 
 import metadata from './metadata-header.js';
 
 // Look for text of the form {{variable_name}} which will be defined either in a file
 // or in the metadata header, for inclusion in the output HTML
 const moustache = {
-                name: 'moustache',
-                level: 'inline',
-                start(src) { return src.match(/{{/)?.index },
-                tokenizer(src) {
-                    const rule = /^{{([^}]+)}}/;
-                    const match = rule.exec(src);
-                    if (match) {
-                        const token = {
-                            type: 'moustache',
-                            raw: match[0],
-                            text: match[1],
-                            tokens: []
-                        };
-                        //this.lexer.inline(token.text, token.tokens);
-                        return token;
-                    }
-                },
-                renderer(token) {
-                    if (token.text in metadata) {
-                        let contents = metadata[token.text];
-                        return contents.join('');
-                    }
-                    else {
-                        try {
-                            const result = runInThisContext(token.text);
-                            return result;
-                        }
-                        catch (error) {
-                            return `{{${token.text}}}`;
-                        }
-                    }
-                }
+    name: 'moustache',
+    level: 'inline',
+    start(src) { return src.match(/{{/)?.index },
+    tokenizer(src) {
+        const rule = /^{{([^}]+)}}/;
+        const match = rule.exec(src);
+        if (match) {
+            const token = {
+                type: 'moustache',
+                raw: match[0],
+                text: match[1],
+                tokens: []
             };
+            //this.lexer.inline(token.text, token.tokens);
+            return token;
+        }
+    },
+    renderer(token) {
+        if (token.text in metadata) {
+            let contents = metadata[token.text];
+            return contents.join('');
+        }
+        else {
+            try {
+                const result = runInThisContext(token.text);
+                return result;
+            }
+            catch (error) {
+                return `{{${token.text}}}`;
+            }
+        }
+    }
+};
 
 // Emojis!
 // This code is mostly taken from the marked-emojis package, but I've tweaked it to provide
@@ -108,6 +108,9 @@ function emoji_renderer(token) {
     }
 }
 
+/*
+    Provide support for inserting octocat or fontawesome emojis via the syntax :beer: or :fa-thumbs-up:
+*/
 const emojis = {
     name: 'emoji',
     level: 'inline',
@@ -130,7 +133,12 @@ const emojis = {
     }
 };
 
+/*
+    Provide support for right-aligned text with syntax as follows:
 
+    >> I'm right-aligned
+    >> text!
+*/
 const rightAlignExtension = {
     name: 'rightAlign',
     level: 'block',
@@ -138,27 +146,29 @@ const rightAlignExtension = {
         return src.match(/^>>/)?.index;
     },
     tokenizer(src) {
-        const rule = /^(>> .*(?!<<\s*\n)(?:\n|$))+/;
+        const rule = /^(>> ?.*(?!<<\s*\n)(?:\n|$))+/;
         const match = rule.exec(src);
         if (match) {
             const raw = match[0];
-            // Remove the >> markers and trim each line
+            // Remove the >> markers
             const text = raw.split('\n')
                 .map(line => line.replace(/^>> ?/, ''))
-                .filter(line => line.length > 0)
                 .join('\n');
 
-            return {
+            let token = {
                 type: 'rightAlign',
                 raw: raw,
                 text: text,
-                tokens: this.lexer.inlineTokens(text)
+                tokens: []
             };
+
+            this.lexer.blockTokens(text, token.tokens);
+            return token;
         }
         return false;
     },
     renderer(token) {
-        return `<div style="text-align: right;">${this.parser.parseInline(token.tokens)}</div>`;
+        return `<div class='jmarkdown-right'>${marked.parser(token.tokens)}</div>`;
     }
 };
 
