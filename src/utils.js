@@ -3,6 +3,7 @@
 	instance of runInThisContext.  This utility module makes that possible.
 */
 import { runInThisContext } from 'vm';
+import { marked } from 'marked';
 
 
-export { runInThisContext };
+export { runInThisContext, marked };

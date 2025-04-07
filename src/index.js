@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { marked, Marked } from 'marked';
+import { Marked } from 'marked';
 import fs from 'fs';
-import { runInThisContext } from './utils.js';
+import { runInThisContext, marked } from './utils.js';
 
 import { JSDOM } from 'jsdom';
 

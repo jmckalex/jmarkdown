@@ -5,7 +5,7 @@
 	inline text being parsed.
 */
 
-import { runInThisContext } from './utils.js';
+import { runInThisContext, marked } from './utils.js';
 
 export default function export_to_jmarkdown(name, options = {}) {
 	const {simple = true, tokenize = false} = options;

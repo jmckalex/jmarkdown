@@ -18,6 +18,7 @@
 	but with no double-colon on the first line, indicates the end of the
 	description list.
 */
+import { marked } from './utils.js';
 
 const descriptionList = {
 	name: 'descriptionList',

@@ -2,6 +2,7 @@
 // modify the standard markdown syntax but they provide additional functionality.
 
 import descriptionLists from './description-lists.js';
+import { marked } from './utils.js';
 
 // Scan the text for LaTeX code between the standard MathJax delimiters,
 // and make sure the raw text is passed straight through to the output HTML.  The one exception
