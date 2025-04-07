@@ -174,7 +174,7 @@ The beginning was this: I’ve always found the default syntax of markdown to be
 annoying.  Why aren't italics defined `/like this/` rather than `*like this*`?
 It also seemed like boldface was better indicated `*like this*` rather than
 `**like this**`.  And, finally, shouldn’t underlining be indicated `__like
-this__`?  That just seems more&hellip; /rational/, you know. 
+this__`?  That just seems more&hellip; /rational/, you know.
  
 From that initial goal &mdash; to create a custom markdown interpreter which catered to my own peculiar syntax
 preferences &mdash; this project has since grown into a full-featured markdown interpreter which
@@ -194,7 +194,7 @@ of all the features `jmarkdown` offers:
 * A syntax extension for adding classes and an id to the parent element.
 * A syntax extension for inline comments.  This defaults to the `%` character,
 	as in $\TeX$, but it can be changed.
-* A syntax extension for definition lists.	
+* A syntax extension for description lists.	
 * Emojis (all [octocat supported](https://gist.github.com/rxaviers/7360908) emojis) :beers: :smile: I :heart: marked! :tada: 
 * [FontAwesome](fontawesome.com) icons :fa-thumbs-up:
 * GFM tables
@@ -369,7 +369,7 @@ The formatting below isn’t perfect, but that just requires some CSS tweaks.
 > an action.
 :::
 
-# Definition lists
+# Description lists
 
 <style>
 	dl {
@@ -393,9 +393,9 @@ The formatting below isn’t perfect, but that just requires some CSS tweaks.
 	}
 </style>
 
-Normal markdown, by default, doesn’t include syntax for creating definition lists.
-The syntax used by `jmarkdown` for definition lists is shown below.  It also
-allows definition lists to be nested.  For some reason, this doesn’t play well
+Normal markdown, by default, doesn’t include syntax for creating description lists.
+The syntax used by `jmarkdown` for description lists is shown below.  It also
+allows description lists to be nested.  For some reason, this doesn’t play well
 with the footnotes extension, so if anyone would like to help debug it, that
 would be awesome.
 

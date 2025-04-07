@@ -1,6 +1,8 @@
 // These are syntax enhancements for jMarkdown.  That is, they don't
 // modify the standard markdown syntax but they provide additional functionality.
 
+import descriptionLists from './description-lists.js';
+
 // Scan the text for LaTeX code between the standard MathJax delimiters,
 // and make sure the raw text is passed straight through to the output HTML.  The one exception
 // is that '<' and '>' symbols need to be transformed to '&lt;' or '&gt;' as they
@@ -214,6 +216,7 @@ export const jmarkdownSyntaxEnhancements = {
     'moustache': moustache,
     'emojis': emojis,
     'rightAlign': rightAlignExtension,
-    'centerAlign': centerAlignExtension
+    'centerAlign': centerAlignExtension,
+    'descriptionLists': descriptionLists
 };
 
