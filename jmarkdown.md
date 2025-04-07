@@ -1030,7 +1030,7 @@ ROT-13 twice: rot13(rot13("Hello world!"))
 Complex functions should only return HTML to be inserted as replacement text, because
 attempted anything too complicated while requesting the output be parsed can confuse
 the markdown interpreter.  If you /really/ need to, though, you can use `marked.parse()`
-as follows:
+as follows: 
 
 :::markdown-demo{type=html}
 <script data-type='jmarkdown'>
@@ -1221,17 +1221,6 @@ of the DOM and the file `output.txt` is closed.
 </script>
 ```
 
-<script data-type='jmarkdown-postprocess'>
-	const writeStream = fs.createWriteStream('output.txt');
-	$('h1').each((index, element) => {
-		let t = $(element).text().toUpperCase();
-		writeStream.write(t + '\n');
-		$(element).text(t); 
-	});
-	html = $.html();
-	writeStream.end();
-</script>
- 
 
 Because all of the markdown-magic has already been performed by the post-processing
 state, the above changes will not, of course, be reflected in the table of contents.

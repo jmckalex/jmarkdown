@@ -2300,18 +2300,23 @@ function add_labels_to_headers($) {
 		switch($elem.prop('tagName')) {
 		case "H1":
 			$(elem).prepend(`<span class='header-label h1-label xref'>${++h1}.</span> `);
+			h2 = 0;
 			break;
 		case "H2":
 			$(elem).prepend(`<span class='header-label h2-label xref'>${h1}.${++h2}.</span> `);
+			h3 = 0;
 			break;
 		case "H3":
 			$(elem).prepend(`<span class='header-label h3-label xref'>${h1}.${h2}.${++h3}.</span> `);
+			h4 = 0;
 			break;
 		case "H4":
 			$(elem).prepend(`<span class='header-label h4-label xref'>${h1}.${h2}.${h3}.${++h4}.</span> `);
+			h5 = 0;
 			break;
 		case "H5":
 			$(elem).prepend(`<span class='header-label h5-label xref'>${h1}.${h2}.${h3}.${h4}.${++h5}.</span> `);
+			h6 = 0;
 			break;
 		case "H6":
 			$(elem).prepend(`<span class='header-label h6-label xref'>${h1}.${h2}.${h3}.${h4}.${h5}.${++h6}.</span> `);
@@ -2397,7 +2402,6 @@ function runPostprocessScripts() {
 	let configuration = `const $ = cheerio.load(html);`
 	runInThisContext(configuration);
 	for (let script of postprocessor_scripts) {
-		console.log(script);
 		runInThisContext(script);
 	}
 }
