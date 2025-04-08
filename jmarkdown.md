@@ -1208,6 +1208,8 @@ More text after it.
 
 ## Post-processing scripts
 
+asdf asdf qwer asdf asdf asdf qwer
+
 In addition, `jmarkdown` supports the inclusion of JavaScript which
 should be invoked once the final document has been assembled.  In this case,
 once `jmarkdown` has finished constructing the HTML for the entire document,

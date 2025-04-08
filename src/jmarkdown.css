@@ -1,0 +1,156 @@
+pre code.hljs {
+	tab-size: 2;
+	-moz-tab-size: 2;
+}
+
+.marked-emoji-img {
+	height: 1em;  /* Match line height */
+	vertical-align: -0.15em;  /* Fine-tune alignment */
+}
+
+.markdown-alert-title {
+	margin-top: 0pt;
+	margin-bottom: 3pt;
+}
+
+.markdown-alert svg.octicon {
+	margin: 3pt;
+	vertical-align: middle;
+}
+
+.markdown-demo-container {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	column-gap: 12pt;
+}
+
+.markdown-demo-container code {
+	height: 100%;
+	width: 100%;
+	display: block;
+	box-sizing: border-box;
+}
+
+.markdown-demo-container pre {
+	height: 100%;
+	width: 100%;
+	margin: 0pt;
+}
+
+table.game caption {
+	caption-side: bottom;
+	padding-top: 10px;
+	text-align: center;
+	color: inherit;
+}
+
+table.game {
+	border-collapse: collapse;
+}
+
+table.game td {
+	border: 1px solid black;
+	border-collapse: collapse;
+	text-align: center;
+}
+
+table.game tr:first-child td:first-child {
+	border: none;
+}
+
+table.game td.columnLabel {
+	border: none;
+}
+
+table.game .caption {
+	padding: 6pt;
+}
+
+table.game td.rowLabel {
+	border: none;
+	vertical-align: middle;
+	padding-right: 6pt;
+}
+
+table.game td.strategyLabels {
+	border: none;
+}
+
+table.game tr.no-border td {
+	border: none;
+}
+
+table.game td.rowStrategies {
+	text-align: left;
+	padding-right: 12px;
+}
+
+table.game td.columnStrategies {
+	text-align: center;
+	min-width: 4em;
+}
+
+table.game td.payoffs {
+	padding-top: 6px;
+	padding-bottom: 6px;
+}
+
+table.game.playerLabels td {
+	border: 1px solid black !important;
+	text-align: center !important;
+}
+
+table.game.playerLabels tr:first-child td {
+	border: none !important;
+}
+
+table.game.playerLabels tr:nth-child(2) td {
+	border: none !important;
+}
+
+table.game.playerLabels tr:nth-child(3) td:first-child {
+	border: none !important;
+	vertical-align: middle;
+}
+
+table.game.playerLabels tr:nth-child(3) td:nth-child(2) {
+	border: none !important;
+}
+
+table.game td.caption p {
+	margin: 0pt;
+}
+
+table.game td.rowLabel p {
+	margin: 0pt;
+}
+
+table.game td.columnLabel p {
+	margin: 0pt;
+}
+
+.markdown-alert {
+	padding: 0.5rem 0.5rem;
+	margin-bottom: 16px;
+	border-left: .25em solid;
+}
+
+.markdown-alert-note {
+	border-color: #0969DA;
+	background-color: #DAEEFF;
+}
+
+.markdown-alert-warning {
+	border-color: #9A6700;
+	background-color: #FFF8E5;
+}
+
+.markdown-alert-tip {
+	border-color: #1A7F37;
+	background-color: #DDFBE6;
+}
+
+.markdown-alert-important {
+	border-color: #CF222E;
+	background-color: #FFEBE9;
+}

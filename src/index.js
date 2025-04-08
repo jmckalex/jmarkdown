@@ -12,7 +12,7 @@ const require = createRequire(import.meta.url);
 global.require = require;
 
 import { execSync } from 'child_process';
-import path from 'path';
+import path, { dirname, join } from 'path';
 const globalNodeModulesPath = execSync('npm root -g').toString().trim();
 
 function requireGlobal(the_package) {
@@ -1242,7 +1242,7 @@ const pass_through2 = {
 
 marked.use( createDirectives([pass_through2]) );
 
-
+import { fileURLToPath } from 'url';
 
 var content;
 function generateHTMLOutput(text) {
@@ -1252,6 +1252,10 @@ function generateHTMLOutput(text) {
 
 	content = post_process_markdown(content);
 
+	const __filename = fileURLToPath(import.meta.url);
+	const __dirname = dirname(__filename);
+	const jmarkdown_css = fs.readFileSync( join(__dirname, 'jmarkdown.css'), 'utf8');
+	
 	let body_classes = '';
 	if ('Body classes' in metadata) {
 		body_classes = metadata['Body classes'];
@@ -1273,164 +1277,7 @@ function generateHTMLOutput(text) {
 	</script>
 	<script src="https://kit.fontawesome.com/161dcde163.js" crossorigin="anonymous"></script>
 	<style>
-		pre code.hljs {
-		  tab-size: 2;
-		  -moz-tab-size: 2;
-		}
-
-    .marked-emoji-img {
-		  height: 1em;  /* Match line height */
-		  vertical-align: -0.15em;  /* Fine-tune alignment */
-		}
-
-    .markdown-alert-title {
-    	margin-top: 0pt;
-    	margin-bottom: 3pt;
-    }
-
-    .markdown-alert svg.octicon {
-    	margin: 3pt;
-    	vertical-align: middle;
-    }
-
-		.markdown-demo-container {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			column-gap: 12pt;
-		}
-
-		.markdown-demo-container code {
-			height: 100%;
-			width: 100%;
-			display: block;
-			box-sizing: border-box;
-		}
-
-		.markdown-demo-container pre {
-			height: 100%;
-			width: 100%;
-			margin: 0pt;
-		}
-
-table.game caption {
-	caption-side: bottom;
-	padding-top: 10px;
-	text-align: center;
-	color: inherit;
-}
-
-table.game {
-	border-collapse: collapse;
-}
-
-table.game td {
-	border: 1px solid black;
-	border-collapse: collapse;
-	text-align: center;
-}
-
-table.game tr:first-child td:first-child {
-	border: none;
-}
-
-table.game td.columnLabel {
-	border: none;
-}
-
-table.game .caption {
-	padding: 6pt;
-}
-
-table.game td.rowLabel {
-	border: none;
-	vertical-align: middle;
-	padding-right: 6pt;
-}
-
-table.game td.strategyLabels {
-	border: none;
-}
-
-table.game tr.no-border td {
-	border: none;
-}
-
-table.game td.rowStrategies {
-	text-align: left;
-	padding-right: 12px;
-}
-
-table.game td.columnStrategies {
-	text-align: center;
-	min-width: 4em;
-}
-
-table.game td.payoffs {
-	padding-top: 6px;
-	padding-bottom: 6px;
-}
-
-table.game.playerLabels td {
-	border: 1px solid black !important;
-	text-align: center !important;
-}
-
-table.game.playerLabels tr:first-child td {
-	border: none !important;
-}
-
-table.game.playerLabels tr:nth-child(2) td {
-	border: none !important;
-}
-
-table.game.playerLabels tr:nth-child(3) td:first-child {
-	border: none !important;
-	vertical-align: middle;
-}
-
-table.game.playerLabels tr:nth-child(3) td:nth-child(2) {
-	border: none !important;
-}
-
-table.game td.caption p {
-	margin: 0pt;
-}
-
-table.game td.rowLabel p {
-	margin: 0pt;
-}
-
-table.game td.columnLabel p {
-	margin: 0pt;
-}
-
-
-.markdown-alert {
- padding: 0.5rem 0.5rem;
- margin-bottom: 16px;
- border-left: .25em solid;
-}
-
-.markdown-alert-note {
- border-color: #0969DA;
- background-color: #DAEEFF;
-}
-
-.markdown-alert-warning {
- border-color: #9A6700;
- background-color: #FFF8E5;
-}
-
-.markdown-alert-tip {
- border-color: #1A7F37;
- background-color: #DDFBE6;
-}
-
-.markdown-alert-important {
- border-color: #CF222E;
- background-color: #FFEBE9;
-}
-
+	${jmarkdown_css}
 	</style>
 	<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${metadata['highlight-theme']}.min.css">
