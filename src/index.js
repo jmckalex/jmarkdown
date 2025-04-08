@@ -4,7 +4,7 @@ import { Marked } from 'marked';
 import fs from 'fs';
 import { runInThisContext, marked, marked_copy, registerExtensions } from './utils.js';
 
-import { JSDOM } from 'jsdom';
+//import { JSDOM } from 'jsdom';
 
 
 import { createRequire } from 'module';
@@ -74,35 +74,35 @@ if (options.normalSyntax != true) {
 
 
 
-const theoremExtension = {
-  name: 'theorem',
-  level: 'inline',
-  start(src) {
-    return src.match(/^Theorem[^:]*:/m)?.index;
-  },
-  tokenizer(src) {
-    const rule = /^Theorem([^:]*:)([\s|\S]*)/;
-    const match = rule.exec(src);
-    if (match) {
-      let token = {
-        type: 'theorem',
-        raw: match[0],
-        text: match[1],
-        tokens: [],
-        start: [],
-        rest: []
-      };
-      this.lexer.inlineTokens(match[1], token.start);
-      this.lexer.inlineTokens(match[2], token.rest);
-      return token;
-    }
-  },
-  renderer(token) {
-  	let start = this.parser.parseInline(token.start);
-  	let rest = this.parser.parseInline(token.rest);
-    return `<span style='font-weight: bold'>Theorem${start}</span><span style='font-style: italic;'>${rest}</span>`;
-  }
-};
+// const theoremExtension = {
+//   name: 'theorem',
+//   level: 'inline',
+//   start(src) {
+//     return src.match(/^Theorem[^:]*:/m)?.index;
+//   },
+//   tokenizer(src) {
+//     const rule = /^Theorem([^:]*:)([\s|\S]*)/;
+//     const match = rule.exec(src);
+//     if (match) {
+//       let token = {
+//         type: 'theorem',
+//         raw: match[0],
+//         text: match[1],
+//         tokens: [],
+//         start: [],
+//         rest: []
+//       };
+//       this.lexer.inlineTokens(match[1], token.start);
+//       this.lexer.inlineTokens(match[2], token.rest);
+//       return token;
+//     }
+//   },
+//   renderer(token) {
+//   	let start = this.parser.parseInline(token.start);
+//   	let rest = this.parser.parseInline(token.rest);
+//     return `<span style='font-weight: bold'>Theorem${start}</span><span style='font-style: italic;'>${rest}</span>`;
+//   }
+// };
 
 // marked.use({ extensions: [theoremExtension]});
 
@@ -572,9 +572,9 @@ marked.use({
 });
 
 
-function writeToFile(filename, content) {
-   fs.writeFileSync(filename, content);
-}
+// function writeToFile(filename, content) {
+//    fs.writeFileSync(filename, content);
+// }
 
 import markedMoreLists from 'marked-more-lists';
 marked.use(markedMoreLists());
@@ -695,28 +695,7 @@ marked.use({
 });
 
 
-function processFileInclusions(markdown) {
-	const regex = /\[\[(.*?)\]\]/g;
-	const matches = markdown.match(regex);
-
-	if (!matches) return markdown;
-
-	let cwd = process.cwd() + "/";
-
-
-	for (const match of matches) {
-		const filepath = match.slice(2, -2);  // Remove [[ and ]]
-		try {
-		 	const fileContent = fs.readFileSync(filepath, 'utf8');
-		 	markdown = markdown.replace(match, fileContent);
-		} catch (err) {
-		 	console.error(`Error reading file ${filepath}:`, err);
-		}
-	}
-
-	return markdown;
-}
-
+import processFileInclusions from './file-inclusion.js';
 
 marked.use({
 	hooks: {
