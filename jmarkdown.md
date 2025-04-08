@@ -3,7 +3,6 @@ date: 24 January 2025
 author: J. McKenzie Alexander
 CSS: test.css
 highlight-theme: atom-one-light
-moustache files: test.js
 script: <code>&lt;script&gt;</code>
 HTML header: <!-- This is comment 1 -->
 HTML header: <!-- This is comment 2
@@ -168,6 +167,8 @@ Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)<br>
 
 This is a test.  More test. asdf asdf asdf $\alpha$. % asdf
 more text.
+
+{{author}} asdf {{foobar("test")}}  and {{title}}
 
 # Motivation
 

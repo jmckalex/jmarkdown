@@ -15,19 +15,6 @@ export function processYAMLheader(markdown) {
 
 		parseKeyedData(first);
 
-		// Evaluate any moustache files
-		if ("moustache files" in metadata) {
-			for (let file of metadata['moustache files']) {
-				try {
-					const code = fs.readFileSync(file, 'utf8');
-					runInThisContext(code);
-				}
-				catch (error) {
-					console.error(`Error loading or evaluating file ${file}`, error);
-				}
-			}
-		}
-
 		const custom_elements_key = Object.keys(metadata).find(k => k.toLowerCase() === "Custom element".toLowerCase());
 		if (custom_elements_key) {
 			processCustomElements();

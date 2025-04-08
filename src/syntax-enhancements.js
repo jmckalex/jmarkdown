@@ -67,7 +67,6 @@ const moustache = {
                 text: match[1],
                 tokens: []
             };
-            //this.lexer.inline(token.text, token.tokens);
             return token;
         }
     },
@@ -77,13 +76,7 @@ const moustache = {
             return contents.join('');
         }
         else {
-            try {
-                const result = runInThisContext(token.text);
-                return result;
-            }
-            catch (error) {
-                return `{{${token.text}}}`;
-            }
+            return `{{${token.text}}}`;
         }
     }
 };

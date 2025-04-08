@@ -717,33 +717,6 @@ function processFileInclusions(markdown) {
 	return markdown;
 }
 
-/*
-	This function runs during the preprocessing period.  It replaces all the {{moustache}}
-	entries with their definition from the metadata header, or from JavaScript, if possible.
-*/
-function processMoustache(text) {
-	let new_text = text.replace(/{{[^}]*}}/g, function(match) {
-		const key = match.slice(2,-2);
-		if (key in metadata) {
-			let value = metadata[key];
-			return value;
-		}
-		else {
-			try {
-				const result = runInThisContext(key);
-				return result;
-			}
-			catch (error) {
-				return `{{${key}}}`;
-			}
-		}
-	});
-
-	return new_text;
-}
-
-
-
 
 marked.use({
 	hooks: {
