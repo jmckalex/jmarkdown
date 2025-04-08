@@ -580,43 +580,6 @@ import markedMoreLists from 'marked-more-lists';
 marked.use(markedMoreLists());
 
 
-function create_inline_comment_extension(character, include_in_comment) {
-	const start_regexp = RegExp(`${character}`);
-	const match_regexp = RegExp(`^${character}(.*?)(?:\\n|$)`);
-
-	const inlineCommentExtension = {
-	  name: 'inlineComment',
-	  level: 'inline',
-	  start(src) {
-	    return src.match(start_regexp)?.index;
-	  },
-	  tokenizer(src) {
-	    const match = match_regexp.exec(src);
-	    if (match) {
-	      return {
-	        type: 'inlineComment',
-	        raw: match[0],
-	        text: match[1].trim(),
-	        tokens: []
-	      };
-	    }
-	  },
-	  renderer(token) {
-	  	if (include_in_comment) {
-	  		return `<!-- ${token.text} -->`;	
-	  	}
-	  	else {
-	  		return `<!-- Markdown source commented out -->`;
-	  	}
-	    
-	  }
-	};
-
-	// Usage:
-	marked.use({ extensions: [inlineCommentExtension] });	
-}
-
-
 // This extension has to be registered after the directives in order for it to work.
 registerExtensions([ 
 	jmarkdownSyntaxEnhancements['emojis']
