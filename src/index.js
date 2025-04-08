@@ -2,7 +2,7 @@
 
 import { Marked } from 'marked';
 import fs from 'fs';
-import { runInThisContext, marked } from './utils.js';
+import { runInThisContext, marked, marked_copy, registerExtensions } from './utils.js';
 
 import { JSDOM } from 'jsdom';
 
@@ -23,14 +23,6 @@ function requireGlobal(the_package) {
 
 global.requireGlobal = requireGlobal;
 
-
-let marked_copy = new Marked({
-	indentedCode: false
-});
-
-marked.setOptions({
-	gfm: true
-})
 
 var my_footnotes = "";
 
@@ -60,33 +52,18 @@ program
 program.parse(process.argv);
 const options = program.opts();
 
-// This next function is useful for registering extensions with both versions of the markdown interpreter.
-// The argument must be an array of extensions.
-function register_extensions(exts) {
-	[marked, marked_copy].map(m => {
-		m.use({
-			extensions: exts
-		});
-	});	
-}
-
 import { jmarkdownSyntaxEnhancements } from './syntax-enhancements.js';
 
-register_extensions([ 
+registerExtensions([ 
 	jmarkdownSyntaxEnhancements['latex'],
 	jmarkdownSyntaxEnhancements['moustache']
 ]);
 
-// [marked, marked_copy].map(m => {
-// 	m.use({
-// 		extensions: [latexTokenizer, fontawesome]
-// 	});
-// });
 
 import jmarkdownSyntaxModifications from './syntax-modifications.js';
 
 if (options.normalSyntax != true) {
-	register_extensions([
+	registerExtensions([
 				jmarkdownSyntaxModifications['italics'], 
 				jmarkdownSyntaxModifications['strong'], 
 				jmarkdownSyntaxModifications['underline'],
@@ -641,7 +618,7 @@ function create_inline_comment_extension(character, include_in_comment) {
 
 
 // This extension has to be registered after the directives in order for it to work.
-register_extensions([ 
+registerExtensions([ 
 	jmarkdownSyntaxEnhancements['emojis']
 ]);
 
