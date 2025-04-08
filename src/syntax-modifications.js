@@ -116,12 +116,10 @@ const superscript = {
 				}
 			};		
 
-const jmarkdownSyntaxModifications = {
+export const jmarkdownSyntaxModifications = {
 	'italics': italics,
 	'strong': strong,
 	'underline': underline,
 	'subscript': subscript,
 	'superscript': superscript
 }
-
-export default jmarkdownSyntaxModifications;

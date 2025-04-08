@@ -60,7 +60,7 @@ registerExtensions([
 ]);
 
 
-import jmarkdownSyntaxModifications from './syntax-modifications.js';
+import { jmarkdownSyntaxModifications } from './syntax-modifications.js';
 
 if (options.normalSyntax != true) {
 	registerExtensions([
