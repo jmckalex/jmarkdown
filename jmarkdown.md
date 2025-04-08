@@ -166,6 +166,7 @@ Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)<br>
 
 {{TOC}} 
 
+This is a test.  More test.
 
 # Motivation
 
@@ -1207,8 +1208,6 @@ More text after it.
 
 
 ## Post-processing scripts
-
-asdf asdf qwer asdf asdf asdf qwer
 
 In addition, `jmarkdown` supports the inclusion of JavaScript which
 should be invoked once the final document has been assembled.  In this case,

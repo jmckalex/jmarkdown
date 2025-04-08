@@ -49,7 +49,7 @@ const latexTokenizer = {
     }       
 };
 
-import metadata from './metadata-header.js';
+import { metadata } from './metadata-header.js';
 
 // Look for text of the form {{variable_name}} which will be defined either in a file
 // or in the metadata header, for inclusion in the output HTML
