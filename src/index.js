@@ -4,9 +4,6 @@ import { Marked } from 'marked';
 import fs from 'fs';
 import { runInThisContext, marked, marked_copy, registerExtensions } from './utils.js';
 
-//import { JSDOM } from 'jsdom';
-
-
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 global.require = require;
@@ -23,8 +20,6 @@ function requireGlobal(the_package) {
 
 global.requireGlobal = requireGlobal;
 
-
-var my_footnotes = "";
 
 // Initialise the default footnote extension
 import markedFootnote from 'marked-footnote';
@@ -73,39 +68,6 @@ if (options.normalSyntax != true) {
 }
 
 
-
-// const theoremExtension = {
-//   name: 'theorem',
-//   level: 'inline',
-//   start(src) {
-//     return src.match(/^Theorem[^:]*:/m)?.index;
-//   },
-//   tokenizer(src) {
-//     const rule = /^Theorem([^:]*:)([\s|\S]*)/;
-//     const match = rule.exec(src);
-//     if (match) {
-//       let token = {
-//         type: 'theorem',
-//         raw: match[0],
-//         text: match[1],
-//         tokens: [],
-//         start: [],
-//         rest: []
-//       };
-//       this.lexer.inlineTokens(match[1], token.start);
-//       this.lexer.inlineTokens(match[2], token.rest);
-//       return token;
-//     }
-//   },
-//   renderer(token) {
-//   	let start = this.parser.parseInline(token.start);
-//   	let rest = this.parser.parseInline(token.rest);
-//     return `<span style='font-weight: bold'>Theorem${start}</span><span style='font-style: italic;'>${rest}</span>`;
-//   }
-// };
-
-// marked.use({ extensions: [theoremExtension]});
-
 import extendedTables from "marked-extended-tables";
 
 [marked, marked_copy].map(m => {
@@ -127,47 +89,6 @@ import hljs from 'highlight.js';
 		})
 	);
 });
-
-
-/*
-const markdown_demo_extension = {
-  name: 'markdownDemo',
-  level: 'block',                                     // Is this a block-level or inline-level tokenizer?
-  start(src) { 
-  	// if (src.match(/:::markdown-test/) != null) {
-  	// }
-    return src.match(/^:::markdown-test/)?.index; 
-  }, 
-  tokenizer(src, tokens) {
-  	if (src.startsWith(":::")) {
-  	}
-
-    const rule = /^:::markdown-test([\s\S]*?)\n:::/;
-    const match = rule.exec(src);
-    if (match != null) { 
-		const token = {                                 // Token to generate
-			type: 'markdownDemo',                      // Should match "name" above
-			raw: match[0],                                // Text to consume from the source
-			text: match[1],                        // Additional custom properties
-			pairs: [],
-			tokens: []                                    // Array where child inline tokens will be generated
-		};
-		return token;
-    }
-    else {
-    	return false;
-    }
-  },
-  renderer(token) {
-    return "MARKDOWN DEMO WAS HERE";
-  }
-};
-
-marked.use({
-	extensions: [markdown_demo_extension]
-});
-*/
-
 
 
 //import { createDirectives, presetDirectiveConfigs } from 'marked-directive';
@@ -437,14 +358,6 @@ ${marked.parser(token.tokens)}
 
 createMultilevelDirectives(rendering_function_for_markdown_demo);
 
-/*
-	This is an attempt to create a version of the markdown-demo extension
-	WITHOUT using marked-directives, because I can't control the
-	tokenizer...
-*/
-
-
-
 
 function extract_game_labels(text) {
     // First, normalize the keys we're looking for
@@ -572,10 +485,6 @@ marked.use({
 });
 
 
-// function writeToFile(filename, content) {
-//    fs.writeFileSync(filename, content);
-// }
-
 import markedMoreLists from 'marked-more-lists';
 marked.use(markedMoreLists());
 
@@ -598,8 +507,6 @@ global.output = '';
 
 
 global.marked = marked;
-//global.foobar = null;
-
 
 import export_to_jmarkdown from './function-extensions.js';
 global.export_to_jmarkdown = export_to_jmarkdown;
@@ -612,7 +519,6 @@ import * as cheerio from 'cheerio';
 marked.use({ 
 	extensions: [ jmarkdownSyntaxEnhancements['classAndId'] ]
 });
-
 
 
 
@@ -788,8 +694,6 @@ import { fileURLToPath } from 'url';
 var content;
 function generateHTMLOutput(text) {
 	content = marked.parse(text);
-
-	content += my_footnotes;
 
 	content = post_process_markdown(content);
 
