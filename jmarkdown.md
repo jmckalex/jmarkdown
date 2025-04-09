@@ -148,6 +148,30 @@ extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 	.jmarkdown-center p:not(:first-of-type) {
 		margin-top: 12pt;
 	}
+
+	div.title-box div.title {
+		border: solid 1pt #A3C1AD;
+		background-color: #557C55;
+		color: white;
+		border-top-left-radius: 8pt;
+		border-top-right-radius: 8pt;
+		padding: 6pt;
+	}
+	div.title-box div.title p {
+		margin: 0pt;
+	}
+	div.title-box div.body {
+		border: solid 1pt #A3C1AD;
+		background-color: #F0F5F1;
+		border-top: none;
+		border-bottom-left-radius: 8pt;
+		border-bottom-right-radius: 8pt;
+		padding: 6pt;
+	}
+	div.title-box div.body > :last-child {
+		margin-bottom: 0pt; 
+	}
+	
 </style>
  
 
@@ -166,6 +190,22 @@ Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)<br>
 {{TOC}} 
    
 # Motivation 
+
+:::title-box
+This is the title $\alpha + \beta=\gamma$
+****  
+1. asdf
+2. asdf
+3. asdf
+   This is a sentence :today.
+
+   This is another paragraph.
+
+>> quote
+>> asdf
+>> asdf
+:::
+
    
 This project started out small, and then grew in its ambition.  
 The beginning was this: I’ve always found the default syntax of markdown to be a little
