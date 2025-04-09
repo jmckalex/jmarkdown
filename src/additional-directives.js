@@ -164,4 +164,30 @@ const additionalDirectives = [
 	}
 ];
 
+
+// This directive is just a minimal template to show how extended-directives.js
+// allow you to specify a custom tokenizer, as well.  (The default marked-directives package
+// doesn't provide that capability.)
+const pass_through = {
+	level: 'container',
+	marker: ':::',
+	label: "plaintext",
+	tokenizer: function(text, token) {
+	    console.log("Called by the plaintext tokenizer");
+	  	console.log(token);
+	},
+	renderer(token) {
+		if (token.meta.name == "plaintext") {
+			console.log("Called by the plaintext renderer");
+			console.log(token);
+			return "Consumed plaintext";
+		}
+		return false;
+	}
+};
+
+// And here's how you would install it.
+//marked.use( createDirectives([pass_through]) );
+
+
 export default additionalDirectives;

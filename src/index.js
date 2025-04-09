@@ -284,7 +284,6 @@ marked.use({
 	hooks: {
 		preprocess(markdown) {
 			let markdown_no_metadata = processYAMLheader(markdown);
-
 			return processFileInclusions(markdown_no_metadata);
 		}
 	}
@@ -314,46 +313,6 @@ function insert_HTML_footer() {
 }
 
 
-const pass_through = {
-  level: 'container',
-  marker: ':::',
-  label: "plaintext",
-  tokenizer: function(text, token) {
-    //console.log("Called by the plaintext tokenizer");
-  	//console.log(token);
-  },
-  renderer(token) {
-  	if (token.meta.name == "plaintext") {
-	  	//console.log("Called by the plaintext renderer");
-	  	//console.log(token);
-	  	return "Consumed plaintext";
-	  }
-	  return false;
-  }
-};
-
-marked.use( createDirectives([pass_through]) );
-
-
-const pass_through2 = {
-  level: 'container',
-  marker: ':::',
-  label: "doThis",
-  tokenizer: function(text, token) {
-    //console.log("Called by the doThis tokenizer");
-    //console.log(token);
-  },
-  renderer(token) {
-  	if (token.meta.name == "doThis") {
-	  	//console.log("Called by the doThis renderer");
-	  	//console.log(token);
-	  	return "I was told to do this";
-	  }
-	  return false;
-  }
-};
-
-marked.use( createDirectives([pass_through2]) );
 
 import { fileURLToPath } from 'url';
 
