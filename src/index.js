@@ -20,7 +20,6 @@ function requireGlobal(the_package) {
 
 global.requireGlobal = requireGlobal;
 
-
 // Initialise the default footnote extension
 import markedFootnote from 'marked-footnote';
 
@@ -91,7 +90,6 @@ import hljs from 'highlight.js';
 });
 
 
-//import { createDirectives, presetDirectiveConfigs } from 'marked-directive';
 import { createDirectives, presetDirectiveConfigs } from './extended-directives.js';
 
 
@@ -170,22 +168,6 @@ marked.use({
 });
 
 
-// let id = 0;
-// function get_unique_id() {
-// 	return "${post-process-" + id++ + "}";
-// }
-
-// let markdown_for_postprocessing = [];
-
-// function register_for_postprocessing(markdown) {
-// 	let id = get_unique_id();
-// 	markdown_for_postprocessing.push({
-// 		'id': id,
-// 		'markdown': markdown
-// 	});
-// 	return id;
-// }
-
 import createMarkdownDemo from './markdown-demo.js';
 const markdownDemos = [
   createMarkdownDemo(':::'),
@@ -229,6 +211,8 @@ global.output = '';
 
 global.marked = marked;
 
+// This function needs to be available to code executed in runInThisContext,
+// in order to be able to create extensions which execute JavaScript code.
 import export_to_jmarkdown from './function-extensions.js';
 global.export_to_jmarkdown = export_to_jmarkdown;
 
@@ -356,17 +340,6 @@ function insert_HTML_footer() {
 	}
 	return str.slice(0,-1);
 }
-
-
-// function post_process_markdown(content) {
-// 	for (let md of markdown_for_postprocessing) {
-// 		let id = md['id'];
-// 		let html = marked.parse(md['markdown']);
-// 		content = content.replace(id,html);
-// 	}
-// 	return content;
-// }
-
 
 
 const pass_through = {
