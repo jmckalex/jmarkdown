@@ -165,39 +165,8 @@ Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)<br>
  
 {{TOC}} 
    
-# Motivation
- 
-:::game{math=default} 
-		   Rock[^1]   & *Paper*  & Scissors
-Rock     & (0,0)  & (-1,1) & (1,-1)
-Paper    & (1,-1) & (0,0)  & (-1,1)  
-Scissors & (-1,1) & (1,-1) & (0,0)
-
-row: *Player[^1] 1*
-column: Player 2[^a]
-caption: The game[^b] of<br>Rock-/Paper/-Scissors 
-::: 
-
-
-:::game{math=all} 
-	   C_1   & C_2  & C_3
-R_1 & (0,0)  & (-1,1) & (1,-1)
-R_2 & (1,-1) & (0,0)  & (-1,1)  
-R_3 & (-1,1) & (1,-1) & (0,0)
-
-row: Player 1
-column: Player 2
-caption: The game of<br>Rock-Paper-Scissors
-::: 
-
-This is some text[^1] with a footnote.
-     
-[^1]: This is a footnote.   
-
-[^a]: This is another footnote.   
-
-[^b]: This is yet another a footnote.   
-  
+# Motivation 
+   
 This project started out small, and then grew in its ambition.  
 The beginning was this: I’ve always found the default syntax of markdown to be a little
 annoying.  Why aren't italics defined `/like this/` rather than `*like this*`?

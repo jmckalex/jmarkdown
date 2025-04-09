@@ -317,47 +317,32 @@ marked.use({
 });
 
 
+// let id = 0;
+// function get_unique_id() {
+// 	return "${post-process-" + id++ + "}";
+// }
 
+// let markdown_for_postprocessing = [];
 
-let id = 0;
-function get_unique_id() {
-	return "${post-process-" + id++ + "}";
-}
+// function register_for_postprocessing(markdown) {
+// 	let id = get_unique_id();
+// 	markdown_for_postprocessing.push({
+// 		'id': id,
+// 		'markdown': markdown
+// 	});
+// 	return id;
+// }
 
-let markdown_for_postprocessing = [];
-
-function register_for_postprocessing(markdown) {
-	let id = get_unique_id();
-	markdown_for_postprocessing.push({
-		'id': id,
-		'markdown': markdown
-	});
-	return id;
-}
-
-function rendering_function_for_markdown_demo(token, state) {
-	if (token.meta.name === "markdown-demo") {
-		let lang = token?.attrs?.type ?? "markdown"; 
-		let original_raw = token.raw.split("\n").slice(1,-1).join("\n");
-		let raw = "```" + `${lang}\n` + original_raw + "\n```\n";
-		let id = register_for_postprocessing(raw);
-		let output = `<div class='markdown-demo-container'>
-<div class='markdown-demo-code-label'>Markdown code</div>
-<div class='markdown-demo-output-label'>Markdown output</div>
-<div class='markdown-demo-markdown'>
-${id}
-</div>
-<div class='markdown-demo-parsed'>
-${marked.parser(token.tokens)}
-</div>
-</div>`;
-		return output;
-	}
-	return false;
-}
-
-createMultilevelDirectives(rendering_function_for_markdown_demo);
-
+import createMarkdownDemo from './markdown-demo.js';
+const markdownDemos = [
+  createMarkdownDemo(':::'),
+  createMarkdownDemo('::::'),
+  createMarkdownDemo(':::::'),
+  createMarkdownDemo('::::::'),
+  createMarkdownDemo(':::::::'),
+  createMarkdownDemo(':::::::')
+];
+marked.use( createDirectives( markdownDemos ) );
 
 import strategicFormGame from './strategic-form-games.js';
 marked.use( createDirectives([ strategicFormGame ]) );
@@ -520,14 +505,14 @@ function insert_HTML_footer() {
 }
 
 
-function post_process_markdown(content) {
-	for (let md of markdown_for_postprocessing) {
-		let id = md['id'];
-		let html = marked.parse(md['markdown']);
-		content = content.replace(id,html);
-	}
-	return content;
-}
+// function post_process_markdown(content) {
+// 	for (let md of markdown_for_postprocessing) {
+// 		let id = md['id'];
+// 		let html = marked.parse(md['markdown']);
+// 		content = content.replace(id,html);
+// 	}
+// 	return content;
+// }
 
 
 
@@ -577,8 +562,6 @@ import { fileURLToPath } from 'url';
 var content;
 function generateHTMLOutput(text) {
 	content = marked.parse(text);
-
-	content = post_process_markdown(content);
 
 	const __filename = fileURLToPath(import.meta.url);
 	const __dirname = dirname(__filename);
