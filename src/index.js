@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { Marked } from 'marked';
+//import { Marked } from 'marked';
 import fs from 'fs';
 import { runInThisContext, marked, marked_copy, registerExtensions } from './utils.js';
 
@@ -232,41 +232,13 @@ marked.use(markedAlert());
 
 
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
-
-function createTOC(headings) {
-	if (!headings.length) return '';
-
-	let toc = "<div class='toc'>";
-	let current_level = 0;
-
-	for(const entry of headings) {
-		if (entry['level'] == current_level) {
-			toc += `</li>\n<li><a href='#${entry['id']}'>${entry['text']}</a>`;
-		}
-		else if (entry['level'] > current_level) {
-			let diff = entry['level'] - current_level;
-			toc += "<ul>".repeat(diff);
-			toc += `<li><a href='#${entry['id']}'>${entry['text']}</a>`;
-			current_level = entry['level'];
-		}
-		else {
-			let diff = current_level - entry['level'];
-			toc += "</li>\n" + "</ul>".repeat(diff) + "</li>";
-			toc += `<li><a href='#${entry['id']}'>${entry['text']}</a>`;
-			current_level = entry['level'];
-		}
-	}
-
-	toc += "</li>\n</ul>\n</div>"
-	return toc;
-}
+import { createTOC } from './utils.js';
 
 marked.use(gfmHeadingId({prefix: "toc-"}), {
 	hooks: {
 		postprocess(html) {
 			const headings = getHeadingList();
 			const toc = createTOC(headings);
-
 			html = html.replace("{{TOC}}", toc);
 			return html;
 		}

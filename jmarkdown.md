@@ -178,7 +178,7 @@ extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 :div[*JMarkdown: JavaScript empowered markdown with dynamic syntax extensions*]{.big .left}
  
 Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)<br>
-16 February 2025
+:today
 
 >> “Let’s go crazy” {.class1 .class2} ↵
 >> /* &mdash; Prince*/ 
@@ -191,13 +191,18 @@ Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)<br>
    
 # Motivation 
 
+This is a paragraph. 
+
+This is a heading ~~asdf~~ 
+
+
 :::title-box
 This is the title $\alpha + \beta=\gamma$
 ****  
 1. asdf
 2. asdf
 3. asdf
-   This is a sentence :today.
+   This is a sentence :today. This is a test.
 
    This is another paragraph.
 
