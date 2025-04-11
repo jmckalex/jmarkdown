@@ -154,3 +154,30 @@ table.game td.columnLabel p {
 	border-color: #CF222E;
 	background-color: #FFEBE9;
 }
+
+.tikz-error {
+	border: 2px solid #ff6b6b;
+	background-color: #fff5f5;
+	padding: 15px;
+	margin: 10px 0;
+	border-radius: 4px;
+}
+
+.tikz-error-message {
+	color: #d63031;
+	font-weight: bold;
+	margin-top: 0;
+}
+
+.tikz-error button {
+	background-color: #0984e3;
+	color: white;
+	border: none;
+	padding: 8px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.tikz-error button:hover {
+	background-color: #0570c0;
+}
