@@ -92,7 +92,6 @@ import hljs from 'highlight.js';
 
 import { createDirectives, presetDirectiveConfigs } from './extended-directives.js';
 
-
 [marked, marked_copy].map(m => {
 	m.use(createDirectives([
 		...presetDirectiveConfigs,
@@ -167,6 +166,10 @@ marked.use({
   }
 });
 
+import markedAlert from 'marked-alert';
+marked.use(markedAlert());
+marked_copy.use(markedAlert());
+
 
 import createMarkdownDemo from './markdown-demo.js';
 const markdownDemos = [
@@ -181,16 +184,18 @@ marked.use( createDirectives( markdownDemos ) );
 
 import strategicFormGame from './strategic-form-games.js';
 marked.use( createDirectives([ strategicFormGame ]) );
+marked_copy.use( createDirectives([ strategicFormGame ]) );
 
+registerExtensions([ 
+	jmarkdownSyntaxEnhancements['descriptionLists'] 
+]);
 
-marked.use({
-	extensions: [ jmarkdownSyntaxEnhancements['descriptionLists'] ]
-});
-
+import createTiKZ from './tikz.js';
+marked.use( createDirectives( [ createTiKZ(':::') ] ) );
 
 import markedMoreLists from 'marked-more-lists';
 marked.use(markedMoreLists());
-
+marked_copy.use(markedMoreLists());
 
 // This extension has to be registered after the directives in order for it to work.
 registerExtensions([ 
@@ -209,7 +214,7 @@ marked.use({
 global.output = '';
 
 
-global.marked = marked;
+global.marked = marked_copy;
 
 // This function needs to be available to code executed in runInThisContext,
 // in order to be able to create extensions which execute JavaScript code.
@@ -221,15 +226,16 @@ global.export_to_jmarkdown = export_to_jmarkdown;
 import * as cheerio from 'cheerio';
 
 
-marked.use({ 
-	extensions: [ jmarkdownSyntaxEnhancements['classAndId'] ]
-});
+registerExtensions([ 
+	jmarkdownSyntaxEnhancements['classAndId'] 
+]);
 
+registerExtensions([ 
+	jmarkdownSyntaxEnhancements['rightAlign'], 
+	jmarkdownSyntaxEnhancements['centerAlign'] 
+]);
 
-
-import markedAlert from 'marked-alert';
-marked.use(markedAlert());
-
+//HERE
 
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';
@@ -270,12 +276,6 @@ function insertOptionalScripts() {
 }
 
 
-marked.use({ 
-	extensions: [ 
-		jmarkdownSyntaxEnhancements['rightAlign'], 
-		jmarkdownSyntaxEnhancements['centerAlign'] 
-	]
-});
 
 
 import processFileInclusions from './file-inclusion.js';
@@ -313,12 +313,11 @@ function insert_HTML_footer() {
 }
 
 
-
 import { fileURLToPath } from 'url';
 
-var content;
+//var content;
 function generateHTMLOutput(text) {
-	content = marked.parse(text);
+	let content = marked.parse(text);
 
 	const __filename = fileURLToPath(import.meta.url);
 	const __dirname = dirname(__filename);
@@ -332,9 +331,9 @@ function generateHTMLOutput(text) {
 	let output = `<!DOCTYPE html>
 <html lang='en'>
 <head>
-  <meta charset="utf-8">
-  <title>${metadata['title']}</title>
-  <script>
+	<meta charset="utf-8">
+	<title>${metadata['title']}</title>
+	<script>
 		MathJax = {
 			tex: {
 			    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
@@ -349,10 +348,10 @@ function generateHTMLOutput(text) {
 	</style>
 	<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${metadata['highlight-theme']}.min.css">
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" 
-	    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
-	    crossorigin="anonymous"></script>
-  <script src="https://jmckalex.org/prez/libs/original2/js/citation.min.js"></script>	
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js" 
+		integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
+		crossorigin="anonymous"></script>
+	<script src="https://jmckalex.org/prez/libs/original2/js/citation.min.js"></script>	
 	<script src="https://jmckalex.org/prez/libs/original2/js/biblify.js"></script>
 ${custom_element_string}
 ${insert_HTML_header()}
@@ -393,11 +392,14 @@ document.addEventListener('bibliography-ready', function() {
 
 const filename = program.args[0]; //process.argv[2];
 if (!filename) {
- console.error('Please provide a filename');
- process.exit(1);
+	console.error('Please provide a filename');
+	process.exit(1);
 }
 
 const input = fs.readFileSync(filename, 'utf8');
+
+import { config } from './utils.js';
+config['home directory'] = path.dirname(filename);
 
 
 const outFile = filename.replace(/\.([^.]+)$/, '.html');
@@ -407,34 +409,32 @@ let html = generateHTMLOutput(input);
 
 
 // Post-process HTML output using cheerio
-
 function processHTML(html) {
-  // Load into cheerio
-  const $ = cheerio.load(html);
-  
-  // Find all our marker spans
-  $('span.marker-to-remove').each((i, elem) => {
-    const $elem = $(elem);
-    const classes = $elem.attr('data-add-classes');
-    const id = $elem.attr('data-add-id');
-    
-    // Add classes and id to parent
-    const $parent = $elem.parent();
-    if (classes) {
-      $parent.addClass(classes);
-    }
-    if (id) {
-      $parent.attr('id', id);
-    }
-    
-    // Remove the marker span
-    $elem.remove();
-  });
-  
-  add_labels_to_headers($);
-  process_crossrefs($);
+	// Load into cheerio
+	const $ = cheerio.load(html);
 
-  return $.html();
+	// Find all our marker spans
+	$('span.marker-to-remove').each((i, elem) => {
+		const $elem = $(elem);
+		const classes = $elem.attr('data-add-classes');
+		const id = $elem.attr('data-add-id');
+
+	    // Add classes and id to parent
+		const $parent = $elem.parent();
+		if (classes) {
+			$parent.addClass(classes);
+		}
+		if (id) {
+			$parent.attr('id', id);
+		}
+
+	    // Remove the marker span
+		$elem.remove();
+	});
+
+	add_labels_to_headers($);
+	process_crossrefs($);
+	return $.html();
 }
 
 function add_labels_to_headers($) {

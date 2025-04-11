@@ -56,5 +56,8 @@ function createTOC(headings) {
 	return toc;
 }
 
+export const config = {
+	'home directory': null
+};
 
 export { runInThisContext, marked, marked_copy, registerExtension, registerExtensions, createTOC };
