@@ -5,7 +5,7 @@
 	inline text being parsed.
 */
 
-import { runInThisContext, marked } from './utils.js';
+import { runInThisContext, marked, registerExtension } from './utils.js';
 
 export default function export_to_jmarkdown(name, options = {}) {
 	const {simple = true, tokenize = false} = options;
@@ -115,9 +115,10 @@ function construct_simple_function_extension(name, options) {
 		}
 	};
 
-	marked.use({
-		extensions: [new_function]
-	});
+	// marked.use({
+	// 	extensions: [new_function]
+	// });
+	registerExtension(new_function);
 }
 
 
@@ -235,9 +236,10 @@ function construct_complex_function_extension(name, options) {
 		}
 	};
 
-	marked.use({
-		extensions: [new_function]
-	});
+	// marked.use({
+	// 	extensions: [new_function]
+	// });
+	registerExtension(new_function);
 }
 
 
