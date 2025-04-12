@@ -4,6 +4,7 @@
 	version on the right. 
 */
 import hljs from 'highlight.js';
+import { marked_copy } from './utils.js';
 
 function createMarkdownDemo(marker) {
 	return {
@@ -12,11 +13,10 @@ function createMarkdownDemo(marker) {
 		label: "markdown-demo",
 		tokenizer: function(text, token) {
 			let lang = token?.attrs?.type ?? "markdown";
-			let raw = "```" + lang + "\n" + text + "\n```";
-
+			
 			token['output'] = [];
-
 			this.lexer.blockTokens(text, token['output']);
+			
 			return token;
 		},
 		renderer(token) {
@@ -30,6 +30,10 @@ function createMarkdownDemo(marker) {
 				const highlightedCode = hljs.highlight(code, {language: lang}).value;
 
 				let output = this.parser.parse(token['output']);
+
+				// The next line is a hack I use to get around the fact that the line
+				// above doesn't seem to recognise the marked-alert extension...
+				//let output = marked_copy.parse(token.text);
 				let display = `<div class='markdown-demo-container'>
 	<div class='markdown-demo-code-label'>Markdown code</div>
 	<div class='markdown-demo-output-label'>Markdown output</div>
