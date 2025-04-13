@@ -66,6 +66,8 @@ if (options.normalSyntax != true) {
 			]);
 }
 
+import { mermaid } from './mermaid.js';
+registerExtensions( [ mermaid ]);
 
 import extendedTables from "marked-extended-tables";
 
