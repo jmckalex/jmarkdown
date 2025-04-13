@@ -46,11 +46,11 @@ program
 program.parse(process.argv);
 const options = program.opts();
 
-import { jmarkdownSyntaxEnhancements } from './syntax-enhancements.js';
+import * as jmarkdownSyntaxEnhancements from './syntax-enhancements.js';
 
 registerExtensions([ 
-	jmarkdownSyntaxEnhancements['latex'],
-	jmarkdownSyntaxEnhancements['moustache']
+	jmarkdownSyntaxEnhancements.latex,
+	jmarkdownSyntaxEnhancements.moustache
 ]);
 
 
@@ -189,7 +189,7 @@ marked.use( createDirectives([ strategicFormGame ]) );
 marked_copy.use( createDirectives([ strategicFormGame ]) );
 
 registerExtensions([ 
-	jmarkdownSyntaxEnhancements['descriptionLists'] 
+	jmarkdownSyntaxEnhancements.descriptionLists 
 ]);
 
 import createTiKZ from './tikz.js';
@@ -201,7 +201,7 @@ marked_copy.use(markedMoreLists());
 
 // This extension has to be registered after the directives in order for it to work.
 registerExtensions([ 
-	jmarkdownSyntaxEnhancements['emojis']
+	jmarkdownSyntaxEnhancements.emojis
 ]);
 
 
@@ -229,12 +229,12 @@ import * as cheerio from 'cheerio';
 
 
 registerExtensions([ 
-	jmarkdownSyntaxEnhancements['classAndId'] 
+	jmarkdownSyntaxEnhancements.classAndId 
 ]);
 
 registerExtensions([ 
-	jmarkdownSyntaxEnhancements['rightAlign'], 
-	jmarkdownSyntaxEnhancements['centerAlign'] 
+	jmarkdownSyntaxEnhancements.rightAlign, 
+	jmarkdownSyntaxEnhancements.centerAlign 
 ]);
 
 //HERE

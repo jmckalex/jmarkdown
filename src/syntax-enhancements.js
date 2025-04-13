@@ -4,11 +4,13 @@
 import descriptionLists from './description-lists.js';
 import { marked } from './utils.js';
 
+export { descriptionLists };
+
 // Scan the text for LaTeX code between the standard MathJax delimiters,
 // and make sure the raw text is passed straight through to the output HTML.  The one exception
 // is that '<' and '>' symbols need to be transformed to '&lt;' or '&gt;' as they
 // can cause errors when the HTML is interpreted.
-const latexTokenizer = {
+export const latex = {
     name: 'latex',
     level: 'inline',
     priority: 1,
@@ -53,7 +55,7 @@ import { metadata } from './metadata-header.js';
 
 // Look for text of the form {{variable_name}} which will be defined either in a file
 // or in the metadata header, for inclusion in the output HTML
-const moustache = {
+export const moustache = {
     name: 'moustache',
     level: 'inline',
     start(src) { return src.match(/{{/)?.index },
@@ -107,7 +109,7 @@ function emoji_renderer(token) {
 /*
     Provide support for inserting octocat or fontawesome emojis via the syntax :beer: or :fa-thumbs-up:
 */
-const emojis = {
+export const emojis = {
     name: 'emoji',
     level: 'inline',
     start(src) { return src.match(emojiRegex)?.index; },
@@ -135,7 +137,7 @@ const emojis = {
     >> I'm right-aligned
     >> text!
 */
-const rightAlignExtension = {
+export const rightAlign = {
     name: 'rightAlign',
     level: 'block',
     start(src) {
@@ -175,7 +177,7 @@ const rightAlignExtension = {
     >> I'm center-aligned <<
     >> text!              <<
 */
-const centerAlignExtension = {
+export const centerAlign = {
     name: 'centerAlign',
     level: 'block',
     start(src) {
@@ -222,7 +224,7 @@ const centerAlignExtension = {
     generated to iterate over all such classes and attach the classes and id to the
     parent element, and then removing the span.
 */
-const classExtension = {
+export const classAndId = {
     name: 'classAndId',
     level: 'inline',
     start(src) {
@@ -259,16 +261,5 @@ const classExtension = {
 
         return `<span data-add-classes="${classes.join(' ')}" data-add-id="${id || ''}" class="marker-to-remove"></span>`;
     }
-};
-
-
-export const jmarkdownSyntaxEnhancements = {
-    'latex': latexTokenizer,
-    'moustache': moustache,
-    'emojis': emojis,
-    'rightAlign': rightAlignExtension,
-    'centerAlign': centerAlignExtension,
-    'descriptionLists': descriptionLists,
-    'classAndId': classExtension
 };
 
