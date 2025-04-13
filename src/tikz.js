@@ -89,7 +89,6 @@ function createTiKZ(marker) {
 		label: "TiKZ",
 		tokenizer: function(text, token) {
 			text = text.replace("\n", '');
-			console.log(text);
 			const file_contents = LaTeX_container.replace('%TikZ code will be inserted here', text);
 			const home_directory = config['home directory'];
 			const TiKZ_directory = path.join(home_directory, "TiKZ");
