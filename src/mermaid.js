@@ -8,7 +8,6 @@ const mermaid = {
 	tokenizer(src) {
 		const match = src.match(/^```mermaid([\s\S]*?)```/);
 		if (match) {
-			console.log(match[0], match[1]);
 			return {
 				type: 'mermaid',
 				raw: match[0],
