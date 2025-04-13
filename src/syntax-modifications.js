@@ -1,4 +1,4 @@
-const italics = {
+export const italics = {
 					name: 'italics',
 					level: 'inline',
 					start(src) { return src.match(/\//)?.index },
@@ -22,7 +22,7 @@ const italics = {
 					}
 				};
 
-const strong = {
+export const strong = {
 				name: 'strong',
 				level: 'inline',
 				start(src) { return src.match(/\//)?.index },
@@ -45,7 +45,7 @@ const strong = {
 				}
 			};
 
-const underline = {
+export const underline = {
 				name: 'underline',
 				level: 'inline',
 				start(src) { return src.match(/__/)?.index },
@@ -68,7 +68,7 @@ const underline = {
 				}
 			};
 
-const subscript = {
+export const subscript = {
 				name: 'subscript',
 				level: 'inline',
 				start(src) { return src.match(/_/)?.index },
@@ -92,7 +92,7 @@ const subscript = {
 				}
 			};		
 
-const superscript = {
+export const superscript = {
 				name: 'superscript',
 				level: 'inline',
 				start(src) { return src.match(/\^/)?.index },
@@ -115,11 +115,3 @@ const superscript = {
 					return `<sup>${contents}</sup>`;
 				}
 			};		
-
-export const jmarkdownSyntaxModifications = {
-	'italics': italics,
-	'strong': strong,
-	'underline': underline,
-	'subscript': subscript,
-	'superscript': superscript
-}

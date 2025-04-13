@@ -54,15 +54,15 @@ registerExtensions([
 ]);
 
 
-import { jmarkdownSyntaxModifications } from './syntax-modifications.js';
+import * as jmarkdownSyntaxModifications from './syntax-modifications.js';
 
 if (options.normalSyntax != true) {
 	registerExtensions([
-				jmarkdownSyntaxModifications['italics'], 
-				jmarkdownSyntaxModifications['strong'], 
-				jmarkdownSyntaxModifications['underline'],
-				jmarkdownSyntaxModifications['subscript'],
-				jmarkdownSyntaxModifications['superscript']
+				jmarkdownSyntaxModifications.italics, 
+				jmarkdownSyntaxModifications.strong, 
+				jmarkdownSyntaxModifications.underline,
+				jmarkdownSyntaxModifications.subscript,
+				jmarkdownSyntaxModifications.superscript
 			]);
 }
 
