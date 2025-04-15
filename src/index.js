@@ -83,9 +83,6 @@ if (options.normalSyntax != true) {
 			]);
 }
 
-import { mermaid } from './mermaid.js';
-registerExtensions( [ mermaid ]);
-
 import extendedTables from "marked-extended-tables";
 
 [marked, marked_copy].map(m => {
@@ -125,6 +122,9 @@ import { createDirectives, presetDirectiveConfigs } from './extended-directives.
 
 import additionalDirectives from './additional-directives.js';
 marked.use(createDirectives(additionalDirectives));
+
+import { createMermaid } from './mermaid.js';
+marked.use(createDirectives( [ createMermaid(":::") ]));
 
 function createMultilevelOptionals(name) {
 	const directives = [];
@@ -270,25 +270,16 @@ marked.use(gfmHeadingId({prefix: "toc-"}), {
 	}
 });
 
-
 import { metadata, processYAMLheader } from './metadata-header.js';
 
 import processFileInclusions from './file-inclusion.js';
 
-marked.use({
-	hooks: {
-		preprocess(markdown) {
-			let markdown_no_metadata = processYAMLheader(markdown);
-			return processFileInclusions(markdown_no_metadata);
-		}
-	}
-});
-
-
 import { processTemplate } from './html-template.js';
 
 
-function generateHTMLOutput(text) {
+async function generateHTMLOutput(markdown) {
+	let markdown_no_metadata = await processYAMLheader(markdown);
+	let text = processFileInclusions(markdown_no_metadata);
 	let content = marked.parse(text);
 	return processTemplate(content);
 }
@@ -296,7 +287,7 @@ function generateHTMLOutput(text) {
 const input = fs.readFileSync(filename, 'utf8');
 const outFile = filename.replace(/\.([^.]+)$/, '.html');
 
-let html = generateHTMLOutput(input);
+let html = await generateHTMLOutput(input);
 
 
 // Post-process HTML output using cheerio
