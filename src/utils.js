@@ -5,6 +5,8 @@
 import { runInThisContext } from 'vm';
 import { marked, Marked } from 'marked';
 import { configManager } from './config-manager.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 let marked_copy = new Marked({
 	indentedCode: false
@@ -55,9 +57,5 @@ function createTOC(headings) {
 	toc += "</li>\n</ul>\n</div>"
 	return toc;
 }
-
-export const config = {
-	'home directory': null
-};
 
 export { runInThisContext, marked, marked_copy, registerExtension, registerExtensions, createTOC };

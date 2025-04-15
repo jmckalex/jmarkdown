@@ -1,19 +1,40 @@
 #!/usr/bin/env node
 
-//import { Marked } from 'marked';
 import fs from 'fs';
+import path, { dirname, join } from 'path';
+
+// Command-line processing of options, so that extensions can be switched on or off, as desired.
+import { Command } from 'commander';
+const program = new Command();
+program
+	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface* and revert to normal Markdown syntax')
+	.argument('<filename>', 'Markdown file to process');
+
+program.parse(process.argv);
+const options = program.opts();
+
+// Get the markdown file we are supposed to process
+const filename = program.args[0]; //process.argv[2];
+if (!filename) {
+	console.error('Please provide a filename');
+	process.exit(1);
+}
+const markdownFile = filename;
+const markdownFileDirectory = path.dirname(markdownFile);
+
 import { runInThisContext, marked, marked_copy, registerExtensions } from './utils.js';
 import { configManager } from './config-manager.js';
 
 // Load the configuration at startup
 configManager.load();
+configManager.set("Markdown file directory", markdownFileDirectory);
+configManager.set("Jmarkdown app directory", path.dirname(fileURLToPath(import.meta.url)) )
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 global.require = require;
 
 import { execSync } from 'child_process';
-import path, { dirname, join } from 'path';
 const globalNodeModulesPath = execSync('npm root -g').toString().trim();
 
 function requireGlobal(the_package) {
@@ -40,15 +61,6 @@ marked.use(markedFootnote({
 }));
 
 
-// Command-line processing of options, so that extensions can be switched on or off, as desired.
-import { Command } from 'commander';
-const program = new Command();
-program
-	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface* and revert to normal Markdown syntax')
-	.argument('<filename>', 'Markdown file to process');
-
-program.parse(process.argv);
-const options = program.opts();
 
 import * as jmarkdownSyntaxEnhancements from './syntax-enhancements.js';
 
@@ -329,21 +341,9 @@ function generateHTMLOutput(text) {
 	return processTemplate(content);
 }
 
-
-const filename = program.args[0]; //process.argv[2];
-if (!filename) {
-	console.error('Please provide a filename');
-	process.exit(1);
-}
-
 const input = fs.readFileSync(filename, 'utf8');
 
-import { config } from './utils.js';
-config['Home directory'] = path.dirname(filename);
-
-
 const outFile = filename.replace(/\.([^.]+)$/, '.html');
-
 
 let html = generateHTMLOutput(input);
 
