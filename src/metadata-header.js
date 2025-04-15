@@ -5,7 +5,9 @@ export const metadata = {};
 
 import { runInThisContext, registerExtension } from './utils.js';
 import fs from 'fs';
+import path from 'path';
 import { configManager } from './config-manager.js';
+import Mustache from 'mustache';
 
 export function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
@@ -98,7 +100,7 @@ function parseKeyedData(text) {
 
 
 
-export let custom_element_string = "";
+export const custom_elements = [];
 function processCustomElements() {
 	for (let k in metadata) {
 		if (k.toLowerCase() === "Custom element".toLowerCase()) {
@@ -106,16 +108,10 @@ function processCustomElements() {
 				metadata[k].forEach(spec => {
 					let [name, ...definition] = spec.split("\n");
 					name = name.trim();
-
 					definition = definition.map(el => el.trim()).join("\n");
-
-					let script_contents = "<script type='module'>\n"
-					+ "\tclass custom_element extends HTMLElement { \n"
-					+ "\tconnectedCallback() {\n"
-					+ "\t\tthis.innerHTML = `" + definition + "`;\n\t}}\n"
-					+ `\tcustomElements.define('${name}', custom_element);\n`
-					+ "</script>\n";
-					custom_element_string = custom_element_string + script_contents;
+					
+					const template = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'custom-element.html.mustache'), 'utf8');
+					custom_elements.push(Mustache.render(template, {name, definition}));
 				})
 			}
 		}

@@ -3,7 +3,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { configManager } from './config-manager.js';
-
+import { custom_elements } from './metadata-header.js';
 
 export function processTemplate(content) {
 	const default_template = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'default-template.html'), 'utf8');
@@ -13,6 +13,7 @@ export function processTemplate(content) {
 	config = replaceSpacesInKeys(config);
 	config['Highlight_src'] = Mustache.render(config['Highlight_src'], config);
 	config['Jmarkdown_css'] = jmarkdown_css;
+	config['Custom_elements'] = custom_elements;
 	config['Content'] = content;
 	
 	let html = '';

@@ -271,7 +271,7 @@ marked.use(gfmHeadingId({prefix: "toc-"}), {
 });
 
 
-import { metadata, custom_element_string, processYAMLheader } from './metadata-header.js';
+import { metadata, processYAMLheader } from './metadata-header.js';
 
 import processFileInclusions from './file-inclusion.js';
 

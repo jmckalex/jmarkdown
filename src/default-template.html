@@ -34,7 +34,9 @@
 		crossorigin="anonymous"></script>
 	<script src="https://jmckalex.org/prez/libs/original2/js/citation.min.js"></script>	
 	<script src="https://jmckalex.org/prez/libs/original2/js/biblify.js"></script>
-	<!-- ${custom_element_string} -->
+	{{#Custom_elements}}
+	{{{.}}}
+	{{/Custom_elements}}
 	{{#HTML_header}}
 	{{{.}}}
 	{{/HTML_header}}
