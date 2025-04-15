@@ -61,9 +61,6 @@ function parseKeyedData(text) {
 	let currentKey = null;
 	let currentValue = [];
 
-	metadata['title'] = '';
-	//data['CSS'] = [''];
-
 	for (const line of lines) {
 		const keyMatch = line.match(/^([-a-zA-Z0-9 ]+):\s*(.*)$/);
 		if (keyMatch) {

@@ -1,9 +1,6 @@
 {
-	"Home directory": null,
 	"jmarkdown extensions": {
 		"mode": "all"
 	},
-	"highlight theme": "github",
-	"custom css": [],
-	"custom scripts": []
+	"Highlight theme": "github",
 }

@@ -57,7 +57,7 @@ class ConfigManager {
 			if (fs.existsSync(location)) {
 				try {
 					const fileConfig = JSON.parse(fs.readFileSync(location, 'utf8'));
-					this.config = this._mergeConfigs(this.config, fileConfig);
+					this.config = this._mergeConfigs(this.config, fileConfig, location);
 				} catch (error) {
 					console.warn(`Error loading config from ${location}: ${error.message}`);
 				}
@@ -133,11 +133,11 @@ class ConfigManager {
 	}
 
 	// Helper method to merge configs
-	_mergeConfigs(target, source) {
+	_mergeConfigs(target, source, location = '') {
 		const result = { ...target };
 
 		for (const [key, value] of Object.entries(source)) {
-		  // If property exists and both are objects, merge recursively
+			// If property exists and both are objects, merge recursively
 			if (key in result && typeof result[key] === 'object' && typeof value === 'object' && value !== null) {
 				result[key] = this._mergeConfigs(result[key], value);
 			} else {
