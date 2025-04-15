@@ -64,8 +64,6 @@ class ConfigManager {
 
 		this.loaded = true;
 
-		console.log(this.config);
-
 		return this.config;
 	}
 
