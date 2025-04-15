@@ -320,80 +320,13 @@ function insert_HTML_footer() {
 }
 
 
+import { processTemplate } from './html-template.js';
+
 import { fileURLToPath } from 'url';
 
-//var content;
 function generateHTMLOutput(text) {
 	let content = marked.parse(text);
-
-	const __filename = fileURLToPath(import.meta.url);
-	const __dirname = dirname(__filename);
-	const jmarkdown_css = fs.readFileSync( join(__dirname, 'jmarkdown.css'), 'utf8');
-	
-	let body_classes = '';
-	if ('Body classes' in metadata) {
-		body_classes = metadata['Body classes'];
-	}
-
-	let output = `<!DOCTYPE html>
-<html lang='en'>
-<head>
-	<meta charset="utf-8">
-	<title>${metadata['title']}</title>
-	<script>
-		MathJax = {
-			tex: {
-			    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
-			    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],
-				tags: 'ams'
-			}
-		};
-	</script>
-	<script src="https://kit.fontawesome.com/161dcde163.js" crossorigin="anonymous"></script>
-	<style>
-	${jmarkdown_css}
-	</style>
-	<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/${metadata['highlight-theme']}.min.css">
-	<script src="https://code.jquery.com/jquery-3.7.1.min.js" 
-		integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
-		crossorigin="anonymous"></script>
-	<script src="https://jmckalex.org/prez/libs/original2/js/citation.min.js"></script>	
-	<script src="https://jmckalex.org/prez/libs/original2/js/biblify.js"></script>
-${custom_element_string}
-${insert_HTML_header()}
-</head>
-<body class='${body_classes}'>
-${content}
-${insert_HTML_footer()}
-<script>
-/*
-const Cite = require('citation-js');
-Biblify.configure({
-	bibfile: './bibliography.bib',
-	template: 'philsci',
-	defer: true,
-	addTemplates: [{
-		name: 'philsci',
-		path: './philsci.csl'
-	}]
-});
-
-document.addEventListener('bibliography-ready', function() {
-	Biblify.processCitations('body');
-	Biblify.insertBibliography('body');
-	if (Biblify.numberOfCitations() > 0) {
-		$('div.csl-bib-body').before('<h1 id="bib">Bibliography</h1>');
-    	if ($('div.toc').length > 0) {
-    		$('div.toc ul').first().append('<li><a href="#bib">Bibliography</a></li>');
-    	}
-    }
-});
-*/
-</script>
-</body>
-</html>`;
-	return output;
+	return processTemplate(content);
 }
 
 
@@ -516,6 +449,12 @@ function beautify_html(html) {
 	return beautify.html(html,
 		{
 			indent_size: 2,             // Number of spaces for indentation
+			"css": {
+				"end_with_newline": false
+			},
+			"js": {
+				"end_with_newline": false
+			},
 			indent_char: ' ',           // Character to use for indent (usually space)
 			max_preserve_newlines: 1,   // Maximum number of line breaks to preserve
 			preserve_newlines: true,    // Whether to keep existing line breaks
@@ -525,7 +464,7 @@ function beautify_html(html) {
 			wrap_attributes_indent_size: 2, // Indent size for wrapped attributes
 			unformatted: ['code', 'pre'], // Tags that shouldn't be reformatted
 			content_unformatted: ['pre'], // Tags whose content shouldn't be reformatted
-			extra_liners: ['head', 'body', '/html'], // Tags that should have extra line breaks before them
+			extra_liners: [], // Tags that should have extra line breaks before them
 			end_with_newline: true,     // End output with newline
 			editorconfig: false,        // Use .editorconfig if present
 			eol: '\n',                  // End of line character

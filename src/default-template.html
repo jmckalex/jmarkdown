@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang='{{Lang}}'>
+<head>
+	<meta charset="utf-8">
+	<title>{{Title}}</title>
+	{{#MathJax.configuration}}
+	<script>
+		{{{MathJax.configuration}}};
+	</script>
+	{{/MathJax.configuration}}
+	{{#Fontawesome}}
+	<script src="{{{Fontawesome}}}" crossorigin="anonymous"></script>
+	{{/Fontawesome}}
+	<style>
+	{{{Jmarkdown_css}}}
+	</style>
+	{{#CSS}}
+	<link rel="stylesheet" href="{{{.}}}">
+	{{/CSS}}
+	{{#MathJax.src}}
+	<script src="{{{MathJax.src}}}"></script>
+	{{/MathJax.src}}
+	{{#Highlight_src}}
+	<link rel="stylesheet" href="{{{Highlight_src}}}">
+	{{/Highlight_src}}
+	{{#Mermaid}}
+	<script src="{{{Mermaid}}}"></script>
+	{{/Mermaid}}
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js" 
+		integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
+		crossorigin="anonymous"></script>
+	<script src="https://jmckalex.org/prez/libs/original2/js/citation.min.js"></script>	
+	<script src="https://jmckalex.org/prez/libs/original2/js/biblify.js"></script>
+	<!-- ${custom_element_string} -->
+	{{#HTML_header}}
+	{{{.}}}
+	{{/HTML_header}}
+</head>
+<body class='{{Body_classes}}'>
+{{{Content}}}
+{{#HTML_footer}}
+{{{.}}}
+{{/HTML_footer}}
+<script>
+/*
+const Cite = require('citation-js');
+Biblify.configure({
+	bibfile: './bibliography.bib',
+	template: 'philsci',
+	defer: true,
+	addTemplates: [{
+		name: 'philsci',
+		path: './philsci.csl'
+	}]
+});
+
+document.addEventListener('bibliography-ready', function() {
+	Biblify.processCitations('body');
+	Biblify.insertBibliography('body');
+	if (Biblify.numberOfCitations() > 0) {
+		$('div.csl-bib-body').before('<h1 id="bib">Bibliography</h1>');
+    	if ($('div.toc').length > 0) {
+    		$('div.toc ul').first().append('<li><a href="#bib">Bibliography</a></li>');
+    	}
+    }
+});
+*/
+</script>
+</body>
+</html>

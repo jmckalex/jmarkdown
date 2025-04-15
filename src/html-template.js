@@ -1,0 +1,56 @@
+import Mustache from 'mustache';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
+import { configManager } from './config-manager.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const default_template = fs.readFileSync( path.join(__dirname, 'default-template.html'), 'utf8');
+const jmarkdown_css = fs.readFileSync( path.join(__dirname, 'jmarkdown.css'), 'utf8');
+
+export function processTemplate(content) {
+	let config = { ...configManager.getConfig() };
+	config = replaceSpacesInKeys(config);
+	config['Highlight_src'] = Mustache.render(config['Highlight_src'], config);
+	config['Jmarkdown_css'] = jmarkdown_css;
+	config['Content'] = content;
+	
+	let html = '';
+	if (config['Template'] == 'defaulty') {
+		html = Mustache.render(default_template, config);
+	}
+	else {
+		const template = fs.readFileSync( path.join(__dirname, 'default-template.html'), 'utf8');
+		html = Mustache.render(template, config);
+	}
+	// These are temporary files so that I can inspect how the templating
+	// engine is working.  The should be removed later.
+	fs.writeFileSync("foo.html", html);
+	fs.writeFileSync("config.json", JSON.stringify(config, null, 4));
+	return html;
+}
+
+function replaceSpacesInKeys(obj) {
+	// Create a new object to store modified keys
+	const result = {};
+
+	// Iterate through all keys in the object
+	for (const key in obj) {
+		if (Object.hasOwnProperty.call(obj, key)) {
+			// Check if the key contains spaces
+			if (key.includes(' ')) {
+	        // Create new key with spaces replaced by underscores
+				const newKey = key.replace(/ /g, '_');
+	        // Add to result with the new key
+				result[newKey] = obj[key];
+			} else {
+	        // Keep the original key if it doesn't have spaces
+				result[key] = obj[key];
+			}
+		}
+	}
+
+	return result;
+}
+
