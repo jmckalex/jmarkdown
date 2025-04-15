@@ -2,6 +2,7 @@
 
 import fs from 'fs';
 import path, { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
 // Command-line processing of options, so that extensions can be switched on or off, as desired.
 import { Command } from 'commander';
@@ -286,7 +287,6 @@ marked.use({
 
 import { processTemplate } from './html-template.js';
 
-import { fileURLToPath } from 'url';
 
 function generateHTMLOutput(text) {
 	let content = marked.parse(text);
@@ -294,7 +294,6 @@ function generateHTMLOutput(text) {
 }
 
 const input = fs.readFileSync(filename, 'utf8');
-
 const outFile = filename.replace(/\.([^.]+)$/, '.html');
 
 let html = generateHTMLOutput(input);

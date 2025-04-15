@@ -4,12 +4,11 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { configManager } from './config-manager.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const default_template = fs.readFileSync( path.join(__dirname, 'default-template.html'), 'utf8');
-const jmarkdown_css = fs.readFileSync( path.join(__dirname, 'jmarkdown.css'), 'utf8');
 
 export function processTemplate(content) {
+	const default_template = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'default-template.html'), 'utf8');
+	const jmarkdown_css = fs.readFileSync( path.join(configManager.get('Jmarkdown app directory'), 'jmarkdown.css'), 'utf8');
+
 	let config = { ...configManager.getConfig() };
 	config = replaceSpacesInKeys(config);
 	config['Highlight_src'] = Mustache.render(config['Highlight_src'], config);
@@ -28,8 +27,6 @@ export function processTemplate(content) {
 			template_name = config['Template'].trim();
 		}
 	}
-
-	console.log(template_name);
 
 	if (template_name == 'default') {
 		html = Mustache.render(default_template, config);
