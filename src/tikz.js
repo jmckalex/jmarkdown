@@ -6,7 +6,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { config } from './utils.js';
+//import { config } from './utils.js';
 import { execSync } from 'child_process';
 import crypto from 'crypto';
 import { configManager } from './config-manager.js';
@@ -90,7 +90,7 @@ function createTiKZ(marker) {
 		tokenizer: function(text, token) {
 			text = text.replace("\n", '');
 			const file_contents = LaTeX_container.replace('%TikZ code will be inserted here', text);
-			const home_directory = config['Home directory'];
+			const home_directory = configManager.get('Markdown file directory');
 			const TiKZ_directory = path.join(home_directory, "TiKZ");
 			const file_name = path.join(TiKZ_directory, `figure-${file_index++}.tex`);
 			const dvi_name = file_name.replace('.tex', '.dvi');
@@ -177,7 +177,7 @@ function createTiKZ(marker) {
 				        </div>`;
 				}
 				else {
-					const home_directory = config['Home directory'];
+					const home_directory = configManager.get('Markdown file directory');
 					const TiKZ_directory = path.join(home_directory, "TiKZ");
 					const svg_file_name = path.basename(token['file name']).replace('.tex', '.svg');
 					const svg_full_path = path.join(TiKZ_directory, svg_file_name);
