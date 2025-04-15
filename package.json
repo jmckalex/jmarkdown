@@ -30,6 +30,7 @@
         "marked-gfm-heading-id": "^4.1.1",
         "marked-highlight": "^2.2.1",
         "marked-more-lists": "^1.0.0",
+        "mustache": "^4.2.0",
         "prettier": "^3.5.1",
         "seedrandom": "^3.0.5"
     }
