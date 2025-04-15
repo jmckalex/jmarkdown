@@ -17,11 +17,26 @@ export function processTemplate(content) {
 	config['Content'] = content;
 	
 	let html = '';
-	if (config['Template'] == 'defaulty') {
+	// If the template is set in the metadata header, then config['Template'] will be an array.
+	// However, if it is set in a config.json file, it will be a string. So deal with this.
+	let template_name = '';
+	if ('Template' in config) {
+		if (Array.isArray(config['Template'])) {
+			template_name = config['Template'][0].trim();
+		}
+		else {
+			template_name = config['Template'].trim();
+		}
+	}
+
+	console.log(template_name);
+
+	if (template_name == 'default') {
 		html = Mustache.render(default_template, config);
 	}
 	else {
-		const template = fs.readFileSync( path.join(__dirname, 'default-template.html'), 'utf8');
+		let markdown_directory = configManager.get("Markdown file directory");
+		const template = fs.readFileSync( path.join(markdown_directory, template_name), 'utf8');
 		html = Mustache.render(template, config);
 	}
 	// These are temporary files so that I can inspect how the templating
