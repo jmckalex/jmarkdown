@@ -5,6 +5,7 @@ export const metadata = {};
 
 import { runInThisContext, registerExtension } from './utils.js';
 import fs from 'fs';
+import { configManager } from './config-manager.js';
 
 export function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
@@ -14,6 +15,8 @@ export function processYAMLheader(markdown) {
 		const remainder = rest.join('\n\n');
 
 		parseKeyedData(first);
+		// Merge the metadata with the config but keep metadata for this file
+	    configManager.mergeMetadata(metadata);
 
 		const custom_elements_key = Object.keys(metadata).find(k => k.toLowerCase() === "Custom element".toLowerCase());
 		if (custom_elements_key) {
@@ -58,8 +61,6 @@ function parseKeyedData(text) {
 	let currentKey = null;
 	let currentValue = [];
 
-	metadata['HTML footer'] = [''];
-	metadata['HTML header'] = [''];
 	metadata['title'] = '';
 	//data['CSS'] = [''];
 

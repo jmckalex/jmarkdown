@@ -4,7 +4,7 @@
 */
 import { runInThisContext } from 'vm';
 import { marked, Marked } from 'marked';
-
+import { configManager } from './config-manager.js';
 
 let marked_copy = new Marked({
 	indentedCode: false
