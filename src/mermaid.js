@@ -1,26 +1,20 @@
-// This is a simple extension which ensures that mermaid diagrams,
-// enclosed in a code fence, are output in a way which mermaid recognises.
-
-const mermaid = {
-	name: 'mermaid',
-	level: 'block',
-	start(src) { return src.match(/```mermaid/)?.index },
-	tokenizer(src) {
-		const match = src.match(/^```mermaid([\s\S]*?)```/);
-		if (match) {
-			return {
-				type: 'mermaid',
-				raw: match[0],
-				mermaid: true,
-				text: match[1].trim()
-			};
-		}
-	},
-	renderer(token) {
-		if (token.mermaid) {
-			return `<div class='mermaid'>${token.text}</div>`;
+// This is a simple extension which ensures that mermaid diagrams, enclosed in
+// a directive container, are written to the HTML file in a way that mermaid
+// can recognise.
+export function createMermaid(marker) {
+	return {
+		level: 'container',
+		marker: marker,
+		label: "mermaid",
+		tokenizer: function(text, token) {
+			token.text = text.replace("\n", '');
+			return token;
+		},
+		renderer(token) {
+			if (token.meta.name === "mermaid") {
+				return `<div class="mermaid">${token.text}</div>`;
+			}
+			return false;
 		}
 	}
-};
-
-export { mermaid };
+}
