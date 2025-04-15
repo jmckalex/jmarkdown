@@ -254,7 +254,6 @@ registerExtensions([
 	jmarkdownSyntaxEnhancements.centerAlign 
 ]);
 
-//HERE
 
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';
@@ -273,30 +272,6 @@ marked.use(gfmHeadingId({prefix: "toc-"}), {
 
 import { metadata, custom_element_string, processYAMLheader } from './metadata-header.js';
 
-
-function insertOptionalCSS() {
-	let optional_css = "";
-	if ('CSS' in metadata) {
-		for(const str of metadata['CSS']) {
-			optional_css += `<link rel="stylesheet" href="${str}">\n`;
-		}
-	}
-	return optional_css;
-}
-
-function insertOptionalScripts() {
-	let optional_scripts = "";
-	if ('Script' in metadata) {
-		for(const str of metadata['Script']) {
-			optional_scripts += `<script src="${str}"></script>\n`;
-		}
-	}
-	return optional_scripts;
-}
-
-
-
-
 import processFileInclusions from './file-inclusion.js';
 
 marked.use({
@@ -307,29 +282,6 @@ marked.use({
 		}
 	}
 });
-
-
-if (!'highlight-theme' in metadata) {
-	metadata['highlight_theme'] = "default";
-}
-
-
-function insert_HTML_header() {
-	let str = "" + insertOptionalCSS() + insertOptionalScripts();
-	for(let s of metadata['HTML header']) {
-		str += s + '\n';
-	}
-	return str.slice(0,-1);
-}
-
-function insert_HTML_footer() {
-	let str = "";
-
-	for(let s of metadata['HTML footer']) {
-		str += s + '\n';
-	}
-	return str.slice(0,-1);
-}
 
 
 import { processTemplate } from './html-template.js';
