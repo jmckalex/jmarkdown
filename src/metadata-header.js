@@ -8,8 +8,9 @@ import fs from 'fs';
 import path from 'path';
 import { configManager } from './config-manager.js';
 import Mustache from 'mustache';
+import { registerDirectives } from './utils.js';
 
-export function processYAMLheader(markdown) {
+export async function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
 	if (has_header) {
 		//const [first, ...rest] = markdown.split(/\n\s*\n/);
@@ -23,6 +24,11 @@ export function processYAMLheader(markdown) {
 		const custom_elements_key = Object.keys(metadata).find(k => k.toLowerCase() === "Custom element".toLowerCase());
 		if (custom_elements_key) {
 			processCustomElements();
+		}
+
+		const install_directives_key = Object.keys(metadata).find(k => k.toLowerCase() === "Install directives".toLowerCase());
+		if (install_directives_key) {
+			await installDirectives();
 		}
 
 		const extension_keys = Object.keys(metadata).filter(key => key.startsWith("extension"));
@@ -113,6 +119,32 @@ function processCustomElements() {
 					const template = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'custom-element.html.mustache'), 'utf8');
 					custom_elements.push(Mustache.render(template, {name, definition}));
 				})
+			}
+		}
+	}
+}
+
+
+async function installDirectives() {
+	console.log("I'm here!");
+
+	for (let k in metadata) {
+		if (k.toLowerCase() === "Install directives".toLowerCase()) {
+			if (Array.isArray(metadata[k])) {
+				console.log(metadata[k]);
+				for (const spec of metadata[k]) {
+					console.log(spec);
+					let [directives, file] = spec.split("from");
+					let array = directives.split(",").map(s => s.trim()).filter(s => s !== '');
+					console.log(array);
+					array = array.map(el => el.trim());
+					file = file.trim();
+					
+					const mod = await import(path.join(configManager.get('Markdown file directory'), file));
+					let array2 = array.map(name => mod[name]);
+					console.log(array2);
+					registerDirectives( array2 );
+				}
 			}
 		}
 	}

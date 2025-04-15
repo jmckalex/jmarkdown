@@ -7,6 +7,7 @@ import { marked, Marked } from 'marked';
 import { configManager } from './config-manager.js';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { createDirectives } from './extended-directives.js';
 
 let marked_copy = new Marked({
 	indentedCode: false
@@ -58,4 +59,9 @@ function createTOC(headings) {
 	return toc;
 }
 
-export { runInThisContext, marked, marked_copy, registerExtension, registerExtensions, createTOC };
+// Here, directives *must* be an array
+function registerDirectives(directives) {
+	marked.use(createDirectives(directives));
+}
+
+export { runInThisContext, marked, marked_copy, registerExtension, registerExtensions, registerDirectives, createTOC };
