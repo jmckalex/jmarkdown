@@ -3,6 +3,10 @@
 //import { Marked } from 'marked';
 import fs from 'fs';
 import { runInThisContext, marked, marked_copy, registerExtensions } from './utils.js';
+import { configManager } from './config-manager.js';
+
+// Load the configuration at startup
+configManager.load();
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -167,6 +171,7 @@ marked.use({
     }
   }
 });
+
 
 import markedAlert from 'marked-alert';
 marked.use(markedAlert());
