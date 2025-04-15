@@ -339,7 +339,7 @@ if (!filename) {
 const input = fs.readFileSync(filename, 'utf8');
 
 import { config } from './utils.js';
-config['home directory'] = path.dirname(filename);
+config['Home directory'] = path.dirname(filename);
 
 
 const outFile = filename.replace(/\.([^.]+)$/, '.html');

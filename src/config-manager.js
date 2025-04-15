@@ -26,7 +26,9 @@ const DEFAULT_CONFIG = {
 		}`,
 		'src': 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js' 
 	},
-	'Template': 'default'
+	'Template': 'default',
+	'TiKZ libgs': '/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib',
+	'TiKZ optimise': 'group-attributes,collapse-groups'
 };
 
 class ConfigManager {
@@ -73,7 +75,7 @@ class ConfigManager {
 	}
 
 	// Get configuration value
-	get(key, defaultValue) {
+	get(key, defaultValue = null) {
 		if (!this.loaded) this.load();
 
 		if (key.includes('.')) {
@@ -121,7 +123,6 @@ class ConfigManager {
 		}
 
 		this.config = this._mergeConfigs(this.config, formattedMetadata);
-		console.log(this.config);
 	}
 
 	// Helper method to get app config path
