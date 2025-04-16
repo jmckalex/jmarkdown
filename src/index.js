@@ -166,8 +166,13 @@ function createMultilevelDirectives(rendering_function) {
 	});
 
 	marked.use(createDirectives(directives));
+	marked_copy.use(createDirectives(directives));
 }
 
+import { targets, sources } from './sources-and-targets.js';
+createMultilevelDirectives(sources.renderer);
+marked.use(createDirectives([targets]));
+marked_copy.use(createDirectives([targets]));
 
 marked.use({
   tokenizer: {
@@ -289,6 +294,7 @@ const outFile = filename.replace(/\.([^.]+)$/, '.html');
 
 let html = await generateHTMLOutput(input);
 
+import { replaceTargetsBySources } from './sources-and-targets.js';
 
 // Post-process HTML output using cheerio
 function processHTML(html) {
@@ -316,6 +322,7 @@ function processHTML(html) {
 
 	add_labels_to_headers($);
 	process_crossrefs($);
+	replaceTargetsBySources($);
 	return $.html();
 }
 
