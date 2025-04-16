@@ -29,7 +29,16 @@ function createMarkdownDemo(marker) {
 				const lang = token?.attrs?.type ?? "markdown";
 				const highlightedCode = hljs.highlight(code, {language: lang}).value;
 
-				let output = this.parser.parse(token['output']);
+				// The 'failsafe' option is provided simply because there is a weird
+				// bug I've not been able to identify which occasionally causes the
+				// parsing of the markdown via blockTokens to behave weirdly.
+				let output;
+				if (token?.attrs?.failsafe) {
+					output = marked_copy.parse(token.text);
+				}
+				else {
+					output = this.parser.parse(token['output']);
+				}
 
 				// The next line is a hack I use to get around the fact that the line
 				// above doesn't seem to recognise the marked-alert extension...
