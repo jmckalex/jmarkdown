@@ -8,7 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { configManager } from './config-manager.js';
 import Mustache from 'mustache';
-import { registerDirectives } from './utils.js';
+import { registerDirectives, registerExtensions } from './utils.js';
 
 export async function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
@@ -26,9 +26,14 @@ export async function processYAMLheader(markdown) {
 			processCustomElements();
 		}
 
-		const install_directives_key = Object.keys(metadata).find(k => k.toLowerCase() === "Install directives".toLowerCase());
-		if (install_directives_key) {
-			await installDirectives();
+		const load_directives_key = Object.keys(metadata).find(k => k.toLowerCase() === "Load directives".toLowerCase());
+		if (load_directives_key) {
+			await loadDirectives();
+		}
+
+		const load_extensions_key = Object.keys(metadata).find(k => k.toLowerCase() === "Load extensions".toLowerCase());
+		if (load_extensions_key) {
+			await loadExtensions();
 		}
 
 		const extension_keys = Object.keys(metadata).filter(key => key.startsWith("extension"));
@@ -125,25 +130,69 @@ function processCustomElements() {
 }
 
 
-async function installDirectives() {
-	console.log("I'm here!");
-
+async function loadDirectives() {
 	for (let k in metadata) {
-		if (k.toLowerCase() === "Install directives".toLowerCase()) {
+		if (k.toLowerCase() === "Load directives".toLowerCase()) {
 			if (Array.isArray(metadata[k])) {
-				console.log(metadata[k]);
 				for (const spec of metadata[k]) {
 					console.log(spec);
-					let [directives, file] = spec.split("from");
-					let array = directives.split(",").map(s => s.trim()).filter(s => s !== '');
-					console.log(array);
-					array = array.map(el => el.trim());
-					file = file.trim();
-					
-					const mod = await import(path.join(configManager.get('Markdown file directory'), file));
-					let array2 = array.map(name => mod[name]);
-					console.log(array2);
-					registerDirectives( array2 );
+					let directives, file, array;
+					if (spec.includes("from")) {
+						// The spec should be of the form 'foo, bar, ... from file_name.js'
+						[directives, file] = spec.split("from");
+						// extract the names of the exported directives
+						array = directives.split(",").map(s => s.trim()).filter(s => s !== '');
+						file = file.trim();
+						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
+						// overwrite the array of names with objects extracted from the loaded module
+						array = array.map(name => mod[name]);
+						console.log(array);
+						registerDirectives(array);
+					}
+					else {
+						// The spec should just consist of a file name, and we load everything
+						// from the default export — which should be an array of directives.
+						const file = spec.trim();
+						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
+						const array = mod.default;
+						console.log(array);
+						registerDirectives(array);
+					}
+				}
+			}
+		}
+	}
+}
+
+
+async function loadExtensions() {
+	for (let k in metadata) {
+		if (k.toLowerCase() === "Load extensions".toLowerCase()) {
+			if (Array.isArray(metadata[k])) {
+				for (const spec of metadata[k]) {
+					console.log(spec);
+					let extensions, file, array;
+					if (spec.includes("from")) {
+						// The spec should be of the form 'foo, bar, ... from file_name.js'
+						[extensions, file] = spec.split("from");
+						// extract the names of the exported directives
+						array = extensions.split(",").map(s => s.trim()).filter(s => s !== '');
+						file = file.trim();
+						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
+						// overwrite the array of names with objects extracted from the loaded module
+						array = array.map(name => mod[name]);
+						console.log(array);
+						registerExtensions(array);
+					}
+					else {
+						// The spec should just consist of a file name, and we load everything
+						// from the default export — which should be an array of directives.
+						const file = spec.trim();
+						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
+						const array = mod.default;
+						console.log(array);
+						registerExtensions(array);
+					}
 				}
 			}
 		}
