@@ -276,11 +276,8 @@ marked.use(gfmHeadingId({prefix: "toc-"}), {
 });
 
 import { metadata, processYAMLheader } from './metadata-header.js';
-
 import processFileInclusions from './file-inclusion.js';
-
 import { processTemplate } from './html-template.js';
-
 
 async function generateHTMLOutput(markdown) {
 	let markdown_no_metadata = await processYAMLheader(markdown);
