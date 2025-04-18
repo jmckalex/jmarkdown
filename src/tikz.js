@@ -10,20 +10,23 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import crypto from 'crypto';
 import { configManager } from './config-manager.js';
+import Mustache from 'mustache';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const LaTeX_container = `\\documentclass[tikz,border=3mm,12pt]{standalone}
-\\usepackage{tikz}
-\\usetikzlibrary{arrows,arrows.meta,positioning,shapes,backgrounds,calc,fit,decorations,decorations.pathreplacing,decorations.markings,patterns,matrix,calligraphy,trees,graphs,intersections,through,shapes.geometric,datavisualization}
-\\usepackage{fontspec}
-\\setmainfont{Optima}
-\\begin{document}
-\\begin{tikzpicture}[>=latex]
-%TikZ code will be inserted here
-\\end{tikzpicture}
-\\end{document}`
+const LaTeX_template = String.raw`\documentclass[tikz,border=3mm,12pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows,arrows.meta,positioning,shapes,backgrounds,calc,fit,decorations,decorations.pathreplacing,decorations.markings,patterns,matrix,calligraphy,trees,graphs,intersections,through,shapes.geometric,datavisualization}
+{{#LaTeX_preamble}}
+{{{.}}}
+{{/LaTeX_preamble}}
+\begin{document}
+\begin{tikzpicture}[>=latex]
+{{{TiKZ}}}
+\end{tikzpicture}
+\end{document}`
+
 
 const LIBGS = "--libgs=" + configManager.get('TiKZ libgs'); ///opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib";
 const OPTIMISE = "--optimize=" + configManager.get('TiKZ optimise'); //group-attributes,collapse-groups";
@@ -89,7 +92,9 @@ function createTiKZ(marker) {
 		label: "TiKZ",
 		tokenizer: function(text, token) {
 			text = text.replace("\n", '');
-			const file_contents = LaTeX_container.replace('%TikZ code will be inserted here', text);
+			const opts = { 'TiKZ': text, 'LaTeX_preamble': configManager.get('LaTeX preamble') };
+			const file_contents = Mustache.render(LaTeX_template, opts);
+
 			const home_directory = configManager.get('Markdown file directory');
 			const TiKZ_directory = path.join(home_directory, "TiKZ");
 			const file_name = path.join(TiKZ_directory, `figure-${file_index++}.tex`);
