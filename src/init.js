@@ -46,12 +46,12 @@ export function initialise(filename = null) {
 	}
 	catch (error) {
 		console.log(`${local_jmarkdown_config} does not exist - creating config-template.json...`);
-		fs.writeFileSync('.jmarkdown/config-template.json', JSON.stringify(DEFAULT_CONFIG, null, 4));
+		fs.writeFileSync('.jmarkdown/config-template.json', JSON.stringify(DEFAULT_CONFIG, null, 4), { encoding: 'utf8' });
 		console.log(`config-template.json created.`);
 	}
 
 	if (filename != null) {
-		fs.writeFileSync(filename, file_template);
+		fs.writeFileSync(filename, file_template, { encoding: 'utf8' });
 	}
 }
 
