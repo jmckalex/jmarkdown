@@ -7,23 +7,46 @@ import { fileURLToPath } from 'url';
 // Command-line processing of options, so that extensions can be switched on or off, as desired.
 import { Command } from 'commander';
 const program = new Command();
+
+// Main program setup
 program
+	.version('0.5')
+	.description("A Markdown process with great customisation capabilities, plus JavaScript as a scripting language");
+
+// Init subcommand
+import { initialise } from './init.js';
+
+program
+	.command('init [filename]')
+	.description('Initialise a new JMarkdown project')
+	.action((filename = null) => {
+		initialise(filename);
+		process.exit();
+	});
+
+// Default command for processing files
+program
+	.command('process <filename>', { isDefault: true })
+	.description('Process a JMarkdown file')
 	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface* and revert to normal Markdown syntax')
-	.argument('<filename>', 'Markdown file to process');
+	.action((filename, options) => {
+		program.file_to_process = filename;
+	});
 
 program.parse(process.argv);
 const options = program.opts();
 
 // Get the markdown file we are supposed to process
-const filename = program.args[0]; //process.argv[2];
+const filename = program.file_to_process;
 if (!filename) {
 	console.error('Please provide a filename');
 	process.exit(1);
 }
+
 const markdownFile = filename;
 const markdownFileDirectory = path.dirname(markdownFile);
 
-import { runInThisContext, marked, marked_copy, registerExtensions } from './utils.js';
+import { runInThisContext, marked, marked_copy, registerExtension, registerExtensions } from './utils.js';
 import { configManager } from './config-manager.js';
 
 // Load the configuration at startup
