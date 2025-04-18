@@ -4,8 +4,7 @@ export const targets = {
 	marker: ':',
 	renderer(token) {
 		if (token.meta.name === "target") {
-			console.log(token.text);
-			return `<span id='${token.text}'></span>`;
+			return `<span data-target-id='${token.text.trim()}'></span>`;
 		}
 		return false;
 	}
@@ -20,20 +19,48 @@ export const sources = {
 	// },
 	renderer(token) {
 		if (token.meta.name === "source") {
-			const target = token.attrs.target;
+			const target = token.attrs.target.trim();
 			return `<div data-target='${target}'>${this.parser.parse(token.tokens)}</div>`;
 		}
 		return false;
 	}
 };
 
+
+export const inlineTarget = {
+	name: 'inlineTarget',
+	level: 'inline',
+	start(src) { return src.match(/🎯/)?.index },
+	tokenizer(src) {
+		const match = src.match(/^🎯([a-zA-Z0-9_-]+)/);
+		if (match) {
+			const token = {
+				type: 'inlineTarget',
+				raw: match[0],
+				text: match[1].trim(),
+				tokens: []
+			};
+			return token;
+		}
+	},
+	renderer(token) {
+		return `<span data-target-id='${token.text}'></span>`;
+	}
+};
+
+
 export function replaceTargetsBySources($) {
 	$('[data-target]').each(function () {
 		const $sourceElement = $(this);
 		const targetID = $sourceElement.attr('data-target');
-		// Find the target element
-		const $targetElement = $(`#${targetID}`);
-		$sourceElement.removeAttr('data-target');
-		$targetElement.replaceWith($sourceElement);
+		// Find all target elements
+		$(`[data-target-id='${targetID}']`).each(function() {
+			const $targetElement = $(this);
+			$sourceElement.removeAttr('data-target');
+			$targetElement.replaceWith($sourceElement.clone());
+		});
+		$sourceElement.remove();
 	})
 }
+
+

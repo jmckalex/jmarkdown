@@ -192,10 +192,11 @@ function createMultilevelDirectives(rendering_function) {
 	marked_copy.use(createDirectives(directives));
 }
 
-import { targets, sources } from './sources-and-targets.js';
+import { targets, sources, inlineTarget } from './sources-and-targets.js';
 createMultilevelDirectives(sources.renderer);
 marked.use(createDirectives([targets]));
 marked_copy.use(createDirectives([targets]));
+registerExtension(inlineTarget);
 
 marked.use({
   tokenizer: {
