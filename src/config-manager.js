@@ -92,6 +92,35 @@ class ConfigManager {
 		return this.config[key] !== undefined ? this.config[key] : defaultValue;
 	}
 
+	_replaceSpacesInKeys(obj) {
+		// Base case: if not an object or is null, return as is
+		if (typeof obj !== 'object' || obj === null) {
+			return obj;
+		}
+
+		// If it's an array, process each element
+		if (Array.isArray(obj)) {
+			return obj.map(item => this._replaceSpacesInKeys(item));
+		}
+
+		// Create a new object with transformed keys
+		const newObj = {};
+
+		Object.keys(obj).forEach(key => {
+			// Replace spaces with underscores in the key
+			const newKey = key.replace(/\s+/g, '_');
+
+			// Recursively process the value
+			newObj[newKey] = this._replaceSpacesInKeys(obj[key]);
+		});
+
+		return newObj;
+	}
+
+	getConfigForMustache() {
+		return this._replaceSpacesInKeys(this.config);
+	}
+
 	// Set configuration value
 	set(key, value) {
 		if (!this.loaded) this.load();
@@ -119,7 +148,52 @@ class ConfigManager {
 		const formattedMetadata = {};
 		for (const [key, value] of Object.entries(metadata)) {
 			const formattedKey = key.replace(/\s+/g, '_');
-			formattedMetadata[formattedKey] = value;
+
+			// Clean up a few special cases from the metadata header
+			let str = '';
+			switch (formattedKey) {
+			case 'Biblify_activate':
+				str = value[0].trim().toLowerCase();
+				if (str == "true") {
+					formattedMetadata[formattedKey] = true;
+				}
+				else {
+					formattedMetadata[formattedKey] = false;
+				}
+				break;
+			case "Biblify_defer":
+				str = value[0].trim().toLowerCase();
+				if (str == "true") {
+					this.config["Biblify"]["defer"] = true;
+					this.config["Biblify"]["add helper function"] = false;
+				}
+				else {
+					this.config["Biblify"]["defer"] = false;
+				}
+				break;
+			case "Bibliography":
+				str = value[0].trim();
+				this.config["Biblify"]["bibliography"] = str;
+				break;
+			case "Bibliography_style":
+				str = value[0].trim();
+				if ( ["apa", "harvard1", "vancouver", "bjps", "chicago"].includes(str) ) {
+					this.config["Biblify"]["bibliography style"] = str;
+				}
+				else {
+					const template_name = path.basename(str, ".csl");
+					this.config["Biblify"]["bibliography style"] = template_name;
+					this.config["Biblify"]["template"]["name"] = template_name;
+					this.config["Biblify"]["template"]["file"] = str;
+				}
+				break;
+			case "Body_classes":
+				str = value.join(" ").trim();
+				formattedMetadata[formattedKey] = str;
+				break;
+			default:
+				formattedMetadata[formattedKey] = value;
+			}
 		}
 
 		this.config = this._mergeConfigs(this.config, formattedMetadata);
