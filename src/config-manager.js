@@ -6,14 +6,24 @@ import os from 'os';
 import { marked } from './utils.js';
 
 // Default configuration values
-const DEFAULT_CONFIG = {
+export const DEFAULT_CONFIG = {
 	'Lang': 'en',
 	'Highlight theme': 'default',
 	'Body classes': '',
+	"Biblify activate": false,
+	"Biblify": {
+		"add helper function": true
+		"add section heading": true,
+		"add toc entry": true,
+		"bibliography": "",
+		"bibliography style": "",
+		"defer": false
+	},
 	'Custom directives': [],
-	'Fontawesome': 'https://kit.fontawesome.com/161dcde163.js',
+	'Fontawesome': 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/js/all.min.js',
 	'Mermaid': 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js',
 	'Highlight src': 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css',
+	"Highlight theme": "atom-one-light",
 	'HTML header': '',
 	'HTML footer': '',
 	'MathJax': {
@@ -43,8 +53,6 @@ class ConfigManager {
 
 		// Define config file locations in order of precedence (highest last)
 		const configLocations = [
-			// Application default (in app directory)
-			this._getAppConfigPath(),
 			// User config in home directory
 			path.join(os.homedir(), '.jmarkdown', 'config.json'),
 			// Project config (current directory)
