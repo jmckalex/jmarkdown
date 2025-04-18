@@ -12,7 +12,7 @@ export const DEFAULT_CONFIG = {
 	'Body classes': '',
 	"Biblify activate": false,
 	"Biblify": {
-		"add helper function": true
+		"add helper function": true,
 		"add section heading": true,
 		"add toc entry": true,
 		"bibliography": "",
@@ -24,8 +24,9 @@ export const DEFAULT_CONFIG = {
 	'Mermaid': 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js',
 	'Highlight src': 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css',
 	"Highlight theme": "atom-one-light",
-	'HTML header': '',
-	'HTML footer': '',
+	'HTML header': [],
+	'HTML footer': [],
+	"LaTeX preamble": [],
 	'MathJax': {
 		'configuration': String.raw`MathJax = {
 			tex: {
@@ -207,6 +208,7 @@ class ConfigManager {
 		this.config = this._mergeConfigs(this.config, formattedMetadata);
 	}
 
+
 	// Helper method to get app config path
 	_getAppConfigPath() {
 		const __filename = fileURLToPath(import.meta.url);
@@ -214,6 +216,34 @@ class ConfigManager {
 		return path.join(__dirname, 'default-config.json');
 	}
 
+	// Helper method to merge configs
+	_mergeConfigs(target, source, location = '') {
+	    const result = { ...target };
+	    
+	    for (const [key, value] of Object.entries(source)) {
+	        // Special case: if the source value is an array, replace target value completely
+	        if (Array.isArray(value)) {
+	            result[key] = [...value]; // Create a new array (shallow copy)
+	        }
+	        // If property exists and both are objects (but not arrays), merge recursively
+	        else if (
+	            key in result && 
+	            typeof result[key] === 'object' && typeof value === 'object' &&
+	            !Array.isArray(result[key]) && value !== null
+	        ) {
+	            result[key] = this._mergeConfigs(result[key], value);
+	        } 
+	        // Otherwise, simply overwrite with the source value
+	        else {
+	            result[key] = value;
+	        }
+	    }
+	    
+	    //console.log(`after merging: with ${location}`, result);
+	    return result;
+	}
+
+/*
 	// Helper method to merge configs
 	_mergeConfigs(target, source, location = '') {
 		const result = { ...target };
@@ -230,6 +260,7 @@ class ConfigManager {
 		//console.log(`after merging: with ${location}`, result);
 		return result;
 	}
+*/
 }
 
 export const configManager = new ConfigManager();
