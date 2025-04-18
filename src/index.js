@@ -106,6 +106,9 @@ if (options.normalSyntax != true) {
 			]);
 }
 
+import { anchors } from './anchors.js';
+registerExtension(anchors);
+
 import extendedTables from "marked-extended-tables";
 
 [marked, marked_copy].map(m => {
