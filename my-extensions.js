@@ -45,7 +45,6 @@ export const jmckalex = {
 		}
 	},
 	renderer(token) {
-		console.log("QWER");
 		return `J. McKenzie Alexander`;
 	}
 };
