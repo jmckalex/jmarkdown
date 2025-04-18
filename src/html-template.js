@@ -6,16 +6,42 @@ import { configManager } from './config-manager.js';
 import { custom_elements } from './metadata-header.js';
 
 export function processTemplate(content) {
-	const default_template = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'default-template.html'), 'utf8');
+	const default_template = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'default-template.html.mustache'), 'utf8');
+	const biblify_template = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'Biblify.js.mustache'), 'utf8');
 	const jmarkdown_css = fs.readFileSync( path.join(configManager.get('Jmarkdown app directory'), 'jmarkdown.css'), 'utf8');
 
-	let config = { ...configManager.getConfig() };
+	let config = { ...configManager.getConfigForMustache() };
 	config = replaceSpacesInKeys(config);
 	config['Highlight_src'] = Mustache.render(config['Highlight_src'], config);
 	config['Jmarkdown_css'] = jmarkdown_css;
 	config['Custom_elements'] = custom_elements;
 	config['Content'] = content;
 	
+	// Checking whether the bibliography should be activated is complicated because it
+	// might be set to 'true' in either a configuration file — in which case it won't be an array —
+	// or in the metadata header, in which case it will be an array.  So we need this complicated test.
+	// if (Array.isArray(config["Biblify_activate"])) {
+	// 	if (config["Biblify_activate"][0].toLowerCase().includes('false')) {
+	// 		delete config["Biblify_activate"];
+	// 	}
+	// }
+	// else {
+	// 	if ("Biblify_activate" in config) {
+	// 		if (config["Biblify_activate"].toLowerCase().includes('false')) {
+	// 			delete config["Biblify_activate"];	
+	// 		}
+	// 	}
+	// 	else {
+	// 		delete config["Biblify_activate"];
+	// 	}
+	// }
+	const biblify = Mustache.render(biblify_template, config);
+	// That string will have nonzero length only if Biblify has been activated.
+	// Activation doesn't guarantee it will be configured correctly, though!
+	if (biblify.length > 0) {
+		config['Biblify_configuration'] = biblify;
+	}
+
 	let html = '';
 	// If the template is set in the metadata header, then config['Template'] will be an array.
 	// However, if it is set in a config.json file, it will be a string. So deal with this.
