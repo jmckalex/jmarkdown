@@ -54,8 +54,6 @@ It also allows **inline JavaScript execution** to manipulate output, define exte
 	- Defining new markdown syntax
 - Inline and post-processing scripts
 
----
-
 ## Example Syntax
 
 **Italic + Bold + Underline Nesting:**
