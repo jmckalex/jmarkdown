@@ -1,18 +1,34 @@
-title: Demonstration of jmarkdown
-date: 24 January 2025
-author: J. McKenzie Alexander
+Title: Demonstration of jmarkdown
+Date: 24 January 2025
+Author: J. McKenzie Alexander
+Address: Department of Philosophy, Logic and Scientific Method<br>
+	London School of Economics and Political Science<br>
+	London, United Kingdom<br>    
+	WC2A 2AE 
+Biblify defer: false    
+Biblify website: <a href="https://jmckalex.org/software/bibtex-in-webpages.html">Biblify</a>
 CSS: test.css
-highlight-theme: atom-one-light
+CSS: test2.css
+Script: test.js 
+Body classes: class1
+Body classes: class2   
+Highlight theme: atom-one-light
 script: <code>&lt;script&gt;</code>
+Custom element: that-container
+	<p part='top'><strong>The start of my container</strong></p>
+	<slot></slot> 
+	<p part='bottom'><strong>The end of my container</strong></p> 
+Loud directives:  my-directives.js 
+Load extensions:  reverseText from my-extensions.js 	 
 HTML header: <!-- This is comment 1 -->
-HTML header: <!-- This is comment 2
-	which is a multiline comment
-	and ends here -->
+HTML header: <!-- This is comment 2   
+	which is a multiline comment             
+	and ends here --> 
 	<link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
 HTML footer: <!-- This is comment 3 -->
-HTML footer: <!-- This is comment 4
+HTML footer: <!-- This is comment 4     
 	which is a multiline comment
-	and ends here -->
+	and ends here --> 
 extension 1: [: :] [true,false,true] 3
 	<span class='test' style='background: red'>${content3}</span>
 	<span class='test' style='background: lightgreen'>${content1}</span>
@@ -20,7 +36,7 @@ extension 1: [: :] [true,false,true] 3
 extension 2: @mark( ) true 
 	<span class='mark' 
 		style='border: 1pt solid black; padding: 6pt; border-radius: 6pt;'>${content1}</span>
-extension 3: "" ""
+extension 3: "" ""    
 	<span class="verbatim">${content1}</span>
 extension 4: @explain( ) [false,true] 2
 	<span class="texbook" style="font-family: 'Fira Code';">${content1}</span>
@@ -47,10 +63,16 @@ extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
    <span style='float: right; font-weight: bold; position: relative; top: 6pt'>Grade <span class='mark' style='padding: 3pt; border: 1pt solid black'>${content1}</span></span>
 extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 	<span>Candidate: <strong class='candidate'>${content1}</strong></span><br>
+extension subscripts:  /[pxyz][0-9]+/	/^([pxyz])([0-9]+)/	false 2
+	<span>\(${content1}_{${content2}}\)</span>
 ------------------------------------
 
 
 <style>
+	div.no-colon dt::after {
+		content: "";
+	}
+
 	div.foo p {
 		background: red;
 	}
@@ -108,24 +130,37 @@ extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 		font-size: 14px;
 	}
 
+	.markdown-demo-container code {
+		height: auto;
+	}
+
+	.markdown-demo-container pre {
+		height: auto;
+	}
+
 	.lightgreen {
 		background-color: lightgreen;
 	}
 
-	div.feedback {
-		margin-top: 12pt;
+	p.feedback {
+		font-size: 14pt;
+		margin-top: 8pt;
 	}
 
-	div.feedback > p:first-child {
+	section.feedback {
+		margin-top: 8pt;
+	}
+
+	section.feedback > p:first-child {
 		margin-bottom: 6pt;
 	}
 
-	div.feedback .question {
+	section.feedback .question {
 		margin-bottom: 6pt;
 		margin-top: 6pt;
 	}
 
-	div.feedback .mark {
+	section.feedback .mark {
 		background-color: lightgrey;
 	}
 
@@ -182,12 +217,22 @@ extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 		padding: 3pt;
 	}
 
+	dl {
+		margin-top: 0pt;
+		margin-bottom: 0pt;
+	}
+
 	dl dd p:first-child {
 		margin-top: 0pt;
 	}
 	
 	dl dt.clean:after {
-		content: '';
+		content: '';  
+	}
+
+	foo-bar::part(top), foo-bar::part(bottom) {
+		margin-top: 0pt;
+		margin-bottom: 0pt; 
 	}
 </style>
  
@@ -198,29 +243,117 @@ Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)<br>
 :today
 
 >> “Let’s go crazy” {.class1 .class2} ↵
->> /* &mdash; Prince*/ 
+>> /* &mdash; Prince*/
+
+This is foobar.   And this is me: jmckalex.
+
+:::foobar 
+This is the content
+::: 
 
 `jmarkdown` is a full-featured variant of markdown which provides the ability to define new syntax
 extensions /in the markdown file itself/.  The extensions can be /simple/ &mdash; where you specify only 
 the starting- and ending- delimiters &mdash; or /complex/ &mdash; where you specify a regular expression,
 possibly with groups.  The text identified by the extension can then be manipulated, processed by
-the markdown interpreter, and inserted into arbitrary HTML.  In addition, `jmarkdown` supports
-the evaluation of JavaScript included in the markdown file.  The JavaScript code can be used
+the markdown interpreter, or inserted into arbitrary HTML.  In addition, `jmarkdown` supports
+the evaluation of JavaScript included in the markdown file /at the time the markdown code is processed/.  
+The JavaScript code can be used
 to define syntax extensions or to generate HTML output, or to use Cheerio as a post-processor to
 manipulate the HTML output generated by `jmarkdown`.
 
+<script data-type='jmarkdown'>
+/**
+ * Creates a rainbow text animation effect by wrapping each character in a span with appropriate CSS classes.
+ * 
+ * @param {string} text - The text to animate
+ * @param {Object} options - Optional configuration parameters
+ * @param {number} options.duration - Animation duration in seconds (default: 2)
+ * @param {number} options.delay - Base delay between characters in seconds (default: 0.1)
+ * @param {string} options.className - Additional class name for the container (default: '')
+ * @return {string} HTML string with the animated text
+ */
+function rainbow(text, options = {}) {
+  const {
+    duration = 2,
+    delay = 0.1,
+    className = ''
+  } = options;
+
+  if (!text) return '';
+  
+  // CSS to be injected
+  const css = `
+  <style>
+    .rainbow-text {
+      display: inline-block;
+    }
+
+    .rainbow-text-char {
+      display: inline-block;
+      animation-name: rainbow-color;
+      animation-duration: ${duration}s;
+      animation-iteration-count: infinite;
+      animation-timing-function: linear;
+    }
+
+    @keyframes rainbow-color {
+      0% { color: #ff0000; } /* Red */
+      16.6% { color: #ff8000; } /* Orange */
+      33.3% { color: #ffff00; } /* Yellow */
+      50% { color: #00ff00; } /* Green */
+      66.6% { color: #0080ff; } /* Blue */
+      83.3% { color: #8000ff; } /* Indigo */
+      100% { color: #ff0000; } /* Back to red */
+    }
+  </style>`;
+
+  // Create spans for each character with staggered animation delays
+  const chars = text.split('').map((char, index) => {
+    // Calculate a staggered delay for each character
+    const charDelay = (delay * index) % duration;
+    
+    // Skip spans for whitespace, but preserve the whitespace
+    if (char === ' ') {
+      return ' ';
+    }
+    
+    return `<span class="rainbow-text-char" style="animation-delay: -${charDelay}s">${char}</span>`;
+  }).join('');
+
+  // Return the complete HTML
+  return `${css}<span class="rainbow-text ${className}">${chars}</span>`;
+}
+
+export_to_jmarkdown("rainbow");
+// Example usage:
+// document.getElementById('container').innerHTML = createRainbowText('Rainbow Animation Text!');
+</script>
+
+The syntax extensions can take advantage of the full set of Unicode characters, allowing 
+you to define intuitive markup for certain effects.  For example, this markdown file
+defines extensions so that
+
+`↑Small caps↑` becomes ↑Small caps↑ <br>
+`⌜strings like in the TeXBook⌝ `  becomes ⌜strings like in the TeXBook⌝ 
+
+As for embedding JavaScript in the markdown, here’s a fun example:  
+
+`rainbow(We are all special)` becomes rainbow(We are all special)
+
 [View the `jmarkdown` source which generated this page!](jmarkdown.md)
+
+[Download the source from GitHub!](https://github.com/jmckalex/jmarkdown) 
 
 *Table of Contents*
  
 {{TOC}} 
-   
+    
 # Motivation 
 
 ::::comment
 :::title-box
 This is the title $\alpha + \beta=\gamma$
-****  
+**** 
 1. asdf
 2. asdf
 3. asdf
@@ -272,6 +405,7 @@ of all the features `jmarkdown` offers:
 		providing the functionality of C's `/*...*/` syntax.
 	* The ability to define “optionals” for including/excluding portions of the file (e.g., answers to a quiz)
 * Support for math via MathJax
+* Support for Mermaid.
 * Support for alphabetical and roman numeral lists via `marked-more-lists`.
 * Code highlighting using `highlight.js` via `marked-highlight`.
 * In-browser bibliographies generated via [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html). 
@@ -382,7 +516,7 @@ I’m not going to say much about tables, but here are some quick demonstrations
 
 ## Example 1
 
-:::markdown-demo
+:::markdown-demo  
 | H1      | H2      | H3      |
 |---------|---------|---------|
 | This cell spans 3 columns |||
@@ -404,7 +538,7 @@ I’m not going to say much about tables, but here are some quick demonstrations
 A detailed description for these can be found [here](https://github.com/bent10/marked-extensions/tree/main/packages/alert).
 The formatting below isn’t perfect, but that just requires some CSS tweaks.
 
-:::markdown-demo
+:::markdown-demo  
 > [!NOTE]
 > Highlights information that users 
 > should take into account, even 
@@ -472,8 +606,17 @@ Another term:: Define this term.
 
 A length term::  This definition needs
    to span multiple lines. And it is
-   quite lengthy as well.  So
-   very lengthy.
+   quite lengthy as well.[^a]  So
+   very lengthy. 
+
+   ```js
+   function foo(array) {
+   	let bar = 1;
+   	for (const i of array) {
+   		// do something
+   	}
+   }
+   ```
 
    Another term:: Definition lists can
       also be nested, if you want.
@@ -580,7 +723,7 @@ marked.use(
 );
 ```
 
-The syntax highlighting theme is set in the metadata header.
+The syntax highlighting theme is set in the [metadata header](#toc-metadata-header).
 
 # Bibliographic support
 
@@ -799,7 +942,7 @@ games look more-or-less right out of the box.
 One cool thing is that the text give to the `row`, `column` and `caption`
 options can (a) span multiple lines (if you have a /really/ long name
 for the game) and (b) are passed through the markdown interpreter so
-you can do some tricksy things with it. E.g.,
+you can do some tricksy things with it (such as include footnotes). E.g.,
 
 ::::markdown-demo
 :::game 
@@ -808,7 +951,7 @@ Rock     & (0,0)  & (-1,1) & (1,-1)
 Paper    & (1,-1) & (0,0)  & (-1,1)  
 Scissors & (-1,1) & (1,-1) & (0,0)
 
-row: /Player 1/
+row: /Player[^a] 1/
 column: *Player A_1 $\alpha$*
 caption: The game of 
 	:span[Rock-Paper-Scissors]{.goldenrod}<br>
@@ -856,6 +999,31 @@ generates the following:
 That’s very useful because you only have to write the markdown
 code once, which guarantees that the demo and the output
 will never be out of sync.
+
+## Support for Mermaid diagrams
+
+`jmarkdown` provides a custom directive which detects [Mermaid](https://mermaid.js.org/) diagrams and will
+generate HTML so that they will be automatically detected and formatted.
+
+::::markdown-demo
+:::mermaid 
+graph LR
+    A[Square Rect] -- Link text --> B((Circle))
+    A --> C(Round Rect)
+    B --> D{Rhombus}
+    C --> D
+::: 
+::::
+
+::::markdown-demo
+:::mermaid
+pie title Pets adopted by volunteers
+    "Dogs" : 386
+    "Cats" : 85
+    "Rats" : 15
+:::
+::::
+
 
 ## Support for TiKZ diagrams
 
@@ -908,6 +1076,62 @@ embed{.clean}:: If present, or set to `true`, will cause the SVG file to be embe
 :::
 ::::
 
+## Sources and targets
+
+HTML is a very expressive language and normal markdown allows for only a fraction
+of that to be expressed.  In normal markdown you can’t, for example, construct a two-column table showing
+two different snippets of code, in different languages, side-by-side.
+
+`jmarkdown` provides a very simple solution which greatly increases what can be done.
+The idea?  It uses an inline directive to mark a location as a “target” and then a container
+directive to act as a “source” for that target, with the id of the target given.  
+Once the HTML has been constructed, `jmarkdown` uses [cheerio](https://cheerio.js.org/) to 
+replace the target with the contents of the source.  Essentially, you can think of 
+sources and targets working together to say “put /this/ content /there/”.
+
+Here's a simple illustration:
+
+::::markdown-demo
+| *JavaScript* |   *Python*   |
+|--------------|--------------|
+| :target[id1] | :target[id2] |
+
+:::source{target=id1}
+```js
+function foo() {
+	let x = 10;
+	let y = 20;
+	return x+y;
+}
+```
+:::
+
+:::source{target=id2}
+```python
+def foo()
+	x = 10
+	y = 20
+	return x+y
+```
+:::
+::::
+
+There's also a special syntax abbreviation for indicating a target.  If you write `🎯target-id` that
+will create a target exactly the same as if you wrote `:target[target-id]`.
+
+Multiple targets for the same id can exist.  The source will simply be cloned before each replacement.
+
+:::markdown-demo 
+| *JavaScript 1* | *JavaScript 2* | *JavaScript 3* |
+|----------------|----------------|----------------|
+|    🎯id1       |     🎯id1      |     🎯id1      |
+:::
+  
+# Anchors
+
+An “anchor” is simply an empty element that you can link back to from elsewhere in the page.
+In a `jmarkdown` file it is written as `⚓️id` (that’s the unicode anchor symbol).  When `jmarkdown` encounters that bit of syntax,
+it creates an empty `<span>` with an id set to whatever text followed the anchor.
 
 # Table of contents
 
@@ -919,21 +1143,26 @@ When `jmarkdown` starts processing the file, it checks to see if the first line 
 line of the following form:
 
 ```yaml
-key description: value assigned to the key
+Key description: value assigned to the key
 ```
 
 If it finds something like that, it assumes that the document contains a metadata header.  It then 
-reads the header until it encounters an empty line.  It strips off the header, processes it, and then
+reads the header until it encounters a line beginning with at least three hyphens.  
+It strips off the header, processes it, and then
 pushes the rest of the file through the markdown interpreter.  When processing the header, the values
-assigned to keys can span multiple lines, and the same key can appear multiple times.  Here is an
-example of the header for this file:
+assigned to keys can span multiple lines, and the same key can appear multiple times.  (What happens
+when the same key appears multiple times depends on how that key is interpreted &mdash; more details
+in a moment.)
+
+Here is an example of the header for this file:
 
 ```yaml
-title: Demonstration of jmarkdown
-date: 24 January 2025
-author: J. McKenzie Alexander
+Title: Demonstration of jmarkdown
+Date: 24 January 2025
+Author: J. McKenzie Alexander
 CSS: test.css
-highlight-theme: atom-one-dark
+CSS: test2.css
+Highlight theme: atom-one-dark
 HTML header: <!-- This is comment 1 -->
 HTML header: <!-- This is comment 2
 	which is a multiline comment
@@ -944,11 +1173,266 @@ HTML footer: <!-- This is comment 4
 	and ends here -->
 ```
 
-Files specified as `CSS` will be added to `<link>` tags in the `<head>` of the document.  Anything
-given to `HTML header` will be appended, in order, to the /very end/ of the `<head>`.  This allows you to
-specify more complicated script tags, meta tags, etc.  The same happens for `HTML footer` except
-those are appended to the very end of the `<body>` after everything else, useful for scripts
-which need to appear at the end.
+Some keys have special meanings.  These are as follows.
+
+::::{.no-colon}
+Title:: The value of this key will be wrapped by  `<title></title>` tag in the `<head>` of the 
+	output HTML.
+
+Bibliography:: This should be a relative path specifying a BiBTeX bibliography database, which
+	will be used by {{Biblify}} to process any citations in the HTML output.
+
+Bibliography style:: Biblify comes with a few formats preloaded.  These are 'apa',
+	'harvard1', 'vancouver', 'bjps', and 'chicago'.  If you specify one of these as the value for
+	this key, that will be the output format.  Any other string will be interpreted as a
+	relative path to a CSL style file that will be used.  Biblify uses [citation.js](https://citation.js.org/)
+	behind the scenes, and citation.js uses [Citation Style Language](https://citationstyles.org/)
+	files to know how to format the bibliography.
+
+Body classes:: Any text here will be given to the `class` attribute of the `<body>` tag
+	in the output HTML.  This allows you to trivially change the appearance of the markdown
+	file by writing CSS that takes the body classes into account.
+
+CSS:: The value of this key should be the name of a CSS file, with an optional relative path from
+	the location of the markdown file being processed.  This will be added to `<link>` tags 
+	in the `<head>` of the document.
+
+	If the header has multiple CSS keys, each of the files will appear in a separate `<link>` tag
+	in the output HTML.  The precise way this is done is explained [below](#templates) in the discussion of
+	how mustache is used to process the output template.
+
+Custom element:: This provides an easy way to define custom web elements that play well
+	with container directives.  Consider the following markdown code:
+
+	:target[container]
+
+	The default behaviour of containers converts that into the following HTML:
+
+	:target[container2]
+
+	If you haven’t defined a custom web element named `<that-container>`, it will still be
+	displayed in modern browsers &mdash; it just won't do anything special.  
+	But what if you want to customise its appearance?  That's
+	what this header element allows.  If you write something like:
+
+	:target[container3]
+
+	When the markdown file gets compiled, a `<script>` tag is automatically generated and
+	inserted at the beginning of the HTML file which will register a custom web element.
+	In this case, the automatically generated script tag would look like the following:
+
+	:target[container4]
+
+	And so you would get the following output:
+
+	:target[container5]
+
+Highlight theme:: The name of the theme which `highlight.js` should use when formatting source code.
+
+HTML header:: All of the text given as the value of this\/these key(s) will be written verbatim to
+	the output HTML, right before the closing `</head>` tag.
+
+HTML footer:: All of the text given as the value of this\/these key(s) will be written verbatim to
+	the output HTML, right before the closing `</body>` tag.
+
+Script:: The value of this key should be the name of a javascript file, with an optional relative path from
+	the location of the markdown file being processed.  This will be the value of the `src` attribute
+	in a `<script>` tag in the `<head>` of the document.  If you need to include
+	scripts with additional attributes, that will need to be done using the `HTML header` key.
+
+LaTeX preamble:: If you are using `jmarkdown` to process TiKZ code, you might need to customise the
+	preamble.  The value of this key will be inserted verbatim into the LaTeX preamble.
+
+Load directives:: The value of this key can take one of two forms:
+
+	```
+	Load directives: foobar, barfoo from definitions.js
+	```
+
+	or
+
+	```
+	Load directives: definitions.js
+	```
+
+	The javascript file should be a module which exports definitions of directives, 
+	conforming to the [marked-directive](https://www.npmjs.com/package/marked-directive)
+	rules.  (Strictly speaking, `jmarkdown` uses an extended implementation of `marked-directive` which allows
+	the definition to provide a custom tokeniser as well as a custom renderer. Those interested can take a look
+	at the `jmarkdown` source code for more details.)  These definitions will then be dynamically imported
+	using `import()` and registered as a custom directive.
+
+	The first form is when you only want to use some of the directives defined in the file.
+	The second form is intended for when you want to use whatever the default export is.
+	The following silly example shows how this works.  By using both named exports /and/ a
+	default export which is an array containing all the directives defined in the file, you get
+	the ability to either load some of the directives (using the first form) or all the directives
+	(using the second form).
+
+	:target[bar] 
+
+Load extensions:: The value of this key can take the same two forms as the `Load directives` key.
+	Here, though, instead of dynamically loading directives it dynamically loads extensions
+	written in the format recognised by `marked.js`.  So, for example, if the metadata header
+	had the following:
+
+	```
+	Load extensions: jmckalex from my-extensions.js
+	```
+
+	And the file contained the following code:
+
+	:target[foo]
+
+	Then that inline extension, which does nothing more than automatically replace
+	the token text `jmckalex` with `J. McKenzie Alexander` would be loaded into the
+	markdown interpreter.
+
+Template:: This should be a relative path to a HTML template file written using 
+	[Mustache](https://mustache.github.io/).  For more details, see the section below
+	discussing the default template and how to create custom templates for the output HTML.
+::::
+
+::::source{target='container'}
+```markdown
+:::that-container
+Some text /inside/ a *container*
+that has $\alpha$ math, too.
+:::
+```
+::::
+
+::::source{target='container2'}
+```html
+<that-container>
+Some text <em>inside</em> a <strong>container</strong>
+that has $\alpha$ math, too.
+</that-container>>
+```
+::::
+
+::::source{target='container3'}
+```markdown
+Custom element: that-container
+	<p part='top'><strong>The start of my container</strong></p>
+	<slot></slot> 
+	<p part='bottom'><strong>The end of my container</strong></p>
+```
+::::
+
+::::source{target='container4'}
+```html
+ <script type="module">
+   class custom_element extends HTMLElement {
+     constructor() {
+       super();
+       // Create a shadow root
+       this.attachShadow({
+         mode: 'open'
+       });
+       // Set the shadow DOM's content
+       this.shadowRoot.innerHTML = `<p part='top'><strong>The start of my container</strong></p>
+<slot></slot>
+<p part='bottom'><strong>The end of my container</strong></p>`;
+     }
+   }
+   customElements.define('that-container', custom_element);
+ </script>
+```
+::::
+
+:::::source{target='container5'}
+::::markdown-demo
+:::that-container
+Some text /inside/ a *container*
+that has $\alpha$ math, too.
+:::
+::::
+:::::
+
+:::source{target='bar'}
+>> *The file `definitions.js`* <<
+```js
+export const foobar = {
+	level: 'container',
+	marker: ":::",
+	label: "foobar",
+	renderer(token) {
+		if (token.meta.name === "foobar") {
+			return `<strong>FOOBAR</strong>`;
+		}
+		return false;
+	}
+};
+
+export const barfoo = {
+	level: 'container',
+	marker: ":::",
+	label: "barfoo",
+	renderer(token) {
+		if (token.meta.name === "barfoo") {
+			return `<strong>BARFOO</strong>`;
+		}
+		return false;
+	}
+};
+
+export default [ foobar, barfoo ];
+```
+:::
+
+:::source{target='foo'}
+>> *The file `my-extensions.js`* <<
+```js
+export const jmckalex = {
+	name: 'jmckalex',
+	level: 'inline',
+	start(src) { return src.match(/jmckalex/)?.index },
+	tokenizer(src) {
+		const match = src.match(/^jmckalex/);
+		if (match) {
+			console.log(match);
+			const token = {
+				type: 'jmckalex',
+				raw: match[0],
+				mermaid: true,
+				text: match[0],
+				tokens: []
+			};
+			return token;
+		}
+	},
+	renderer(token) {
+		return `J. McKenzie Alexander`;
+	}
+};
+```
+:::
+
+That’s it for /most/ of the special keys in the metadata header.  There is one more type which 
+requires explanations of greater length.  More on that in a moment.
+
+What can you do with other definable keys in the metadata header?  `jmarkdown` defines a
+mustache-like syntax where the expression `{{variable name}}` gets replaced by whatever the
+corresponding value is from the metadata header, if it's defined.  This provides a very simple
+form of variable interpolation.  So, for example, if the header contained:
+
+```yaml
+Address: Department of Philosophy, Logic and Scientific Method<br>
+	London School of Economics and Political Science<br>
+	London, United Kingdom<br>
+	WC2A 2AE
+```
+
+Then you can use that as follows:
+
+:::markdown-demo
+You can contact me at:<br>
+{{Address}}
+:::
+
+If the same key has been used multiple times, then `{{key}}` will return all of the values
+concatenated into a single string.
 
 ## Defining new markdown syntax (simple)
 
@@ -1012,7 +1496,7 @@ Syntax extensions can also be defined via regular expressions.  To do this, you 
 regular expressions: the first should be a quick and easy regular expression which indicates the
 start of the new syntax element, and the second is the full regular expression to match the entire
 construct.  (Why two?  Because that's how `marked.js` defines syntax extensions.)  
-Here are two examples, taken from my own personal use which are discussed in more detail below:
+Here are three examples, taken from my own personal use which are discussed in more detail below:
 
 ```yaml
 extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
@@ -1021,6 +1505,8 @@ extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
 	</span>
 extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 	<span>Candidate: <strong class='candidate'>${content1}</strong></span><br>
+extension subscripts:  /[pxyz][0-9]+/	/^([pxyz])([0-9]+)/	false 2
+	<span>\(${content1}_{${content2}}\)</span>
 ```
 
 The first extension matches any two digits surrounded by brackets.  It then takes the numeric mark and
@@ -1042,6 +1528,17 @@ Candidate: 123456
 
 Again, why do this?  If you look, you'll see that a class has been added to the `strong` element,
 which means we can target that element during the post-processing phase.
+
+The third expression is more interesting.  On old internet math groups, it used to be the
+case that people would write `x1, x2, x3,...` to refer to subscripted variables.  The use of
+regular expression in defining this extensions means that you can use that syntax directly
+in your markdown documents.
+
+:::markdown-demo
+Consider points p1, p2, p3 in three-dimensional space,
+where the respective components of p1 are denoted
+by x1, y1, and z1 respectively.
+:::
 
 In short, using regular expressions to define syntax extensions means that /patterned data/ can
 be automatically recognised by `jmarkdown` and formatted into something more aesthetically pleasing.
@@ -1430,6 +1927,7 @@ I use `jmarkdown` for writing feedback on exam questions and storing the marks. 
 markdown file is structured as follows (ignoring the metadata header), with each
 student’s feedback and grade noted.
 
+
 ::::markdown-demo
 Candidate: 43786
 File: ⌜student exam file name.pdf⌝
@@ -1450,7 +1948,7 @@ to do pattern matching on the candidate number, file name, question indicators, 
 the mark on each question.  For example, here are the extensions which format the
 candidate number, the question text, and the mark for each question:
 
-```markdown
+```yaml
 extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
 	 <span>Candidate: <strong class='candidate'>${content1}</strong></span><br>
 extension Q1: /Q1\./   /(Q1\.)/   false 1
@@ -1461,36 +1959,38 @@ extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
 	 <span class='mark' style='float: right; padding: 3pt; border: 1pt solid black'>${content1}</span>
 ```
 
-I’ve defined the `feedback` container to add text and wrap the content in a `<div class='feedback'>` element.
+I’ve defined the `feedback` container directive to add text and wrap the content 
+in a `<section class='feedback'>` element.
 
 With this amount of markup automatically generated, it then becomes trivial to define a 
 post-processing script which does the following:
 
 1. Move any footnotes mentioned in the feedback text from the end of the HTML page,
 	which is where `marked-footnotes` automatically puts them, to the bottom of the
-	`div.feedback` container.  (The footnote indicators in the text are already in
-	the right place.)
+	`section.feedback` container.  (The footnote indicators in the text are already in
+	the right place, and there is enough information in the footnote indicator to
+	tell you what needs to be moved where, with cheerio.)
 
 2. Process any bibliographic citations used in the feedback for each student, and append
-	an auto-generated bibliography to the end of each `div.feedback` containiner.
+	an auto-generated bibliography to the end of each `section.feedback` containiner.
 	This uses [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html) to do the
 	heavy lifting.
 
 3. Loop through the entire document and, for each student, calculate the grade for
 	the entire exam by extracting the marks from each `span.mark` and calculating the
 	correct weighted average.  Then append an HTML span element containing the final grade
-	for the exam to the end of the `div.feedback` container for that student.
+	for the exam to the end of the `section.feedback` container for that student.
 
 4. Once /that's/ done, loop through the DOM and do the following:
 	a. Save the feedback for each student in a separate file named '`Candidate NNNNN.html`', where
-		`NNNNN` is that student’s candidate number.  If desired, `cheerio` can be used to
-		put the same `<head>` at the start of each file so that the feedback will be pretty-printed
-		using the right CSS, etc.
+		`NNNNN` is that student’s candidate number.  I use `cheerio` to
+		copy the `<head>` of the master output file to the start of each individual file 
+		so that the feedback will be shown using the right CSS, etc.
 	b. Create a CSV file which contains, on each line, a student’s candidate number,
 		followed by their mark on each individual question, and the aggregate mark
 		for the exam.  This file can then be imported straight into Excel.
 
-Those tasks would, admittedly, be a little easier to do if I /either/ used
+Those tasks would, admittedly, be a little easier to do if I /either/ used 
 another container which wrapped the candidate number, file information, and
 feedback container /or/ if I simply put the feedback container around all of
 the student information.  But that would make the text a little less “natural”
@@ -1500,7 +2000,132 @@ expressions to find them, then automatically add structuring information
 (classes, etc.) which can then be used to compile/extract information during
 the post-processing phase.
 
- 
+# Output Templates 
+
+⚓️templates 
+`jmarkdown` uses a default Mustache template for creating the output HTML.  That default template
+is designed to play well with certain keys in the metadata header, as described above.
+However, you don't have to use the default template &mdash; you can create your own, and
+tell `jmarkdown` to use that, instead.  The only requirement is that the mustache template
+/*must*/ have `{{{Content}}}` appearing somewhere in it, as that is used to insert the
+constructed HTML into the output file. 
+
+<a href="path/to/yourfile.mustache" 
+   onclick="showTextFile(event, 'src/default-template.html.mustache', 'text/plain'); return false;">
+  View jmarkdown’s default template.
+</a>
+In reading through the template, you can see how a number of the special headings from the
+[metadata header](#toc-metadata-header) are used during constructing the output HTML.
+However, the metadata header is not the only way that the output file can be configured!
+`jmarkdown` supports configuration files other than the metadata header, which allow you
+to specify global or project-specific configurations.  Here, “global” means specified
+for a specific user and “project-specific” means for any markdown file located in a particular
+directory.  That’s the next topic.
+
+<script>
+function showTextFile(event, filePath, mimeType) {
+  event.preventDefault();
+  
+  fetch(filePath)
+    .then(response => response.text())
+    .then(content => {
+      const newWindow = window.open('', '_blank', 'width=800,height=600');
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${filePath.split('/').pop()}</title>
+          <style>
+            body { font-family: monospace; white-space: pre; padding: 20px; }
+          </style>
+        </head>
+        <body>${content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</body>
+        </html>
+      `);
+      newWindow.document.close();
+    })
+    .catch(error => console.error('Error loading file:', error));
+}
+</script>
+
+# Configuration files
+
+When `jmarkdown` is started, it checks to see if `.jmarkdown/config.json` exists
+in two locations:
+
+1. The current user’s home directory.
+2. The current working directory where `jmarkdown` was invoked.
+
+If neither `config.json` file exists, the default settings of `jmarkdown` contain some
+hard-coded settings which provide enough information to ensure that `jmarkdown` will likely
+produce a working output file regardless.  Like what?  Like this:
+
+* A URL to load the free version of the [FontAwesome](https://fontawesome.com/) icons.
+* A URL to load [Mermaid](https://mermaid.js.org/), the diagramming language.
+* A URL to configure a highlighting theme for `highlight.js`.
+* A basic MathJax configuration.
+
+If one or more of the `config.json` files exist, what happens is the following:
+
+1. `jmarkdown` reads the contents of `~/.jmarkdown/config.json` and merges that with its
+	default configuration.  Any settings in `~/.jmarkdown/config.json` which have the
+	same key will be /merged/, with more recent values overwriting earlier values.  (The
+	one exception to the merge rule is when a key has an array as its value: in that case,
+	the array overwrites the previous value of that key).
+
+2. `jmarkdown` then reads the contents of `.jmarkdown/config.json` from its current
+	working directory, which is where the jmarkdown file currently being processed lives.
+	As before, more recent settings overwrite earlier settings.
+
+How do you know what configuration settings are available?  If you run
+
+> `jmarkdown options`
+
+from the command-line, it will show the default configuration options as a formatted
+JSON file.  Here's the current version:
+
+```json 
+{
+    "Lang": "en", 
+    "Highlight theme": "atom-one-light",
+    "Body classes": "",  
+    "Biblify activate": false,   
+    "Biblify": { 
+        "add helper function": true,
+        "add section heading": true,
+        "add toc entry": true,
+        "bibliography": "",
+        "bibliography style": "",
+        "defer": false
+    },
+    "Custom directives": [],
+    "Fontawesome": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/js/all.min.js",
+    "Mermaid": "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js",
+    "Highlight src": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css",
+    "HTML header": [],
+    "HTML footer": [],
+    "LaTeX preamble": [],
+    "MathJax": {
+        "configuration": "MathJax = {\n\t\t\ttex: {\n\t\t\t    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],\n\t\t\t    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],\n\t\t\t\ttags: 'ams'\n\t\t\t}\n\t\t}",
+        "src": "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+    },
+    "Template": "default",
+    "TiKZ libgs": "/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib",
+    "TiKZ optimise": "group-attributes,collapse-groups"
+}
+```
+
+If you type
+
+> `jmarkdown init`
+
+from the command line in a directory which does not yet have a `.jmarkdown/` directory /or/
+a `config.json` file, `jmarkdown` with automatically create that directory and create a file
+called `config-template.json` inside it.  Why `config-template.json` rather than `config.json`?
+Because the file it creates contains just the default options hardwired in the source code,
+and so if that file had the name `config.json` then, given the merge rules above, that would
+clobber any global configuration settings you have set.
+
 # File inclusion 
 
 <script>
