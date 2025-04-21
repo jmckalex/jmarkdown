@@ -15,7 +15,6 @@ program
 
 // Init subcommand
 import { initialise } from './init.js';
-
 program
 	.command('init [filename]')
 	.description('Initialise a new JMarkdown project')
@@ -23,6 +22,17 @@ program
 		initialise(filename);
 		process.exit();
 	});
+
+// Show options
+import { showOptions } from './init.js';
+program
+	.command('options')
+	.description('Show the default configuration options')
+	.action(() => {
+		showOptions();
+		process.exit();
+	});
+
 
 // Default command for processing files
 program

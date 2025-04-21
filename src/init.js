@@ -71,3 +71,7 @@ function getCurrentDate() {
 	// Combine into desired format
 	return `${day} ${month} ${year}`;
 }
+
+export function showOptions() {
+	console.log(JSON.stringify(DEFAULT_CONFIG, null, 4));
+}
