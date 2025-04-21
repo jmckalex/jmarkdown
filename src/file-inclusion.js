@@ -17,7 +17,8 @@ function processFileInclusions(markdown, basePath = process.cwd(), includedFiles
 		return markdown;
 	}
 
-	const regex = /\[\[(.*?)\]\]/g;
+	// This should only capture the names of markdown files, to avoid false positives.
+	const regex = /\[\[(.*?)\.md\]\]/g;
 	let lastIndex = 0;
 	let result = '';
 	let match;
