@@ -13,10 +13,7 @@ function createMarkdownDemo(marker) {
 		label: "markdown-demo",
 		tokenizer: function(text, token) {
 			let lang = token?.attrs?.type ?? "markdown";
-			
-			token['output'] = [];
-			this.lexer.blockTokens(text, token['output']);
-			
+			this.lexer.blockTokens(text, token.tokens);
 			return token;
 		},
 		renderer(token) {
@@ -25,24 +22,16 @@ function createMarkdownDemo(marker) {
 				// introducing unnecessary whitespace.
 				let t = token.text.split("\n");
 				t.shift();
+
+				// Make the code available to highlight.js directly without
+				// wrapping it in code-fenced blocks and processing it with blockTokens().
+				// Why?  Because if the demo code includes a code-fenced bit, that will
+				// create a parse error.
 				const code = t.join('\n');
 				const lang = token?.attrs?.type ?? "markdown";
 				const highlightedCode = hljs.highlight(code, {language: lang}).value;
 
-				// The 'failsafe' option is provided simply because there is a weird
-				// bug I've not been able to identify which occasionally causes the
-				// parsing of the markdown via blockTokens to behave weirdly.
-				let output;
-				if (token?.attrs?.failsafe) {
-					output = marked_copy.parse(token.text);
-				}
-				else {
-					output = this.parser.parse(token['output']);
-				}
-
-				// The next line is a hack I use to get around the fact that the line
-				// above doesn't seem to recognise the marked-alert extension...
-				//let output = marked_copy.parse(token.text);
+				const right = this.parser.parse(token.tokens);
 				let display = `<div class='markdown-demo-container'>
 	<div class='markdown-demo-code-label'>Markdown code</div>
 	<div class='markdown-demo-output-label'>Markdown output</div>
@@ -50,7 +39,7 @@ function createMarkdownDemo(marker) {
 	<pre><code class='hljs language-${lang}'>${highlightedCode}</code></pre>
 	</div>
 	<div class='markdown-demo-parsed'>
-	${output}
+	${right}
 	</div>
 	</div>`;
 				return display;
