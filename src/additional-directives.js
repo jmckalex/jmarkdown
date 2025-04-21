@@ -131,7 +131,7 @@ const additionalDirectives = [
 		renderer(token) {
 			if (token.meta.name === "feedback") {
 				let html = marked.parser(token.tokens);
-				return `<section class="feedback">${html}</section>`;
+				return `<p class='feedback'>Feedback</p><section class="feedback">${html}</section>`;
 			}
 			return false;
 		}
