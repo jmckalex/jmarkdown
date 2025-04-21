@@ -297,6 +297,11 @@ registerExtensions([
 	jmarkdownSyntaxEnhancements.centerAlign 
 ]);
 
+// Load extensions and directives from the configuration file(s).
+// This should happen before the metadata header is processed.
+await configManager.loadExtensions();
+await configManager.loadDirectives();
+
 
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';

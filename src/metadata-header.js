@@ -161,6 +161,31 @@ async function loadDirectives() {
 	}
 }
 
+export async function loadDirectivesFromSpec(spec) {
+	let directives, file, array;
+	if (spec.includes("from")) {
+		// The spec should be of the form 'foo, bar, ... from /Absolute/Path/To/File/file_name.js'
+		[directives, file] = spec.split("from");
+		// extract the names of the exported directives
+		array = directives.split(",").map(s => s.trim()).filter(s => s !== '');
+		file = file.trim();
+		const mod = await import(file);
+		// overwrite the array of names with objects extracted from the loaded module
+		array = array.map(name => mod[name]);
+		registerDirectives(array);
+	}
+	else {
+		// The spec should just consist of an absolute path to a file, and we load everything
+		// from the default export — which should be an array of directives.
+		const file = spec.trim();
+		console.log(`Loading all directives from ${file}`);
+		const mod = await import(file);
+		const array = mod.default;
+		console.log(array);
+		registerDirectives(array);
+	}
+}
+
 
 async function loadExtensions() {
 	for (let k in metadata) {
@@ -193,11 +218,31 @@ async function loadExtensions() {
 	}
 }
 
+export async function loadExtensionsFromSpec(spec) {
+	let extensions, file, array;
+	if (spec.includes("from")) {
+		// The spec should be of the form 'foo, bar, ... from /Absolute/Path/To/File/file_name.js'
+		[extensions, file] = spec.split("from");
+		// extract the names of the exported directives
+		array = extensions.split(",").map(s => s.trim()).filter(s => s !== '');
+		file = file.trim();
+		const mod = await import(file);
+		// overwrite the array of names with objects extracted from the loaded module
+		array = array.map(name => mod[name]);
+		registerExtensions(array);
+	}
+	else {
+		// The spec should just consist of a file name, and we load everything
+		// from the default export — which should be an array of directives.
+		const file = spec.trim();
+		const mod = await import(file);
+		const array = mod.default;
+		registerExtensions(array);
+	}
+}
 
-function addExtension(spec, name) {
-
+export function addExtension(spec, name) {
 	const extension_name = name.replace(' ', '');
-
 	const index = spec[0].indexOf("\n");
 	const firstLine = spec[0].slice(0, index);
 	let definition = spec[0].slice(index+1);
