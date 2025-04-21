@@ -135,7 +135,6 @@ async function loadDirectives() {
 		if (k.toLowerCase() === "Load directives".toLowerCase()) {
 			if (Array.isArray(metadata[k])) {
 				for (const spec of metadata[k]) {
-					console.log(spec);
 					let directives, file, array;
 					if (spec.includes("from")) {
 						// The spec should be of the form 'foo, bar, ... from file_name.js'
@@ -146,7 +145,6 @@ async function loadDirectives() {
 						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
 						// overwrite the array of names with objects extracted from the loaded module
 						array = array.map(name => mod[name]);
-						console.log(array);
 						registerDirectives(array);
 					}
 					else {
@@ -155,7 +153,6 @@ async function loadDirectives() {
 						const file = spec.trim();
 						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
 						const array = mod.default;
-						console.log(array);
 						registerDirectives(array);
 					}
 				}
@@ -170,7 +167,6 @@ async function loadExtensions() {
 		if (k.toLowerCase() === "Load extensions".toLowerCase()) {
 			if (Array.isArray(metadata[k])) {
 				for (const spec of metadata[k]) {
-					console.log(spec);
 					let extensions, file, array;
 					if (spec.includes("from")) {
 						// The spec should be of the form 'foo, bar, ... from file_name.js'
@@ -181,7 +177,6 @@ async function loadExtensions() {
 						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
 						// overwrite the array of names with objects extracted from the loaded module
 						array = array.map(name => mod[name]);
-						console.log(array);
 						registerExtensions(array);
 					}
 					else {
@@ -190,7 +185,6 @@ async function loadExtensions() {
 						const file = spec.trim();
 						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
 						const array = mod.default;
-						console.log(array);
 						registerExtensions(array);
 					}
 				}
@@ -356,8 +350,6 @@ function addComplexExtension(delimiters, definition, name) {
 				else if (parse_info == 'inline' || parse_info == 'block') {
 					let text = definition;
 					for (let i=0; i<num_args; i++) { 
-						//console.log(`num_args: ${num_args}`);
-						//console.log(`match: ${match}`);
 						text = text.replaceAll("$" + `{content${i+1}}`, match[i+1] );
 					}
 					if (parse_info == 'inline') {
