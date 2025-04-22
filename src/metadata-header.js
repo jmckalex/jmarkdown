@@ -71,19 +71,16 @@ export async function processYAMLheader(markdown) {
 	}
 }
 
-export let optionals = [];
 export function parseOptionals(array) {
 	for (const str of array) {
-		const values = parseOptionalString(str);
-		optionals = [ ...optionals, ...values ];
+		const optionals = parseOptionalString(str);
+		for (const optional of optionals) {
+			console.log(optional);
+			const name = optional.name;
+			const default_value = optional.default;
+			createMultilevelOptionals(name, default_value);
+		}
 	}
-	
-	for (const optional of optionals) {
-		console.log(optional);
-		const name = optional.name;
-		const default_value = optional.default;
-		createMultilevelOptionals(name, default_value);
-	};
 }
 
 function parseOptionalString(optionsString) {
