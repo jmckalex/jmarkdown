@@ -7,8 +7,6 @@ export const reverseText = {
 	tokenizer(src) {
 		const match = src.match(/^@Reverse([\s\S]*?)@endReverse/);
 		if (match) {
-			console.log("HERE!")
-			console.log(match[0], match[1]);
 			const token = {
 				type: 'reverseText',
 				raw: match[0],
@@ -33,7 +31,6 @@ export const jmckalex = {
 	tokenizer(src) {
 		const match = src.match(/^jmckalex/);
 		if (match) {
-			console.log(match);
 			const token = {
 				type: 'jmckalex',
 				raw: match[0],
