@@ -36,7 +36,7 @@ let file_index = 1;
 function ensureDirectoryExists(dirPath) {
 	// Check if the directory exists
 	if (!fs.existsSync(dirPath)) {
-    // If it doesn't exist, create it
+	    // If it doesn't exist, create it
 		fs.mkdirSync(dirPath, { recursive: true });
 		console.log(`Created directory: ${dirPath}`);
 	} else {
