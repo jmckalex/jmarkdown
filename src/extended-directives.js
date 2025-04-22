@@ -18,17 +18,17 @@ function createDirectives(configs = presetDirectiveConfigs) {
             const id = alea(marker).int32();
             const type = `directive${ucFirst(level)}${id}`;
 
-            return {
+            const defn = {
                 name: type,
                 level: level === 'inline' ? 'inline' : 'block',
-                start: (src) => src.match(new RegExp(marker))?.index,
+                start: (src) => src.match(new RegExp(`${marker}${label || ''}`))?.index,
+                //start: (src) => src.match(new RegExp(marker))?.index,
 
                 tokenizer: function(src) {
                     const pattern = getDirectivePattern(level, marker, label);
                     const match = src.match(new RegExp(pattern));
 
                     if (match) {
-                        //console.log(`Found match at level ${level}, marker ${marker} using label ${label}`);
                         let [raw, content = ''] = match;
 
                         if (label != undefined) {
@@ -39,6 +39,7 @@ function createDirectives(configs = presetDirectiveConfigs) {
                             type,
                             level,
                             raw,
+                            label,
                             content,
                             marker,
                             tag: tag || (level === 'inline' ? 'span' : 'div'),
@@ -46,8 +47,11 @@ function createDirectives(configs = presetDirectiveConfigs) {
                         });
                     }
                 },
+
                 renderer: customRenderer || directiveRenderer
             };
+
+            return defn;
         })
     };
 }
@@ -56,20 +60,6 @@ function createDirectives(configs = presetDirectiveConfigs) {
 function ucFirst(str) {
     return str[0].toUpperCase() + str.slice(1).toLowerCase();
 }
-
-// Get the regular expression pattern for matching directives based on
-// `level` and `marker`.
-// function getDirectivePattern(level, marker) {
-//     switch (level) {
-//         case 'container':
-//             return `^${marker}([\\s\\S]*?)\\n${marker}`;
-//         case 'block':
-//             return `^${marker}((?:[a-zA-Z][\\w-]*|[\\{\\[].*?[\\}\\]])+)`;
-//         case 'inline':
-//             return `^${marker}((?:[a-zA-Z][\\w-]*|[\\{].*?[\\}]+|[\\[].*?[\\]])+)`;
-//     }
-// }
-
 
 function getDirectivePattern(level, marker, label='') {
     switch (level) {
@@ -184,7 +174,6 @@ function createToken(config) {
             case 'text':
                 if (level === 'container') {
                     tok['header text'] = value;
-                    //console.log(`Processing square brackets for container: ${value}`);
                     break;
                 }
             case 'blockText':
@@ -219,18 +208,6 @@ function createToken(config) {
     }
 
     tok['meta'] = { level, marker, tag, name };
-
-    //console.log(`Token created for: ${name}`);
-
-    // let t = {
-    //     type,
-    //     raw,
-    //     meta: { level, marker, tag, name },
-    //     attrs,
-    //     text,
-    //     tokens
-    // };
-
     return tok;
 }
 
