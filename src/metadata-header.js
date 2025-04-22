@@ -36,7 +36,7 @@ export async function processYAMLheader(markdown) {
 			await loadExtensions();
 		}
 
-		const extension_keys = Object.keys(metadata).filter(key => key.startsWith("extension"));
+		const extension_keys = Object.keys(metadata).filter(key => key.startsWith("Extension"));
 		for (let key of extension_keys) {
 			let spec = metadata[key];
 			addExtension(spec, key);
@@ -181,7 +181,6 @@ export async function loadDirectivesFromSpec(spec) {
 		console.log(`Loading all directives from ${file}`);
 		const mod = await import(file);
 		const array = mod.default;
-		console.log(array);
 		registerDirectives(array);
 	}
 }
