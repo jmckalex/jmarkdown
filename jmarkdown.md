@@ -755,7 +755,7 @@ The syntax highlighting theme is set in the [metadata header](#toc-metadata-head
 
 # Bibliographic support
 
-`jmarkdown` generates an HTML file which is configured to use Biblify, a
+`jmarkdown` generates an HTML file which is configured to use [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html), a
 Javascript-based “implementation” (so to speak) of a subset of BibTeX commands
 which is processed entirely within the browser.  I initially wrote this to
 provide bibliographic support for [reveal.js](https://revealjs.com/)
@@ -1211,8 +1211,14 @@ Some keys have special meanings.  These are as follows.
 Title:: The value of this key will be wrapped by  `<title></title>` tag in the `<head>` of the 
 	output HTML.
 
+Biblify activate:: Initially, `jmarkdown` doesn't attempt to provide support for bibliographies
+	because it doesn't know what bibliography file to use or what style you want. Once that information
+	has been provided, either in the metadata header or in a `config.json` file [see here](#toc-configuration-files)
+	you need to tell `jmarkdown` to switch on bibliographic support.  To do that, set the key
+	`Biblify activate` to `true`.
+
 Bibliography:: ⚓️bibliography This should be a relative path specifying a BiBTeX bibliography database, which
-	will be used by {{Biblify}} to process any citations in the HTML output. 
+	will be used by Biblify to process any citations in the HTML output. 
 
 Bibliography style:: Biblify comes with a few formats preloaded.  These are 'apa',
 	'harvard1', 'vancouver', 'bjps', and 'chicago'.  If you specify one of these as the value for
