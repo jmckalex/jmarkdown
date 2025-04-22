@@ -2,7 +2,6 @@
 node_modules/
 bibliography.bib
 philsci.csl
-jmarkdown.html
 src/dt-parser.js
 TiKZ/
 config.json

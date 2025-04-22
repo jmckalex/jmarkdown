@@ -5,31 +5,45 @@
 Created by [J. McKenzie Alexander](mailto:jalex@lse.ac.uk)  
 📅 15 April 2025
 
----
-
 ## What is JMarkdown?
 
 `jmarkdown` is a powerful markdown interpreter that allows you to define new syntax extensions *within* the markdown file. These can be:
 
-- **Simple**: Custom delimiters
-- **Complex**: Regex-based extensions with JavaScript processing
+- **Simple**: Custom delimiters using any Unicode symbol.
+- **Complex**: Regex-based extensions for matching patterned text in the file.
+- **JavaScript functions**: Define a JavaScript function in special `<script>` code blocks and then call
+	it directly from the markdown text, as the markdown file is processed.
 
-It also allows **inline JavaScript execution** to manipulate output, define extensions, or modify the generated HTML with [Cheerio](https://cheerio.js.org/).
+It also allows post-processing of the HTML to manipulate output or modify the generated HTML with [Cheerio](https://cheerio.js.org/).
 
 [🔗 View the detailed documentation!](https://jmckalex.org/software/jmarkdown/jmarkdown.html)
 
----
+## Installation
+
+Download the source and then type
+
+```bash
+npm install
+```
+
+and then
+
+```bash
+npm link
+```
+
+to make the `jmarkdown` executable available from the command line.
 
 ## Features
 
-- Custom syntax for:
+- Custom syntax (which can be disabled, if you prefer default Markdown syntax) for:
 	- *Italics* (`/italics/`)
 	- **Boldface** (`*boldface*`)
 	- __Underline__ (`__underline__`)
 - Subscript/Superscript: `H_2O`, `E=mc^2`
 - Alignment blocks: right (`>> text`) and center (`>> text <<`)
-- Add `.class` and `#id` to elements
-- Description lists with nesting
+- Add `.class` and `#id` to elements with directive syntax: `{.class #id}`
+- Description lists with support for nested description lists.
 - Support for emojis (:heart:), FontAwesome icons 
 - GitHub-style tables and alerts
 - Footnotes via `marked-footnotes`
@@ -37,15 +51,15 @@ It also allows **inline JavaScript execution** to manipulate output, define exte
 	- Commenting out content
 	- Including/excluding sections (`Optionals:` in metadata)
 	- Creating advanced containers for custom processing (strategic-form games, 
-	  TiKZ diagrams, Mermaid diagrams, etc.)
+	  TiKZ diagrams, Mermaid diagrams, demonstrating markdown code, etc.)
 - Math with MathJax
-- Mermaid diagrams (`:::mermaid`)
+- Mermaid diagrams 
 - TiKZ support via LaTeX and `dvisvgm` (SVG export)
 - Extended list styles: alphabetical, Roman numerals, checklists
 - Syntax highlighting via `highlight.js`
 - Bibliographic references using [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html)
 - Auto-generated Table of Contents
-- Strategic-form game tables (`:::game`)
+- Strategic-form game
 - Demo environments showing raw/parsed markdown (`:::markdown-demo`)
 - File inclusion
 - Metadata header for:
@@ -96,15 +110,11 @@ graph LR
 :::
 ```
 
----
-
 ## License
 
 MIT
 
----
-
 ## Author
 
-J. McKenzie Alexander — [https://jmckalex.org](https://jmckalex.org)
+&shy;J. McKenzie Alexander — [https://jmckalex.org](https://jmckalex.org)
 

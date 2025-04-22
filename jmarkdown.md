@@ -2251,7 +2251,7 @@ How do you know what configuration settings are available?  If you run
 > `jmarkdown options`
 
 from the command-line, it will show the default configuration options as a formatted
-JSON file.  Here's the current version:
+JSON file.  Here's the current version: 
   
 ```json 
 {
