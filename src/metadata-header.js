@@ -36,6 +36,11 @@ export async function processYAMLheader(markdown) {
 			await loadExtensions();
 		}
 
+		const optionals_key = Object.keys(metadata).find(k => k.toLowerCase() === "Optionals".toLowerCase());
+		if (optionals_key) {
+			parseOptionals(metadata[optionals_key]);
+		}
+
 		const extension_keys = Object.keys(metadata).filter(key => key.startsWith("Extension"));
 		for (let key of extension_keys) {
 			let spec = metadata[key];
@@ -66,7 +71,73 @@ export async function processYAMLheader(markdown) {
 	}
 }
 
+export let optionals = [];
+function parseOptionals(array) {
+	for (const str of array) {
+		const values = parseOptionalString(str);
+		optionals = [ ...optionals, ...values ];
+	}
+	
+	for (const optional of optionals) {
+		console.log(optional);
+		const name = optional.name;
+		const default_value = optional.default;
+		createMultilevelOptionals(name, default_value);
+	};
+}
 
+function parseOptionalString(optionsString) {
+  // Split the string by spaces
+  const options = optionsString.trim().split(/\s+/);
+  
+  // Process each option
+  return options.map(option => {
+    // Check if this option has a default value specified in brackets
+    const match = option.match(/^(.+?)\[(.+?)\]$/);
+    
+    if (match) {
+      // If brackets are found, extract the name and default value
+      const name = match[1];
+      const defaultValue = match[2].toLowerCase() === 'true';
+      
+      return {
+        name,
+        default: defaultValue
+      };
+    } else {
+      // If no brackets, assume default is false
+      return {
+        name: option,
+        default: false
+      };
+    }
+  });
+}
+
+import { marked } from 'marked';
+import { createDirectives } from './extended-directives.js';
+function createMultilevelOptionals(name, default_value) {
+	const directives = [];
+	[3,4,5,6,7,8].forEach(level => {
+		directives.push(
+			{
+				'level': 'container',
+				'marker': ':'.repeat(level),
+				label: name,
+				renderer(token) {
+		      if (token.meta.name === name) {
+		        // First check if attr exists and has include property
+		        const shouldInclude = token.attrs?.include ?? default_value;
+		        return shouldInclude 
+		          ? marked.parser(token.tokens)
+		          : '';
+		      }
+		      return false;
+		    }
+		});
+	});
+	marked.use(createDirectives(directives));
+}
 
 function parseKeyedData(text) {
 	const lines = text.split('\n');
