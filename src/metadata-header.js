@@ -116,7 +116,7 @@ function parseOptionalString(optionsString) {
 
 import { marked } from 'marked';
 import { createDirectives } from './extended-directives.js';
-function createMultilevelOptionals(name, default_value) {
+export function createMultilevelOptionals(name, default_value) {
 	const directives = [];
 	[3,4,5,6,7,8].forEach(level => {
 		directives.push(

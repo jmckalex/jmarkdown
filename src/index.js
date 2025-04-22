@@ -165,32 +165,8 @@ marked.use(createDirectives(additionalDirectives));
 import { createMermaid } from './mermaid.js';
 marked.use(createDirectives( [ createMermaid(":::") ]));
 
-function createMultilevelOptionals(name) {
-	const directives = [];
-	[3,4,5,6,7,8].forEach(level => {
-		directives.push(
-			{
-				'level': 'container',
-				'marker': ':'.repeat(level),
-				label: name,
-				renderer(token) {
-		      if (token.meta.name === name) {
-		        // First check if attr exists and has include property
-		        const shouldInclude = token.attrs?.include ?? false;
-		        return shouldInclude 
-		          ? marked.parser(token.tokens)
-		          : '';
-		      }
-		      return false;
-		    }
-			}
-		);
-	});
-	marked.use(createDirectives(directives));
-}
-
-createMultilevelOptionals("comment");
-createMultilevelOptionals("answer");
+import { createMultilevelOptionals } from './metadata-header.js';
+createMultilevelOptionals('comment', false);
 
 function createMultilevelDirectives(rendering_function) {
 	const directives = [];
