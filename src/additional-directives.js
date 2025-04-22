@@ -135,19 +135,26 @@ const additionalDirectives = [
 			}
 			return false;
 		}
-	},
-	{
+	}
+];
+
+export const titleBox = {
 		'level': 'container',
 		'marker': ":::",
 		label: "title-box",
 		tokenizer(text, token) {
-			const [title, body] = text.split(/\*{3,}/);
-			token['title'] = [];
-			this.lexer.blockTokens(title, token['title']);
-			token['body'] = [];
-			this.lexer.blockTokens(body, token['body']);
-			return token;
-		},
+	        // Check if we can split by asterisks
+	        if (!text.includes('***')) {
+	            // If no separator, use default processing
+	            this.lexer.blockTokens(text, token.tokens);
+	            //return token;
+	        }        
+	        const [title, body] = text.split(/\*{3,}/);
+	        token['title'] = [];
+	        this.lexer.blockTokens(title, token['title']);
+	        token['body'] = [];
+	        this.lexer.blockTokens(body, token['body']);
+	    },
 		renderer(token) {
 			if (token.meta.name === "title-box") {
 				const title = this.parser.parse(token['title']);
@@ -161,9 +168,7 @@ const additionalDirectives = [
 			}
 			return false;
 		}
-	}
-];
-
+	};
 
 // This directive is just a minimal template to show how extended-directives.js
 // allow you to specify a custom tokenizer, as well.  (The default marked-directives package

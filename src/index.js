@@ -155,8 +155,11 @@ import { createDirectives, presetDirectiveConfigs } from './extended-directives.
 	]));
 });
 
-
-import additionalDirectives from './additional-directives.js';
+// There's a weird bug that I haven't yet figured out.
+// If you install the titleBox directive here, you get an error whenever
+// you try to use it in the markdown file.  However, if you install
+// it later, after some other directives have been installed, it works.
+import additionalDirectives, {titleBox} from './additional-directives.js';
 marked.use(createDirectives(additionalDirectives));
 
 import { createMermaid } from './mermaid.js';
@@ -302,6 +305,42 @@ registerExtensions([
 await configManager.loadExtensions();
 await configManager.loadDirectives();
 
+/*
+const titleBox = {
+		'level': 'container',
+		'marker': ":::",
+		label: "title-box",
+		tokenizer(text, token) {
+	        // Check if we can split by asterisks
+	        if (!text.includes('***')) {
+	            // If no separator, use default processing
+	            this.lexer.blockTokens(text, token.tokens);
+	            //return token;
+	        }        
+	        const [title, body] = text.split(/\*{3,}/);
+	        token['title'] = [];
+	        this.lexer.blockTokens(title, token['title']);
+	        token['body'] = [];
+	        this.lexer.blockTokens(body, token['body']);
+	    },
+		renderer(token) {
+			if (token.meta.name === "title-box") {
+				const title = this.parser.parse(token['title']);
+				const body = this.parser.parse(token['body']);
+				return `<div class="title-box"><div class='title'>${title}</div><div class='body'>${body}</div></div>`;
+				token.tokens.shift(); // Throw away the opening space token
+				let title_token = token.tokens.shift();
+				let title_html = marked.parser(title_token.tokens).replace(/<\/?p>/g, '');
+				let body_html = marked.parser(token.tokens);
+				return `<div class="title-box"><div class='title'>${title_html}</div><div class='body'>${body_html}</div></div>`;
+			}
+			return false;
+		}
+	};
+const tb2 = createDirectives([titleBox]);
+*/
+marked.use(createDirectives([titleBox]));
+//showDirectiveFunctions(tb2.extensions[0]);
 
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';
