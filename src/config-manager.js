@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { marked } from './utils.js';
+import { addExtension, loadExtensionsFromSpec, loadDirectivesFromSpec } from './metadata-header.js';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {
@@ -62,10 +63,11 @@ class ConfigManager {
 
 		// Load from each location if it exists
 		for (const location of configLocations) {
-			console.log(`Merging information from ${location}`);
+			//console.log(`Merging information from ${location}`);
 			if (fs.existsSync(location)) {
 				try {
 					const fileConfig = JSON.parse(fs.readFileSync(location, 'utf8'));
+					//console.log(fileConfig);
 					this.config = this._mergeConfigs(this.config, fileConfig, location);
 				} catch (error) {
 					console.warn(`Error loading config from ${location}: ${error.message}`);
@@ -243,24 +245,34 @@ class ConfigManager {
 	    return result;
 	}
 
-/*
-	// Helper method to merge configs
-	_mergeConfigs(target, source, location = '') {
-		const result = { ...target };
-
-		for (const [key, value] of Object.entries(source)) {
-			// If property exists and both are objects, merge recursively
-			if (key in result && typeof result[key] === 'object' && typeof value === 'object' && value !== null) {
-				result[key] = this._mergeConfigs(result[key], value);
-			} else {
-				result[key] = value;
-			}
+	async loadDirectives() {
+		let directives = this.get("Directives");
+		for (const directive of directives) {
+			await loadDirectivesFromSpec(directive);
 		}
-
-		//console.log(`after merging: with ${location}`, result);
-		return result;
 	}
-*/
+
+	async loadExtensions() {
+		let extensions = this.get("Extensions");
+		//console.log(`Extensions found to load: ${extensions}`);
+		for (const extension of extensions) {
+			// There are two forms extensions can be given in: (1) the simple format used by
+			// the metadata header, or (2) the syntax of "Load extensions" from the metadata header.
+			if (typeof extension === 'object' && extension !== null) {
+				// Need to convert this into the string format expected by addExtension from metadata-header.js
+				// the spec and definition need to be joined into a single string with "\n" at the end
+				// of each line, and put into an array.
+				const name = "Extention" + extension['name'].replaceAll(' ', '');
+				let spec = [ extension['spec'], ...extension['definition']];
+				spec = [ spec.join("\n") ];
+				addExtension(spec, name);	
+			}
+			else {
+				// Assume the file path is absolute
+				await loadExtensionsFromSpec(extension);
+			}			
+		}
+	}
 }
 
 export const configManager = new ConfigManager();
