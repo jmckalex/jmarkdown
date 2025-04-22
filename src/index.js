@@ -280,6 +280,7 @@ registerExtensions([
 // This should happen before the metadata header is processed.
 await configManager.loadExtensions();
 await configManager.loadDirectives();
+configManager.loadOptionals();
 
 /*
 const titleBox = {

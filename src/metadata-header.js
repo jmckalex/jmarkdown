@@ -72,7 +72,7 @@ export async function processYAMLheader(markdown) {
 }
 
 export let optionals = [];
-function parseOptionals(array) {
+export function parseOptionals(array) {
 	for (const str of array) {
 		const values = parseOptionalString(str);
 		optionals = [ ...optionals, ...values ];

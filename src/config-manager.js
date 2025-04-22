@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { marked } from './utils.js';
-import { addExtension, loadExtensionsFromSpec, loadDirectivesFromSpec } from './metadata-header.js';
+import { addExtension, loadExtensionsFromSpec, loadDirectivesFromSpec, parseOptionals } from './metadata-header.js';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {
@@ -20,7 +20,8 @@ export const DEFAULT_CONFIG = {
 		"bibliography style": "",
 		"defer": false
 	},
-	'Custom directives': [],
+	"Directives": [],
+	"Extensions": [],
 	'Fontawesome': 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/js/all.min.js',
 	'Mermaid': 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js',
 	'Highlight src': 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css',
@@ -38,6 +39,7 @@ export const DEFAULT_CONFIG = {
 		}`,
 		'src': 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js' 
 	},
+	"Optionals": [],
 	'Template': 'default',
 	'TiKZ libgs': '/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib',
 	'TiKZ optimise': 'group-attributes,collapse-groups'
@@ -243,6 +245,11 @@ class ConfigManager {
 	    
 	    //console.log(`after merging: with ${location}`, result);
 	    return result;
+	}
+
+	loadOptionals() {
+		let optionals = this.get("Optionals");
+		parseOptionals(optionals);
 	}
 
 	async loadDirectives() {
