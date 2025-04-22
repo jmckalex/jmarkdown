@@ -1,19 +1,19 @@
 html {
-	background-color: #e0e0e0;  /* Light grey for margins */
-	lang: "en-GB";
+    background-color: #e0e0e0;  /* Light grey for margins */
+    lang: "en-GB";
 }
 
 body {
-	font-family: "Optima";
-	font-size: 12pt;
-/*	width: 210mm;*/
-	width: 171.8mm;
-	margin: 0 auto;	
-	background: white;
-	padding: 25.4mm;
-	text-align: justify;
-	hyphens: auto;
-	word-break: break-word;
+    font-family: "Optima";
+    font-size: 12pt;
+    width: 171.8mm;
+    box-sizing: border-box; /* This is important! */
+    margin: 0 auto;    
+    background: white;
+    padding: 25.4mm;
+    text-align: justify;
+    hyphens: auto;
+    word-break: break-word;
 }
 
 @page {
@@ -73,7 +73,6 @@ div.csl-bib-body {
 	}
 
 	@media print {
-
 		span.final-grade-entered {
 	        display: inline-block;
 	    }
@@ -99,7 +98,5 @@ div.csl-bib-body {
 
 	    hr:not(:first-of-type) {
 	        page-break-before: always;
-	    }
-	    
 	    }
 	}
