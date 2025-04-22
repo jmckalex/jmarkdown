@@ -19,7 +19,6 @@
         "commander": "^13.1.0",
         "highlight.js": "^11.11.1",
         "js-beautify": "^1.15.3",
-        "lodash": "^4.17.21",
         "marked": "^15.0.6",
         "marked-alert": "^2.1.2",
         "marked-directive": "^1.0.7",
