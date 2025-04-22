@@ -75,7 +75,6 @@ export function parseOptionals(array) {
 	for (const str of array) {
 		const optionals = parseOptionalString(str);
 		for (const optional of optionals) {
-			console.log(optional);
 			const name = optional.name;
 			const default_value = optional.default;
 			createMultilevelOptionals(name, default_value);
