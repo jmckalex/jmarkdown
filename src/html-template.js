@@ -65,8 +65,8 @@ export function processTemplate(content) {
 	}
 	// These are temporary files so that I can inspect how the templating
 	// engine is working.  The should be removed later.
-	fs.writeFileSync("foo.html", html);
-	fs.writeFileSync("config.json", JSON.stringify(config, null, 4));
+	//fs.writeFileSync("foo.html", html);
+	//fs.writeFileSync("config.json", JSON.stringify(config, null, 4));
 	return html;
 }
 
