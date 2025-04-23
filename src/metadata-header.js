@@ -14,7 +14,7 @@ export async function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
 	if (has_header) {
 		//const [first, ...rest] = markdown.split(/\n\s*\n/);
-		const [first, ...rest] = markdown.split(/\n^----.*$/m);
+		const [first, ...rest] = markdown.split(/\n^---.*$/m);
 		const remainder = rest.join('\n\n');
 
 		parseKeyedData(first);
