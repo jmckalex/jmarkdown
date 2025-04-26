@@ -72,7 +72,7 @@ if (!filename) {
 }
 
 const markdownFile = filename;
-const markdownFileDirectory = path.dirname(markdownFile);
+const markdownFileDirectory = path.dirname(path.resolve(process.cwd(), markdownFile));
 
 import { runInThisContext, marked, marked_copy, registerExtension, registerExtensions } from './utils.js';
 
