@@ -56,7 +56,7 @@ program
 program
 	.command('process <filename>', { isDefault: true })
 	.description('Process a JMarkdown file')
-	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface* and revert to normal Markdown syntax')
+	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface*, etc., and revert to normal Markdown syntax')
 	.action((filename, options) => {
 		program.file_to_process = filename;
 	});
@@ -123,12 +123,12 @@ import * as jmarkdownSyntaxModifications from './syntax-modifications.js';
 
 if (options.normalSyntax != true) {
 	registerExtensions([
-				jmarkdownSyntaxModifications.italics, 
-				jmarkdownSyntaxModifications.strong, 
-				jmarkdownSyntaxModifications.underline,
-				jmarkdownSyntaxModifications.subscript,
-				jmarkdownSyntaxModifications.superscript
-			]);
+		jmarkdownSyntaxModifications.italics, 
+		jmarkdownSyntaxModifications.strong, 
+		jmarkdownSyntaxModifications.underline,
+		jmarkdownSyntaxModifications.subscript,
+		jmarkdownSyntaxModifications.superscript
+	]);
 }
 
 import { anchors } from './anchors.js';
@@ -295,44 +295,12 @@ registerExtensions([
 // This should happen before the metadata header is processed.
 await configManager.loadExtensions();
 await configManager.loadDirectives();
+
+// No await is needed because this doesn't read from a file.
 configManager.loadOptionals();
 
-/*
-const titleBox = {
-		'level': 'container',
-		'marker': ":::",
-		label: "title-box",
-		tokenizer(text, token) {
-	        // Check if we can split by asterisks
-	        if (!text.includes('***')) {
-	            // If no separator, use default processing
-	            this.lexer.blockTokens(text, token.tokens);
-	            //return token;
-	        }        
-	        const [title, body] = text.split(/\*{3,}/);
-	        token['title'] = [];
-	        this.lexer.blockTokens(title, token['title']);
-	        token['body'] = [];
-	        this.lexer.blockTokens(body, token['body']);
-	    },
-		renderer(token) {
-			if (token.meta.name === "title-box") {
-				const title = this.parser.parse(token['title']);
-				const body = this.parser.parse(token['body']);
-				return `<div class="title-box"><div class='title'>${title}</div><div class='body'>${body}</div></div>`;
-				token.tokens.shift(); // Throw away the opening space token
-				let title_token = token.tokens.shift();
-				let title_html = marked.parser(title_token.tokens).replace(/<\/?p>/g, '');
-				let body_html = marked.parser(token.tokens);
-				return `<div class="title-box"><div class='title'>${title_html}</div><div class='body'>${body_html}</div></div>`;
-			}
-			return false;
-		}
-	};
-const tb2 = createDirectives([titleBox]);
-*/
+// For some reason, this has to be installed here or it doesn't work
 marked.use(createDirectives([titleBox]));
-//showDirectiveFunctions(tb2.extensions[0]);
 
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';
