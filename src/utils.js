@@ -34,23 +34,26 @@ function registerExtensions(extensions) {
 function createTOC(headings) {
 	if (!headings.length) return '';
 
-	let toc = "<div class='toc'>";
+	let toc = "<div class='toc'><p id='toc'>Table of contents</p>";
 	let current_level = 0;
 
+	// The anchors have data-id set so that it's easy to overwrite
+	// the content of the TOC, if the relevant section heading changes.
+	// This happens, for example, if numeric headings are requested.
 	for(const entry of headings) {
 		if (entry['level'] == current_level) {
-			toc += `</li>\n<li><a href='#${entry['id']}'>${entry['text']}</a>`;
+			toc += `</li>\n<li><a data-id='${entry['id']}' href='#${entry['id']}'>${entry['text']}</a>`;
 		}
 		else if (entry['level'] > current_level) {
 			let diff = entry['level'] - current_level;
 			toc += "<ul>".repeat(diff);
-			toc += `<li><a href='#${entry['id']}'>${entry['text']}</a>`;
+			toc += `<li><a data-id='${entry['id']}' href='#${entry['id']}'>${entry['text']}</a>`;
 			current_level = entry['level'];
 		}
 		else {
 			let diff = current_level - entry['level'];
 			toc += "</li>\n" + "</ul>".repeat(diff) + "</li>";
-			toc += `<li><a href='#${entry['id']}'>${entry['text']}</a>`;
+			toc += `<li><a data-id='${entry['id']}' href='#${entry['id']}'>${entry['text']}</a>`;
 			current_level = entry['level'];
 		}
 	}

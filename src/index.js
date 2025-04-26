@@ -390,7 +390,9 @@ function processHTML(html) {
 		$elem.remove();
 	});
 
-	add_labels_to_headers($);
+	if (configManager.get("Headings") && configManager.get("Headings")[0] == "numeric") {
+		add_labels_to_headers($);
+	}
 	process_crossrefs($);
 	replaceTargetsBySources($);
 	return $.html();
@@ -398,6 +400,8 @@ function processHTML(html) {
 
 function add_labels_to_headers($) {
 	let [h1,h2,h3,h4,h5,h6] = [0,0,0,0,0,0];
+
+	$('div.toc').addClass('numeric');
 
 	$(":header").each((i, elem) => {
 		let $elem = $(elem);
@@ -425,7 +429,16 @@ function add_labels_to_headers($) {
 		case "H6":
 			$(elem).prepend(`<span class='header-label h6-label xref'>${h1}.${h2}.${h3}.${h4}.${h5}.${++h6}.</span> `);
 			break;
-		}	
+		}
+		// Now update the TOC, if it exists.
+		let id = $elem.attr('id');
+		let $toc = $(`[data-id='${id}']`);
+		if ($toc.length > 0) {
+			$toc.html($elem.html());
+		}
+		let html = $elem.html();
+		html = `<a href='#toc'>${html}</a>`;
+		$elem.html(html);
 	})
 }
 
