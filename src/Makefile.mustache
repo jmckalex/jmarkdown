@@ -1,0 +1,24 @@
+{{^First_Time}}
+
+
+{{/First_Time}}
+FILE{{key_uppercase}} = {{Markdown_File}}
+HTML{{key_uppercase}} = $(basename $(FILE{{key_uppercase}})).html
+PDF{{key_uppercase}} = $(basename $(FILE{{key_uppercase}})).pdf
+{{#First_Time}}
+CHROME = /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
+{{/First_Time}}
+
+.PHONY: start{{key}} pdf{{key}} kill{{key}}
+
+start{{key}}:
+	jmarkdown $(FILE{{key_uppercase}})
+	fswatch -0 $(FILE{{key_uppercase}}) | xargs -0 -n 1 jmarkdown & 
+	browser-sync start --server --files $(HTML{{key_uppercase}}) jmarkdown.css --followSymlinks true --startPath $(HTML{{key_uppercase}}) --browser "Google Chrome" &> /dev/null &
+
+pdf{{key}}:
+	$(CHROME) --headless --print-to-pdf=$(PDF{{key_uppercase}}) --no-pdf-header-footer $(HTML{{key_uppercase}})
+
+kill{{key}}:
+	pkill FILE{{key_uppercase}}
+	pkill HTML{{key_uppercase}}

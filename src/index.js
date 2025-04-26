@@ -4,6 +4,13 @@ import fs from 'fs';
 import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
+// Load the configuration at startup.
+// This needs to be done before the initialise() routine is called below, because that might use
+// configuration data for the default jmarkdown template (i.e., {{Author}} info)
+import { configManager } from './config-manager.js';
+configManager.load();
+
+
 // Command-line processing of options, so that extensions can be switched on or off, as desired.
 import { Command } from 'commander';
 const program = new Command();
@@ -16,10 +23,21 @@ program
 // Init subcommand
 import { initialise } from './init.js';
 program
-	.command('init [filename]')
+	.command('init')
 	.description('Initialise a new JMarkdown project')
-	.action((filename = null) => {
-		initialise(filename);
+	.option('-f, --file <filename>', 'Construct a skeleton file named "filename" from a template')
+	.option('-t, --title [title]', 'Title for the newly created jmarkdown file (default: \'My title\')')
+	.option('-m, --makefile [key]', 'Include a Makefile template (an optional key is required if adding to an existing Makefile, otherwise the first three letters of the filename will be used to differentiate the targets in the Makefile). This requires the -f option.')
+	.action((options) => {
+		if (options.title === true) {
+			options.title = 'My title';
+		}
+
+		if (options.makefile !== undefined && options.file == undefined) {
+			console.log('You need to specify a markdown file name for the Makefile template.');
+			process.exit();
+		}
+		initialise(options, path.dirname(fileURLToPath(import.meta.url)));
 		process.exit();
 	});
 
@@ -57,10 +75,7 @@ const markdownFile = filename;
 const markdownFileDirectory = path.dirname(markdownFile);
 
 import { runInThisContext, marked, marked_copy, registerExtension, registerExtensions } from './utils.js';
-import { configManager } from './config-manager.js';
 
-// Load the configuration at startup
-configManager.load();
 configManager.set("Markdown file directory", markdownFileDirectory);
 configManager.set("Jmarkdown app directory", path.dirname(fileURLToPath(import.meta.url)) )
 

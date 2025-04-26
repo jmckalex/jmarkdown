@@ -10,49 +10,100 @@
 */
 import * as fs from 'fs';
 import * as path from 'path';
-import { DEFAULT_CONFIG } from './config-manager.js';
+import { DEFAULT_CONFIG, configManager } from './config-manager.js';
+import Mustache from 'mustache';
 
-const file_template = `Title: New jmarkdown file
+const file_template = `Title: {{title}}
 Date: ${getCurrentDate()}
-Author:
+Author: {{Author}}
 ---
 
 # Heading
 
 `;
 
-export function initialise(filename = null) {
+export function initialise(options, src_path = '') {
+	// When we get here we know the options are valid.
 	console.log('Initalising a new JMarkdown project');
 	const local_jmarkdown_dir = path.resolve(process.cwd(), '.jmarkdown/');
 	const local_jmarkdown_config = path.resolve(process.cwd(), '.jmarkdown/', 'config.json');
-	
+
 	try {
 		// Check if .jmarkdown/ exists
-		console.log(`Checking to see if ${local_jmarkdown_dir} exists...`);
 		fs.accessSync(local_jmarkdown_dir);
-		console.log(`${local_jmarkdown_dir} exists!`);
 	}
 	catch (error) {
 		console.log(`${local_jmarkdown_dir} does not exist - creating directory...`);
 		fs.mkdirSync('.jmarkdown');
-		console.log(`${local_jmarkdown_dir} created.`);
 	}
 
 	try {
 		// Check if .jmarkdown/config.json exists
-		console.log(`Checking to see if ${local_jmarkdown_config} exists...`);
 		fs.accessSync(local_jmarkdown_config);
-		console.log(`${local_jmarkdown_config} exists!`);
 	}
 	catch (error) {
-		console.log(`${local_jmarkdown_config} does not exist - creating config-template.json...`);
-		fs.writeFileSync('.jmarkdown/config-template.json', JSON.stringify(DEFAULT_CONFIG, null, 4), { encoding: 'utf8' });
-		console.log(`config-template.json created.`);
+		// Check if .jmarkdown/config-template.json exists
+		try {
+			fs.accessSync(path.resolve(process.cwd(), '.jmarkdown/config-template.json'));
+		}
+		catch (error2) {
+			// If config-template.json doesn't exist, create it.  This nested try/catch is
+			// needed so that we don't attempt to re-create it every time if the user doesn't
+			// bother creating a local config.json file
+			fs.writeFileSync('.jmarkdown/config-template.json', JSON.stringify(DEFAULT_CONFIG, null, 4), { encoding: 'utf8' });
+			console.log(`.jmarkdown/config-template.json created.`);
+		}
 	}
 
-	if (filename != null) {
-		fs.writeFileSync(filename, file_template, { encoding: 'utf8' });
+	if (options.file) {
+		console.log(`creating ${options.file} with title ${options.title}`);
+		const file = Mustache.render(file_template, { title: options.title, Author: configManager.get("Author") });
+		fs.writeFileSync(options.file, file, { encoding: 'utf8' });
 	}
+
+	if (options.makefile !== undefined) {
+		createMakefileTemplate(options, src_path);
+	}
+}
+
+function createMakefileTemplate(options, src_path) {
+	const template = fs.readFileSync(path.join(src_path, "Makefile.mustache"), 'utf8');
+	
+	options['Markdown_File'] = options.file;
+
+	// When this is true it means no optional key was specified, which usually means
+	// we're creating the makefile for the first time.  But if the makefile exists and no
+	// key was specified, pick the first three letters of the file name (or everything before the .md,
+	// if the filename is shorter)
+	const makefile_path = path.join(process.cwd(), "Makefile");
+
+	if (options.makefile == true && fs.existsSync(makefile_path)) {
+		const f = options.file;
+		if (f.length > 3) {
+			options['key'] = '-' + f.slice(0,3);
+			options['key_uppercase'] = '-' + f.slice(0,3).toUpperCase();	
+		}
+		else {
+			options['key'] = '-' + f.split('.')[0];
+			options['key_uppercase'] = '-' + f.split('.').toUpperCase();	
+		}
+	}
+	else {
+		options['key'] = "-" + options.makefile;
+		options['key_uppercase'] = "-" + options.makefile.toUpperCase();
+	}
+
+	if (fs.existsSync(makefile_path)) {
+		// File exists, so hide the Chrome definition
+		options['First_Time'] = false;
+	}
+	else {
+		// File doesn't exist, so add the Chrome definition
+		options['First_Time'] = true;
+	}
+
+	const output = Mustache.render(template, options);
+	fs.appendFileSync(makefile_path, output);
 }
 
 
