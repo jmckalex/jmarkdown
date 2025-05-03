@@ -10,7 +10,6 @@ import { fileURLToPath } from 'url';
 import { configManager } from './config-manager.js';
 configManager.load();
 
-
 // Command-line processing of options, so that extensions can be switched on or off, as desired.
 import { Command } from 'commander';
 const program = new Command();
@@ -41,7 +40,7 @@ program
 		process.exit();
 	});
 
-// Show options
+// Options subcommand
 import { showOptions } from './init.js';
 program
 	.command('options')
@@ -50,7 +49,6 @@ program
 		showOptions();
 		process.exit();
 	});
-
 
 // Default command for processing files
 program
@@ -83,6 +81,9 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 global.require = require;
 
+import * as cheerio from 'cheerio';
+global.cheerio = cheerio;
+
 import { execSync } from 'child_process';
 const globalNodeModulesPath = execSync('npm root -g').toString().trim();
 
@@ -109,15 +110,12 @@ marked.use(markedFootnote({
     } 
 }));
 
-
-
 import * as jmarkdownSyntaxEnhancements from './syntax-enhancements.js';
 
 registerExtensions([ 
 	jmarkdownSyntaxEnhancements.latex,
 	jmarkdownSyntaxEnhancements.moustache
 ]);
-
 
 import * as jmarkdownSyntaxModifications from './syntax-modifications.js';
 
@@ -155,7 +153,6 @@ import hljs from 'highlight.js';
 		})
 	);
 });
-
 
 import { createDirectives, presetDirectiveConfigs } from './extended-directives.js';
 
@@ -259,7 +256,7 @@ registerExtensions([
 ]);
 
 
-import { jmarkdownScriptExtensions, postprocessor_scripts } from './script-blocks.js';
+import { jmarkdownScriptExtensions } from './script-blocks.js';
 marked.use({
 	extensions: [
 		jmarkdownScriptExtensions['javascript'],
@@ -328,6 +325,3 @@ html = PostProcessor.postProcessHTML(html);
 html = PostProcessor.runPostprocessScripts(html);
 html = PostProcessor.beautifyHTML(html);
 fs.writeFileSync(outFile, html );
-
-
-
