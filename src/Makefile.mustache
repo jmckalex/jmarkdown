@@ -9,7 +9,10 @@ PDF{{key_uppercase}} = $(basename $(FILE{{key_uppercase}})).pdf
 CHROME = /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
 {{/First_Time}}
 
-.PHONY: start{{key}} pdf{{key}} kill{{key}}
+.PHONY: link start{{key}} pdf{{key}} kill{{key}}
+
+link:
+	ln -s ~/Dropbox/Miscellaneous/jmarkdown.css jmarkdown.css
 
 start{{key}}:
 	jmarkdown $(FILE{{key_uppercase}})
@@ -20,5 +23,5 @@ pdf{{key}}:
 	$(CHROME) --headless --print-to-pdf=$(PDF{{key_uppercase}}) --no-pdf-header-footer $(HTML{{key_uppercase}})
 
 kill{{key}}:
-	pkill FILE{{key_uppercase}}
-	pkill HTML{{key_uppercase}}
+	pkill $(FILE{{key_uppercase}})
+	pkill $(HTML{{key_uppercase}})

@@ -55,7 +55,7 @@ export function initialise(options, src_path = '') {
 		}
 	}
 
-	if (options.file) {
+	if (options.file && fs.existsSync(options.file) == false) {
 		console.log(`creating ${options.file} with title ${options.title}`);
 		const file = Mustache.render(file_template, { title: options.title, Author: configManager.get("Author") });
 		fs.writeFileSync(options.file, file, { encoding: 'utf8' });
@@ -87,6 +87,10 @@ function createMakefileTemplate(options, src_path) {
 			options['key'] = '-' + f.split('.')[0];
 			options['key_uppercase'] = '-' + f.split('.').toUpperCase();	
 		}
+	}
+	else if (options.makefile == true) {
+		options['key'] = '';
+		options['key_uppercase'] = '';
 	}
 	else {
 		options['key'] = "-" + options.makefile;
