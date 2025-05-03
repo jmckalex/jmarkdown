@@ -114,9 +114,10 @@ function createTiKZ(marker) {
 
 			if (needsProcessing) {
 				try {
-					const opts = { cwd: TiKZ_directory }; 
-					execSync(`lualatex --output-format=dvi ${file_name}`, opts);
-					execSync(`dvisvgm --bbox=min ${LIBGS} --no-fonts=1 ${OPTIMISE} ${dvi_name}`, opts);
+					const opts = { cwd: TiKZ_directory };
+					console.log(`Trying to process the TiKZ file with options ${opts}`);
+					execSync(`lualatex --output-format=dvi \"${file_name}\"`, opts);
+					execSync(`dvisvgm --bbox=min ${LIBGS} --no-fonts=1 ${OPTIMISE} \"${dvi_name}\"`, opts);
 				}
 				catch (error) {
 					token['has_error'] = true;
@@ -132,6 +133,7 @@ function createTiKZ(marker) {
 						token['error_log'] = error.message || 'Unknown error, unable to read log file';
 					}
 
+					/*
 					// Delete the generated files
 					const filesToDelete = [file_name, dvi_name, hash_name, svg_name];
 
@@ -145,7 +147,7 @@ function createTiKZ(marker) {
 							console.error(`Error deleting ${file}: ${deleteError.message}`);
 						}
 					});
-
+					*/
 					console.error(`Error processing TikZ: ${error.message}`);
 				}
 			}
