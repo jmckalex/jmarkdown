@@ -37,6 +37,7 @@ export function postProcessHTML(html) {
 	}
 	process_crossrefs($);
 	replaceTargetsBySources($);
+	moveBodyStylesToHead($);
 	return $.html();
 }
 
@@ -113,6 +114,22 @@ function process_crossrefs($) {
 		}
 		$(elem).text(str);
 	});
+}
+
+// When writing markdown, it's common to put <style> tags in the body.
+// This moves all such tags to the <head> to be compliant with the HTML spec.
+function moveBodyStylesToHead($) {
+	const body_styles = $('body style');
+	if (body_styles.length > 0) {
+		const styles = [];
+		body_styles.each(function () {
+			styles.push($(this));
+			$(this).remove();
+		});
+		styles.forEach(style => {
+			$('head').append(style);
+		})
+	}
 }
 
 
