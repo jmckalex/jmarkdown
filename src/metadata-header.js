@@ -18,8 +18,9 @@ export async function processYAMLheader(markdown) {
 		const remainder = rest.join('\n\n');
 
 		parseKeyedData(first);
+
 		// Merge the metadata with the config but keep metadata for this file
-	    configManager.mergeMetadata(metadata);
+	  configManager.mergeMetadata(metadata);
 
 		const custom_elements_key = Object.keys(metadata).find(k => k.toLowerCase() === "Custom element".toLowerCase());
 		if (custom_elements_key) {
@@ -34,6 +35,11 @@ export async function processYAMLheader(markdown) {
 		const load_extensions_key = Object.keys(metadata).find(k => k.toLowerCase() === "Load extensions".toLowerCase());
 		if (load_extensions_key) {
 			await loadExtensions();
+		}
+
+		const load_javascript_key = Object.keys(metadata).find(k => k.toLowerCase() === "Load javascript".toLowerCase());
+		if (load_javascript_key) {
+			await loadJavascript();
 		}
 
 		const optionals_key = Object.keys(metadata).find(k => k.toLowerCase() === "Optionals".toLowerCase());
@@ -306,6 +312,25 @@ export async function loadExtensionsFromSpec(spec) {
 		registerExtensions(array);
 	}
 }
+
+function loadJavascript() {
+	for (let k in metadata) {
+		if (k.toLowerCase() === "Load javascript".toLowerCase()) {
+			if (Array.isArray(metadata[k])) {
+				for (const file of metadata[k]) {
+					// For JavaScript, at the moment we just load the entire file into a string
+					// and evaluate it using runInThisContext().  The spec should be a relative file
+					// path from the current working directory.
+					const file_path = path.join(configManager.get('Markdown file directory'), file);
+					const code = fs.readFileSync(file_path);
+					runInThisContext(code);
+				}
+			}
+		}
+	}
+}
+
+
 
 export function addExtension(spec, name) {
 	const extension_name = name.replace(' ', '');
