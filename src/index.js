@@ -282,6 +282,12 @@ registerExtensions([
 	jmarkdownSyntaxEnhancements.centerAlign 
 ]);
 
+import { math, mathjs } from './mathjs-extension.js';
+registerExtension( mathjs );
+
+import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
+registerExtensions([ inlineFunctions, blockFunctions ]);
+
 // Load extensions and directives from the configuration file(s).
 // This should happen before the metadata header is processed.
 await configManager.loadExtensions();
