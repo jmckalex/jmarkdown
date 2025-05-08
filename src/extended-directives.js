@@ -189,7 +189,7 @@ function createToken(config) {
                 }
                 else if (level === 'block') {
                     if (customTokenizer == undefined) {
-                        tok['tokens'] = this.lexer.inlineTokens(value);
+                        this.lexer.inline(value, tok['tokens']);
                     }
                     else {
                         customTokenizer.call(this, text, tok);
