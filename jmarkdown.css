@@ -1,0 +1,188 @@
+html {
+	background-color: #e0e0e0;  /* Light grey for margins */
+	lang: "en-GB";
+}
+
+body {
+	font-family: "Optima";
+	font-size: 12pt;
+/*	width: 210mm;*/
+	width: 171.8mm;
+/*	width: 121.71mm;*/
+	margin: 0 auto;	
+	background: white;
+	padding: 25.4mm;
+	text-align: justify;
+	hyphens: auto;
+	word-break: break-word;
+	counter-reset: h1counter h2counter h3counter;
+}
+
+body.fancy {
+	font-family: "STIX Two Text";
+	font-size: 12pt;
+/*	width: 210mm;*/
+	width: 171.8mm;
+/*	width: 121.71mm;*/
+	margin: 0 auto;	
+	background: white;
+	padding: 25.4mm;
+	text-align: justify;
+	hyphens: auto;
+	word-break: break-word;
+	counter-reset: h1counter h2counter h3counter;
+}
+
+
+@page {
+	counter-increment: page;
+}
+
+
+/* If you want "Page X of Y" format */
+@page {
+	@bottom-center {
+		content: "Page " counter(page) " of " counter(pages);
+		font-family: "Optima";
+	}
+}
+
+hr {
+	margin-top:  18pt;
+	margin-bottom:  16pt;
+} 
+
+#contents li {
+	list-style: none;
+}
+
+file-header p:first-child {
+	margin-top: 0pt;
+}
+
+div.csl-bib-body {
+	text-align: left;
+}
+
+div.csl-entry:not(:last-child) {
+	margin-bottom: 6pt;
+}
+
+span.mark {
+	background-color: lightgray;
+}
+
+span.final-grade, span.final-grade-entered {
+	background-color: lightgreen;
+	padding: 6pt;
+	border: 1pt solid darkgreen;
+}
+
+file-header {
+	display: block;
+}
+
+file-header * {
+	background-color: inherit;
+}
+
+@media print {
+	html {
+		background-color: white; 
+		lang: "en-GB";
+	}
+
+	span.final-grade-entered {
+        display: inline-block;
+    }
+
+	@page {
+		margin: 1in;
+/*		margin-top: 122pt;
+		margin-bottom: 122pt;
+
+*/	}
+
+	body {
+		padding: 0pt;
+	}
+
+	file-header {
+		display: none;
+	}
+
+	hr {
+        border: none;           /* Remove the visible line */
+        height: 0;             /* Take up no space */
+        margin: 0;             /* No margins */
+        visibility: hidden;
+    }
+
+    hr:not(:first-of-type) {
+        page-break-before: always;
+    }
+}
+
+.larger {
+	font-size: 16pt;
+}
+
+.red {
+	background-color: red;
+}
+
+.goldenrod {
+	background-color: goldenrod;
+}
+
+.title {
+	font-size: 22pt; 
+	text-align: left;
+	font-weight: bold;
+}
+
+.title p {
+	margin: 0pt;
+}
+
+.author, .date {
+	font-size: 14pt;
+}
+
+dl {
+	display: grid;
+	grid-template-columns: auto 1fr;
+}
+
+dd:not(:last-of-type) {
+	margin-bottom: 6pt;
+}
+
+dl dd p:first-of-type {
+	margin-top: 0pt;
+}
+
+sup, sub {
+	line-height: 0pt;
+}
+
+/* Line at the bottom of the table */
+table {
+    border-bottom: 1px solid #000;
+    border-collapse: collapse;
+}
+
+/* Zebra striping for rows */
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+th, td { 
+	padding: 3pt;
+}
+
+thead {
+	background-color: lightgrey;
+	border-top: 1pt solid black;
+	border-bottom: 1pt solid black;
+}
