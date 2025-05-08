@@ -1,4 +1,6 @@
 import { runInThisContext } from './utils.js';
+import * as acorn from 'acorn';
+
 /*
 	This file defines several extensions which look for blocks of the form
 
@@ -41,7 +43,6 @@ const javascript_script = {
 					const match = rule.exec(src);
 
 					if (match) {
-						// Check to make sure it's jmarkdown script code!
 						let script = match[1]
 						const token = {
 							type: 'javascript',
@@ -84,6 +85,24 @@ const jmarkdown_script = {
 						let script = match[1]
 						let [tag, ...rest] = match[0].split('>');
 
+						// Use Acorn to validate the parsing
+						let exp;
+						try {
+							exp = acorn.parse(script, { ecmaVersion: 2022 });
+						}
+						catch (error) {
+							const syntaxError = highlightSyntaxError(error, script);
+							const display = `<div class='jmarkdown-script-parse-error'><div>Jmarkdown script parse error</div><pre><code>${syntaxError.display}</code></pre></div>`;
+							const token = {
+								type: 'jmarkdownScript',
+								raw: match[0],
+								text: match[1],
+								output: display,
+								tokens: []
+							};
+							return token;
+						}
+
 						// Check if it's a postprocessor script
 						if (tag.includes("jmarkdown-postprocess") == true) {
 							global.output = '';
@@ -107,6 +126,73 @@ const jmarkdown_script = {
 					return `${token.output}`;
 				}
 			};
+
+function highlightSyntaxError(error, script) {
+	// Initialize the error message and location
+	const errorMessage = error.message || "Unknown syntax error";
+	const lineNumber = error.loc?.line || 0;
+	const columnNumber = error.loc?.column || 0;
+
+	// Split the script into lines
+	const lines = script.split('\n');
+
+	// Create a visual error indicator
+	let errorDisplay = '';
+	let errorIndicator = '';
+
+	// Add context (show a few lines before and after the error)
+	const contextStart = Math.max(0, lineNumber - 2);
+	const contextEnd = Math.min(lines.length, lineNumber + 2);
+
+	for (let i = contextStart; i < contextEnd; i++) {
+	    const lineNum = i + 1; // 1-based line numbers
+	    const isErrorLine = lineNum === lineNumber;
+	    const linePrefix = `${lineNum}: `;
+	    
+	    // Add the line with line number
+	    //errorDisplay += `${linePrefix}${lines[i]}\n`;
+	    
+	    // Create the error indicator arrow pointing to the error
+	    if (isErrorLine) {
+	    	errorDisplay += `${linePrefix}<span class='jmarkdown-error-bad'>${lines[i]}</span>\n`;
+		    // Create spacing that aligns with the error column
+		    const characters = `${linePrefix}${lines[i]}`.split('');
+		    console.log(characters);
+		    let current_column = 0;
+		    for (const char of characters) {
+		    	if (current_column < columnNumber + linePrefix.length) {
+		    		if (char == '\t') {
+		    			errorIndicator += "\t";
+		    		}
+		    		else {
+		    			errorIndicator += ' ';
+		    		}
+		    		current_column++;
+		    	}
+		    	else {
+		    		errorIndicator += '^ ' + errorMessage;
+		    		errorDisplay += errorIndicator + '\n';
+		    		break;
+		    	}
+		    }
+		    console.log(errorIndicator.split(''));
+	    	//errorIndicator = ' '.repeat(linePrefix.length + columnNumber) + '^ ' + errorMessage;
+	    	//errorDisplay += errorIndicator + '\n';
+	    }
+	    else {
+	    	errorDisplay += `${linePrefix}${lines[i]}\n`;
+	    }
+	}
+
+	return {
+		message: errorMessage,
+		line: lineNumber,
+		column: columnNumber,
+		display: errorDisplay,
+		errorObject: error
+	};
+}
+
 
 
 
