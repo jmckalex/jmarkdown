@@ -119,7 +119,7 @@ function process_crossrefs($) {
 // When writing markdown, it's common to put <style> tags in the body.
 // This moves all such tags to the <head> to be compliant with the HTML spec.
 function moveBodyStylesToHead($) {
-	const body_styles = $('body style');
+	const body_styles = $('body style').not('body svg style');
 	if (body_styles.length > 0) {
 		const styles = [];
 		body_styles.each(function () {
