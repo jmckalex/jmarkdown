@@ -220,6 +220,7 @@ class AcornParseError extends Error {
 		this.name = 'AcornParseError';
 		this.pos = error.pos;
 		this.raisedAt = error.raisedAt;
+		this.error = error;
 
 		// This captures the proper stack trace in modern engines
 		if (Error.captureStackTrace) {
@@ -264,54 +265,55 @@ function construct_complex_function_extension(name, options) {
 		tokenizer(src) {
 			const regexp = new RegExp("^" + name + delimiter)
 			if (src.match(regexp)) {
-				console.log(`Match found for name ${name} at ${src.slice(0,20)}`);
+				//console.log(`Match found for name ${name} at ${src.slice(0,20)}`);
 				try {
 					let exp;
 					try {
 						exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
 					}
 					catch (error) {
+						//console.log(src.slice(0,error.raisedAt));
 						throw new AcornParseError(error);
 					}
 
+					//console.log(exp);
+					let token;
 					if (exp.type == "CallExpression") {
-						// Since we have a valid JavaScript function call, pass it
-						// to runInThisContext and collect the output for insertion
-						const start = exp.start;
-						const end = exp.end;
-						const func = src.slice(start, end);
-						let output;
-						try {
-							output = runInThisContext(func);
-						}
-						catch (error) {
-							const token = {
-								type: `${name}`,
-								raw: func,
-								success: false,
-								error: error
-							}
-							error.token = token;
-							throw new VMEvaluationError(error)
-						}
-				
-						const token = {
-							type: `${name}`,
-							raw: func,
-							success: true,
-							text: output,
-							tokens: []
-						};
-						return token;
+						token = handleCallExpression(exp, src, name);
+					}
+					else if (exp.type == "SequenceExpression") {
+						token = handleSequenceExpression(exp, src, name);
+					}
+					else if (exp.type == "MemberExpression") {
+						token = handleMemberExpression(exp, src, name);
 					}
 					else {
 						console.log(exp);
 					}
+
+					if (token?.tokenize == 'block') {
+						this.lexer.blockTokens(token.text, token.tokens);
+					}
+					else if (token?.tokenize == 'inline') {
+						this.lexer.inline(token.text, token.tokens);
+					}
+					return token;
 				}
 				catch (error) {
 					if (error instanceof AcornParseError) {
-						//console.log(error);
-						//console.log(`ERROR: ${error.message}, starting at ${error.pos} and raised at ${error.raisedAt}`);
+						const last_attempt = handlePossibleIrrelevantEndCharacter(error, src, name);
+						if (last_attempt !== false) {
+							// It finally worked, and last_attempt is a valid token, so return it
+							if (last_attempt?.tokenize == 'block') {
+								this.lexer.blockTokens(last_attempt.text, last_attempt.tokens);
+							}
+							else if (last_attempt?.tokenize == 'inline') {
+								this.lexer.inline(last_attempt.text, last_attempt.tokens);
+							}
+							return last_attempt;
+						}
+
+						// If the last attempt failed, then we need to return an error message.
 						const token = {
 							type: `${name}`,
 							raw: src.slice(0, error.raisedAt),
@@ -334,6 +336,12 @@ function construct_complex_function_extension(name, options) {
 		},
 		renderer(token) {
 			if (token.success) {
+				if (token?.tokenize == 'block') {
+					return this.parser.parse(token.tokens);
+				}
+				else if (token?.tokenize == 'inline') {
+					return this.parser.parseInline(token.tokens);
+				}
 				return token.text;	
 			}
 			else {
@@ -352,11 +360,304 @@ function construct_complex_function_extension(name, options) {
 		}
 	};
 
-	// marked.use({
-	// 	extensions: [new_function]
-	// });
 	registerExtension(new_function);
 }
+
+
+function handleCallExpression(exp, src, name) {
+	// Since we have a valid JavaScript function call, pass it
+	// to runInThisContext and collect the output for insertion
+	const start = exp.start;
+	const end = exp.end;
+	const func = src.slice(start, end);
+	//console.log(func);
+	let output;
+	try {
+		output = runInThisContext(func);
+	}
+	catch (error) {
+		const token = {
+			type: `${name}`,
+			raw: func,
+			success: false,
+			error: error
+		}
+		error.token = token;
+		throw new VMEvaluationError(error);
+	}
+
+	let token;
+	if (typeof output === "object" && output !== null) {
+		token = {
+			type: `${name}`,
+			raw: func,
+			success: true,
+			tokens: []
+		};
+		if ('block' in output) {
+			token.text = output.block;
+			token.tokenize = 'block';
+		}
+		else {
+			token.text = output.inline;
+			token.tokenize = 'inline';
+		}
+	}
+	else {
+		token = {
+			type: `${name}`,
+			raw: func,
+			success: true,
+			text: output,
+			tokens: []
+		};
+	}
+	
+	return token;
+}
+
+
+// Here we assume that a sequence expression results from a
+// comma - which is supposed to be punctuation - following an otherwise
+// valid CallExpression or MemberExpression.  So we have to
+// identify the trailing comma which is the issue and find the appropriate
+// subexpression.
+function handleSequenceExpression(exp, src, name) {
+	const start = exp.start;
+	const end = exp.end;
+	const sequence = src.slice(start, end);
+	// But we don't want the sequence, just the part up to the last comma.
+	const last_comma_index = sequence.lastIndexOf(',');
+	const code_to_check = sequence.substring(0, last_comma_index);
+
+	let exp2;
+	try {
+		exp2 = acorn.parseExpressionAt(code_to_check, 0, { ecmaVersion: 2022 });
+	}
+	catch(error) {
+		throw new AcornParseError(error);
+	}
+
+	// If we get here we found a valid subexpression
+	let output;
+	let code_to_run;
+	if (exp2.type == "CallExpression" || exp2.type == "MemberExpression") {
+		code_to_run = code_to_check.slice(exp2.start, exp2.end);
+		try {
+			output = runInThisContext(code_to_run);
+		}
+		catch(error) {
+			const token = {
+						type: `${name}`,
+						raw: code_to_run,
+						success: false,
+						error: error
+					};
+			error.token = token;
+			throw new VMEvaluationError(error)
+		}
+	}
+
+	const token = {
+		type: `${name}`,
+		raw: code_to_run,
+		success: true,
+		text: output,
+		tokens: []
+	};
+	return token;
+}
+
+
+// This can get called erroneously if we have something like this:
+// 
+//		end of a sentence with Math.pow(3,4).  Start of next sentence
+//
+// This will trigger with the member expression being "Math.pow(3,4).  Start"
+// so we have to clean it up in this case.
+function handleMemberExpression(exp, src, name) {
+	const start = exp.start;
+	const end = exp.end;
+	const member_expression = src.slice(start, end);
+	//console.log(member_expression);
+	const last_dot_index = member_expression.lastIndexOf('.');
+
+	let code_to_check;
+	if (last_dot_index !== -1) {
+		if (last_dot_index < member_expression.length - 1) {
+			//console.log(last_dot_index);
+			const charAfterDot = member_expression.charAt(last_dot_index + 1);
+			//console.log(`"${charAfterDot}"`);
+			if (/\s/.test(charAfterDot)) {
+				code_to_check = src.slice(start, last_dot_index);
+				//console.log(code_to_check);
+			}
+			else {
+				code_to_check= member_expression;
+			}
+		}
+	}
+	else {
+		code_to_check = member_expression;
+	}
+
+	let exp2;
+	try {
+		exp2 = acorn.parseExpressionAt(code_to_check, 0, { ecmaVersion: 2022 });
+	}
+	catch(error) {
+		throw new AcornParseError(error);
+	}
+
+	// If we get here we found a valid subexpression
+	let output;
+	let code_to_run;
+	if (exp2.type == "CallExpression" || exp2.type == "MemberExpression") {
+		code_to_run = code_to_check.slice(exp2.start, exp2.end);
+		try {
+			output = runInThisContext(code_to_run);
+		}
+		catch(error) {
+			const token = {
+						type: `${name}`,
+						raw: code_to_run,
+						success: false,
+						error: error
+					};
+			error.token = token;
+			throw new VMEvaluationError(error)
+		}
+	}
+
+	let token;
+	if (typeof output === "object" && output !== null) {
+		token = {
+			type: `${name}`,
+			raw: code_to_run,
+			success: true,
+			tokens: []
+		};
+		if ('block' in output) {
+			token.text = output.block;
+			token.tokenize = 'block';
+		}
+		else {
+			token.text = output.inline;
+			token.tokenize = 'inline';
+		}
+	}
+	else {
+		token = {
+			type: `${name}`,
+			raw: code_to_run,
+			success: true,
+			text: output,
+			tokens: []
+		};
+	}
+	
+	return token;
+}
+
+// When acorn.js is parsing inline JavaScript, sometimes an error is generated when
+// a valid expression is followed by an irrelevant character which should be ignored because
+// it is part of the surrounding text.  For example, both of the following can generate
+// errors:
+//
+//		"Object.function()"		<-- will often generate error because the second " is parsed as opening an unclosed string
+//		function().				<-- will generate an error if the . (a punction mark) is followed by the end of paragraph
+//
+// (Note that the last case above, where the . is followed by one or more spaces and a word is handled
+// in the handleMemberExpression() function.)
+//
+// In all these cases, the solution is to find the character which generates the error, extract the substring up to
+// but not including that character, and then checking to see if that is a valid JavaScript expression.
+function handlePossibleIrrelevantEndCharacter(error, src, name) {
+	const substring = src.slice(0, error.raisedAt).trimRight();
+	// Now handle three cases based on the message...
+	let substring_to_check = '';
+	if (error.message.startsWith("Unexpected token")) {
+		// This is typically triggered by the inline JavaScript occuring right before a final . indicating
+		// a sentence end - so try removing that.
+		const i = substring.lastIndexOf('.');
+		substring_to_check = substring.slice(0, i);
+	}
+	else if (error.message.startsWith("Unexpected character")) {
+		// In this case, the raisedAt index correctly indicates the end of the possible valid
+		// expression, so the string to check is just the original substring extracted
+		substring_to_check = substring;
+
+	}
+	else if (error.message.startsWith("Unterminated string constant")) {
+		const match = error.message.match(/\(\d+:(\d+)\)/);
+		//console.log(`End character for slice: ${match[1]}`);
+		substring_to_check = substring.slice(0, match[1]);
+	}
+	else {
+		// We've exhausted all the possible cases I can think of...
+		return false;
+	}
+	// console.log(error.message);
+	// console.log(error.raisedAt);
+	console.log(`Subexpression to check '${substring_to_check}'`);
+
+	let exp;
+	let code_to_run;
+	try {
+		exp = acorn.parseExpressionAt(substring_to_check, 0, { ecmaVersion: 2022 });
+		code_to_run = substring_to_check.slice(exp.start, exp.end);
+	}
+	catch (error) {
+		return false
+	}
+
+	// If we get here we have found a valid subexpression
+	console.log(`Subexpression to evaluate: '${code_to_run}'`);
+	let output = '';
+	try {
+		output = runInThisContext(code_to_run);
+	}
+	catch(error) {
+		const token = {
+					type: `${name}`,
+					raw: code_to_run,
+					success: false,
+					error: error
+				};
+		error.token = token;
+		throw new VMEvaluationError(error)
+	}
+
+	let token;
+	if (typeof output === "object" && output !== null) {
+		token = {
+			type: `${name}`,
+			raw: code_to_run,
+			success: true,
+			tokens: []
+		};
+		if ('block' in output) {
+			token.text = output.block;
+			token.tokenize = 'block';
+		}
+		else {
+			token.text = output.inline;
+			token.tokenize = 'inline';
+		}
+	}
+	else {
+		token = {
+			type: `${name}`,
+			raw: code_to_run,
+			success: true,
+			text: output,
+			tokens: []
+		};
+	}
+
+	return token;
+}
+
 
 
 function createErrorPopupButton(error) {
