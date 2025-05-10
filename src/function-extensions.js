@@ -55,31 +55,47 @@ function construct_simple_function_extension(name, options) {
 			const match = tokenizer_regexp.exec(src);
 			if (match) {
 				let script = `${name}("${match[1]}")`;
-				script = script.replaceAll('\n', '\\n');
+				script = script.replaceAll('\n', '\\n'); 
 				let output = runInThisContext(script);
 
-				const token = {
-					type: `${name}`,
-					raw: match[0],
-					text: output,
-					tokens: []
-				};
+				let token;
+				if (typeof output === "object" && output !== null) {
+					token = {
+						type: `${name}`,
+						raw: match[0],
+						success: true,
+						tokens: []
+					};
+					if ('block' in output) {
+						token.text = output.block;
+						token.tokenize = 'block';
+						this.lexer.blockTokens(token.text, token.tokens);
+					}
+					else {
+						token.text = output.inline;
+						token.tokenize = 'inline';
+						this.lexer.inline(token.text, token.tokens);
+					}
+				}
+				else {
+					token = {
+						type: `${name}`,
+						raw: match[0],
+						success: true,
+						text: output,
+						tokens: []
+					};
+				}
 				
-				if (tokenize == "inline") {
-					this.lexer.inlineTokens(output, token.tokens);
-				}
-				if (tokenize == "block") {
-					this.lexer.blockTokens(output, token.tokens);
-				}
 				return token;
 			}
 		},
 		renderer(token) {
-			if (tokenize == "inline") {
+			if (token?.tokenize == "inline") {
 				let html = this.parser.parseInline(token.tokens);
 				return html;
 			}
-			else if (tokenize == 'block') {
+			else if (token?.tokenize == 'block') {
 				let html = this.parser.parse(token.tokens);
 				return html;
 			}
