@@ -17,6 +17,31 @@ marked.setOptions({
 	gfm: true
 })
 
+/*
+	When using inline JavaScript in jmarkdown files, functions which return 
+	a string value can request that it be run through the lexer in block-mode
+	or inline-mode by calling
+
+		return string.block();
+	or
+		return string.inline();
+
+	as desired.  This just wraps the string in an object with keys that indicate
+	how it should be processed.  This is used in function-extensions.js
+*/
+const string_prototype_addition = `String.prototype.inline = function() {
+    return {
+      inline: this.toString()
+    };
+  };
+
+  String.prototype.block = function() {
+    return {
+      block: this.toString()
+    };
+  };`;
+runInThisContext(string_prototype_addition);
+
 // This function takes a single extension, not in an array.
 function registerExtension(extension_definition) {
 	[marked, marked_copy].map(m => {
