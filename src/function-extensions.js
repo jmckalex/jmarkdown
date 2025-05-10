@@ -26,41 +26,6 @@ export default function export_to_jmarkdown(name, options = {}) {
 		construct_complex_function_extension(name, mergedOptions);
 		return;
 	}
-
-	/*
-	let start_regexp = new RegExp(name + "\\(");
-	let tokenizer_regexp = new RegExp("^" + name + "\\(([^)]*?)\\)");
-
-	const new_function = {
-		name: `${name}`,
-		level: 'inline',
-		start(src) {
-			return src.match(start_regexp)?.index; 
-		},
-		tokenizer(src) {
-			const match = tokenizer_regexp.exec(src);
-			if (match) {
-				const token = {
-					type: `${name}`,
-					raw: match[0],
-					text: match[1],
-					tokens: []
-				};
-				let script = `${token.type}("${token.text}")`;
-				let output = runInThisContext(script);
-				this.lexer.inlineTokens(output, token.tokens);
-				return token;
-			}
-		},
-		renderer(token) {
-			return this.parser.parseInline(token.tokens);
-		}
-	};
-
-	marked.use({
-		extensions: [new_function]
-	});
-	*/
 }
 
 
@@ -265,18 +230,15 @@ function construct_complex_function_extension(name, options) {
 		tokenizer(src) {
 			const regexp = new RegExp("^" + name + delimiter)
 			if (src.match(regexp)) {
-				//console.log(`Match found for name ${name} at ${src.slice(0,20)}`);
 				try {
 					let exp;
 					try {
 						exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
 					}
 					catch (error) {
-						//console.log(src.slice(0,error.raisedAt));
 						throw new AcornParseError(error);
 					}
 
-					//console.log(exp);
 					let token;
 					if (exp.type == "CallExpression") {
 						token = handleCallExpression(exp, src, name);
@@ -326,9 +288,6 @@ function construct_complex_function_extension(name, options) {
 						return token;
 					}
 					else if (error instanceof VMEvaluationError) {
-						// console.log("We have a VMEvaluationError");
-						// console.log(error.message);
-						// console.log(error.error);
 						return error.token;
 					}
 				}
@@ -370,7 +329,6 @@ function handleCallExpression(exp, src, name) {
 	const start = exp.start;
 	const end = exp.end;
 	const func = src.slice(start, end);
-	//console.log(func);
 	let output;
 	try {
 		output = runInThisContext(func);
@@ -479,18 +437,14 @@ function handleMemberExpression(exp, src, name) {
 	const start = exp.start;
 	const end = exp.end;
 	const member_expression = src.slice(start, end);
-	//console.log(member_expression);
 	const last_dot_index = member_expression.lastIndexOf('.');
 
 	let code_to_check;
 	if (last_dot_index !== -1) {
 		if (last_dot_index < member_expression.length - 1) {
-			//console.log(last_dot_index);
 			const charAfterDot = member_expression.charAt(last_dot_index + 1);
-			//console.log(`"${charAfterDot}"`);
 			if (/\s/.test(charAfterDot)) {
 				code_to_check = src.slice(start, last_dot_index);
-				//console.log(code_to_check);
 			}
 			else {
 				code_to_check= member_expression;
@@ -590,16 +544,12 @@ function handlePossibleIrrelevantEndCharacter(error, src, name) {
 	}
 	else if (error.message.startsWith("Unterminated string constant")) {
 		const match = error.message.match(/\(\d+:(\d+)\)/);
-		//console.log(`End character for slice: ${match[1]}`);
 		substring_to_check = substring.slice(0, match[1]);
 	}
 	else {
 		// We've exhausted all the possible cases I can think of...
 		return false;
 	}
-	// console.log(error.message);
-	// console.log(error.raisedAt);
-	console.log(`Subexpression to check '${substring_to_check}'`);
 
 	let exp;
 	let code_to_run;
@@ -612,7 +562,6 @@ function handlePossibleIrrelevantEndCharacter(error, src, name) {
 	}
 
 	// If we get here we have found a valid subexpression
-	console.log(`Subexpression to evaluate: '${code_to_run}'`);
 	let output = '';
 	try {
 		output = runInThisContext(code_to_run);
