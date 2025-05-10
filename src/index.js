@@ -78,8 +78,18 @@ configManager.set("Markdown file directory", markdownFileDirectory);
 configManager.set("Jmarkdown app directory", path.dirname(fileURLToPath(import.meta.url)) )
 
 import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-global.require = require;
+const baseRequire = createRequire(import.meta.url);
+// Create a custom require function that checks both the CWD and the original paths
+const customRequire = (modulePath) => {
+  try {
+    // First try to resolve relative to current working directory
+    return baseRequire(path.resolve(process.cwd(), modulePath));
+  } catch (err) {
+    // If that fails, try the original require paths
+    return baseRequire(modulePath);
+  }
+};
+global.require = customRequire;
 
 import * as cheerio from 'cheerio';
 global.cheerio = cheerio;
