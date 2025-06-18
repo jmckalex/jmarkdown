@@ -48,7 +48,7 @@ table.game {
 	border-collapse: collapse;
 }
 
-table.game td {
+table.game td:not(.strategyLabels) {
 	border: 1px solid black;
 	border-collapse: collapse;
 	text-align: center;
