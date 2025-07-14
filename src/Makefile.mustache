@@ -7,12 +7,13 @@ HTML{{key_uppercase}} = $(basename $(FILE{{key_uppercase}})).html
 PDF{{key_uppercase}} = $(basename $(FILE{{key_uppercase}})).pdf
 {{#First_Time}}
 CHROME = /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
-{{/First_Time}}
 
-.PHONY: link start{{key}} pdf{{key}} kill{{key}}
-
+.PHONY: link
 link:
 	ln -s ~/Dropbox/Miscellaneous/jmarkdown.css jmarkdown.css
+{{/First_Time}}
+
+.PHONY: start{{key}} pdf{{key}} kill{{key}}
 
 start{{key}}:
 	jmarkdown $(FILE{{key_uppercase}})
