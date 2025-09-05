@@ -27,6 +27,7 @@ program
 	.option('-f, --file <filename>', 'Construct a skeleton file named "filename" from a template')
 	.option('-t, --title [title]', 'Title for the newly created jmarkdown file (default: \'My title\')')
 	.option('-m, --makefile [key]', 'Include a Makefile template (an optional key is required if adding to an existing Makefile, otherwise the first three letters of the filename will be used to differentiate the targets in the Makefile). This requires the -f option.')
+	.option('-p, --print', 'Copy files for exporting jmarkdown to PDF using puppeteer')
 	.action((options) => {
 		if (options.title === true) {
 			options.title = 'My title';

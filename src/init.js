@@ -64,6 +64,36 @@ export function initialise(options, src_path = '') {
 	if (options.makefile !== undefined) {
 		createMakefileTemplate(options, src_path);
 	}
+
+	if (options.print !== undefined) {
+		copyPrintUtilityFiles(options, src_path);
+	}
+}
+
+function copyPrintUtilityFiles(options, src_path) {
+	try {
+		if (fs.existsSync(path.join(process.cwd(),'package.json'))) {
+			console.log("I didn't create package.json because that file already exists!");
+			console.log("If print.js is installed, make sure you install puppeteer and browser-sync before using.");
+		}
+		else {
+			fs.copyFileSync(path.join(src_path, "package-print.json"), path.join(process.cwd(), "package.json"));
+			console.log("Created package.json file for print.js");
+		}
+
+		if (fs.existsSync(path.join(process.cwd(), 'print.js'))) {
+			console.log("I didn't install print.js because a file of that name already exists...");
+		}
+		else {
+			fs.copyFileSync(path.join(src_path, "print.js"), path.join(process.cwd(), "print.js"));
+			console.log("Installed print.js file for exporting jmarkdown to PDF");
+			console.log("  ==> remember to install puppeteer and browser-sync by typing 'npm install'!");
+		}
+	}
+	catch (e) {
+		console.log("Something went wrong while attempting to install the jmarkdown print utility.  Here's the error:")
+		console.log(e);
+	}
 }
 
 function createMakefileTemplate(options, src_path) {
