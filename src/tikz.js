@@ -115,9 +115,14 @@ function createTiKZ(marker) {
 			if (needsProcessing) {
 				try {
 					const opts = { cwd: TiKZ_directory };
+					let command = '';
 					console.log(`Trying to process the TiKZ file with options ${opts}`);
-					execSync(`lualatex --output-format=dvi \"${file_name}\"`, opts);
-					execSync(`dvisvgm --bbox=min ${LIBGS} --no-fonts=1 ${OPTIMISE} \"${dvi_name}\"`, opts);
+					command = `lualatex --output-format=dvi \"${file_name}\"`;
+					console.log(`Executing: ${command}`);
+					execSync(command, opts);
+					command = `dvisvgm --bbox=min ${LIBGS} --no-fonts=1 ${OPTIMISE} \"${dvi_name}\"`;
+					console.log(`Executing: ${command}`);
+					execSync(command, opts);
 				}
 				catch (error) {
 					token['has_error'] = true;
