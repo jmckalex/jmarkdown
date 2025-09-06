@@ -22,16 +22,12 @@ const LaTeX_template = String.raw`\documentclass[tikz,border=3mm,12pt]{standalon
 {{{.}}}
 {{/LaTeX_preamble}}
 \begin{document}
-\begin{tikzpicture}[>=latex]
 {{{TiKZ}}}
-\end{tikzpicture}
 \end{document}`
 
 
 const LIBGS = "--libgs=" + configManager.get('TiKZ libgs'); ///opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib";
 const OPTIMISE = "--optimize=" + configManager.get('TiKZ optimise'); //group-attributes,collapse-groups";
-
-let file_index = 1;
 
 function ensureDirectoryExists(dirPath) {
 	// Check if the directory exists
@@ -39,51 +35,38 @@ function ensureDirectoryExists(dirPath) {
 	    // If it doesn't exist, create it
 		fs.mkdirSync(dirPath, { recursive: true });
 		console.log(`Created directory: ${dirPath}`);
-	} else {
-		console.log(`Directory already exists: ${dirPath}`);
-	}
+	} 
 }
 
-function processWithCaching(text, file_name) {
-	// Generate a hash of the TikZ code
-	const hash = crypto.createHash('md5').update(text).digest('hex');
+function generateHash(string) {
+	return crypto.createHash('md5').update(string).digest('hex');
+}
 
-	// Construct the hash file path
-	const hashFilePath = file_name.replace('.tex', '.hash');
-
-	// Check if the file already exists
-	let shouldProcess = true;
-	if (fs.existsSync(file_name) && fs.existsSync(hashFilePath)) {
+// Given an array of file names, delete them.
+function deleteFiles(filesToDelete) {
+	filesToDelete.forEach(file => {
 		try {
-		    // Read the stored hash
-			const storedHash = fs.readFileSync(hashFilePath, 'utf8');
-
-		    // Compare the hashes
-			if (storedHash === hash) {
-	        // Hashes match, no need to reprocess
-				shouldProcess = false;
-				console.log(`TikZ code unchanged for ${path.basename(file_name)}, using cached version`);
+			if (fs.existsSync(file)) {
+				fs.unlinkSync(file);
+				console.log(`Deleted: ${file}`);
 			}
-		} catch (error) {
-			console.error(`Error reading hash file: ${error.message}`);
-		    // If there's an error reading the hash, process the file anyway
-			shouldProcess = true;
+		} catch (deleteError) {
+			console.error(`Error deleting ${file}: ${deleteError.message}`);
+		}
+	});
+}
+
+function emptyCache(TiKZ_directory) {
+	const files = fs.readdirSync(TiKZ_directory);
+
+	for (const file of files) {
+		const filePath = path.join(TiKZ_directory, file);
+		if (fs.statSync(filePath).isFile()) {
+			fs.unlinkSync(filePath);
+			console.log(`Deleted: ${file}`);
 		}
 	}
-
-	if (shouldProcess) {
-		// Write the TeX file
-		fs.writeFileSync(file_name, text);
-
-		// Save the hash
-		fs.writeFileSync(hashFilePath, hash);
-
-	    return true; // Signal that processing is needed
-	}
-
-  return false; // Signal that no processing is needed
 }
-
 
 function createTiKZ(marker) {
 	return {
@@ -91,44 +74,52 @@ function createTiKZ(marker) {
 		marker: marker,
 		label: "TiKZ",
 		tokenizer: function(text, token) {
-			text = text.replace("\n", '');
+			if (text.includes('begin{tikzpicture}') == false) {
+				text = "\\begin{tikzpicture}[>=latex]\n" + text + "\n\\end{tikzpicture}";
+			}
 			const opts = { 'TiKZ': text, 'LaTeX_preamble': configManager.get('LaTeX preamble') };
 			const file_contents = Mustache.render(LaTeX_template, opts);
 
 			const home_directory = configManager.get('Markdown file directory');
 			const TiKZ_directory = path.join(home_directory, "TiKZ");
-			const file_name = path.join(TiKZ_directory, `figure-${file_index++}.tex`);
+			const hash = generateHash(file_contents);
+			const file_name = path.join(TiKZ_directory, `${hash}.tex`);
+			const aux_name = file_name.replace('.tex', '.aux');
 			const dvi_name = file_name.replace('.tex', '.dvi');
 			const log_name = file_name.replace('.tex', '.log');
 			const svg_name = file_name.replace('.tex', '.svg');
-			const hash_name = file_name.replace('.tex', '.hash');
+			//const hash_name = file_name.replace('.tex', '.hash');
 			
 			ensureDirectoryExists(TiKZ_directory);
+			if (token?.attrs?.['empty-cache'] == 'true' || token?.attrs?.['empty-cache'] == 'empty-cache') {
+				console.log("Removing all cached TiKZ files...");
+				emptyCache(TiKZ_directory);
+			}
 			
-			// Check if processing is needed
-			const needsProcessing = processWithCaching(file_contents, file_name);
-
 			token['file name'] = file_name;
 			token['has_error'] = false;
 			token['error_log'] = '';
 
-			if (needsProcessing) {
+			if (fs.existsSync(svg_name) == false) {
 				try {
+					fs.writeFileSync(file_name, file_contents);
 					const opts = { cwd: TiKZ_directory };
 					let command = '';
-					console.log(`Trying to process the TiKZ file with options ${opts}`);
+					//console.log(`Trying to process the TiKZ file with options ${opts}`);
 					command = `lualatex --output-format=dvi \"${file_name}\"`;
 					console.log(`Executing: ${command}`);
 					execSync(command, opts);
 					command = `dvisvgm --bbox=min ${LIBGS} --no-fonts=1 ${OPTIMISE} \"${dvi_name}\"`;
 					console.log(`Executing: ${command}`);
 					execSync(command, opts);
+					console.log("Cleaning up temporary files...")
+					const filesToDelete = [file_name, aux_name, dvi_name, log_name];
+					deleteFiles(filesToDelete);
 				}
 				catch (error) {
 					token['has_error'] = true;
 					// Try to read the log file
 					try {
-						const log_name = file_name.replace('.tex', '.log');
 						if (fs.existsSync(log_name)) {
 							token['error_log'] = fs.readFileSync(log_name, 'utf8');
 						} else {
@@ -138,21 +129,10 @@ function createTiKZ(marker) {
 						token['error_log'] = error.message || 'Unknown error, unable to read log file';
 					}
 
-					/*
 					// Delete the generated files
-					const filesToDelete = [file_name, dvi_name, hash_name, svg_name];
-
-					filesToDelete.forEach(file => {
-						try {
-							if (fs.existsSync(file)) {
-								fs.unlinkSync(file);
-								console.log(`Deleted: ${file}`);
-							}
-						} catch (deleteError) {
-							console.error(`Error deleting ${file}: ${deleteError.message}`);
-						}
-					});
-					*/
+					const filesToDelete = [file_name, dvi_name, svg_name];
+					deleteFiles(filesToDelete);
+					
 					console.error(`Error processing TikZ: ${error.message}`);
 				}
 			}
