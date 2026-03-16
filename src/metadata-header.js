@@ -10,12 +10,16 @@ import { configManager } from './config-manager.js';
 import Mustache from 'mustache';
 import { registerDirectives, registerExtensions } from './utils.js';
 
+export let header_length = 0;
+
 export async function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
 	if (has_header) {
 		//const [first, ...rest] = markdown.split(/\n\s*\n/);
 		const [first, ...rest] = markdown.split(/\n^---.*$/m);
-		const remainder = rest.join('\n\n');
+		const remainder = rest.join('\n');
+
+		header_length = first.split('\n').length + 1;
 
 		parseKeyedData(first);
 
@@ -215,9 +219,11 @@ async function loadDirectives() {
 						// extract the names of the exported directives
 						array = directives.split(",").map(s => s.trim()).filter(s => s !== '');
 						file = file.trim();
+						console.log(`Attempting to import file ${file}`);
 						const mod = await import(path.join(configManager.get('Markdown file directory'), file));
 						// overwrite the array of names with objects extracted from the loaded module
 						array = array.map(name => mod[name]);
+						console.log(array);
 						registerDirectives(array);
 					}
 					else {
@@ -340,7 +346,7 @@ export function addExtension(spec, name) {
 	const delimiters = firstLine.trimLeft();
 
 	if (delimiters.startsWith('/')) {
-		return addComplexExtension(delimiters, definition, name);
+		return addComplexExtension(delimiters, definition, extension_name);
 	}
 
 	//const separator = delimiters[0];

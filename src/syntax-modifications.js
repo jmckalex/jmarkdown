@@ -45,6 +45,52 @@ export const strong = {
 				}
 			};
 
+export const highlight = {
+	name: 'highlight',
+	level: 'inline',
+	start(src) { return src.match(/==/)?.index },
+	tokenizer(src) {
+		const rule = /^==([^=]+)==/;
+		const match = rule.exec(src);
+		if (match) {
+			const token = {
+				type: 'highlight',
+				raw: match[0],
+				text: match[1],
+				tokens: []
+			};
+			this.lexer.inline(token.text, token.tokens);
+			return token;
+		}
+	},
+	renderer(token) {
+		return `<span class='highlight'>${this.parser.parseInline(token.tokens)}</span>`;
+	}
+};
+
+export const intense = {
+	name: 'intense',
+	level: 'inline',
+	start(src) { return src.match(/\*\*/)?.index },
+	tokenizer(src) {
+		const rule = /^\*\*([^*]+)\*\*/;
+		const match = rule.exec(src);
+		if (match) {
+			const token = {
+				type: 'intense',
+				raw: match[0],
+				text: match[1],
+				tokens: []
+			};
+			this.lexer.inline(token.text, token.tokens);
+			return token;
+		}
+	},
+	renderer(token) {
+		return `<span class='intense'>${this.parser.parseInline(token.tokens)}</span>`;
+	}
+};
+
 export const underline = {
 				name: 'underline',
 				level: 'inline',
@@ -64,7 +110,7 @@ export const underline = {
 					}
 				},
 				renderer(token) {
-					return `<span style='text-decoration: underline;'>${this.parser.parseInline(token.tokens)}</span>`;
+					return `<span class='underline'>${this.parser.parseInline(token.tokens)}</span>`;
 				}
 			};
 

@@ -8,9 +8,20 @@ PDF{{key_uppercase}} = $(basename $(FILE{{key_uppercase}})).pdf
 {{#First_Time}}
 CHROME = /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome
 
-.PHONY: link
+.PHONY: link bib clean
+# Create symbolic links for CSS and the BibTeX database so that we don't
+# waste disk space with unnecessary copies (plus they are always up-to-date, too)
 link:
-	ln -s ~/Dropbox/Miscellaneous/jmarkdown.css jmarkdown.css
+	ln -s ~/Miscellaneous/jmarkdown.css jmarkdown.css
+	ln -s ~/Miscellaneous/Bibliography-minimal.bib bibliography.bib
+
+# Refresh the BibTeX database in case new entries were added
+bib:
+	bibporter ~/Miscellaneous/Bibliography-minimal.bib
+
+# Provide a way of cleaning out the node_modules directory to save space
+clean:
+	rm -r node_modules/
 {{/First_Time}}
 
 .PHONY: start{{key}} pdf{{key}} kill{{key}}

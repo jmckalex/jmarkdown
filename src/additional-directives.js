@@ -66,7 +66,9 @@ const additionalDirectives = [
 		label: "date",
 		renderer(token) {
 			if (token.meta.name === "date") {
-				return `<div class="date">${token.text}</div>`;
+				const content = this.parser.parseInline(token.tokens);
+				return `<div class="date">${content}</div>`;
+				// return `<div class="date">${token.text}</div>`;
 			}
 			return false;
 		}

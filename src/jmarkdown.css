@@ -181,3 +181,18 @@ table.game td.columnLabel p {
 .tikz-error button:hover {
 	background-color: #0570c0;
 }
+
+span.intense {
+	font-variant: small-caps;
+	font-weight: 700;
+	text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.35);
+}
+
+span.underline {
+	text-decoration: underline;
+}
+
+
+span.highlight {
+	background: yellow;
+}

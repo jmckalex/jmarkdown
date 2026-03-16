@@ -107,11 +107,40 @@ const jmarkdown_script = {
 						if (tag.includes("jmarkdown-postprocess") == true) {
 							global.output = '';
 							postprocessor_scripts.push(script);
+							return {
+								type: 'jmarkdownScript',
+								raw: match[0],
+								text: match[1],
+								output: '',
+								tokens: []
+							};
 						}
 						else {
 							global.output = '';
 							runInThisContext(script);
+							let token = {
+								type: 'jmarkdownScript',
+								raw: match[0],
+								text: match[1],
+								output: global.output,
+								tokens: []
+							};
+
+							if (typeof global.output == "object" && output !== null ) {
+								if ('block' in output) {
+									token.text = output.block;
+									token.tokenize = 'block';
+									this.lexer.blockTokens(token.text, token.tokens);
+								}
+								else {
+									token.text = output.inline;
+									token.tokenize = 'inline';
+									this.lexer.inline(token.text, token.tokens);
+								}
+							}
+							return token;
 						}
+						/*
 						const token = {
 							type: 'jmarkdownScript',
 							raw: match[0],
@@ -120,10 +149,19 @@ const jmarkdown_script = {
 							tokens: []
 						};
 						return token;
+						*/
 					}
 				},
 				renderer(token) {
-					return `${token.output}`;
+					if (token?.tokenize == "inline") {
+						return this.parser.parseInline(token.tokens);
+					}
+					else if (token?.tokenize == 'block') {
+						return this.parser.parse(token.tokens);
+					}
+					else {
+						return token.output;
+					}
 				}
 			};
 

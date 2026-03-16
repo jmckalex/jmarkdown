@@ -16,6 +16,10 @@ import Mustache from 'mustache';
 const file_template = `Title: {{title}}
 Date: ${getCurrentDate()}
 Author: {{Author}}
+CSS: jmarkdown.css
+Biblify activate: true
+Bibliography: bibliography.bib
+Bibliography style: harvard1
 ---
 
 # Heading

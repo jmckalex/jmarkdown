@@ -41,7 +41,7 @@ export default function export_to_jmarkdown(name, options = {}) {
 function construct_simple_function_extension(name, options) {
 	const {tokenize = false} = options;
 	let start_regexp = new RegExp(name + "\\(");
-	let tokenizer_regexp = new RegExp("^" + name + "\\(([^)]*?)\\)", 's');
+	let tokenizer_regexp = new RegExp("^" + name + "\\((.*?)\\)", 's');
 
 	let extension_level = (tokenize != false)? tokenize : 'inline';
 
@@ -695,7 +695,29 @@ function createErrorPopupButton(error) {
   
   return html;
 }
- 
+
+import { create, all } from 'mathjs';
+import * as test from 'mathjs';
+const MathJS = create(all, {});
+global.MathJS = MathJS;
+String.prototype.surround = function(prefix, suffix = false) {
+	if (suffix == false) {
+		suffix = prefix;
+	}
+	return prefix + this + suffix;
+}
+
+function calc(expr) {
+	return MathJS.evaluate(expr);
+}
+global.calc = calc;
+
+import * as Algebra from 'algebra.js';
+global.Algebra = Algebra;
+
 export_to_jmarkdown("Math", {simple: false, type: "Object"});
 export_to_jmarkdown("Date", {simple: false, type: "Object"});
 export_to_jmarkdown("String", {simple: false});
+export_to_jmarkdown("MathJS", {simple: false, type: "Object"});
+export_to_jmarkdown("Algebra", {simple: false, type: "Object"});
+export_to_jmarkdown("calc", {simple: false, type: "Function"});

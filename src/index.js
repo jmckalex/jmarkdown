@@ -70,6 +70,7 @@ if (!filename) {
 	process.exit(1);
 }
 
+global.current_file = filename;
 const markdownFile = filename;
 const markdownFileDirectory = path.dirname(path.resolve(process.cwd(), markdownFile));
 
@@ -81,15 +82,54 @@ configManager.set("Jmarkdown app directory", path.dirname(fileURLToPath(import.m
 import { createRequire } from 'module';
 const baseRequire = createRequire(import.meta.url);
 // Create a custom require function that checks both the CWD and the original paths
+// const customRequire = (modulePath) => {
+//   try {
+//     // First try to resolve relative to current working directory
+//     return baseRequire(path.resolve(process.cwd(), modulePath));
+//   } catch (err) {
+//     // If that fails, try the original require paths
+//     return baseRequire(modulePath);
+//   }
+// };
+// Create a custom require function that checks multiple locations
 const customRequire = (modulePath) => {
-  try {
-    // First try to resolve relative to current working directory
-    return baseRequire(path.resolve(process.cwd(), modulePath));
-  } catch (err) {
-    // If that fails, try the original require paths
-    return baseRequire(modulePath);
+  const attempts = [
+    // 1. Original require (app's node_modules, global modules)
+    () => baseRequire(modulePath),
+    
+    // 2. Current working directory's node_modules
+    () => {
+      const cwdRequire = createRequire(path.join(process.cwd(), 'package.json'));
+      return cwdRequire(modulePath);
+    },
+    
+    // 3. Try to find package.json in parent directories and create require from there
+    () => {
+      let currentDir = process.cwd();
+      while (currentDir !== path.dirname(currentDir)) {
+        const packageJsonPath = path.join(currentDir, 'package.json');
+        if (fs.existsSync(packageJsonPath)) {
+          const dirRequire = createRequire(packageJsonPath);
+          return dirRequire(modulePath);
+        }
+        currentDir = path.dirname(currentDir);
+      }
+      throw new Error('No package.json found in parent directories');
+    }
+  ];
+
+  let lastError;
+  for (const attempt of attempts) {
+    try {
+      return attempt();
+    } catch (err) {
+      lastError = err;
+    }
   }
+  
+  throw lastError;
 };
+
 global.require = customRequire;
 
 import * as cheerio from 'cheerio';
@@ -136,12 +176,18 @@ if (options.normalSyntax != true) {
 		jmarkdownSyntaxModifications.strong, 
 		jmarkdownSyntaxModifications.underline,
 		jmarkdownSyntaxModifications.subscript,
-		jmarkdownSyntaxModifications.superscript
+		jmarkdownSyntaxModifications.superscript,
+		jmarkdownSyntaxModifications.highlight,
+		jmarkdownSyntaxModifications.intense
 	]);
 }
 
 import { anchors } from './anchors.js';
 registerExtension(anchors);
+
+import { editors } from './editor-tag.js';
+registerExtension(editors);
+
 
 import extendedTables from "marked-extended-tables";
 
@@ -231,8 +277,24 @@ marked.use({
 
 
 import markedAlert from 'marked-alert';
-marked.use(markedAlert());
-marked_copy.use(markedAlert());
+const alert_options = {
+  variants: [
+    {
+      type: 'question',
+      icon: '<i class="fa-regular fa-circle-question"></i>',
+      title: 'Question', // optional
+      titleClassName: 'alert-question' // optional
+    },
+    {
+      type: 'suggestion',
+      icon: '<span class="fa-stack"><i class="fa-light fa-circle fa-stack-2x"></i><i class="fa fa-lightbulb fa-stack-1x"></i></span>',
+      title: 'Suggestion', // optional
+      titleClassName: 'alert-suggestion' // optional
+    }
+  ]
+};
+marked.use(markedAlert(alert_options));
+marked_copy.use(markedAlert(alert_options));
 
 
 import createMarkdownDemo from './markdown-demo.js';
@@ -257,6 +319,10 @@ registerExtensions([
 import createTiKZ from './tikz.js';
 marked.use( createDirectives( [ createTiKZ(':::') ] ) );
 
+import { inlineMathematica, createMathematica } from './mathematica.js';
+marked.use( createDirectives( [ createMathematica(':::') ] ) );
+registerExtension( inlineMathematica );
+
 import markedMoreLists from 'marked-more-lists';
 marked.use(markedMoreLists());
 marked_copy.use(markedMoreLists());
@@ -277,7 +343,7 @@ marked.use({
 
 global.output = '';
 
-global.marked = marked_copy;
+global.marked = marked;
 
 // This function needs to be available to code executed in runInThisContext,
 // in order to be able to create extensions which execute JavaScript code.
@@ -333,6 +399,42 @@ const outFile = filename.replace(/\.([^.]+)$/, '.html');
 
 const markdown_no_metadata = await processYAMLheader(input);
 const text = processFileInclusions(markdown_no_metadata);
+
+import { Renderer } from 'marked';
+import { header_length } from './metadata-header.js';
+
+const renderer = {
+  paragraph(token) {
+    let html = Renderer.prototype.paragraph.call(this, token); 
+   	let edit_link = '';
+   	if (token?.position?.start?.line !== undefined) {
+			const value = 'value=' + encodeURIComponent(`${path.resolve(markdownFile)}:${token.position.start.line + header_length}`);
+			const href = 'kmtrigger://macro=Open%20file%20in%20sublime&' + value;
+			edit_link = `<a class='edit-link' href='${href}'><i class='fa-solid fa-pen-to-square'></i></a>`;  
+   	}
+   	
+   	html = html.replace('<p>', `<p>${edit_link}`);
+    return `${html}`
+  },
+
+  listitem(token) {
+  	let html = Renderer.prototype.listitem.call(this, token); 
+   	let edit_link = '';
+   	if (token?.position?.start?.line !== undefined) {
+			const value = 'value=' + encodeURIComponent(`${path.resolve(markdownFile)}:${token.position.start.line + header_length}`);
+			const href = 'kmtrigger://macro=Open%20file%20in%20sublime&' + value;
+			edit_link = `<a class='edit-link' href='${href}'><i class='fa-solid fa-pen-to-square'></i></a>`;  
+   	}
+   	
+   	html = html.replace('<li>', `<li>${edit_link}`);
+    return `${html}`
+  }
+}; 
+
+import markedTokenPosition from "marked-token-position";
+//marked.use({ renderer }, markedTokenPosition());
+
+
 const content = marked.parse(text);
 let html = processTemplate(content);
 

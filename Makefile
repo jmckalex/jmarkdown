@@ -1,4 +1,8 @@
-.PHONY: start ph226
+.PHONY: start ph226 math
+
+math:
+	browser-sync start --server --files interactive-mathematica.html --followSymlinks true --startPath interactive-mathematica.html --browser "Google Chrome" &> /dev/null &
+
 
 start:
 	node ./src/index.js jmarkdown.md

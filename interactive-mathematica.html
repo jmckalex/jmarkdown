@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>My Website</title>
+	<style>
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+			line-height: 1.6;
+			color: #333;
+			max-width: 800px;
+			margin: 0 auto;
+			padding: 20px;
+		}
+		header {
+			border-bottom: 1px solid #eee;
+			padding-bottom: 10px;
+			margin-bottom: 20px;
+		}
+		footer {
+			margin-top: 40px;
+			padding-top: 10px;
+			border-top: 1px solid #eee;
+			font-size: 0.8em;
+			color: #777;
+		}
+	</style>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/light.css" />
+	<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+	<style>
+	
+		sl-radio-group {
+			display: inline-block;
+			margin-left: 3pt;
+			position: relative;
+			top: -1pt;
+		}
+		
+		sl-radio-group::part(form-control-input) {
+			display: flex;
+			flex-direction: row;
+			gap: 1em;
+		}
+		
+		.container {
+			display: grid;
+			grid-template-columns: minmax(20%, 1fr) 1fr;
+			column-gap: 6pt;
+			border: solid 1pt lightgray;
+			border-radius: 6pt;
+			padding: 6pt;
+			overflow: scroll;
+		}
+		
+		main {
+			margin-bottom: 18pt;
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<h1>Interactive Mathematica Test</h1>
+	</header>
+	
+	<main>
+		<span>URL of local Mathematica server:</span>
+		<sl-input id='url'></sl-input>
+		
+		<div style='margin-top: 6pt'>
+			Output 
+			<sl-radio-group id='output' value='svg'>
+					<sl-radio value="svg">SVG</sl-radio>
+					<sl-radio value="png">PNG</sl-radio>
+					<!-- <sl-radio value="text">Text</sl-radio> -->
+			</sl-radio-group>
+		</div>
+		
+		<sl-textarea id='code' label="Code to evaluate" resize=auto style='margin-top: 6pt;'></sl-textarea>
+		
+		<sl-button-group label="Tasks" style='margin-top: 6pt;'>
+		  <sl-button id='evaluate'>Evaluate</sl-button>
+		</sl-button-group>
+
+	</main>
+	
+	<div id='svg-output'>
+		<span><strong>SVG output</strong></span>
+		<div class="container">
+			<span>Code</span>
+			<span>Output</span>
+		</div>
+	</div>
+	
+	<div id='png-output'>
+		<span><strong>PNG output</strong></span>
+		<div class="container">
+			<span>Code</span>
+			<span>Output</span>
+		</div>
+	</div>
+	
+	<div id='text-output'></div>
+	
+	<div id='result-container'></div>
+	
+	<footer>
+		<p>&copy; 2025 J. McKenzie Alexander</p>
+	</footer>
+
+	<script>
+		// This function configures the textarea to allow 'tab' keys
+		$(window).on("load", function() {
+			const sl_textarea = document.getElementById("code");
+			
+			function checkShadowDOM() {
+				if (sl_textarea.shadowRoot) {
+					const textarea = sl_textarea.shadowRoot.querySelector("textarea");
+					console.log(textarea);
+					textarea.addEventListener('keydown', function(e) {
+					  if (e.key === 'Tab') {
+						console.log("Tab key pressed");
+						e.preventDefault();
+						
+						const start = this.selectionStart;
+						const end = this.selectionEnd;
+						
+						console.log(`Selection start: ${start}, end: ${end}`);
+						
+						// Insert tab character
+						this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
+						
+						// Move cursor to after the inserted tab
+						this.selectionStart = this.selectionEnd = start + 1;
+					  }
+					});
+				} else {
+					// Try again on next frame
+					requestAnimationFrame(checkShadowDOM);
+				}
+			}
+			
+			checkShadowDOM();
+		});
+		
+		
+		$("#url").val("127.0.0.1:20000");
+		
+		$("#evaluate").on("click", function() {
+			const url = $("#url").val();
+			const code = $("#code").val();
+			const output = $("#output").val();
+			console.log(output);
+			
+			console.log(`code: ${code}`);
+			$.post(`http://${url}`, {
+				message: code,
+				returnAs: output
+			})
+			.done(function(data, textStatus, xhr) {
+				console.log("Response received");
+				console.log($(data.documentElement));
+				
+				if (xhr.getResponseHeader('Content-Type').includes('image/svg+xml')) {
+					// Handle SVG response
+					const $p = $("<p></p>");
+					$p.html(data.documentElement);
+					$('#svg-output .container').append(`<p>${code}</p>`);
+					$('#svg-output .container').append($p);					
+				} else if (xhr.getResponseHeader('Content-Type').includes('image/png')) {
+					// Handle PNG response (base64 encoded)
+					const img = new Image();
+					img.src = 'data:image/png;base64,' + data;
+					const $p = $("<p></p>");
+					$p.html(img);
+					$('#png-output .container').append(`<p>${code}</p>`);
+					$('#png-output .container').append($p);
+					
+				} else {
+					// Handle text response
+					console.log("Result:", data);
+					$('#result-container').text(data);
+				}
+			})
+			.fail(function(xhr, status, error) {
+				console.error("Request failed:", error);
+				console.log("Response:", xhr.responseText);
+			});
+		})
+	</script>
+</body>
+</html>
