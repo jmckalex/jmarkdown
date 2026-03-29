@@ -407,45 +407,83 @@ const text = processFileInclusions(markdown_no_metadata);
 
 import { Renderer } from 'marked';
 import { header_length } from './metadata-header.js';
+import { sourcePositions } from './source-positions.js';
+
+// Stamp data-source-line attributes onto rendered HTML elements.
+// The inverse-search click handler (injected into the template) reads these.
+function addSourceLineAttr(html, token, tag) {
+  if (token.sourceLine !== undefined) {
+    return html.replace(`<${tag}`, `<${tag} data-source-line="${token.sourceLine}"`);
+  }
+  return html;
+}
 
 const renderer = {
   paragraph(token) {
-    let html = Renderer.prototype.paragraph.call(this, token); 
-   	let edit_link = '';
-   	if (token?.position?.start?.line !== undefined) {
-			const value = 'value=' + encodeURIComponent(`${path.resolve(markdownFile)}:${token.position.start.line + header_length}`);
-			const href = 'kmtrigger://macro=Open%20file%20in%20sublime&' + value;
-			edit_link = `<a class='edit-link' href='${href}'><i class='fa-solid fa-pen-to-square'></i></a>`;  
-   	}
-   	
-   	html = html.replace('<p>', `<p>${edit_link}`);
-    return `${html}`
+    let html = Renderer.prototype.paragraph.call(this, token);
+    return addSourceLineAttr(html, token, 'p');
   },
 
   listitem(token) {
-  	let html = Renderer.prototype.listitem.call(this, token); 
-   	let edit_link = '';
-   	if (token?.position?.start?.line !== undefined) {
-			const value = 'value=' + encodeURIComponent(`${path.resolve(markdownFile)}:${token.position.start.line + header_length}`);
-			const href = 'kmtrigger://macro=Open%20file%20in%20sublime&' + value;
-			edit_link = `<a class='edit-link' href='${href}'><i class='fa-solid fa-pen-to-square'></i></a>`;  
-   	}
-   	
-   	html = html.replace('<li>', `<li>${edit_link}`);
-    return `${html}`
+    let html = Renderer.prototype.listitem.call(this, token);
+    return addSourceLineAttr(html, token, 'li');
+  },
+
+  heading(token) {
+    let html = Renderer.prototype.heading.call(this, token);
+    return addSourceLineAttr(html, token, `h${token.depth}`);
+  },
+
+  table(token) {
+    let html = Renderer.prototype.table.call(this, token);
+    return addSourceLineAttr(html, token, 'table');
+  },
+
+  blockquote(token) {
+    let html = Renderer.prototype.blockquote.call(this, token);
+    return addSourceLineAttr(html, token, 'blockquote');
+  },
+
+  code(token) {
+    let html = Renderer.prototype.code.call(this, token);
+    return addSourceLineAttr(html, token, 'pre');
   }
-}; 
+};
 
-import markedTokenPosition from "marked-token-position";
-//marked.use({ renderer }, markedTokenPosition());
 
+// Install the source position tracker and the renderer that stamps data-source-line attributes.
+marked.use(sourcePositions(text, header_length), { renderer });
 
 const content = marked.parse(text);
+
+// Inject the inverse-search click handler script into the template data.
+// This provides click-to-edit functionality: clicking any element with a
+// data-source-line attribute opens the source file at that line in Sublime Text.
+const inverseSearchScript = `
+<script>
+  document.addEventListener('click', function(e) {
+    if (!e.metaKey) return;
+    const el = e.target.closest('[data-source-line]');
+    if (el) {
+      e.preventDefault();
+      const line = el.dataset.sourceLine;
+      const file = ${JSON.stringify(path.resolve(markdownFile))};
+      const value = 'value=' + encodeURIComponent(file + ':' + line);
+      window.location = 'kmtrigger://macro=Open%20file%20in%20sublime&' + value;
+    }
+  });
+</script>
+`;
+
 let html = processTemplate(content);
 
 import * as PostProcessor from './post-processor.js';
 
 html = PostProcessor.postProcessHTML(html);
 html = PostProcessor.runPostprocessScripts(html);
+
+// Insert the inverse-search script before </body>
+html = html.replace('</body>', inverseSearchScript + '</body>');
+
 html = PostProcessor.beautifyHTML(html);
 fs.writeFileSync(outFile, html );
