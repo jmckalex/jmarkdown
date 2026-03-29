@@ -189,11 +189,16 @@ import { editors } from './editor-tag.js';
 registerExtension(editors);
 
 
-import extendedTables from "marked-extended-tables";
-
+//import extendedTables from "marked-extended-tables";
+// [marked, marked_copy].map(m => {
+// 	m.use(extendedTables());
+// });
+import { markedExtendedTablesHeaderless } from './marked-extended-tables-headerless.js';
 [marked, marked_copy].map(m => {
-	m.use(extendedTables());
+	m.use(markedExtendedTablesHeaderless());
 });
+
+
 
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js';
