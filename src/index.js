@@ -76,6 +76,27 @@ const markdownFileDirectory = path.dirname(path.resolve(process.cwd(), markdownF
 
 import { runInThisContext, marked, marked_copy, registerExtension, registerExtensions } from './utils.js';
 
+// --- Inverse search utilities ---
+// Stamp data-source-line onto the first HTML opening tag in a rendered fragment.
+function addSourceLineAttr(html, token) {
+  if (token.sourceLine !== undefined) {
+    return html.replace(/^(<[a-zA-Z][a-zA-Z0-9]*)/, `$1 data-source-line="${token.sourceLine}"`);
+  }
+  return html;
+}
+
+// Wrap an extension object's renderer so its output gets data-source-line.
+// Mutates the extension in place (before registration).
+function wrapRendererWithSourceLine(extension) {
+  const originalRenderer = extension.renderer;
+  extension.renderer = function(token) {
+    const html = originalRenderer.call(this, token);
+    if (html === false) return false;
+    return addSourceLineAttr(html, token);
+  };
+  return extension;
+}
+
 configManager.set("Markdown file directory", markdownFileDirectory);
 configManager.set("Jmarkdown app directory", path.dirname(fileURLToPath(import.meta.url)) )
 
@@ -171,7 +192,8 @@ registerExtensions([
 import * as jmarkdownSyntaxModifications from './syntax-modifications.js';
 
 if (options.normalSyntax != true) {
-	registerExtensions([
+	// Wrap each inline extension's renderer to stamp data-source-line
+	const inlineExts = [
 		jmarkdownSyntaxModifications.italics, 
 		jmarkdownSyntaxModifications.strong, 
 		jmarkdownSyntaxModifications.underline,
@@ -179,7 +201,9 @@ if (options.normalSyntax != true) {
 		jmarkdownSyntaxModifications.superscript,
 		jmarkdownSyntaxModifications.highlight,
 		jmarkdownSyntaxModifications.intense
-	]);
+	];
+	inlineExts.forEach(ext => wrapRendererWithSourceLine(ext));
+	registerExtensions(inlineExts);
 }
 
 import { anchors } from './anchors.js';
@@ -409,44 +433,29 @@ import { Renderer } from 'marked';
 import { header_length } from './metadata-header.js';
 import { sourcePositions } from './source-positions.js';
 
-// Stamp data-source-line attributes onto rendered HTML elements.
-// The inverse-search click handler (injected into the template) reads these.
-function addSourceLineAttr(html, token, tag) {
-  if (token.sourceLine !== undefined) {
-    return html.replace(`<${tag}`, `<${tag} data-source-line="${token.sourceLine}"`);
-  }
-  return html;
-}
-
 const renderer = {
   paragraph(token) {
-    let html = Renderer.prototype.paragraph.call(this, token);
-    return addSourceLineAttr(html, token, 'p');
+    return addSourceLineAttr(Renderer.prototype.paragraph.call(this, token), token);
   },
 
   listitem(token) {
-    let html = Renderer.prototype.listitem.call(this, token);
-    return addSourceLineAttr(html, token, 'li');
+    return addSourceLineAttr(Renderer.prototype.listitem.call(this, token), token);
   },
 
   heading(token) {
-    let html = Renderer.prototype.heading.call(this, token);
-    return addSourceLineAttr(html, token, `h${token.depth}`);
+    return addSourceLineAttr(Renderer.prototype.heading.call(this, token), token);
   },
 
   table(token) {
-    let html = Renderer.prototype.table.call(this, token);
-    return addSourceLineAttr(html, token, 'table');
+    return addSourceLineAttr(Renderer.prototype.table.call(this, token), token);
   },
 
   blockquote(token) {
-    let html = Renderer.prototype.blockquote.call(this, token);
-    return addSourceLineAttr(html, token, 'blockquote');
+    return addSourceLineAttr(Renderer.prototype.blockquote.call(this, token), token);
   },
 
   code(token) {
-    let html = Renderer.prototype.code.call(this, token);
-    return addSourceLineAttr(html, token, 'pre');
+    return addSourceLineAttr(Renderer.prototype.code.call(this, token), token);
   }
 };
 

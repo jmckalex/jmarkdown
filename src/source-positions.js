@@ -48,7 +48,7 @@ function tryLocateInSource(token, text, offsetToLine, headerLength, searchFrom) 
 	if (!token.raw) return false;
 	const idx = text.indexOf(token.raw, searchFrom);
 	if (idx !== -1) {
-		token.sourceLine = offsetToLine(idx) + headerLength + 1;
+		token.sourceLine = offsetToLine(idx) + headerLength;
 		token._sourceOffset = idx;
 		return true;
 	}
@@ -137,7 +137,7 @@ export function sourcePositions(text, headerLength = 0) {
 					if (!token.raw) continue;
 					const idx = text.indexOf(token.raw, offset);
 					if (idx !== -1) {
-						token.sourceLine = offsetToLine(idx) + headerLength + 1;
+						token.sourceLine = offsetToLine(idx) + headerLength;
 						token._sourceOffset = idx;
 						offset = idx + token.raw.length;
 					}
