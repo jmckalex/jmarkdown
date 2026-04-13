@@ -81,6 +81,7 @@ if (!filename) {
 }
 
 global.current_file = filename;
+global.isLatex = isLatex;
 const markdownFile = filename;
 const markdownFileDirectory = path.dirname(path.resolve(process.cwd(), markdownFile));
 
@@ -474,6 +475,13 @@ const renderer = {
 // In fragment mode or LaTeX output, skip this — the attributes are only useful with the inverse search script.
 if (!options.fragment && !isLatex) {
 	marked.use(sourcePositions(text, header_length), { renderer });
+}
+
+// Install the LaTeX renderer for built-in tokens (paragraph, heading, etc.).
+// This must come after all extensions are registered so it takes precedence.
+import latexRenderer from './latex-renderer.js';
+if (isLatex) {
+	marked.use({ renderer: latexRenderer });
 }
 
 const content = marked.parse(text);

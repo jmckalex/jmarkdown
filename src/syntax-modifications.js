@@ -18,7 +18,9 @@ export const italics = {
 						}
 					},
 					renderer(token) {
-						return `<em>${this.parser.parseInline(token.tokens)}</em>`;
+						const content = this.parser.parseInline(token.tokens);
+						if (global.isLatex) return `\\emph{${content}}`;
+						return `<em>${content}</em>`;
 					}
 				};
 
@@ -41,7 +43,9 @@ export const strong = {
 					}
 				},
 				renderer(token) {
-					return `<strong>${this.parser.parseInline(token.tokens)}</strong>`;
+					const content = this.parser.parseInline(token.tokens);
+					if (global.isLatex) return `\\textbf{${content}}`;
+					return `<strong>${content}</strong>`;
 				}
 			};
 
@@ -64,7 +68,9 @@ export const highlight = {
 		}
 	},
 	renderer(token) {
-		return `<span class='highlight'>${this.parser.parseInline(token.tokens)}</span>`;
+		const content = this.parser.parseInline(token.tokens);
+		if (global.isLatex) return `\\hl{${content}}`;
+		return `<span class='highlight'>${content}</span>`;
 	}
 };
 
@@ -87,7 +93,9 @@ export const intense = {
 		}
 	},
 	renderer(token) {
-		return `<span class='intense'>${this.parser.parseInline(token.tokens)}</span>`;
+		const content = this.parser.parseInline(token.tokens);
+		if (global.isLatex) return `\\textbf{\\emph{${content}}}`;
+		return `<span class='intense'>${content}</span>`;
 	}
 };
 
@@ -110,7 +118,9 @@ export const underline = {
 					}
 				},
 				renderer(token) {
-					return `<span class='underline'>${this.parser.parseInline(token.tokens)}</span>`;
+					const content = this.parser.parseInline(token.tokens);
+					if (global.isLatex) return `\\underline{${content}}`;
+					return `<span class='underline'>${content}</span>`;
 				}
 			};
 
@@ -134,6 +144,7 @@ export const subscript = {
 				},
 				renderer(token) {
 					let contents = this.parser.parseInline(token.tokens).replace(/[{}]/g, '');
+					if (global.isLatex) return `\\textsubscript{${contents}}`;
 					return `<sub>${contents}</sub>`;
 				}
 			};		
@@ -158,6 +169,7 @@ export const superscript = {
 				},
 				renderer(token) {
 					let contents = this.parser.parseInline(token.tokens).replace(/[{}]/g, '');
+					if (global.isLatex) return `\\textsuperscript{${contents}}`;
 					return `<sup>${contents}</sup>`;
 				}
 			};		
