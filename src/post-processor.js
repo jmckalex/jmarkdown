@@ -9,9 +9,10 @@ import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 
 // Post-process HTML output using cheerio
-export function postProcessHTML(html) {
-	// Load into cheerio
-	const $ = cheerio.load(html);
+export function postProcessHTML(html, options = {}) {
+	// Load into cheerio — in fragment mode, pass isDocument=false to prevent
+	// cheerio wrapping the content in <html><head><body> tags.
+	const $ = cheerio.load(html, null, !options.fragment);
 
 	// Find all our marker spans
 	$('span.marker-to-remove').each((i, elem) => {
@@ -37,7 +38,10 @@ export function postProcessHTML(html) {
 	}
 	process_crossrefs($);
 	replaceTargetsBySources($);
-	moveBodyStylesToHead($);
+	// Only hoist styles to <head> in full-document mode; in fragment mode there's no <head>.
+	if (!options.fragment) {
+		moveBodyStylesToHead($);
+	}
 	return $.html();
 }
 
@@ -153,7 +157,7 @@ export function beautifyHTML(html) {
 			wrap_attributes: 'auto',    // 'auto', 'force', 'force-aligned', 'force-expand-multiline'
 			wrap_attributes_indent_size: 2, // Indent size for wrapped attributes
 			unformatted: ['code', 'pre'], // Tags that shouldn't be reformatted
-			content_unformatted: ['pre'], // Tags whose content shouldn't be reformatted
+			content_unformatted: ['pre', 'code-display'], // Tags whose content shouldn't be reformatted
 			extra_liners: [], // Tags that should have extra line breaks before them
 			end_with_newline: true,     // End output with newline
 			editorconfig: false,        // Use .editorconfig if present
