@@ -193,6 +193,11 @@ marked.use(markedFootnote({
     } 
 }));
 
+// Register the inline footnote extension [^label: body] after marked-footnote.
+// Later registrations get priority, so our start() (which requires a colon inside
+// the brackets) is checked before marked-footnote's [^label] reference syntax.
+registerExtension(inlineFootnote);
+
 import * as jmarkdownSyntaxEnhancements from './syntax-enhancements.js';
 
 registerExtensions([ 
@@ -438,7 +443,13 @@ const input = fs.readFileSync(filename, 'utf8');
 const outFile = filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html');
 
 const markdown_no_metadata = await processYAMLheader(input);
-const text = processFileInclusions(markdown_no_metadata);
+const text_no_inclusions = processFileInclusions(markdown_no_metadata);
+
+// Collapse multi-paragraph inline footnotes so they stay within a single
+// paragraph block for the inline tokenizer.
+import { preprocessFootnotes, inlineFootnote, getFootnotesHTML, resetFootnotes } from './inline-footnotes.js';
+resetFootnotes();
+const text = preprocessFootnotes(text_no_inclusions);
 
 import { Renderer } from 'marked';
 import { header_length } from './metadata-header.js';
@@ -495,6 +506,9 @@ if (isLatex) {
 } else {
 	// HTML output: full pipeline with post-processing, template, and inverse search.
 
+	// Append the collected inline footnotes section, if any.
+	const contentWithFootnotes = content + getFootnotesHTML();
+
 	// Inject the inverse-search click handler script into the template data.
 	// This provides click-to-edit functionality: clicking any element with a
 	// data-source-line attribute opens the source file at that line in Sublime Text.
@@ -514,7 +528,7 @@ if (isLatex) {
 </script>
 `;
 
-	let html = options.fragment ? content : processTemplate(content);
+	let html = options.fragment ? contentWithFootnotes : processTemplate(contentWithFootnotes);
 
 	html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment });
 	html = PostProcessor.runPostprocessScripts(html);
