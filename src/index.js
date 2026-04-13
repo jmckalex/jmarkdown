@@ -57,6 +57,7 @@ program
 	.description('Process a JMarkdown file')
 	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface*, etc., and revert to normal Markdown syntax')
 	.option('--fragment', 'Output an HTML fragment without the template wrapper (no <html>, <head>, <body>)')
+	.option('--to <format>', 'Output format: html (default) or latex', 'html')
 	.action((filename, options) => {
 		program.file_to_process = filename;
 		program.process_options = options;
@@ -64,6 +65,13 @@ program
 
 program.parse(process.argv);
 const options = { ...program.opts(), ...program.process_options };
+
+const outputFormat = options.to || 'html';
+if (!['html', 'latex'].includes(outputFormat)) {
+	console.error(`Unknown output format: "${outputFormat}". Supported formats: html, latex`);
+	process.exit(1);
+}
+const isLatex = outputFormat === 'latex';
 
 // Get the markdown file we are supposed to process
 const filename = program.file_to_process;
@@ -204,7 +212,7 @@ if (options.normalSyntax != true) {
 		jmarkdownSyntaxModifications.highlight,
 		jmarkdownSyntaxModifications.intense
 	];
-	inlineExts.forEach(ext => { if (!options.fragment) wrapRendererWithSourceLine(ext); });
+	inlineExts.forEach(ext => { if (!options.fragment && !isLatex) wrapRendererWithSourceLine(ext); });
 	registerExtensions(inlineExts);
 }
 
@@ -426,7 +434,7 @@ import processFileInclusions from './file-inclusion.js';
 import { processTemplate } from './html-template.js';
 
 const input = fs.readFileSync(filename, 'utf8');
-const outFile = filename.replace(/\.([^.]+)$/, '.html');
+const outFile = filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html');
 
 const markdown_no_metadata = await processYAMLheader(input);
 const text = processFileInclusions(markdown_no_metadata);
@@ -463,17 +471,26 @@ const renderer = {
 
 
 // Install the source position tracker and the renderer that stamps data-source-line attributes.
-// In fragment mode, skip this — the attributes are only useful with the inverse search script.
-if (!options.fragment) {
+// In fragment mode or LaTeX output, skip this — the attributes are only useful with the inverse search script.
+if (!options.fragment && !isLatex) {
 	marked.use(sourcePositions(text, header_length), { renderer });
 }
 
 const content = marked.parse(text);
 
-// Inject the inverse-search click handler script into the template data.
-// This provides click-to-edit functionality: clicking any element with a
-// data-source-line attribute opens the source file at that line in Sublime Text.
-const inverseSearchScript = `
+import * as PostProcessor from './post-processor.js';
+
+if (isLatex) {
+	// LaTeX output: write the parsed content directly — no post-processing,
+	// no template wrapping, no inverse-search injection.
+	fs.writeFileSync(outFile, content);
+} else {
+	// HTML output: full pipeline with post-processing, template, and inverse search.
+
+	// Inject the inverse-search click handler script into the template data.
+	// This provides click-to-edit functionality: clicking any element with a
+	// data-source-line attribute opens the source file at that line in Sublime Text.
+	const inverseSearchScript = `
 <script>
   document.addEventListener('click', function(e) {
     if (!e.metaKey) return;
@@ -489,17 +506,16 @@ const inverseSearchScript = `
 </script>
 `;
 
-let html = options.fragment ? content : processTemplate(content);
+	let html = options.fragment ? content : processTemplate(content);
 
-import * as PostProcessor from './post-processor.js';
+	html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment });
+	html = PostProcessor.runPostprocessScripts(html);
 
-html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment });
-html = PostProcessor.runPostprocessScripts(html);
+	// Insert the inverse-search script before </body> (skip in fragment mode)
+	if (!options.fragment) {
+		html = html.replace('</body>', inverseSearchScript + '</body>');
+	}
 
-// Insert the inverse-search script before </body> (skip in fragment mode)
-if (!options.fragment) {
-	html = html.replace('</body>', inverseSearchScript + '</body>');
+	html = PostProcessor.beautifyHTML(html);
+	fs.writeFileSync(outFile, html);
 }
-
-html = PostProcessor.beautifyHTML(html);
-fs.writeFileSync(outFile, html );
