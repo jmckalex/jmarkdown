@@ -56,12 +56,14 @@ program
 	.command('process <filename>', { isDefault: true })
 	.description('Process a JMarkdown file')
 	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface*, etc., and revert to normal Markdown syntax')
+	.option('--fragment', 'Output an HTML fragment without the template wrapper (no <html>, <head>, <body>)')
 	.action((filename, options) => {
 		program.file_to_process = filename;
+		program.process_options = options;
 	});
 
 program.parse(process.argv);
-const options = program.opts();
+const options = { ...program.opts(), ...program.process_options };
 
 // Get the markdown file we are supposed to process
 const filename = program.file_to_process;
@@ -202,7 +204,7 @@ if (options.normalSyntax != true) {
 		jmarkdownSyntaxModifications.highlight,
 		jmarkdownSyntaxModifications.intense
 	];
-	inlineExts.forEach(ext => wrapRendererWithSourceLine(ext));
+	inlineExts.forEach(ext => { if (!options.fragment) wrapRendererWithSourceLine(ext); });
 	registerExtensions(inlineExts);
 }
 
@@ -461,7 +463,10 @@ const renderer = {
 
 
 // Install the source position tracker and the renderer that stamps data-source-line attributes.
-marked.use(sourcePositions(text, header_length), { renderer });
+// In fragment mode, skip this — the attributes are only useful with the inverse search script.
+if (!options.fragment) {
+	marked.use(sourcePositions(text, header_length), { renderer });
+}
 
 const content = marked.parse(text);
 
@@ -484,15 +489,17 @@ const inverseSearchScript = `
 </script>
 `;
 
-let html = processTemplate(content);
+let html = options.fragment ? content : processTemplate(content);
 
 import * as PostProcessor from './post-processor.js';
 
-html = PostProcessor.postProcessHTML(html);
+html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment });
 html = PostProcessor.runPostprocessScripts(html);
 
-// Insert the inverse-search script before </body>
-html = html.replace('</body>', inverseSearchScript + '</body>');
+// Insert the inverse-search script before </body> (skip in fragment mode)
+if (!options.fragment) {
+	html = html.replace('</body>', inverseSearchScript + '</body>');
+}
 
 html = PostProcessor.beautifyHTML(html);
 fs.writeFileSync(outFile, html );
