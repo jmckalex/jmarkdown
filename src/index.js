@@ -58,6 +58,7 @@ program
 	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface*, etc., and revert to normal Markdown syntax')
 	.option('--fragment', 'Output an HTML fragment without the template wrapper (no <html>, <head>, <body>)')
 	.option('--to <format>', 'Output format: html (default) or latex', 'html')
+	.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension)')
 	.action((filename, options) => {
 		program.file_to_process = filename;
 		program.process_options = options;
@@ -440,7 +441,7 @@ import processFileInclusions from './file-inclusion.js';
 import { processTemplate } from './html-template.js';
 
 const input = fs.readFileSync(filename, 'utf8');
-const outFile = filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html');
+const outFile = options.output || filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html');
 
 const markdown_no_metadata = await processYAMLheader(input);
 const text_no_inclusions = processFileInclusions(markdown_no_metadata);
