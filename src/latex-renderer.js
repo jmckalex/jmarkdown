@@ -62,8 +62,8 @@ const latexRenderer = {
 	},
 
 	blockquote(token) {
-		const body = this.parser.parse(token.tokens);
-		return `\\begin{quote}\n${body}\\end{quote}\n\n`;
+		const body = this.parser.parse(token.tokens).trimEnd();
+		return `\\begin{quote}\n${body}\n\\end{quote}\n\n`;
 	},
 
 	list(token) {
