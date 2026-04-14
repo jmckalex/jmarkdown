@@ -1,7 +1,10 @@
 /*
 	Inline footnotes extension for JMarkdown.
 
-	Syntax:  [^label: footnote body text]
+	Two syntax forms:
+
+	  [fn: footnote body text]        — anonymous (auto-numbered label)
+	  [^label: footnote body text]    — explicitly labelled
 
 	The body can span multiple lines and paragraphs (continuation indicated
 	by indentation), and may contain block-level content such as lists and
@@ -91,6 +94,7 @@ function findClosingBracket(src, start) {
 // ========================================================================
 
 let footnoteCounter = 0;
+let autoLabelCounter = 0;                // for anonymous [fn: ...] footnotes
 const footnoteEntries = [];            // collected HTML footnotes
 const footnoteStore = new Map();       // label → { body, indent }
 
@@ -114,6 +118,7 @@ function escapeForRegExp(s) {
  */
 export function resetFootnotes() {
 	footnoteCounter = 0;
+	autoLabelCounter = 0;
 	footnoteEntries.length = 0;
 	footnoteStore.clear();
 }
@@ -127,40 +132,62 @@ export function resetFootnotes() {
  *
  * Multi-paragraph footnotes (those whose body contains blank lines)
  * are extracted, dedented, and stored in footnoteStore.  The original
- * [^label: ...] is replaced with a short marker so that the surrounding
+ * construct is replaced with a short marker so that the surrounding
  * paragraph remains intact for marked's block tokenizer.
  *
  * Single-paragraph footnotes are left in place — the inline extension
  * handles them directly.
+ *
+ * Recognises two forms:
+ *   [fn: body]          — anonymous footnote (auto-generated label)
+ *   [^label: body]      — explicitly labelled footnote
  */
 export function preprocessFootnotes(src) {
 	const result = [];
 	let i = 0;
 
 	while (i < src.length) {
-		const idx = src.indexOf('[^', i);
-		if (idx === -1) {
+		// Find the earliest of the two trigger sequences
+		const idxCaret = src.indexOf('[^', i);
+		const idxFn    = src.indexOf('[fn:', i);
+
+		// Pick the earlier match; if neither, flush and break
+		let idx;
+		if (idxCaret === -1 && idxFn === -1) {
 			result.push(src.slice(i));
 			break;
+		} else if (idxCaret === -1) {
+			idx = idxFn;
+		} else if (idxFn === -1) {
+			idx = idxCaret;
+		} else {
+			idx = Math.min(idxCaret, idxFn);
 		}
 
-		// Check for inline footnote definition: [^label:
 		const afterBracket = src.slice(idx);
-		const labelMatch = /^\[\^(\w+):\s*/.exec(afterBracket);
-		if (!labelMatch) {
-			result.push(src.slice(i, idx + 2));
-			i = idx + 2;
+
+		// Try both patterns: [fn: ...] (anonymous) and [^label: ...] (labelled)
+		const anonMatch    = /^\[fn:\s*/.exec(afterBracket);
+		const labelMatch   = /^\[\^(\w+):\s*/.exec(afterBracket);
+
+		const match = anonMatch || labelMatch;
+		if (!match) {
+			// Not a footnote — skip past the trigger characters
+			const skip = (idx === idxFn) ? 4 : 2;
+			result.push(src.slice(i, idx + skip));
+			i = idx + skip;
 			continue;
 		}
 
-		const label = labelMatch[1];
+		const label = labelMatch ? labelMatch[1] : '_auto' + (++autoLabelCounter);
 
 		// Use context-aware scanner to find the closing ]
 		const closingPos = findClosingBracket(src, idx + 1);
 		if (closingPos === -1) {
-			// Unmatched bracket — skip past [^
-			result.push(src.slice(i, idx + 2));
-			i = idx + 2;
+			// Unmatched bracket — skip past trigger
+			const skip = match[0].length;
+			result.push(src.slice(i, idx + skip));
+			i = idx + skip;
 			continue;
 		}
 
@@ -177,8 +204,8 @@ export function preprocessFootnotes(src) {
 
 		// ---- Multi-paragraph footnote: extract, dedent, store ----
 
-		// Body is everything between "[^label: " and the final "]"
-		const bodyRaw = src.slice(idx + labelMatch[0].length, closingPos - 1);
+		// Body is everything between the opening pattern and the final "]"
+		const bodyRaw = src.slice(idx + match[0].length, closingPos - 1);
 
 		// Detect indent from the first continuation line in the raw source
 		let indent = '';
@@ -204,7 +231,7 @@ export function preprocessFootnotes(src) {
 
 		footnoteStore.set(label, { body: dedented, indent });
 
-		// Replace the whole [^label: ...] with a marker
+		// Replace the whole [...] with a marker
 		result.push(src.slice(i, idx) + makeFnMarker(label));
 		i = closingPos;
 	}
@@ -224,18 +251,23 @@ export const inlineFootnote = {
 		// Check for preprocessed marker
 		const markerIdx = src.indexOf(FN_MARKER_PREFIX);
 
-		// Check for inline footnote definition [^label:
-		let inlineIdx = -1;
-		const bracketIdx = src.indexOf('[^');
-		if (bracketIdx !== -1 && /^\[\^\w+:/.test(src.slice(bracketIdx))) {
-			inlineIdx = bracketIdx;
+		// Check for anonymous inline footnote [fn:
+		let fnIdx = -1;
+		const fnBracketIdx = src.indexOf('[fn:');
+		if (fnBracketIdx !== -1) {
+			fnIdx = fnBracketIdx;
 		}
 
-		// Return the earliest match, or undefined if neither found
-		if (markerIdx === -1 && inlineIdx === -1) return undefined;
-		if (markerIdx === -1) return inlineIdx;
-		if (inlineIdx === -1) return markerIdx;
-		return Math.min(markerIdx, inlineIdx);
+		// Check for labelled inline footnote [^label:
+		let labelIdx = -1;
+		const caretIdx = src.indexOf('[^');
+		if (caretIdx !== -1 && /^\[\^\w+:/.test(src.slice(caretIdx))) {
+			labelIdx = caretIdx;
+		}
+
+		// Return the earliest match, or undefined if none found
+		const candidates = [markerIdx, fnIdx, labelIdx].filter(x => x !== -1);
+		return candidates.length > 0 ? Math.min(...candidates) : undefined;
 	},
 
 	tokenizer(src) {
@@ -258,15 +290,18 @@ export const inlineFootnote = {
 			return token;
 		}
 
-		// ---- Case 2: inline single-paragraph footnote [^label: body] ----
-		const opening = /^\[\^(\w+):\s*/.exec(src);
+		// ---- Case 2: inline single-paragraph footnote ----
+		// Matches [fn: body] (anonymous) or [^label: body] (labelled)
+		const anonOpening  = /^\[fn:\s*/.exec(src);
+		const labelOpening = /^\[\^(\w+):\s*/.exec(src);
+		const opening = anonOpening || labelOpening;
 		if (!opening) return;
 
 		const closingPos = findClosingBracket(src, 1);
 		if (closingPos === -1) return;
 
 		const raw = src.slice(0, closingPos);
-		const label = opening[1];
+		const label = labelOpening ? labelOpening[1] : '_auto' + (++autoLabelCounter);
 		const body = src.slice(opening[0].length, closingPos - 1).trim();
 
 		// Detect indent from first continuation line
