@@ -466,7 +466,14 @@ const renderer = {
   },
 
   heading(token) {
-    return addSourceLineAttr(Renderer.prototype.heading.call(this, token), token);
+    let html = Renderer.prototype.heading.call(this, token);
+    // Strip {-} marker from the rendered heading text.
+    // If present, also add an 'unnumbered' class for the numeric headings post-processor.
+    if (/\s*\{-\}\s*/.test(html)) {
+      html = html.replace(/\s*\{-\}\s*/, '');
+      html = html.replace(/^<h([1-6])/, '<h$1 class="unnumbered"');
+    }
+    return addSourceLineAttr(html, token);
   },
 
   table(token) {
@@ -487,6 +494,20 @@ const renderer = {
 // In fragment mode or LaTeX output, skip this — the attributes are only useful with the inverse search script.
 if (!options.fragment && !isLatex) {
 	marked.use(sourcePositions(text, header_length), { renderer });
+} else if (!isLatex) {
+	// Fragment mode: still strip {-} from headings even though we skip source-position tracking.
+	marked.use({
+		renderer: {
+			heading(token) {
+				let html = Renderer.prototype.heading.call(this, token);
+				if (/\s*\{-\}\s*/.test(html)) {
+					html = html.replace(/\s*\{-\}\s*/, '');
+					html = html.replace(/^<h([1-6])/, '<h$1 class="unnumbered"');
+				}
+				return html;
+			}
+		}
+	});
 }
 
 // Install the LaTeX renderer for built-in tokens (paragraph, heading, etc.).

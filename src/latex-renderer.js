@@ -29,9 +29,17 @@ const latexRenderer = {
 	},
 
 	heading(token) {
-		const content = this.parser.parseInline(token.tokens);
+		let content = this.parser.parseInline(token.tokens);
 		const command = headingCommands[token.depth] || 'subparagraph';
-		return `\\${command}{${content}}\n\n`;
+
+		// Check for {-} suffix, which signals an unnumbered heading.
+		let starred = '';
+		if (/\s*\{-\}\s*$/.test(content)) {
+			content = content.replace(/\s*\{-\}\s*$/, '');
+			starred = '*';
+		}
+
+		return `\\${command}${starred}{${content}}\n\n`;
 	},
 
 	strong(token) {
