@@ -370,7 +370,7 @@ export const inlineFootnote = {
 export function getFootnotesHTML() {
 	if (footnoteEntries.length === 0) return '';
 
-	let html = '\n<section class="footnotes">\n<ol>\n';
+	let html = '\n<section class="footnotes">\n<h1 class="endnotes-heading">Endnotes</h1>\n<ol>\n';
 	for (const { n, label, content } of footnoteEntries) {
 		html += `<li id="fn-${label}">\n`;
 		html += content + '\n';
