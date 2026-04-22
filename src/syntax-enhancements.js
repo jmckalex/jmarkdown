@@ -243,6 +243,12 @@ export const classAndId = {
         }
     },
     renderer(token) {
+        // In LaTeX mode, emit nothing. There's no generic HTML-class-to-LaTeX
+        // mapping that makes sense, so any LaTeX-specific content (e.g. a
+        // \noindent that corresponds to a {.noindent} class in the HTML path)
+        // should be supplied explicitly via the :tex[...] inline directive.
+        if (global.isLatex) return '';
+
         // Create an empty span with data attributes
         const attributes = [];
         const selectors = token.selector.split(/(?=[.#])/);

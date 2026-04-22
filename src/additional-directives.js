@@ -113,6 +113,40 @@ const additionalDirectives = [
 			return false;
 		}
 	},
+	/*
+		:tex[...] — emit the bracketed content verbatim in LaTeX output,
+		emit nothing in HTML output.  Use for output-format-specific LaTeX
+		commands (e.g. :tex[\noindent] before a paragraph that should not
+		be indented in the print version).
+	*/
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "tex",
+		renderer(token) {
+			if (token.meta.name === "tex") {
+				return global.isLatex ? token.text : '';
+			}
+			return false;
+		}
+	},
+	/*
+		:html[...] — inverse of :tex.  Emit the bracketed content verbatim
+		in HTML output, emit nothing in LaTeX output.  Use for HTML-specific
+		markup (e.g. interactive elements, links to web-only resources) in
+		dual-output documents.
+	*/
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "html",
+		renderer(token) {
+			if (token.meta.name === "html") {
+				return global.isLatex ? '' : token.text;
+			}
+			return false;
+		}
+	},
 	{
 		'level': 'container',
 		'marker': ":::",
