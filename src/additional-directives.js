@@ -114,35 +114,90 @@ const additionalDirectives = [
 		}
 	},
 	/*
-		:tex[...] — emit the bracketed content verbatim in LaTeX output,
+		:TeX[...] — emit the bracketed content verbatim in LaTeX output,
 		emit nothing in HTML output.  Use for output-format-specific LaTeX
-		commands (e.g. :tex[\noindent] before a paragraph that should not
+		commands (e.g. :TeX[\noindent] before a paragraph that should not
 		be indented in the print version).
 	*/
 	{
 		'level': 'inline',
 		'marker': ":",
-		label: "tex",
+		label: "TeX",
 		renderer(token) {
-			if (token.meta.name === "tex") {
+			if (token.meta.name === "TeX") {
 				return global.isLatex ? token.text : '';
 			}
 			return false;
 		}
 	},
 	/*
-		:html[...] — inverse of :tex.  Emit the bracketed content verbatim
-		in HTML output, emit nothing in LaTeX output.  Use for HTML-specific
-		markup (e.g. interactive elements, links to web-only resources) in
-		dual-output documents.
+		:HTML[...] — inverse of :TeX.  Emit the bracketed content in HTML
+		output (with markdown inline syntax processed normally), emit
+		nothing in LaTeX output.  Use for HTML-specific inline markup in
+		dual-output documents, e.g. an inline link to a web-only resource
+		that should be rendered with any markdown formatting inside it.
 	*/
 	{
 		'level': 'inline',
 		'marker': ":",
-		label: "html",
+		label: "HTML",
 		renderer(token) {
-			if (token.meta.name === "html") {
-				return global.isLatex ? '' : token.text;
+			if (token.meta.name === "HTML") {
+				return global.isLatex ? '' : this.parser.parseInline(token.tokens);
+			}
+			return false;
+		}
+	},
+	/*
+		:::TeX ... ::: — container form of :TeX[...].  Emit the block
+		content verbatim in LaTeX output, emit nothing in HTML output.
+		Use for block-level LaTeX that has no inline equivalent, e.g.
+		a full \begin{figure}...\end{figure} block, a tabular environment,
+		or a TiKZ picture that should only appear in the print version.
+
+		The empty custom tokenizer is deliberate: its presence causes
+		createToken() to skip marked's default block lexer for the
+		container's content, so raw LaTeX (backslashes, dollar signs,
+		braces) is preserved verbatim on token.text.  Running markdown
+		processing on LaTeX source would actively corrupt it (e.g. $...$
+		math would be eaten by the latex extension, _x_ would become
+		italics).
+	*/
+	{
+		'level': 'container',
+		'marker': ":::",
+		label: "TeX",
+		tokenizer(text, token) {
+			// Intentionally empty: token.text has already been set by
+			// createToken(), and we don't want marked's lexer to run on
+			// the raw LaTeX content.
+		},
+		renderer(token) {
+			if (token.meta.name === "TeX") {
+				return global.isLatex ? token.text : '';
+			}
+			return false;
+		}
+	},
+	/*
+		:::HTML ... ::: — inverse of :::TeX.  Emit the block content in
+		HTML output (with markdown syntax processed normally), emit
+		nothing in LaTeX output.  Use for block-level content that
+		should only appear in the web version.
+
+		Unlike :::TeX, markdown processing is enabled inside :::HTML —
+		content here is typically prose, and writing raw <p> tags around
+		every paragraph would defeat the point of a markdown authoring
+		system.  Raw HTML (iframes, <details>, custom elements) still
+		passes through since marked supports inline HTML by default.
+	*/
+	{
+		'level': 'container',
+		'marker': ":::",
+		label: "HTML",
+		renderer(token) {
+			if (token.meta.name === "HTML") {
+				return global.isLatex ? '' : marked.parser(token.tokens);
 			}
 			return false;
 		}
