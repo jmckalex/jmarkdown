@@ -372,9 +372,14 @@ export function getFootnotesHTML() {
 
 	let html = '\n<section class="footnotes">\n<h1 class="endnotes-heading">Endnotes</h1>\n<ol>\n';
 	for (const { n, label, content } of footnoteEntries) {
+		const backref = ` <a href="#fnref-${label}" class="footnote-backref">\u21a9</a>`;
+		// Insert backref before the last </p> so it sits inline within the final paragraph
+		const lastP = content.lastIndexOf('</p>');
+		const merged = lastP !== -1
+			? content.slice(0, lastP) + backref + content.slice(lastP)
+			: content + backref;
 		html += `<li id="fn-${label}">\n`;
-		html += content + '\n';
-		html += `<a href="#fnref-${label}" class="footnote-backref">\u21a9</a>\n`;
+		html += merged + '\n';
 		html += `</li>\n`;
 	}
 	html += '</ol>\n</section>\n';
