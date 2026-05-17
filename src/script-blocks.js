@@ -126,14 +126,14 @@ const jmarkdown_script = {
 								tokens: []
 							};
 
-							if (typeof global.output == "object" && output !== null ) {
-								if ('block' in output) {
-									token.text = output.block;
+							if (typeof global.output == "object" && global.output !== null) {
+								if ('block' in global.output) {
+									token.text = global.output.block;
 									token.tokenize = 'block';
 									this.lexer.blockTokens(token.text, token.tokens);
 								}
 								else {
-									token.text = output.inline;
+									token.text = global.output.inline;
 									token.tokenize = 'inline';
 									this.lexer.inline(token.text, token.tokens);
 								}
