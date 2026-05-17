@@ -354,7 +354,7 @@ const markdownDemos = [
   createMarkdownDemo(':::::'),
   createMarkdownDemo('::::::'),
   createMarkdownDemo(':::::::'),
-  createMarkdownDemo(':::::::')
+  createMarkdownDemo('::::::::')
 ];
 marked.use( createDirectives( markdownDemos ) );
 

@@ -27,7 +27,7 @@ export const italics = {
 export const strong = {
 				name: 'strong',
 				level: 'inline',
-				start(src) { return src.match(/\//)?.index },
+				start(src) { return src.match(/\*/)?.index },
 				tokenizer(src) {
 					const rule = /^\*([^\*]+)\*/;
 					const match = rule.exec(src);

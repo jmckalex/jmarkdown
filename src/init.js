@@ -120,7 +120,7 @@ function createMakefileTemplate(options, src_path) {
 		}
 		else {
 			options['key'] = '-' + f.split('.')[0];
-			options['key_uppercase'] = '-' + f.split('.').toUpperCase();	
+			options['key_uppercase'] = '-' + f.split('.')[0].toUpperCase();
 		}
 	}
 	else if (options.makefile == true) {
