@@ -167,6 +167,79 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
     return raw.replace(/:/g, '').replace(/-+| /g, '').split('|');
   }
 
+  /* ── LaTeX rendering helpers ─────────────────────────────────────── */
+  /*
+   * Map the extension's token shape to a `tabular` environment. Widths are
+   * percentage strings (e.g. '30%') and translate to `p{0.30\textwidth}`.
+   * Colspan uses \multicolumn; rowspan uses \multirow (requires
+   * \usepackage{multirow}). The two-cell-empty placeholder for rowspan
+   * targets keeps the `&` count aligned with the column count.
+   */
+
+  const buildColSpec = (align, width) => {
+    if (width) {
+      const pct = parseInt(width, 10) / 100;
+      return `p{${pct.toFixed(2)}\\textwidth}`;
+    }
+    if (align === 'center') return 'c';
+    if (align === 'right')  return 'r';
+    return 'l';
+  };
+
+  const formatLatexCell = (text, cell, align, width, col) => {
+    let inner = text;
+    if (cell.rowspan && cell.rowspan > 1) {
+      inner = `\\multirow{${cell.rowspan}}{*}{${inner}}`;
+    }
+    if (cell.colspan > 1) {
+      const spec = buildColSpec(align[col], width[col]);
+      return `\\multicolumn{${cell.colspan}}{${spec}}{${inner}}`;
+    }
+    return inner;
+  };
+
+  const renderLatexRow = (parser, row, align, width) => {
+    const cells = [];
+    let col = 0;
+    for (const cell of row) {
+      if (cell.rowspan === 0) {
+        // Rowspan target from above: emit an empty placeholder so the
+        // column count (& separators) still matches the colspec.
+        if (cell.colspan > 1) {
+          cells.push(`\\multicolumn{${cell.colspan}}{c}{}`);
+        } else {
+          cells.push('');
+        }
+      } else {
+        const text = parser.parseInline(cell.tokens);
+        cells.push(formatLatexCell(text, cell, align, width, col));
+      }
+      col += cell.colspan || 1;
+    }
+    return cells.join(' & ');
+  };
+
+  const renderTableLatex = (parser, token, hasHeader) => {
+    const colspec = token.align.map((a, i) => buildColSpec(a, token.width[i])).join('');
+
+    let tex = `\\begin{tabular}{${colspec}}\n\\hline\n`;
+
+    if (hasHeader) {
+      for (const hrow of token.header) {
+        tex += renderLatexRow(parser, hrow, token.align, token.width) + ' \\\\\n';
+      }
+      tex += '\\hline\n';
+    }
+
+    for (const brow of token.rows) {
+      if (brow[0].emptyRow) continue;
+      tex += renderLatexRow(parser, brow, token.align, token.width) + ' \\\\\n';
+    }
+
+    tex += '\\hline\n\\end{tabular}\n\n';
+    return tex;
+  };
+
   /* ── Extension 1: Standard table with header (spanTable) ────────── */
 
   var spanTable = {
@@ -244,6 +317,8 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
       }
     },
     renderer: function(token) {
+      if (global.isLatex) return renderTableLatex(this.parser, token, true);
+
       var i, j, row, cell, col, text;
       var output = '<table>';
 
@@ -436,6 +511,8 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
       }
     },
     renderer: function(token) {
+      if (global.isLatex) return renderTableLatex(this.parser, token, false);
+
       var output = '<table>';
       output += '<tbody>';
       for (var i = 0; i < token.rows.length; i++) {
