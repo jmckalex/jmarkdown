@@ -250,6 +250,10 @@ import hljs from 'highlight.js';
 			emptyLangClass: 'hljs',
 		    langPrefix: 'hljs language-',
 		    highlight(code, lang, info) {
+		      // On the LaTeX path, hand the original source through to
+		      // the renderer unchanged so `\begin{minted}{lang}` receives
+		      // raw code, not HTML-encoded hljs spans.
+		      if (global.isLatex) return code;
 		      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
 		      return hljs.highlight(code, {tabReplace: '  ', language }).value;
 		    }
