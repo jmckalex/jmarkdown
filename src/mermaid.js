@@ -7,7 +7,12 @@ export function createMermaid(marker) {
 		marker: marker,
 		label: "mermaid",
 		tokenizer: function(text, token) {
-			token.text = text.replace("\n", '');
+			// Strip the leading newline between `:::mermaid` and the first
+			// diagram line; preserve all internal newlines (mermaid is
+			// line-based). Anchored regex makes the intent explicit — the
+			// previous `text.replace("\n", '')` happened to do the same
+			// thing only because string-arg `replace` is first-match-only.
+			token.text = text.replace(/^\n/, '');
 			return token;
 		},
 		renderer(token) {
