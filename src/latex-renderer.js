@@ -105,7 +105,11 @@ const latexRenderer = {
 	},
 
 	table(token) {
-		// Build a basic tabular environment.
+		// Fallback for marked's built-in `table` token. The two table
+		// extensions in `marked-extended-tables-headerless.js` intercept
+		// most tables and render directly to LaTeX, but marked's GFM
+		// tokenizer is more permissive (e.g. accepts rows without trailing
+		// pipes) and falls through to this renderer for those edge cases.
 		const ncols = token.header.length;
 		const aligns = token.align.map(a => {
 			if (a === 'center') return 'c';
