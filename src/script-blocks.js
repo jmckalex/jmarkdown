@@ -43,11 +43,14 @@ const javascript_script = {
 					const match = rule.exec(src);
 
 					if (match) {
-						let script = match[1]
+						// `script_regexp` has no capturing groups, so `match[1]`
+						// was always undefined. The renderer emits `token.raw`
+						// verbatim, so `text` is only here for marked's convention;
+						// point it at the whole match instead of nothing.
 						const token = {
 							type: 'javascript',
 							raw: match[0],
-							text: match[1],
+							text: match[0],
 							tokens: []
 						};
 						return token;
