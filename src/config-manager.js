@@ -42,7 +42,8 @@ export const DEFAULT_CONFIG = {
 	"Optionals": [],
 	'Template': 'default',
 	'TiKZ libgs': '/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib',
-	'TiKZ optimise': 'group-attributes,collapse-groups'
+	'TiKZ optimise': 'group-attributes,collapse-groups',
+	'Code language': 'text'
 };
 
 class ConfigManager {

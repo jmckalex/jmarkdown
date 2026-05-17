@@ -10,6 +10,18 @@
 	are handled in their own extension renderers, not here.
 */
 
+import { configManager } from './config-manager.js';
+
+// LaTeX prose escaping. Only `&` and `#` need escaping at this layer:
+// `_` and `%` are JMarkdown source-level syntax (subscript / comment), so
+// any surviving instance has already been escaped by the author. `$` is
+// reserved for math, which the HTML pipeline validates via MathJax and
+// is passed through verbatim to LaTeX.
+function escapeLatex(text) {
+	if (text == null) return '';
+	return String(text).replace(/&/g, '\\&').replace(/#/g, '\\#');
+}
+
 // Default heading-depth → LaTeX command mapping.
 // depth 1 is \chapter by default (appropriate for book-class documents).
 // This can be shifted later via a heading-base metadata field.
@@ -51,22 +63,26 @@ const latexRenderer = {
 	},
 
 	codespan(token) {
-		return `\\texttt{${token.text}}`;
+		const lang = configManager.get('Code language') || 'text';
+		return `\\mintinline{${lang}}{${token.text}}`;
 	},
 
 	code(token) {
-		// Use verbatim for now; can switch to lstlisting or minted later.
-		return `\\begin{verbatim}\n${token.text}\n\\end{verbatim}\n\n`;
+		// Prefer the fence's named language (```javascript) over the
+		// document-wide default. Requires \usepackage{minted} in the
+		// preamble and pdflatex -shell-escape at compile time.
+		const lang = token.lang || configManager.get('Code language') || 'text';
+		return `\\begin{minted}{${lang}}\n${token.text}\n\\end{minted}\n\n`;
 	},
 
 	link(token) {
 		const text = this.parser.parseInline(token.tokens);
-		return `\\href{${token.href}}{${text}}`;
+		return `\\href{${escapeLatex(token.href)}}{${text}}`;
 	},
 
 	image(token) {
 		// A simple default; width and placement can be refined later.
-		return `\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=\\textwidth]{${token.href}}\n\\caption{${token.text || ''}}\n\\end{figure}\n\n`;
+		return `\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=\\textwidth]{${escapeLatex(token.href)}}\n\\caption{${escapeLatex(token.text || '')}}\n\\end{figure}\n\n`;
 	},
 
 	blockquote(token) {
@@ -96,7 +112,7 @@ const latexRenderer = {
 			if (a === 'right') return 'r';
 			return 'l';
 		});
-		const colspec = aligns.join(' ');
+		const colspec = aligns.join('');
 
 		let tex = `\\begin{tabular}{${colspec}}\n\\hline\n`;
 
@@ -132,7 +148,7 @@ const latexRenderer = {
 		if (token.tokens) {
 			return this.parser.parseInline(token.tokens);
 		}
-		return token.text;
+		return escapeLatex(token.text);
 	}
 };
 
