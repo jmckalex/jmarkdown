@@ -13,13 +13,22 @@ import { registerDirectives, registerExtensions } from './utils.js';
 export let header_length = 0;
 
 export async function processYAMLheader(markdown) {
-	let has_header = /^[-a-zA-Z0-9 ]+:/.test(markdown);
+	// Accept an optional YAML-style `---` opening fence (Pandoc / Jekyll /
+	// Hugo / Obsidian convention) in addition to JMarkdown's native bare-key
+	// form. The closing `---` is already handled by the split-on-terminator
+	// below. If detection fails after the strip, fall back to the original
+	// markdown so a leading `---` written as <hr> isn't silently swallowed.
+	const yaml_opener = markdown.match(/^---[ \t]*\r?\n/);
+	const stripped = yaml_opener ? markdown.slice(yaml_opener[0].length) : markdown;
+	const yaml_fence_lines = yaml_opener ? 1 : 0;
+
+	let has_header = /^[-a-zA-Z0-9 ]+:/.test(stripped);
 	if (has_header) {
-		//const [first, ...rest] = markdown.split(/\n\s*\n/);
+		markdown = stripped;
 		const [first, ...rest] = markdown.split(/\n^---.*$/m);
 		const remainder = rest.join('\n');
 
-		header_length = first.split('\n').length + 1;
+		header_length = first.split('\n').length + 1 + yaml_fence_lines;
 
 		parseKeyedData(first);
 

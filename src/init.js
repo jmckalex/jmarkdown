@@ -13,7 +13,8 @@ import * as path from 'path';
 import { DEFAULT_CONFIG, configManager } from './config-manager.js';
 import Mustache from 'mustache';
 
-const file_template = `Title: {{title}}
+const file_template = `---
+Title: {{title}}
 Date: ${getCurrentDate()}
 Author: {{Author}}
 CSS: jmarkdown.css
