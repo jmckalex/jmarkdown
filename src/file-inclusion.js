@@ -4,31 +4,30 @@ import { dirname, resolve, isAbsolute } from 'path';
 const MAX_RECURSION_DEPTH = 20;
 const SENTINEL = '\x00';
 
-// Mask code blocks and display-math regions with NUL bytes so the include
-// regex can run on the result without matching tokens inside those regions.
+// Mask code and display-math regions with NUL bytes so the include regex
+// can run on the result without matching tokens inside those regions.
 // Offsets are preserved (1 character → 1 sentinel character), so match
 // indices computed against the masked text are valid indices into the
 // original text.
 //
 // Regions masked:
 //   - fenced code blocks (``` or ~~~, leading indent ≤ 3, matching length close)
-//   - indented code blocks (4-space or tab indent, preceded by a blank line)
 //   - display math blocks (`$$ … $$`, possibly spanning lines)
 //
-// Inline code spans and inline math are not masked: the line-anchored include
-// regex already cannot match when wrapping characters are present on the line.
+// Indented code blocks are not masked: JMarkdown disables marked's 4-space
+// indented-code tokenizer (see `src/index.js`), so a line like
+// `    [[file.md]]` is ordinary text and the include should be expanded.
+//
+// Inline code spans and inline math are not masked either: the line-anchored
+// include regex cannot match when wrapping characters are present on the line.
 function maskProtectedRegions(text) {
 	const lines = text.split('\n');
 	let inFence = false;
 	let fenceChar = null;
 	let fenceLen = 0;
-	let inIndentedCode = false;
 	let inDisplayMath = false;
-	let prevBlank = true;
 
 	const out = lines.map(line => {
-		const isBlank = /^[ \t]*$/.test(line);
-
 		if (inFence) {
 			const close = line.match(/^[ \t]{0,3}(`{3,}|~{3,})[ \t]*$/);
 			if (close && close[1][0] === fenceChar && close[1].length >= fenceLen) {
@@ -36,7 +35,6 @@ function maskProtectedRegions(text) {
 				fenceChar = null;
 				fenceLen = 0;
 			}
-			prevBlank = false;
 			return SENTINEL.repeat(line.length);
 		}
 
@@ -44,10 +42,8 @@ function maskProtectedRegions(text) {
 			const closeIdx = line.indexOf('$$');
 			if (closeIdx !== -1) {
 				inDisplayMath = false;
-				prevBlank = false;
 				return SENTINEL.repeat(closeIdx + 2) + line.slice(closeIdx + 2);
 			}
-			prevBlank = isBlank;
 			return SENTINEL.repeat(line.length);
 		}
 
@@ -56,24 +52,6 @@ function maskProtectedRegions(text) {
 			inFence = true;
 			fenceChar = fenceOpen[1][0];
 			fenceLen = fenceOpen[1].length;
-			inIndentedCode = false;
-			prevBlank = false;
-			return SENTINEL.repeat(line.length);
-		}
-
-		if (inIndentedCode) {
-			if (isBlank) {
-				prevBlank = true;
-				return SENTINEL.repeat(line.length);
-			}
-			if (/^(?: {4}|\t)/.test(line)) {
-				prevBlank = false;
-				return SENTINEL.repeat(line.length);
-			}
-			inIndentedCode = false;
-		} else if (prevBlank && /^(?: {4}|\t)/.test(line)) {
-			inIndentedCode = true;
-			prevBlank = false;
 			return SENTINEL.repeat(line.length);
 		}
 
@@ -100,7 +78,6 @@ function maskProtectedRegions(text) {
 			i++;
 		}
 
-		prevBlank = isBlank;
 		return masked;
 	});
 
