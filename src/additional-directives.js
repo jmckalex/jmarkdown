@@ -233,28 +233,25 @@ export const titleBox = {
 		'marker': ":::",
 		label: "title-box",
 		tokenizer(text, token) {
-	        // Check if we can split by asterisks
-	        if (!text.includes('***')) {
-	            // If no separator, use default processing
-	            this.lexer.blockTokens(text, token.tokens);
-	            //return token;
-	        }        
-	        const [title, body] = text.split(/\*{3,}/);
-	        token['title'] = [];
-	        this.lexer.blockTokens(title, token['title']);
-	        token['body'] = [];
-	        this.lexer.blockTokens(body, token['body']);
-	    },
+			// Title and body are separated by a line of three or more asterisks.
+			// When the author omits the separator, render the whole content as
+			// the body with an empty title rather than crashing on an undefined
+			// half of the split.
+			token['title'] = [];
+			token['body'] = [];
+			if (text.includes('***')) {
+				const [title, body] = text.split(/\*{3,}/);
+				this.lexer.blockTokens(title, token['title']);
+				this.lexer.blockTokens(body, token['body']);
+			} else {
+				this.lexer.blockTokens(text, token['body']);
+			}
+		},
 		renderer(token) {
 			if (token.meta.name === "title-box") {
 				const title = this.parser.parse(token['title']);
 				const body = this.parser.parse(token['body']);
 				return `<div class="title-box"><div class='title'>${title}</div><div class='body'>${body}</div></div>`;
-				token.tokens.shift(); // Throw away the opening space token
-				let title_token = token.tokens.shift();
-				let title_html = marked.parser(title_token.tokens).replace(/<\/?p>/g, '');
-				let body_html = marked.parser(token.tokens);
-				return `<div class="title-box"><div class='title'>${title_html}</div><div class='body'>${body_html}</div></div>`;
 			}
 			return false;
 		}
