@@ -23,8 +23,16 @@ import { marked } from './utils.js';
 const descriptionList = {
 	name: 'descriptionList',
 	level: 'block',                                     // Is this a block-level or inline-level tokenizer?
-	start(src) { return src.match(/([ \t]*(?:[^:\n]|(?<!:):(?!:))+?)::(\s+(?:.*)|$)/)?.index; },
-	//start(src) { return src.match(/([ \t]*[^:\n]+?)::(\s+(?:.*)|$)/)?.index; }, // Hint to Marked.js to stop and check for a match
+	start(src) {
+		// Fast pre-check: bail out if '::' doesn't appear at all. Avoids the
+		// catastrophic backtracking the old unanchored regex was prone to on
+		// large documents with no description lists.
+		const idx = src.indexOf('::');
+		if (idx < 0) return undefined;
+		// Return the start of the line containing '::' so marked.js can ask
+		// the tokenizer (whose dt_rule is anchored at ^) to try matching there.
+		return src.lastIndexOf('\n', idx - 1) + 1;
+	},
 	tokenizer(src, tokens) {
 		const dt_rule = /^([ \t]*(?:[^:\n]|(?<!:):(?!:))+?)::(\s+(?:.*)|$)/;
 		//const dt_rule = /^([ \t]*[^:\n]+?)::(\s+(?:.*)|$)/;
