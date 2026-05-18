@@ -12,6 +12,14 @@ import { registerDirectives, registerExtensions } from './utils.js';
 
 export let header_length = 0;
 
+// Whitespace-flanked match for the `from` keyword in load specs like
+// 'foo, bar from file.js'. A plain `"from"` substring search would also
+// fire on names containing the letters, e.g. `transform`, `platform-foo`,
+// or a filename like `from-config.js`, silently mis-splitting the spec.
+// Word boundaries alone aren't enough either, since `\b` matches the
+// hyphen-adjacent `from` in `from-config.js`.
+const FROM_KEYWORD = /\s+from\s+/;
+
 export async function processYAMLheader(markdown) {
 	// Accept an optional YAML-style `---` opening fence (Pandoc / Jekyll /
 	// Hugo / Obsidian convention) in addition to JMarkdown's native bare-key
@@ -222,9 +230,9 @@ async function loadDirectives() {
 			if (Array.isArray(metadata[k])) {
 				for (const spec of metadata[k]) {
 					let directives, file, array;
-					if (spec.includes("from")) {
+					if (FROM_KEYWORD.test(spec)) {
 						// The spec should be of the form 'foo, bar, ... from file_name.js'
-						[directives, file] = spec.split("from");
+						[directives, file] = spec.split(FROM_KEYWORD);
 						// extract the names of the exported directives
 						array = directives.split(",").map(s => s.trim()).filter(s => s !== '');
 						file = file.trim();
@@ -251,9 +259,9 @@ async function loadDirectives() {
 
 export async function loadDirectivesFromSpec(spec) {
 	let directives, file, array;
-	if (spec.includes("from")) {
+	if (FROM_KEYWORD.test(spec)) {
 		// The spec should be of the form 'foo, bar, ... from /Absolute/Path/To/File/file_name.js'
-		[directives, file] = spec.split("from");
+		[directives, file] = spec.split(FROM_KEYWORD);
 		// extract the names of the exported directives
 		array = directives.split(",").map(s => s.trim()).filter(s => s !== '');
 		file = file.trim();
@@ -280,9 +288,9 @@ async function loadExtensions() {
 			if (Array.isArray(metadata[k])) {
 				for (const spec of metadata[k]) {
 					let extensions, file, array;
-					if (spec.includes("from")) {
+					if (FROM_KEYWORD.test(spec)) {
 						// The spec should be of the form 'foo, bar, ... from file_name.js'
-						[extensions, file] = spec.split("from");
+						[extensions, file] = spec.split(FROM_KEYWORD);
 						// extract the names of the exported directives
 						array = extensions.split(",").map(s => s.trim()).filter(s => s !== '');
 						file = file.trim();
@@ -307,9 +315,9 @@ async function loadExtensions() {
 
 export async function loadExtensionsFromSpec(spec) {
 	let extensions, file, array;
-	if (spec.includes("from")) {
+	if (FROM_KEYWORD.test(spec)) {
 		// The spec should be of the form 'foo, bar, ... from /Absolute/Path/To/File/file_name.js'
-		[extensions, file] = spec.split("from");
+		[extensions, file] = spec.split(FROM_KEYWORD);
 		// extract the names of the exported directives
 		array = extensions.split(",").map(s => s.trim()).filter(s => s !== '');
 		file = file.trim();
