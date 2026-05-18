@@ -73,7 +73,7 @@ export function createMathematica(marker) {
 			// output file exists...
 			let output_file = file_name.replace('.m', ".txt"); // This is the default
 			if (token?.attrs?.output) {
-				const type = token?.attrs?.output.toLowerCase();
+				const type = token?.attrs?.output?.toLowerCase();
 				output_file = output_file.replace('.txt', `.${type}`);
 			}
 
@@ -82,13 +82,13 @@ export function createMathematica(marker) {
 					fs.writeFileSync(file_name, text);
 					const opts = { cwd: mathematica_directory };
 					//console.log(`Trying to process the Mathematica file with options ${opts}`);
-					if (token?.attrs?.output.toLowerCase() == 'svg') {
+					if (token?.attrs?.output?.toLowerCase() == 'svg') {
 						execSync(`wolframscript -c "SetOptions[$Output, PageWidth->100]" -f \"${file_name}\" -print -format SVG > \"${svg_name}\"`, opts);
 					}
-					else if (token?.attrs?.output.toLowerCase() == 'png') {
+					else if (token?.attrs?.output?.toLowerCase() == 'png') {
 						execSync(`wolframscript -c "SetOptions[$Output, PageWidth->100]" -f \"${file_name}\" -print -format PNG > \"${png_name}\"`, opts);
 					}
-					else if (token?.attrs?.output.toLowerCase() == 'jpg' || token?.attrs?.output.toLowerCase() == 'jpeg') {
+					else if (token?.attrs?.output?.toLowerCase() == 'jpg' || token?.attrs?.output?.toLowerCase() == 'jpeg') {
 						execSync(`wolframscript -c "SetOptions[$Output, PageWidth->100]" -f \"${file_name}\" -print -format JPEG > \"${jpg_name}\"`, opts);
 					}
 					else {
@@ -158,7 +158,7 @@ export function createMathematica(marker) {
 					const style = token.attrs?.style ? ` style='${token.attrs.style}'` : '';
 					// construct strings for class= and id= attributes
 					let classes = " class='mathematica";
-					switch (token.attrs?.output.toLowerCase()) {
+					switch (token.attrs?.output?.toLowerCase()) {
 						case "png": classes += " png "; break;
 						case "svg": classes += " svg "; break;
 						case "jpg":
@@ -170,7 +170,7 @@ export function createMathematica(marker) {
 
 					// Construct the object to be returned — either a graphic or a string
 					let obj;
-					if (token.attrs?.output.toLowerCase() == "svg") {
+					if (token.attrs?.output?.toLowerCase() == "svg") {
 						if (token.attrs?.embed) {
 							try {
 								// Read the SVG file
@@ -187,7 +187,7 @@ export function createMathematica(marker) {
 							obj = `<img  ${classes} ${id} ${style}  src='Mathematica/${svg_file_name}'>`;
 						}
 					}
-					else if (token.attrs?.output.toLowerCase() == "png") {
+					else if (token.attrs?.output?.toLowerCase() == "png") {
 						if (token.attrs?.embed) {
 							try {
 								// Read the png file
@@ -204,7 +204,7 @@ export function createMathematica(marker) {
 							obj = `<img ${classes} ${id} ${style} src='Mathematica/${png_file_name}'>`;
 						}
 					}
-					else if (token.attrs?.output.toLowerCase() == "jpg" || token.attrs?.output.toLowerCase() == "jpeg") {
+					else if (token.attrs?.output?.toLowerCase() == "jpg" || token.attrs?.output?.toLowerCase() == "jpeg") {
 						if (token.attrs?.embed) {
 							try {
 								// Read the png file
@@ -405,7 +405,7 @@ export const inlineMathematica = {
 			const style = token.attrs?.style ? ` style='${token.attrs.style}'` : '';
 			// construct strings for class= and id= attributes
 			let classes = " class='mathematica";
-			switch (token.attrs?.output.toLowerCase()) {
+			switch (token.attrs?.output?.toLowerCase()) {
 			case "png": classes += " png "; break;
 			case "svg": classes += " svg "; break;
 			case "jpg":
@@ -413,11 +413,11 @@ export const inlineMathematica = {
 			default: classes += " txt "; break;
 			}
 			classes += (token.attrs?.class ?? '') + "'";
-			const id = ('id' in token.attrs) ? " id='" + token.attrs.id + "'" : '';
+			const id = (token.attrs?.id) ? " id='" + token.attrs.id + "'" : '';
 
 			// Construct the object to be returned — either a graphic or a string
 			let obj;
-			if (token.attrs?.output.toLowerCase() == "svg") {
+			if (token.attrs?.output?.toLowerCase() == "svg") {
 				if (token.attrs?.embed) {
 					try {
 						// Read the SVG file
@@ -434,7 +434,7 @@ export const inlineMathematica = {
 					obj = `<img  ${classes} ${id} ${style}  src='Mathematica/${svg_file_name}'>`;
 				}
 			}
-			else if (token.attrs?.output.toLowerCase() == "png") {
+			else if (token.attrs?.output?.toLowerCase() == "png") {
 				if (token.attrs?.embed) {
 					try {
 						// Read the png file
@@ -451,7 +451,7 @@ export const inlineMathematica = {
 					obj = `<img ${classes} ${id} ${style} src='Mathematica/${png_file_name}'>`;
 				}
 			}
-			else if (token.attrs?.output.toLowerCase() == "jpg" || token.attrs?.output.toLowerCase() == "jpeg") {
+			else if (token.attrs?.output?.toLowerCase() == "jpg" || token.attrs?.output?.toLowerCase() == "jpeg") {
 				if (token.attrs?.embed) {
 					try {
 						// Read the png file
@@ -469,10 +469,10 @@ export const inlineMathematica = {
 				}
 			}
 			else {
-				if (token.attrs?.TeX.toLowerCase() == "inline") {
+				if (token.attrs?.TeX?.toLowerCase() == "inline") {
 					obj = "$" + fs.readFileSync(svg_full_path.replace('.svg', '.txt'), 'utf8') + "$";
 				}
-				else if (token.attrs?.TeX.toLowerCase() == "block") {
+				else if (token.attrs?.TeX?.toLowerCase() == "block") {
 					obj = "$$" + fs.readFileSync(svg_full_path.replace('.svg', '.txt'), 'utf8') + "$$";
 				}
 				else {
