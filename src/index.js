@@ -448,7 +448,7 @@ const input = fs.readFileSync(filename, 'utf8');
 const outFile = options.output || filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html');
 
 const markdown_no_metadata = await processYAMLheader(input);
-const text_no_inclusions = processFileInclusions(markdown_no_metadata);
+const text_no_inclusions = processFileInclusions(markdown_no_metadata, markdownFileDirectory);
 
 // Collapse multi-paragraph inline footnotes so they stay within a single
 // paragraph block for the inline tokenizer.
