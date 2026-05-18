@@ -107,7 +107,7 @@ function makeFnMarker(label) {
 	return FN_MARKER_PREFIX + label + FN_MARKER_SUFFIX;
 }
 
-const FN_MARKER_REGEX = new RegExp('^' + escapeForRegExp(FN_MARKER_PREFIX) + '(\\w+)' + escapeForRegExp(FN_MARKER_SUFFIX));
+const FN_MARKER_REGEX = new RegExp('^' + escapeForRegExp(FN_MARKER_PREFIX) + '([^' + escapeForRegExp(FN_MARKER_SUFFIX) + ']+)' + escapeForRegExp(FN_MARKER_SUFFIX));
 
 function escapeForRegExp(s) {
 	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -168,7 +168,7 @@ export function preprocessFootnotes(src) {
 
 		// Try both patterns: [fn: ...] (anonymous) and [^label: ...] (labelled)
 		const anonMatch    = /^\[fn:\s*/.exec(afterBracket);
-		const labelMatch   = /^\[\^(\w+):\s*/.exec(afterBracket);
+		const labelMatch   = /^\[\^([^\]\s:]+):\s*/.exec(afterBracket);
 
 		const match = anonMatch || labelMatch;
 		if (!match) {
@@ -261,7 +261,7 @@ export const inlineFootnote = {
 		// Check for labelled inline footnote [^label:
 		let labelIdx = -1;
 		const caretIdx = src.indexOf('[^');
-		if (caretIdx !== -1 && /^\[\^\w+:/.test(src.slice(caretIdx))) {
+		if (caretIdx !== -1 && /^\[\^[^\]\s:]+:/.test(src.slice(caretIdx))) {
 			labelIdx = caretIdx;
 		}
 
@@ -293,7 +293,7 @@ export const inlineFootnote = {
 		// ---- Case 2: inline single-paragraph footnote ----
 		// Matches [fn: body] (anonymous) or [^label: body] (labelled)
 		const anonOpening  = /^\[fn:\s*/.exec(src);
-		const labelOpening = /^\[\^(\w+):\s*/.exec(src);
+		const labelOpening = /^\[\^([^\]\s:]+):\s*/.exec(src);
 		const opening = anonOpening || labelOpening;
 		if (!opening) return;
 
