@@ -175,7 +175,7 @@ const strategicFormGame = {
 
 			let c = token?.attrs?.class ?? '';
 
-			output = `<table class='game ${c}'>` + rest.join('\n') + "</table>";
+			let output = `<table class='game ${c}'>` + rest.join('\n') + "</table>";
 
 			return output;
 
