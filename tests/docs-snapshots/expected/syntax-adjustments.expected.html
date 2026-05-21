@@ -1,0 +1,91 @@
+<h1>Syntax adjustments</h1>
+<p>As noted above, here are the main “ordinary” changes for <code>jmarkdown</code>:</p>
+<ul>
+  <li>Writing <code>/italics/</code> gives <em>italics</em>.</li>
+  <li>Writing <code>*boldface*</code> gives <strong>boldface</strong>.</li>
+  <li>These can be nested, so that <code>/*italic bold*/</code> is functionally equivalent to <code>*/bold italic*/</code>
+    which looks like this: <em><strong>italic bold</strong></em> or <strong><em>bold italic</em></strong>.</li>
+  <li>Writing <code>__underline__</code> gives <span class="underline">underline</span>.</li>
+  <li>And these can all be nested for phrases, so that <code>__underline with *bold* and /italic/ is possible__</code> gives
+    <span class="underline">underline with <strong>bold</strong> and <em>italic</em> is possible</span>.
+  </li>
+</ul>
+<p>Two new syntax extensions are introduced for flush-right and centered text.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">&gt;&gt; This text is right aligned.
+&gt;&gt; Multiple lines can be included as
+&gt;&gt; line breaks are not assumed 
+&gt;&gt; to be significant.
+&gt;&gt; 
+&gt;&gt; And multiple paragraphs can be included
+&gt;&gt; as well!</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="jmarkdown-right">
+      <p>This text is right aligned.
+        Multiple lines can be included as
+        line breaks are not assumed
+        to be significant.</p>
+      <p>And multiple paragraphs can be included
+        as well!</p>
+    </div>
+  </div>
+</div>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">&gt;&gt; This text is center aligned.      &lt;&lt;
+&gt;&gt; Multiple lines can be included as &lt;&lt;
+&gt;&gt; line breaks are not assumed       &lt;&lt;
+&gt;&gt; to be significant.                &lt;&lt;
+&gt;&gt;                                   &lt;&lt;
+&gt;&gt; Multiple paragraphs are           &lt;&lt;
+&gt;&gt; supported, too!                   &lt;&lt;</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="jmarkdown-center">
+      <p>This text is center aligned.
+        Multiple lines can be included as
+        line breaks are not assumed
+        to be significant. </p>
+      <p>Multiple paragraphs are
+        supported, too! </p>
+    </div>
+  </div>
+</div>
+<p>What about emojis? For the octocat emojis, you put the name of the emoji between colons, so that
+  writing <code>:heart:</code> gives <img alt="undefined" src="https://github.githubassets.com/images/icons/emoji/unicode/2764.png?v8" class="marked-emoji-img">. Consult the
+  <a href="https://gist.github.com/rxaviers/7360908">list of octocat emojis</a> for the full list… there are a lot.
+</p>
+<p>For FontAwesome, you’ll need to link to the appropriate javascript package in the header but, once you do, then
+  you enter a FontAwesome icon by including the relevant class name.
+  So <code>:fa-thumbs-up:</code> yields <i class="fa-solid fa-thumbs-up"></i>. If you want to add additional styling class, you don’t
+  need to add the <code>fa-</code> prefix to them (they will be attached automatically).
+  Thus, <code>:fa-thumbs-up lg rotate-90:</code> yields <i class="fa-solid fa-thumbs-up fa-lg fa-rotate-90"></i>. <strong>N.B.</strong> you need to
+  have the <code>fa-</code> part of the icon name <em>immediately</em> following the opening colon.</p>
+<p>Normal markdown doesn’t provide any easy way of adding classes or an id to elements.
+  <code>jmarkdown</code> uses the directive syntax (see below) to specify that classes or an id should
+  be added to the parent element. So, for example, if <code>.red</code> and <code>.lightgreen</code> are classes with
+  the appropriate CSS definitions, then we can do the following:
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="hljs-bullet">1.</span> This is a list item {.red}
+<span class="hljs-bullet">2.</span> This is another item {.lightgreen #foo}
+<span class="hljs-bullet">3.</span> This is yet another.</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <ol>
+      <li class="red">This is a list item </li>
+      <li class="lightgreen" id="foo">This is another item </li>
+      <li>This is yet another.</li>
+    </ol>
+
+  </div>
+</div>

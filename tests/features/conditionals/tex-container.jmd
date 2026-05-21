@@ -1,0 +1,12 @@
+Title: tex-container
+------------------------------------
+
+Before paragraph.
+
+:::TeX
+\begin{equation}
+  e^{i\pi} + 1 = 0
+\end{equation}
+:::
+
+After paragraph.

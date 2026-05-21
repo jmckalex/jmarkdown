@@ -1,0 +1,62 @@
+<h2>Defining new markdown syntax (complex)</h2>
+<p>Syntax extensions can also be defined via regular expressions. To do this, you need to specify two
+  regular expressions: the first should be a quick and easy regular expression which indicates the
+  start of the new syntax element, and the second is the full regular expression to match the entire
+  construct. (Why two? Because that's how <code>marked.js</code> defines syntax extensions.)
+  Here are three examples, taken from my own personal use which are discussed in more detail below:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">Extension mark:</span> <span class="hljs-string">/\[\d\d\]/</span>   <span class="hljs-string">/\[(\d\d)\]/</span>   <span class="hljs-literal">false</span> <span class="hljs-number">1</span>
+	<span class="hljs-string">&lt;span</span> <span class="hljs-string">style='float:</span> <span class="hljs-string">right;</span> <span class="hljs-attr">font-weight:</span> <span class="hljs-string">bold;</span> <span class="hljs-attr">position:</span> <span class="hljs-string">relative;</span> <span class="hljs-attr">top:</span> <span class="hljs-string">6pt'&gt;</span>
+		<span class="hljs-string">Grade</span> <span class="hljs-string">&lt;span</span> <span class="hljs-string">class='mark'</span> <span class="hljs-string">style='padding:</span> <span class="hljs-string">3pt;</span> <span class="hljs-attr">border:</span> <span class="hljs-string">1pt</span> <span class="hljs-string">solid</span> <span class="hljs-string">black'&gt;${content1}&lt;/span&gt;</span>
+	<span class="hljs-string">&lt;/span&gt;</span>
+<span class="hljs-attr">Extension candidate:</span> <span class="hljs-string">/Candidate:\s*[0-9]+/</span> 	<span class="hljs-string">/Candidate:\s*([0-9]+)/</span>		<span class="hljs-literal">false</span>		<span class="hljs-number">1</span>
+	<span class="hljs-string">&lt;span&gt;Candidate:</span> <span class="hljs-string">&lt;strong</span> <span class="hljs-string">class='candidate'&gt;${content1}&lt;/strong&gt;&lt;/span&gt;&lt;br&gt;</span>
+<span class="hljs-attr">Extension subscripts:</span>  <span class="hljs-string">/[pxyz][0-9]+/</span>	<span class="hljs-string">/^([pxyz])([0-9]+)/</span>	<span class="hljs-literal">false</span> <span class="hljs-number">2</span>
+	<span class="hljs-string">&lt;span&gt;\(${content1}_{${content2}}\)&lt;/span&gt;</span>
+</code></pre>
+<p>The first extension matches any two digits surrounded by brackets. It then takes the numeric mark and
+  wraps it in some HTML which causes it to float to the right, so that <code>[59]</code> becomes the construct you
+  see to the right. <span style="float: right; font-weight: bold; position: relative; top: 6pt">Grade <span class="mark" style="padding: 3pt; border: 1pt solid black">59</span></span> </p>
+<p>Why do I have this defined? Because when I mark student essays, I write
+  the feedback in markdown, and it is nice to be able to simply include the mark using that syntax
+  and have it formatted in a more readable way. Moreover, by automatically adding a class to
+  the second inner span, we can do automated data extraction during the post-processing phase, as we’ll
+  see later.</p>
+<p>The second extension matches the expression <code>Candidate:</code> followed by any amount of optional
+  space, and then a sequence of digits. This then gets formatted as follows:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">Candidate: 123456</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p> <span>Candidate: <strong class="candidate">123456</strong></span><br></p>
+
+  </div>
+</div>
+<p>Again, why do this? If you look, you'll see that a class has been added to the <code>strong</code> element,
+  which means we can target that element during the post-processing phase.</p>
+<p>The third expression is more interesting. On old internet math groups, it used to be the
+  case that people would write <code>x1, x2, x3,...</code> to refer to subscripted variables. The use of
+  regular expression in defining this extensions means that you can use that syntax directly
+  in your markdown documents.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">Consider points p1, p2, p3 in three-dimensional space,
+where the respective components of p1 are denoted
+by x1, y1, and z1 respectively.</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p>Consider points <span>\(p_{1}\)</span>, <span>\(p_{2}\)</span>, <span>\(p_{3}\)</span> in three-dimensional space,
+      where the respective components of <span>\(p_{1}\)</span> are denoted
+      by <span>\(x_{1}\)</span>, <span>\(y_{1}\)</span>, and <span>\(z_{1}\)</span> respectively.</p>
+
+  </div>
+</div>
+<p>In short, using regular expressions to define syntax extensions means that <em>patterned data</em> can
+  be automatically recognised by <code>jmarkdown</code> and formatted into something more aesthetically pleasing.
+  In addition, classes can be added to the HTML markup so that the generated document has suitable
+  structure for being able to automate certain tasks. However, automating certain tasks requires
+  using JavaScript, so let me now explain why <code>jmarkdown</code> as a <code>j</code> in its name!</p>

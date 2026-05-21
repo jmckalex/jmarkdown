@@ -1,0 +1,66 @@
+<h1>Motivation</h1>
+<p>This project started out small, and then grew in its ambition.
+  The beginning was this: I’ve always found the default syntax of markdown to be a little
+  annoying. Why aren't italics defined <code>/like this/</code> rather than <code>*like this*</code>?
+  It also seemed like boldface was better indicated <code>*like this*</code> rather than
+  <code>**like this**</code>. And, finally, shouldn’t underlining be indicated <code>__like this__</code>? That just seems more… <em>rational</em>, you know.
+</p>
+<p>From that initial goal — to create a custom markdown interpreter which catered to my own peculiar syntax
+  preferences — this project has since grown into a full-featured markdown interpreter which
+  allows you to define <em>custom syntax extensions</em> in the markdown file itself! <i class="fa-solid fa-champagne-glasses"></i>
+  There’s also a lot more.</p>
+<p>Anyway, <code>jmarkdown</code> uses <a href="https://marked.js.org/">marked.js</a> to adjust and
+  extend the syntax of markdown in a number of ways. It also preloads several
+  additional extensions from the marked.js extension library to make it behave more like multimarkdown, with some
+  additional features multimarkdown doesn’t have. Here’s a list, in no particular order,
+  of all the features <code>jmarkdown</code> offers:</p>
+<ul>
+  <li>Better syntax for italics, boldface, and underline as per above</li>
+  <li>Better syntax for inline subscripts and superscripts, so that <code>H_2O</code> yields H<sub>2</sub>O
+    and <code>E=mc^2</code> yields E=mc<sup>2</sup>.</li>
+  <li>A syntax extension for right-aligned and center-aligned text.</li>
+  <li>A syntax extension for adding classes and an id to the parent element.</li>
+  <li>A syntax extension for inline comments. This defaults to the <code>%</code> character,
+    as in $\TeX$, but it can be changed.</li>
+  <li>A syntax extension for description lists. </li>
+  <li>Emojis (all <a href="https://gist.github.com/rxaviers/7360908">octocat supported</a> emojis) <img alt="undefined" src="https://github.githubassets.com/images/icons/emoji/unicode/1f37b.png?v8" class="marked-emoji-img"> <img alt="undefined" src="https://github.githubassets.com/images/icons/emoji/unicode/1f604.png?v8" class="marked-emoji-img"> I <img alt="undefined" src="https://github.githubassets.com/images/icons/emoji/unicode/2764.png?v8" class="marked-emoji-img"> marked! <img alt="undefined" src="https://github.githubassets.com/images/icons/emoji/unicode/1f389.png?v8" class="marked-emoji-img"> </li>
+  <li><a href="fontawesome.com">FontAwesome</a> icons <i class="fa-solid fa-thumbs-up"></i></li>
+  <li>GFM tables</li>
+  <li>GFM alerts</li>
+  <li>Footnotes<sup><a id="footnote-ref-a" href="#footnote-a" data-footnote-ref="" aria-describedby="footnote-label">1</a></sup> via <code>marked-footnotes</code></li>
+  <li><a href="https://talk.commonmark.org/t/generic-directives-plugins-syntax/444">Directives syntax</a>. If you don’t
+    know what this is, it’s an incredibly useful extension. I use this to provide: <ul>
+      <li>The ability to comment out parts of the markdown file, i.e., multiline comments
+        providing the functionality of C's <code>/*...*/</code> syntax.</li>
+      <li>The ability to define “optionals” for including/excluding portions of the file (e.g., answers to a quiz)</li>
+    </ul>
+  </li>
+  <li>Support for math via MathJax</li>
+  <li>Support for Mermaid.</li>
+  <li>Support for alphabetical and roman numeral lists via <code>marked-more-lists</code>.</li>
+  <li>Code highlighting using <code>highlight.js</code> via <code>marked-highlight</code>.</li>
+  <li>In-browser bibliographies generated via <a href="https://jmckalex.org/software/bibtex-in-webpages.html">Biblify</a>.
+    These are handled via JavaScript and are processed entirely within the browser, so there is no need to
+    use <code>pandoc</code> as part of the workflow.</li>
+  <li>Auto-generated table of contents.</li>
+  <li>Typesetting strategic-form games.</li>
+  <li>A useful environment for showing markdown code in its raw form, and processed form,
+    side-by-side.</li>
+  <li>A metadata header whose content is used for configuring jmarkdown and also for defining
+    variables/parameters to be inserted into the document by a pre-processor.
+    Given the header for this file, by simply typing this <code>{{homepage}}</code> I get this: <a href="https://jmckalex.org/home/">https://jmckalex.org/home/</a></li>
+  <li>The ability to define new markdown syntax, simply, in the metadata header.</li>
+  <li>The ability to insert arbitrary JavaScript code in <code>&lt;script&gt;</code> code blocks, defining and
+    exporting functions to make then available in the markdown source. Think of this
+    as being able to write your own JavaScript functions which generate HTML output,
+    and calling them, with arguments, in the markdown source.</li>
+  <li>Limited file inclusion capabilities.</li>
+</ul>
+<section class="footnotes" data-footnotes="">
+  <h2 id="footnote-label" class="sr-only">Footnotes</h2>
+  <ol>
+    <li id="footnote-a">
+      <p>Like this! <a href="#footnote-ref-a" data-footnote-backref="" aria-label="Back to reference a">↩</a></p>
+    </li>
+  </ol>
+</section>

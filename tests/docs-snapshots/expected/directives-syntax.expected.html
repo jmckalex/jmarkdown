@@ -1,0 +1,101 @@
+<h1>Directives syntax</h1>
+<p>The <code>marked-directives</code> extension provides support for directives. This is a particular form
+  of markdown which allows you to include inline elements, block elements, or higher-level containers.
+  For example, an inline element, like a span, is created like this: <code>:span[contents]{#id .class1 .class2 key=value}</code>.
+  So, if the class <code>.red</code> sets the background of an element to red, then you insert a
+  red span like this:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">:span[This is a red span]{.red}</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p><span class="red">This is a red span</span></p>
+
+  </div>
+</div>
+<p>B
+  l
+  o
+  c
+  k
+  -
+  l
+  e
+  v
+  e
+  l
+
+  d
+  i
+  r
+  e
+  c
+  t
+  i
+  v
+  e
+  s
+
+  a
+  r
+  e
+
+  p
+  r
+  e
+  f
+  i
+  x
+  e
+  d
+
+  w
+  i
+  t
+  h
+
+  <code> ::</code>. To insert an empty unordered list with a specific
+  id (say, to target with JavaScript later), just type <code>:</code>­<code>:ul{#my-id}</code>. If you inspect the elements
+  after this paragraph, you should find just such an empty element.
+</p>
+<ul id="my-id">
+</ul>
+<p>Where directives become particularly interesting is when we use them as containers. Here’s how to
+  enclose part of your markdown file in a <code>&lt;section&gt;</code> tag: </p>
+<pre><code class="hljs language-markdown">:::section{#my-section .goldenrod}
+This will appear wrapped in a 'section' tag in the output HTML, 
+with the indicated id and classes applied.
+
+<span class="hljs-bullet">1.</span> A list.
+<span class="hljs-bullet">2.</span> Another list item.
+:li[The third list item]{.red}
+<span class="hljs-bullet">4.</span> A fourth list item.
+
+Here is some math: $E=mc^2$.
+:::
+</code></pre>
+<p>Did you see the use of the inline directive in the list? That behaves as you think it should, i.e.,</p>
+<section id="my-section" class="goldenrod">
+  <p>This will appear wrapped in a 'section' tag in the output HTML.
+    (Use 'Inspect Elements' under Developer Tools to confirm...)</p>
+  <ol>
+    <li>A list.</li>
+    <li>Another list item.
+    </li>
+    <li class="red">The third list item</li>
+    <li value="4">A fourth list item.</li>
+  </ol>
+  <p>Here is some math: $E=mc^2$.</p>
+</section>
+<p>The tag name which appears after the <code>:</code>­<code>:</code>­<code>:</code> can be a predefined HTML tag, or it
+  can be a custom web element you’ve defined yourself. For example, when I'm marking exams
+  I define a minimal custom web element named <code>exam-feedback</code> so I can write</p>
+<pre><code class="hljs language-markdown">:::exam-feedback
+Exam feedback goes here...
+:::
+</code></pre>
+<p>and that custom element will add some additional HTML decorations around the text. It also means
+  that you can target that particular set of feedback for inserting local bibliographies with Biblify.
+  (See the <a href="https://jmckalex.org/software/bibtex-in-webpages.html">Biblify</a> website for details.)</p>

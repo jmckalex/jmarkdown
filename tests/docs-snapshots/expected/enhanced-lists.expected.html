@@ -1,0 +1,55 @@
+<h1>Enhanced lists</h1>
+<p><code>jmarkdown</code> includes the <code>marked-more-lists</code> extension, which provides support for alphabetical and roman numeral
+  lists. </p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="hljs-bullet">1.</span> item 1
+<span class="hljs-bullet">2.</span> item 2
+<span class="hljs-code">    a. item 2a
+        I.  sub item I
+        II. sub item II
+    b. item 2b
+3. item 3</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <ol>
+      <li>item 1</li>
+      <li>item 2<ol type="a">
+          <li>item 2a<ol type="I">
+              <li>sub item I</li>
+              <li>sub item II</li>
+            </ol>
+          </li>
+          <li>item 2b</li>
+        </ol>
+      </li>
+      <li>item 3</li>
+    </ol>
+
+  </div>
+</div>
+<p>Does this version support checkbox lists? Yes it does!</p>
+<style>
+  li:has(input[type="checkbox"]:first-child) {
+    list-style: none;
+    margin-left: -18pt;
+  }
+</style>
+
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="hljs-bullet">-</span> [X] Done
+<span class="hljs-bullet">-</span> [ ] Still to do</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <ul>
+      <li><input checked="" disabled="" type="checkbox"> Done</li>
+      <li><input disabled="" type="checkbox"> Still to do</li>
+    </ul>
+
+  </div>
+</div>

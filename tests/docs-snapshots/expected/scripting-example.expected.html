@@ -1,0 +1,98 @@
+<h2>A detailed example</h2>
+<p>I use <code>jmarkdown</code> for writing feedback on exam questions and storing the marks. The
+  markdown file is structured as follows (ignoring the metadata header), with each
+  student’s feedback and grade noted.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">Candidate: 43786
+File: ⌜student exam file name.pdf⌝
+
+:::feedback
+Q1.
+
+...text containing feedback on question 1... [68]
+
+Q2.
+
+...text containing feedback on question 2... [75]
+::: </code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p> <span>Candidate: <strong class="candidate">43786</strong></span><br>
+      File: <span class="texbook" style="font-family: 'Fira Code';">student exam file name.pdf</span> </p>
+    <p class="feedback">Feedback</p>
+    <section class="feedback">
+      <p> </p>
+      <p class="question"><em>This is the text of the first question.</em></p>
+      <p></p>
+      <p>...text containing feedback on question 1... <span style="float: right; font-weight: bold; position: relative; top: 6pt">Grade <span class="mark" style="padding: 3pt; border: 1pt solid black">68</span></span></p>
+      <p> </p>
+      <p class="question"><em>This is the text of the second question.</em></p>
+      <p></p>
+      <p>...text containing feedback on question 2... <span style="float: right; font-weight: bold; position: relative; top: 6pt">Grade <span class="mark" style="padding: 3pt; border: 1pt solid black">75</span></span></p>
+    </section>
+  </div>
+</div>
+<p>In the metadata header, I've written several extensions which use regular expressions
+  to do pattern matching on the candidate number, file name, question indicators, and
+  the mark on each question. For example, here are the extensions which format the
+  candidate number, the question text, and the mark for each question:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">extension candidate:</span> <span class="hljs-string">/Candidate:\s*[0-9]+/</span> 	<span class="hljs-string">/Candidate:\s*([0-9]+)/</span>		<span class="hljs-literal">false</span>		<span class="hljs-number">1</span>
+	 <span class="hljs-string">&lt;span&gt;Candidate:</span> <span class="hljs-string">&lt;strong</span> <span class="hljs-string">class='candidate'&gt;${content1}&lt;/strong&gt;&lt;/span&gt;&lt;br&gt;</span>
+<span class="hljs-attr">extension Q1:</span> <span class="hljs-string">/Q1\./</span>   <span class="hljs-string">/(Q1\.)/</span>   <span class="hljs-literal">false</span> <span class="hljs-number">1</span>
+	 <span class="hljs-string">&lt;p</span> <span class="hljs-string">class='question'&gt;&lt;em&gt;This</span> <span class="hljs-string">is</span> <span class="hljs-string">the</span> <span class="hljs-string">text</span> <span class="hljs-string">of</span> <span class="hljs-string">the</span> <span class="hljs-string">first</span> <span class="hljs-string">question.&lt;/em&gt;&lt;/p&gt;</span>
+<span class="hljs-attr">extension Q2:</span> <span class="hljs-string">/Q2\./</span>   <span class="hljs-string">/(Q2\.)/</span>   <span class="hljs-literal">false</span> <span class="hljs-number">1</span>
+	 <span class="hljs-string">&lt;p</span> <span class="hljs-string">class='question'&gt;&lt;em&gt;This</span> <span class="hljs-string">is</span> <span class="hljs-string">the</span> <span class="hljs-string">text</span> <span class="hljs-string">of</span> <span class="hljs-string">the</span> <span class="hljs-string">second</span> <span class="hljs-string">question.&lt;/em&gt;&lt;/p&gt;</span>
+<span class="hljs-attr">extension mark:</span> <span class="hljs-string">/\[\d\d\]/</span>   <span class="hljs-string">/\[(\d\d)\]/</span>   <span class="hljs-literal">false</span> <span class="hljs-number">1</span>
+	 <span class="hljs-string">&lt;span</span> <span class="hljs-string">class='mark'</span> <span class="hljs-string">style='float:</span> <span class="hljs-string">right;</span> <span class="hljs-attr">padding:</span> <span class="hljs-string">3pt;</span> <span class="hljs-attr">border:</span> <span class="hljs-string">1pt</span> <span class="hljs-string">solid</span> <span class="hljs-string">black'&gt;${content1}&lt;/span&gt;</span>
+</code></pre>
+<p>I’ve defined the <code>feedback</code> container directive to add text and wrap the content
+  in a <code>&lt;section class='feedback'&gt;</code> element.</p>
+<p>With this amount of markup automatically generated, it then becomes trivial to define a
+  post-processing script which does the following:</p>
+<ol>
+  <li>
+    <p>Move any footnotes mentioned in the feedback text from the end of the HTML page,
+      which is where <code>marked-footnotes</code> automatically puts them, to the bottom of the
+      <code>section.feedback</code> container. (The footnote indicators in the text are already in
+      the right place, and there is enough information in the footnote indicator to
+      tell you what needs to be moved where, with cheerio.)
+    </p>
+  </li>
+  <li>
+    <p>Process any bibliographic citations used in the feedback for each student, and append
+      an auto-generated bibliography to the end of each <code>section.feedback</code> containiner.
+      This uses <a href="https://jmckalex.org/software/bibtex-in-webpages.html">Biblify</a> to do the
+      heavy lifting.</p>
+  </li>
+  <li>
+    <p>Loop through the entire document and, for each student, calculate the grade for
+      the entire exam by extracting the marks from each <code>span.mark</code> and calculating the
+      correct weighted average. Then append an HTML span element containing the final grade
+      for the exam to the end of the <code>section.feedback</code> container for that student.</p>
+  </li>
+  <li>
+    <p>Once <em>that's</em> done, loop through the DOM and do the following:</p>
+    <ol type="a">
+      <li>Save the feedback for each student in a separate file named '<code>Candidate NNNNN.html</code>', where
+        <code>NNNNN</code> is that student’s candidate number. I use <code>cheerio</code> to
+        copy the <code>&lt;head&gt;</code> of the master output file to the start of each individual file
+        so that the feedback will be shown using the right CSS, etc.
+      </li>
+      <li>Create a CSV file which contains, on each line, a student’s candidate number,
+        followed by their mark on each individual question, and the aggregate mark
+        for the exam. This file can then be imported straight into Excel.</li>
+    </ol>
+  </li>
+</ol>
+<p>Those tasks would, admittedly, be a little easier to do if I <em>either</em> used
+  another container which wrapped the candidate number, file information, and
+  feedback container <em>or</em> if I simply put the feedback container around all of
+  the student information. But that would make the text a little less “natural”
+  in how it was read. The important thing to note, though, is how much can be
+  done by taking advantage of naturally occuring textual patterns, using regular
+  expressions to find them, then automatically add structuring information
+  (classes, etc.) which can then be used to compile/extract information during
+  the post-processing phase.</p>

@@ -1,0 +1,9 @@
+Title: fenced-no-lang
+------------------------------------
+
+A code block without a language hint:
+
+```
+plain text
+no highlighting
+```

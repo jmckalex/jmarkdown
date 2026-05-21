@@ -1,0 +1,4 @@
+Title: inline
+------------------------------------
+
+Inline math $a^2 + b^2 = c^2$ in a sentence, plus a paren form \(x = y\).

@@ -1,0 +1,6 @@
+Title: nested
+------------------------------------
+
+Nested emphasis: /*italic bold*/ and */bold italic*/.
+
+Underline wrapping mixed: __with *bold* and /italic/ inside__.

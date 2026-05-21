@@ -1,0 +1,16 @@
+Title: colspan-rowspan
+------------------------------------
+
+A column-span-only table:
+
+| H1      | H2      | H3      |
+|---------|---------|---------|
+| This cell spans 3 columns |||
+| Two-col span             || Single |
+
+A row-span + col-span table:
+
+| This header spans two       || Header A |
+| columns and two rows       ^|| Header B |
+|-------------|-----------:|----------|
+| Cell A      | Cell B     | Cell C   |

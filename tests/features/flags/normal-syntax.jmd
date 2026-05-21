@@ -1,0 +1,5 @@
+Title: normal-syntax
+------------------------------------
+
+Under --normal-syntax, /italics/ stays literal (no `<em>`) and the standard
+markdown rules apply: *this* should be emphasised, **this** strong.

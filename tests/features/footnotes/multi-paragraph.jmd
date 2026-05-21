@@ -1,0 +1,11 @@
+Title: multi-paragraph
+------------------------------------
+
+This sentence has a multi-paragraph footnote[^big:
+
+	First paragraph of the footnote body.
+
+	Second paragraph of the footnote body, with /emphasis/.
+] embedded in it.
+
+Trailing paragraph.

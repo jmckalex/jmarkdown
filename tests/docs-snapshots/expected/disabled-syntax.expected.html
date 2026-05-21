@@ -1,0 +1,20 @@
+<h1>Disabled syntax</h1>
+<p><em>Most</em> of normal markdown syntax is supported, but there are two which are disabled.
+  These are:</p>
+<ol>
+  <li>The rule that two enpty spaces at the end of a line turn into a line break.</li>
+  <li>The rule that an indent of four spaces creates a code block.</li>
+</ol>
+<p>The rule that two empty spaces indicates a line break is disabled because it is
+  a <em>really bad markup</em> rule. It's problematic enough to have semantically significant white
+  space at the <em>start</em> of a line, but we've figured out how to deal with that after years
+  of working with Makefiles and Python. But semantically significant whitespace at the
+  end of a line is deeply problematic because there's simply nothing in the source
+  file to reveal that you have two spaces at the end of a line, unless you have a
+  syntax highlighting scheme in your editor to flag that. Anyway, <code>jmarkdown</code> provides
+  a better way of explicitly indicating line breaks via syntax extensions.</p>
+<p>As for why I disabled indented code blocks… basically, that rule creates
+  havoc with using indents to indicate hierarchical list structures. If you want
+  to allow nested description lists or nest numeric lists, it's all-too-easy for
+  indented code blocks to be created when you don't want them. Anyway,
+  fenced code blocks are far superior, so just use them.</p>

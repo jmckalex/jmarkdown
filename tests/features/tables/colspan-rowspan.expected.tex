@@ -1,0 +1,22 @@
+A column-span-only table:
+
+\begin{tabular}{lll}
+\hline
+H1 & H2 & H3 \\
+\hline
+\multicolumn{3}{l}{This cell spans 3 columns} \\
+\multicolumn{2}{l}{Two-col span} & Single \\
+\hline
+\end{tabular}
+
+A row-span + col-span table:
+
+\begin{tabular}{lrl}
+\hline
+\multicolumn{2}{l}{\multirow{2}{*}{This header spans two columns and two rows       }} & Header A \\
+\multicolumn{2}{c}{} & Header B \\
+\hline
+Cell A & Cell B & Cell C \\
+\hline
+\end{tabular}
+

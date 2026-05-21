@@ -1,0 +1,38 @@
+# List of docs/*.jmd files to use as regression fixtures.
+# One bare basename per line (no extension, no path).
+# Lines starting with `#` are comments. Blank lines are ignored.
+#
+# Excluded with reason:
+#   introduction        :today directive (date-dependent)
+#   bibliographic-support  external BibTeX, network resources
+#   tikz-diagrams       requires lualatex + dvisvgm toolchain
+#   inline-scripts      embedImage('./nature.jpg') resolves relative to cwd; brittle
+#
+# Each fixture is rendered with --fragment so template chrome (CDN URLs,
+# inverse-search script, body classes) is excluded from the diff.
+
+anchors
+code-highlighting
+comments-and-optionals
+configuration-files
+description-lists
+directives-syntax
+disabled-syntax
+enhanced-lists
+extensions-complex
+extensions-simple
+file-inclusion
+footnotes
+markdown-demo
+math-support
+mermaid-diagrams
+metadata-header
+motivation
+output-templates
+post-processing
+scripting-example
+sources-and-targets
+strategic-form-games
+syntax-adjustments
+table-of-contents
+tables-and-alerts

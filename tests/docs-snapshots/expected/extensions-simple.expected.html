@@ -1,0 +1,50 @@
+<h2>Defining new markdown syntax (simple)</h2>
+<p>In the metadata header, you can define new markdown syntax by simply specifying the starting delimiter,
+  the ending delimiter, and the replacement text as HTML. (With an optional argument, you can also indicated
+  whether the contents of the new delimiter should be parsed as markdown text.) Anything between the
+  delimiters is then inserted into the defined replacement text every place that <code>${content}</code> appears. Here
+  are three examples. Suppose the metadata header includes the following:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">Extension 1:</span> [<span class="hljs-string">:</span> <span class="hljs-string">:</span>] [<span class="hljs-literal">true</span>,<span class="hljs-literal">false</span>,<span class="hljs-literal">true</span>] <span class="hljs-number">3</span>
+	<span class="hljs-string">&lt;span</span> <span class="hljs-string">class='test'</span> <span class="hljs-string">style='background:</span> <span class="hljs-string">red'&gt;${content3}&lt;/span&gt;</span>
+	<span class="hljs-string">&lt;span</span> <span class="hljs-string">class='test'</span> <span class="hljs-string">style='background:</span> <span class="hljs-string">lightgreen'&gt;${content1}&lt;/span&gt;</span>
+	<span class="hljs-string">&lt;span</span> <span class="hljs-string">class='test'</span> <span class="hljs-string">style='background:</span> <span class="hljs-string">lightblue'&gt;${content2}&lt;/span&gt;</span>
+<span class="hljs-attr">Extension 2:</span> <span class="hljs-string">@mark(</span> <span class="hljs-string">)</span> 
+	<span class="hljs-string">&lt;span</span> <span class="hljs-string">class='mark'</span> <span class="hljs-string">style='border:</span> <span class="hljs-string">1pt</span> <span class="hljs-string">solid</span> <span class="hljs-string">black;</span> <span class="hljs-attr">padding:</span> <span class="hljs-string">6pt;</span> <span class="hljs-attr">border-radius:</span> <span class="hljs-string">6pt'&gt;${content1}&lt;/span&gt;</span>
+<span class="hljs-attr">Extension 3:</span> <span class="hljs-string">⌜</span> <span class="hljs-string">⌝</span> <span class="hljs-literal">false</span>
+	<span class="hljs-string">&lt;span</span> <span class="hljs-string">class="texbook"</span> <span class="hljs-string">style="font-family:</span> <span class="hljs-string">'Fira Code'</span><span class="hljs-string">;"&gt;${content1}&lt;/span&gt;</span>	
+<span class="hljs-attr">Extension 4:</span> <span class="hljs-string">↑</span> <span class="hljs-string">↑</span> <span class="hljs-literal">false</span>
+	<span class="hljs-string">&lt;span</span> <span class="hljs-string">style="font-variant-caps:</span> <span class="hljs-string">small-caps;"&gt;${content1}&lt;/span&gt;</span>
+</code></pre>
+<p>Each new defined extension must begin with the keyword <code>Extension</code> followed by a space and then a following unique identifier,
+  which could be a short sequence of words naming the extension.
+  In the simple case, we specify the opening and closing delimiters. These can be any normal text
+  characters, in sequence, provided that there are no spaces in the delimiters. Since <code>jmarkdown</code> supports
+  unicode, you have a large set of symbols you can use which provide good syntactic clues as to what
+  the extension does. The third argument is optional, but if it is <code>true</code> then the contents surrounded
+  by the delimiter will be parsed as markdown input, otherwise it will be assumed to be <code>false</code> and the
+  contents surrounded will not be processed as markdown input.</p>
+<p>There is an optional fourth argument. If it is an integer, it specifies how many <em>arguments</em> are given to
+  the extension. The arguments are comma delimited. If you need to specify an argument that contains a comma,
+  you can give it as a "string", where quotes can be included using the normal escape syntax of \".
+  You refer to the arguments in the replacement text via <code>${content1}</code> or <code>${content2}</code> or so on, where the integer
+  refers to the number of the argument.</p>
+<p>If more than one argument is specified, then the third argument can take a special form.
+  Instead of just <em>true</em> or <em>false</em>, it can be an array of values indicating whether the
+  i<sup>th</sup> argument should be pushed through the markdown processor. If the i<sup>th</sup> entry in
+  the array is true, that argument will be processed as markdown text. If the i<sup>th</sup> entry
+  is false, that argument will be treated as verbatim text.</p>
+<p>The first defined extension converts <code>[:First *argument*, /second/ argument, __third__ argument:]</code> into
+  <span class="test" style="background: red"><span class="underline">third</span> argument</span>
+  <span class="test" style="background: lightgreen">First <strong>argument</strong></span>
+  <span class="test" style="background: lightblue">/second/ argument</span> (The
+  spaces between the <code>&lt;span&gt;</code> elements appears because the definition text contains a tab before each span.)
+</p>
+<p>The second defined extension converts <code>@mark(68)</code> into <span class="mark" style="border: 1pt solid black; padding: 6pt; border-radius: 6pt;">68</span> </p>
+<p>The third defined extension allows <span class="verbatim">⌜⌝</span> to
+  serve as delimiters for verbatim text, allowing me to type arbitary markdown code. But I also enclose the code
+  in a <code>&lt;span class="texbook"&gt;</code> element, and then target it with a little bit of JavaScript, allowing the verbatim
+  code to be typeset like in Knuth’s TeXBook, where spaces are indicated with little square caps. The result?
+  <code>⌜Text *like* /this/⌝</code> ends up transformed into <span class="texbook" style="font-family: 'Fira Code';">Text *like* /this/</span> . The fourth extension defines <code>↑ ↑</code> to function as
+  delimiters which convert the enclosed text to small caps,
+  so <code>↑Small caps↑</code> becomes <span style="font-variant-caps: small-caps;">Small caps</span>.
+</p>

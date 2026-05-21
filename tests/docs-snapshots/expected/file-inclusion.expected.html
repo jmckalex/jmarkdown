@@ -1,0 +1,70 @@
+<h1>File inclusion</h1>
+<p>JMarkdown can splice the contents of one Markdown file into another. Place the
+  include directive on a line by itself:</p>
+<pre><code class="hljs">[[chapter-one.md]]
+</code></pre>
+<p>Before parsing begins, <code>jmarkdown</code> replaces the directive with the raw content
+  of <code>chapter-one.md</code>. Markdown is inserted <em>before</em> processing, so any syntax
+  in the included file — directives, footnotes, tables, math — is parsed exactly
+  as if it had been written inline at that point in the source.</p>
+<h2>Path resolution</h2>
+<p>Relative paths resolve against the directory of the file that contains the
+  directive, <strong>not</strong> the directory <code>jmarkdown</code> was invoked from. So this layout</p>
+<pre><code class="hljs">book/
+  manuscript.md         ← contains [[chapters/intro.md]]
+  chapters/
+    intro.md            ← contains [[../appendix.md]]
+  appendix.md
+</code></pre>
+<p>works whether you run <code>jmarkdown process book/manuscript.md</code> from the project
+  root, from <code>/tmp</code>, or from anywhere else. Each include is resolved relative to
+  its own file: <code>manuscript.md</code>'s include points into <code>chapters/</code>, and
+  <code>intro.md</code>'s include climbs back out to <code>appendix.md</code> next to the manuscript.
+</p>
+<p>Absolute paths are accepted verbatim. Only <code>.md</code> is recognised; the closing
+  <code>]]</code> must immediately follow <code>.md</code>.
+</p>
+<h2>Syntax rules</h2>
+<ul>
+  <li>The directive must occupy a line by itself. Optional leading or trailing
+    whitespace is permitted; anything else on the line (including a wrapping
+    paragraph) leaves the directive literal.</li>
+  <li>Directives inside fenced code blocks or display math (<code>$$ … $$</code>) are <strong>not</strong>
+    expanded. This page demonstrates the syntax in fenced blocks without any
+    escape trick. (JMarkdown does not recognise 4-space-indent code blocks,
+    so an indented directive on its own line <strong>will</strong> expand.)</li>
+  <li>Inclusion is recursive: an included file's own <code>[[…]]</code> directives are
+    expanded against that file's directory.</li>
+</ul>
+<h2>Cycles and re-use</h2>
+<p>The same file may be included at as many independent sites as you like — the
+  contents are spliced in at each site:</p>
+<pre><code class="hljs">[[boilerplate-header.md]]
+
+# Chapter one
+…
+
+[[boilerplate-footer.md]]
+</code></pre>
+<p>What is <strong>not</strong> allowed is a cycle inside the active expansion chain. If
+  <code>a.md</code> includes <code>b.md</code> and <code>b.md</code> tries to include <code>a.md</code>, <code>jmarkdown</code> prints
+  a warning naming the cycle, leaves the offending <code>[[…]]</code> literal in the
+  output, and continues. Symbolic links are canonicalised, so two paths to the
+  same underlying file still count as the same file for cycle detection.
+</p>
+<p>A safety net of 20 levels of nesting bounds runaway recursion even when cycle
+  detection is somehow defeated.</p>
+<h2>Errors and missing files</h2>
+<p>If a referenced file cannot be read, <code>jmarkdown</code> writes an error to standard
+  error naming both the missing path and the including file, and leaves the
+  original <code>[[…]]</code> token in the rendered output as a visible telltale.</p>
+<h2>What is <strong>not</strong> supported</h2>
+<ul>
+  <li>Metadata headers in included files are not re-parsed. Included content is
+    treated as raw Markdown from the first byte, so do not put a <code>---</code>-fenced
+    YAML block at the top of a file that you intend to include.</li>
+  <li>There is no line-range or partial-file syntax — the whole file is included.</li>
+  <li>There is no conditional include (e.g., "include only when building LaTeX").
+    Use the LaTeX/HTML conditional directives (<code>:::TeX</code>, <code>:::HTML</code>) inside the
+    included file if you need format-specific content.</li>
+</ul>

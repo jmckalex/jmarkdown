@@ -1,0 +1,139 @@
+<h2>Strategic-form games</h2>
+<p><code>jmarkdown</code> defines a couple of extra directives which I find useful.
+  The first is for showing strategic-form games. The syntax is pretty
+  straighforward and is virtually the same as the notation used for typesetting
+  strategic-form games in LaTeX. The only difference is that no <code>\\</code> is
+  needed at the end of the line, and there is no <code>&amp;</code> character before the first
+  column strategy label. Here’s what it looks like:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">:::game 
+<span class="hljs-code">		     Rock   &amp; Paper  &amp; Scissors
+Rock     &amp; (0,0)  &amp; (-1,1) &amp; (1,-1)
+Paper    &amp; (1,-1) &amp; (0,0)  &amp; (-1,1)  
+Scissors &amp; (-1,1) &amp; (1,-1) &amp; (0,0)
+</span>
+row: Player 1  
+column: Player 2
+caption: The game of Rock-Paper-Scissors
+:::</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <table class="game ">
+      <tbody>
+        <tr class="no-border">
+          <td></td>
+          <td></td>
+          <td class="columnLabel" colspan="3">Player 2</td>
+        </tr>
+        <tr class="no-border">
+          <td></td>
+          <td></td>
+          <td class="columnStrategies columnLabel strategyLabels">Rock</td>
+          <td class="columnStrategies columnLabel strategyLabels">Paper</td>
+          <td class="columnStrategies columnLabel strategyLabels">Scissors</td>
+        </tr>
+        <tr>
+          <td class="rowLabel" rowspan="3">Player 1</td>
+          <td class="rowLabel rowStrategies strategyLabels">Rock</td>
+          <td class="payoffs">\((0,0)\)</td>
+          <td class="payoffs">\((-1,1)\)</td>
+          <td class="payoffs">\((1,-1)\)</td>
+        </tr>
+        <tr>
+          <td class="rowLabel rowStrategies strategyLabels">Paper</td>
+          <td class="payoffs">\((1,-1)\)</td>
+          <td class="payoffs">\((0,0)\)</td>
+          <td class="payoffs">\((-1,1)\)</td>
+        </tr>
+        <tr>
+          <td class="rowLabel rowStrategies strategyLabels">Scissors</td>
+          <td class="payoffs">\((-1,1)\)</td>
+          <td class="payoffs">\((1,-1)\)</td>
+          <td class="payoffs">\((0,0)\)</td>
+        </tr>
+        <tr class="no-border">
+          <td></td>
+          <td></td>
+          <td class="caption" colspan="3">The game of Rock-Paper-Scissors</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<p>The extension parses the input and generates a <code>&lt;table&gt;</code> having the right
+  form. All of the grid lines are drawn by CSS and can be customized.
+  <code>jmarkdown</code> throws in some CSS at the start of the HTML output so that the
+  games look more-or-less right out of the box.
+</p>
+<p>One cool thing is that the text give to the <code>row</code>, <code>column</code> and <code>caption</code>
+  options can (a) span multiple lines (if you have a <em>really</em> long name
+  for the game) and (b) are passed through the markdown interpreter so
+  you can do some tricksy things with it (such as include footnotes). E.g.,</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">:::game 
+<span class="hljs-code">		     Rock   &amp; Paper  &amp; Scissors
+Rock     &amp; (0,0)  &amp; (-1,1) &amp; (1,-1)
+Paper    &amp; (1,-1) &amp; (0,0)  &amp; (-1,1)  
+Scissors &amp; (-1,1) &amp; (1,-1) &amp; (0,0)
+</span>
+row: /Player[^a] 1/
+column: <span class="hljs-emphasis">*Player A_1 $\alpha$*</span>
+caption: The game of 
+<span class="hljs-code">	:span[Rock-Paper-Scissors]{.goldenrod}&lt;br&gt;
+	has a caption&lt;br&gt;
+	with math $\int_{-1}^{+1}f(x)\,dx$
+:::</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <table class="game ">
+      <tbody>
+        <tr class="no-border">
+          <td></td>
+          <td></td>
+          <td class="columnLabel" colspan="3"><strong>Player A<sub>1</sub> $\alpha$</strong></td>
+        </tr>
+        <tr class="no-border">
+          <td></td>
+          <td></td>
+          <td class="columnStrategies columnLabel strategyLabels">Rock</td>
+          <td class="columnStrategies columnLabel strategyLabels">Paper</td>
+          <td class="columnStrategies columnLabel strategyLabels">Scissors</td>
+        </tr>
+        <tr>
+          <td class="rowLabel" rowspan="3"><em>Player[<sup>a</sup>] 1</em></td>
+          <td class="rowLabel rowStrategies strategyLabels">Rock</td>
+          <td class="payoffs">\((0,0)\)</td>
+          <td class="payoffs">\((-1,1)\)</td>
+          <td class="payoffs">\((1,-1)\)</td>
+        </tr>
+        <tr>
+          <td class="rowLabel rowStrategies strategyLabels">Paper</td>
+          <td class="payoffs">\((1,-1)\)</td>
+          <td class="payoffs">\((0,0)\)</td>
+          <td class="payoffs">\((-1,1)\)</td>
+        </tr>
+        <tr>
+          <td class="rowLabel rowStrategies strategyLabels">Scissors</td>
+          <td class="payoffs">\((-1,1)\)</td>
+          <td class="payoffs">\((1,-1)\)</td>
+          <td class="payoffs">\((0,0)\)</td>
+        </tr>
+        <tr class="no-border">
+          <td></td>
+          <td></td>
+          <td class="caption" colspan="3">The game of
+            <span class="goldenrod">Rock-Paper-Scissors</span><br>
+            has a caption<br>
+            with math $\int_{-1}^{+1}f(x)\,dx$
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

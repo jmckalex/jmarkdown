@@ -1,0 +1,10 @@
+Title: html-container
+------------------------------------
+
+Before paragraph.
+
+:::HTML
+This content is *processed as markdown* but only emitted in HTML mode.
+:::
+
+After paragraph.

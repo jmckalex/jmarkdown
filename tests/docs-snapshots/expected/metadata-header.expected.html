@@ -1,0 +1,329 @@
+<h1>Metadata header</h1>
+<p>When <code>jmarkdown</code> starts processing the file, it checks to see if the first line of the file contains a
+  line of the following form:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">Key description:</span> <span class="hljs-string">value</span> <span class="hljs-string">assigned</span> <span class="hljs-string">to</span> <span class="hljs-string">the</span> <span class="hljs-string">key</span>
+</code></pre>
+<p>If it finds something like that, it assumes that the document contains a metadata header. It then
+  reads the header until it encounters a line beginning with at least three hyphens.
+  It strips off the header, processes it, and then
+  pushes the rest of the file through the markdown interpreter. When processing the header, the values
+  assigned to keys can span multiple lines, and the same key can appear multiple times. (What happens
+  when the same key appears multiple times depends on how that key is interpreted — more details
+  in a moment.)</p>
+<p>Here is an example of the header for this file:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">Title:</span> <span class="hljs-string">Demonstration</span> <span class="hljs-string">of</span> <span class="hljs-string">jmarkdown</span>
+<span class="hljs-attr">Date:</span> <span class="hljs-number">24</span> <span class="hljs-string">January</span> <span class="hljs-number">2025</span>
+<span class="hljs-attr">Author:</span> <span class="hljs-string">J.</span> <span class="hljs-string">McKenzie</span> <span class="hljs-string">Alexander</span>
+<span class="hljs-attr">CSS:</span> <span class="hljs-string">test.css</span>
+<span class="hljs-attr">CSS:</span> <span class="hljs-string">test2.css</span>
+<span class="hljs-attr">Highlight theme:</span> <span class="hljs-string">atom-one-dark</span>
+<span class="hljs-attr">HTML header:</span> <span class="hljs-string">&lt;!--</span> <span class="hljs-string">This</span> <span class="hljs-string">is</span> <span class="hljs-string">comment</span> <span class="hljs-number">1</span> <span class="hljs-string">--&gt;</span>
+<span class="hljs-attr">HTML header:</span> <span class="hljs-string">&lt;!--</span> <span class="hljs-string">This</span> <span class="hljs-string">is</span> <span class="hljs-string">comment</span> <span class="hljs-number">2</span>
+	<span class="hljs-string">which</span> <span class="hljs-string">is</span> <span class="hljs-string">a</span> <span class="hljs-string">multiline</span> <span class="hljs-string">comment</span>
+	<span class="hljs-string">and</span> <span class="hljs-string">ends</span> <span class="hljs-string">here</span> <span class="hljs-string">--&gt;</span>
+<span class="hljs-attr">HTML footer:</span> <span class="hljs-string">&lt;!--</span> <span class="hljs-string">This</span> <span class="hljs-string">is</span> <span class="hljs-string">comment</span> <span class="hljs-number">3</span> <span class="hljs-string">--&gt;</span>
+<span class="hljs-attr">HTML footer:</span> <span class="hljs-string">&lt;!--</span> <span class="hljs-string">This</span> <span class="hljs-string">is</span> <span class="hljs-string">comment</span> <span class="hljs-number">4</span>
+	<span class="hljs-string">which</span> <span class="hljs-string">is</span> <span class="hljs-string">a</span> <span class="hljs-string">multiline</span> <span class="hljs-string">comment</span>
+	<span class="hljs-string">and</span> <span class="hljs-string">ends</span> <span class="hljs-string">here</span> <span class="hljs-string">--&gt;</span>
+</code></pre>
+<p>Some keys have special meanings. These are as follows.</p>
+<div class="no-colon">
+  <dl>
+    <dt>Title</dt>
+    <dd>
+      <p> The value of this key will be wrapped by <code>&lt;title&gt;&lt;/title&gt;</code> tag in the <code>&lt;head&gt;</code> of the
+        output HTML.</p>
+    </dd>
+    <dt>Biblify activate</dt>
+    <dd>
+      <p> Initially, <code>jmarkdown</code> doesn't attempt to provide support for bibliographies
+        because it doesn't know what bibliography file to use or what style you want. Once that information
+        has been provided, either in the metadata header or in a <code>config.json</code> file (<a href="#toc-configuration-files">see here</a>)
+        you need to tell <code>jmarkdown</code> to switch on bibliographic support. To do that, set the key
+        <code>Biblify activate</code> to <code>true</code>.
+      </p>
+    </dd>
+    <dt>Bibliography</dt>
+    <dd>
+      <p> <span id="bibliography"></span> This should be a relative path specifying a BiBTeX bibliography database, which
+        will be used by Biblify to process any citations in the HTML output. </p>
+    </dd>
+    <dt>Bibliography style</dt>
+    <dd>
+      <p> Biblify comes with a few formats preloaded. These are 'apa',
+        'harvard1', 'vancouver', 'bjps', and 'chicago'. If you specify one of these as the value for
+        this key, that will be the output format. Any other string will be interpreted as a
+        relative path to a CSL style file that will be used. Biblify uses <a href="https://citation.js.org/">citation.js</a>
+        behind the scenes, and citation.js uses <a href="https://citationstyles.org/">Citation Style Language</a>
+        files to know how to format the bibliography.</p>
+    </dd>
+    <dt>Body classes</dt>
+    <dd>
+      <p> Any text here will be given to the <code>class</code> attribute of the <code>&lt;body&gt;</code> tag
+        in the output HTML. This allows you to trivially change the appearance of the markdown
+        file by writing CSS that takes the body classes into account.</p>
+    </dd>
+    <dt>CSS</dt>
+    <dd>
+      <p> The value of this key should be the name of a CSS file, with an optional relative path from
+        the location of the markdown file being processed. This will be added to <code>&lt;link&gt;</code> tags
+        in the <code>&lt;head&gt;</code> of the document.</p>
+      <p> If the header has multiple CSS keys, each of the files will appear in a separate <code>&lt;link&gt;</code> tag
+        in the output HTML. The precise way this is done is explained <a href="#templates">below</a> in the discussion of
+        how mustache is used to process the output template.</p>
+    </dd>
+    <dt>Custom element</dt>
+    <dd>
+      <p> This provides an easy way to define custom web elements that play well
+        with container directives. Consider the following markdown code:</p>
+      <p>
+      <div><pre><code class="hljs language-markdown">:::that-container
+Some text /inside/ a <span class="hljs-emphasis">*container*</span>
+that has $\alpha$ math, too.
+:::
+</code></pre>
+      </div>
+      </p>
+      <p> The default behaviour of containers converts that into the following HTML:</p>
+      <p>
+      <div><pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">that-container</span>&gt;</span>
+Some text <span class="hljs-tag">&lt;<span class="hljs-name">em</span>&gt;</span>inside<span class="hljs-tag">&lt;/<span class="hljs-name">em</span>&gt;</span> a <span class="hljs-tag">&lt;<span class="hljs-name">strong</span>&gt;</span>container<span class="hljs-tag">&lt;/<span class="hljs-name">strong</span>&gt;</span>
+that has $\alpha$ math, too.
+<span class="hljs-tag">&lt;/<span class="hljs-name">that-container</span>&gt;</span>&gt;
+</code></pre>
+      </div>
+      </p>
+      <p> If you haven’t defined a custom web element named <code>&lt;that-container&gt;</code>, it will still be
+        displayed in modern browsers — it just won't do anything special.
+        But what if you want to customise its appearance? That's
+        what this header element allows. If you write something like:</p>
+      <p>
+      <div><pre><code class="hljs language-markdown">Custom element: that-container
+<span class="hljs-code">	&lt;p part='top'&gt;&lt;strong&gt;The start of my container&lt;/strong&gt;&lt;/p&gt;
+	&lt;slot&gt;&lt;/slot&gt; 
+	&lt;p part='bottom'&gt;&lt;strong&gt;The end of my container&lt;/strong&gt;&lt;/p&gt;</span>
+</code></pre>
+      </div>
+      </p>
+      <p> When the markdown file gets compiled, a <code>&lt;script&gt;</code> tag is automatically generated and
+        inserted at the beginning of the HTML file which will register a custom web element.
+        In this case, the automatically generated script tag would look like the following:</p>
+      <p>
+      <div><pre><code class="hljs language-html"> <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"module"</span>&gt;</span><span class="language-javascript">
+   <span class="hljs-keyword">class</span> <span class="hljs-title class_">custom_element</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_ inherited__">HTMLElement</span> {
+     <span class="hljs-title function_">constructor</span>(<span class="hljs-params"></span>) {
+       <span class="hljs-variable language_">super</span>();
+       <span class="hljs-comment">// Create a shadow root</span>
+       <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">attachShadow</span>({
+         <span class="hljs-attr">mode</span>: <span class="hljs-string">'open'</span>
+       });
+       <span class="hljs-comment">// Set the shadow DOM's content</span>
+       <span class="hljs-variable language_">this</span>.<span class="hljs-property">shadowRoot</span>.<span class="hljs-property">innerHTML</span> = <span class="hljs-string">`&lt;p part='top'&gt;&lt;strong&gt;The start of my container&lt;/strong&gt;&lt;/p&gt;
+&lt;slot&gt;&lt;/slot&gt;
+&lt;p part='bottom'&gt;&lt;strong&gt;The end of my container&lt;/strong&gt;&lt;/p&gt;`</span>;
+     }
+   }
+   customElements.<span class="hljs-title function_">define</span>(<span class="hljs-string">'that-container'</span>, custom_element);
+ </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</code></pre>
+      </div>
+      </p>
+      <p> And so you would get the following output:</p>
+      <p>
+      <div>
+        <div class="markdown-demo-container">
+          <div class="markdown-demo-code-label">Markdown code</div>
+          <div class="markdown-demo-output-label">Markdown output</div>
+          <div class="markdown-demo-markdown">
+            <pre><code class="hljs language-markdown">:::that-container
+Some text /inside/ a <span class="hljs-emphasis">*container*</span>
+that has $\alpha$ math, too.
+:::</code></pre>
+          </div>
+          <div class="markdown-demo-parsed">
+            <that-container>
+              <p>Some text <em>inside</em> a <strong>container</strong>
+                that has $\alpha$ math, too.</p>
+            </that-container>
+
+          </div>
+        </div>
+      </div>
+      </p>
+    </dd>
+    <dt>Highlight theme</dt>
+    <dd>
+      <p> The name of the theme which <code>highlight.js</code> should use when formatting source code.</p>
+    </dd>
+    <dt>HTML header</dt>
+    <dd>
+      <p> All of the text given as the value of this/these key(s) will be written verbatim to
+        the output HTML, right before the closing <code>&lt;/head&gt;</code> tag.</p>
+    </dd>
+    <dt>HTML footer</dt>
+    <dd>
+      <p> All of the text given as the value of this/these key(s) will be written verbatim to
+        the output HTML, right before the closing <code>&lt;/body&gt;</code> tag.</p>
+    </dd>
+    <dt>Script</dt>
+    <dd>
+      <p> The value of this key should be the name of a javascript file, with an optional relative path from
+        the location of the markdown file being processed. This will be the value of the <code>src</code> attribute
+        in a <code>&lt;script&gt;</code> tag in the <code>&lt;head&gt;</code> of the document. If you need to include
+        scripts with additional attributes, that will need to be done using the <code>HTML header</code> key.</p>
+    </dd>
+    <dt>LaTeX preamble</dt>
+    <dd>
+      <p> If you are using <code>jmarkdown</code> to process TiKZ code, you might need to customise the
+        preamble. The value of this key will be inserted verbatim into the LaTeX preamble.</p>
+    </dd>
+    <dt>Load directives</dt>
+    <dd>
+      <p> The value of this key can take one of two forms:</p>
+      <p> <code> 	Load directives: foobar, barfoo from definitions.js 	</code></p>
+      <p> or</p>
+      <p> <code> 	Load directives: definitions.js 	</code></p>
+      <p> The javascript file should be a module which exports definitions of directives,
+        conforming to the <a href="https://www.npmjs.com/package/marked-directive">marked-directive</a>
+        rules. (Strictly speaking, <code>jmarkdown</code> uses an extended implementation of <code>marked-directive</code> which allows
+        the definition to provide a custom tokeniser as well as a custom renderer. Those interested can take a look
+        at the <code>jmarkdown</code> source code for more details.) These definitions will then be dynamically imported
+        using <code>import()</code> and registered as a custom directive.</p>
+      <p> The first form is when you only want to use some of the directives defined in the file.
+        The second form is intended for when you want to use whatever the default export is.
+        The following silly example shows how this works. By using both named exports <em>and</em> a
+        default export which is an array containing all the directives defined in the file, you get
+        the ability to either load some of the directives (using the first form) or all the directives
+        (using the second form).</p>
+      <p>
+      <div>
+        <div class="jmarkdown-center">
+          <p><strong>The file <code>definitions.js</code></strong> </p>
+        </div><pre><code class="hljs language-js"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> foobar = {
+	<span class="hljs-attr">level</span>: <span class="hljs-string">'container'</span>,
+	<span class="hljs-attr">marker</span>: <span class="hljs-string">":::"</span>,
+	<span class="hljs-attr">label</span>: <span class="hljs-string">"foobar"</span>,
+	<span class="hljs-title function_">renderer</span>(<span class="hljs-params">token</span>) {
+		<span class="hljs-keyword">if</span> (token.<span class="hljs-property">meta</span>.<span class="hljs-property">name</span> === <span class="hljs-string">"foobar"</span>) {
+			<span class="hljs-keyword">return</span> <span class="hljs-string">`&lt;strong&gt;FOOBAR&lt;/strong&gt;`</span>;
+		}
+		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+	}
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> barfoo = {
+	<span class="hljs-attr">level</span>: <span class="hljs-string">'container'</span>,
+	<span class="hljs-attr">marker</span>: <span class="hljs-string">":::"</span>,
+	<span class="hljs-attr">label</span>: <span class="hljs-string">"barfoo"</span>,
+	<span class="hljs-title function_">renderer</span>(<span class="hljs-params">token</span>) {
+		<span class="hljs-keyword">if</span> (token.<span class="hljs-property">meta</span>.<span class="hljs-property">name</span> === <span class="hljs-string">"barfoo"</span>) {
+			<span class="hljs-keyword">return</span> <span class="hljs-string">`&lt;strong&gt;BARFOO&lt;/strong&gt;`</span>;
+		}
+		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+	}
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> [ foobar, barfoo ];
+</code></pre>
+      </div>
+      </p>
+    </dd>
+    <dt>Load extensions</dt>
+    <dd>
+      <p> The value of this key can take the same two forms as the <code>Load directives</code> key.
+        Here, though, instead of dynamically loading directives it dynamically loads extensions
+        written in the format recognised by <code>marked.js</code>. So, for example, if the metadata header
+        had the following:</p>
+      <p> <code> 	Load extensions: jmckalex from my-extensions.js 	</code></p>
+      <p> And the file contained the following code:</p>
+      <p>
+      <div>
+        <div class="jmarkdown-center">
+          <p><strong>The file <code>my-extensions.js</code></strong> </p>
+        </div><pre><code class="hljs language-js"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> jmckalex = {
+	<span class="hljs-attr">name</span>: <span class="hljs-string">'jmckalex'</span>,
+	<span class="hljs-attr">level</span>: <span class="hljs-string">'inline'</span>,
+	<span class="hljs-title function_">start</span>(<span class="hljs-params">src</span>) { <span class="hljs-keyword">return</span> src.<span class="hljs-title function_">match</span>(<span class="hljs-regexp">/jmckalex/</span>)?.<span class="hljs-property">index</span> },
+	<span class="hljs-title function_">tokenizer</span>(<span class="hljs-params">src</span>) {
+		<span class="hljs-keyword">const</span> match = src.<span class="hljs-title function_">match</span>(<span class="hljs-regexp">/^jmckalex/</span>);
+		<span class="hljs-keyword">if</span> (match) {
+			<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(match);
+			<span class="hljs-keyword">const</span> token = {
+				<span class="hljs-attr">type</span>: <span class="hljs-string">'jmckalex'</span>,
+				<span class="hljs-attr">raw</span>: match[<span class="hljs-number">0</span>],
+				<span class="hljs-attr">mermaid</span>: <span class="hljs-literal">true</span>,
+				<span class="hljs-attr">text</span>: match[<span class="hljs-number">0</span>],
+				<span class="hljs-attr">tokens</span>: []
+			};
+			<span class="hljs-keyword">return</span> token;
+		}
+	},
+	<span class="hljs-title function_">renderer</span>(<span class="hljs-params">token</span>) {
+		<span class="hljs-keyword">return</span> <span class="hljs-string">`J. McKenzie Alexander`</span>;
+	}
+};
+</code></pre>
+      </div>
+      </p>
+      <p> Then that inline extension, which does nothing more than automatically replace
+        the token text <code>jmckalex</code> with <code>J. McKenzie Alexander</code> would be loaded into the
+        markdown interpreter.</p>
+    </dd>
+    <dt>Optionals</dt>
+    <dd>
+      <p> This should be a list of names optionally followed by <code>[true]</code> or <code>[false]</code>.
+        <code>jmarkdown</code> will create container directives which include/exclude the code
+        contained. The default setting if nothing is specified is <code>false</code>, i.e., to exclude
+        the code. The default setting can be overriden as follows:
+      </p>
+      <p>
+      <div><pre><code class="hljs language-markdown">:::optional-name{include=true}
+This will be included no matter what the default
+setting was.
+:::
+
+:::optional-name{include=false}
+This will be excluded no matter what the default
+setting was.
+:::
+</code></pre>
+      </div>
+      </p>
+    </dd>
+    <dt>Template</dt>
+    <dd>
+      <p> This should be a relative path to a HTML template file written using
+        <a href="https://mustache.github.io/">Mustache</a>. For more details, see the section below
+        discussing the default template and how to create custom templates for the output HTML.
+      </p>
+    </dd>
+  </dl>
+</div>
+<p>That’s it for <em>most</em> of the special keys in the metadata header. There is one more type which
+  requires explanations of greater length. More on that in a moment.</p>
+<p>What can you do with other definable keys in the metadata header? <code>jmarkdown</code> defines a
+  mustache-like syntax where the expression <code>{{variable name}}</code> gets replaced by whatever the
+  corresponding value is from the metadata header, if it's defined. This provides a very simple
+  form of variable interpolation. So, for example, if the header contained:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">Address:</span> <span class="hljs-string">Department</span> <span class="hljs-string">of</span> <span class="hljs-string">Philosophy,</span> <span class="hljs-string">Logic</span> <span class="hljs-string">and</span> <span class="hljs-string">Scientific</span> <span class="hljs-string">Method&lt;br&gt;</span>
+	<span class="hljs-string">London</span> <span class="hljs-string">School</span> <span class="hljs-string">of</span> <span class="hljs-string">Economics</span> <span class="hljs-string">and</span> <span class="hljs-string">Political</span> <span class="hljs-string">Science&lt;br&gt;</span>
+	<span class="hljs-string">London,</span> <span class="hljs-string">United</span> <span class="hljs-string">Kingdom&lt;br&gt;</span>
+	<span class="hljs-string">WC2A</span> <span class="hljs-string">2AE</span>
+</code></pre>
+<p>Then you can use that as follows:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">You can contact me at:<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">br</span>&gt;</span></span>
+{{Address}}</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p>You can contact me at:<br>
+      {{Address}}
+    </p>
+
+  </div>
+</div>
+<p>If the same key has been used multiple times, then <code>{{key}}</code> will return all of the values
+  concatenated into a single string.</p>

@@ -1,0 +1,142 @@
+<h1>Description lists</h1>
+<style>
+  dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+  }
+
+  dl dt {
+    font-weight: bold;
+  }
+
+  dl dt:after {
+    content: ":";
+  }
+
+  dl dd p {
+    margin-bottom: 6pt !important;
+  }
+
+  dl dd p:not(:first-of-type) {
+    margin-top: 6pt !important;
+  }
+</style>
+
+<p>Normal markdown, by default, doesn’t include syntax for creating description lists.
+  The syntax used by <code>jmarkdown</code> for description lists is shown below. It also
+  allows description lists to be nested. For some reason, this doesn’t play well
+  with the footnotes extension, so if anyone would like to help debug it, that
+  would be awesome.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">A defined term:: This is a term.
+
+Another term:: Define this term.
+
+A length term::  This definition needs
+   to span multiple lines. And it is
+   quite lengthy as well.[^a]  So
+   very lengthy. 
+
+   <span class="hljs-code">```js
+   function foo(array) {
+   	let bar = 1;
+   	for (const i of array) {
+   		// do something
+   	}
+   }
+   ```</span>
+
+   Another term:: Definition lists can
+<span class="hljs-code">      also be nested, if you want.
+</span>
+   And more terms:: As you can see.
+
+   And paragraph breaks can also
+   be included. And nested lists can
+   also be included.
+
+<span class="hljs-bullet">   1.</span> Item one.
+<span class="hljs-bullet">   2.</span> Item two.
+<span class="hljs-code">      a. Subitem one
+      b. Subitem two
+   3. Item three.
+</span>
+   Back to the definition.</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <dl>
+      <dt>A defined term</dt>
+      <dd>
+        <p> This is a term.</p>
+      </dd>
+      <dt>Another term</dt>
+      <dd>
+        <p> Define this term.</p>
+      </dd>
+      <dt>A length term</dt>
+      <dd>
+        <p> This definition needs
+          to span multiple lines. And it is
+          quite lengthy as well.[<sup>a</sup>] So
+          very lengthy. </p>
+        <pre><code class="hljs language-js"><span class="hljs-keyword">function</span> <span class="hljs-title function_">foo</span>(<span class="hljs-params">array</span>) {
+	<span class="hljs-keyword">let</span> bar = <span class="hljs-number">1</span>;
+	<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> i <span class="hljs-keyword">of</span> array) {
+		<span class="hljs-comment">// do something</span>
+	}
+}
+</code></pre>
+        <dl>
+          <dt> Another term</dt>
+          <dd>
+            <p> Definition lists can
+              also be nested, if you want.</p>
+          </dd>
+          <dt> And more terms</dt>
+          <dd>
+            <p> As you can see.</p>
+          </dd>
+        </dl>
+        <p> And paragraph breaks can also
+          be included. And nested lists can
+          also be included.</p>
+        <ol>
+          <li>Item one.</li>
+          <li>Item two.<ol type="a">
+              <li>Subitem one</li>
+              <li>Subitem two</li>
+            </ol>
+          </li>
+          <li>Item three.</li>
+        </ol>
+        <p> Back to the definition.</p>
+      </dd>
+    </dl>
+  </div>
+</div>
+<p>Here's the CSS used to format the above:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">style</span>&gt;</span><span class="language-css">
+	<span class="hljs-selector-tag">dl</span> {
+		<span class="hljs-attribute">display</span>: grid;
+		<span class="hljs-attribute">grid-template-columns</span>: auto <span class="hljs-number">1</span>fr;
+	}
+	<span class="hljs-selector-tag">dl</span> <span class="hljs-selector-tag">dt</span> {
+		<span class="hljs-attribute">font-weight</span>: bold;
+	}
+
+	<span class="hljs-selector-tag">dl</span> <span class="hljs-selector-tag">dt</span><span class="hljs-selector-pseudo">:after</span> {
+		<span class="hljs-attribute">content</span>: <span class="hljs-string">":"</span>;
+	}
+
+	<span class="hljs-selector-tag">dl</span> <span class="hljs-selector-tag">dd</span> <span class="hljs-selector-tag">p</span> {
+		<span class="hljs-attribute">margin-bottom</span>: <span class="hljs-number">6pt</span> <span class="hljs-meta">!important</span>;
+	}
+
+	<span class="hljs-selector-tag">dl</span> <span class="hljs-selector-tag">dd</span> <span class="hljs-selector-tag">p</span><span class="hljs-selector-pseudo">:not</span>(<span class="hljs-selector-pseudo">:first-of-type</span>) {
+				<span class="hljs-attribute">margin-top</span>: <span class="hljs-number">6pt</span> <span class="hljs-meta">!important</span>;
+	}
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">style</span>&gt;</span>
+</code></pre>

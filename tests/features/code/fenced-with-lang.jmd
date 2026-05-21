@@ -1,0 +1,9 @@
+Title: fenced-with-lang
+------------------------------------
+
+A code block:
+
+```js
+const greet = (name) => `Hello, ${name}!`;
+greet('world');
+```

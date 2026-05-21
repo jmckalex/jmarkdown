@@ -1,0 +1,16 @@
+Title: both-modes
+------------------------------------
+
+This paragraph has :TeX[\(\beta\)] and :HTML[<span>html-bit</span>] side by side.
+
+So does this container test:
+
+:::TeX
+LaTeX-only block content.
+:::
+
+:::HTML
+HTML-only block content with *emphasis*.
+:::
+
+Both ends in the same source file.

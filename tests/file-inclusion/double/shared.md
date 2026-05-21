@@ -1,0 +1,1 @@
+Shared boilerplate paragraph.

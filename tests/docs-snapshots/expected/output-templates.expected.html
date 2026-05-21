@@ -1,0 +1,44 @@
+<h1>Output Templates</h1>
+<p><span id="templates"></span>
+  <code>jmarkdown</code> uses a default Mustache template for creating the output HTML. That default template
+  is designed to play well with certain keys in the metadata header, as described above.
+  However, you don't have to use the default template — you can create your own, and
+  tell <code>jmarkdown</code> to use that, instead. The only requirement is that the mustache template
+  <em><strong>must</strong></em> have <code>{{{Content}}}</code> appearing somewhere in it, as that is used to insert the
+  constructed HTML into the output file.
+</p>
+<p><a href="path/to/yourfile.mustache" onclick="showTextFile(event, 'src/default-template.html.mustache', 'text/plain'); return false;">
+    View jmarkdown’s default template.
+  </a>
+  In reading through the template, you can see how a number of the special headings from the
+  <a href="#toc-metadata-header">metadata header</a> are used during constructing the output HTML.
+  However, the metadata header is not the only way that the output file can be configured!
+  <code>jmarkdown</code> supports configuration files other than the metadata header, which allow you
+  to specify global or project-specific configurations. Here, “global” means specified
+  for a specific user and “project-specific” means for any markdown file located in a particular
+  directory. That’s the next topic.
+</p>
+<script>
+  function showTextFile(event, filePath, mimeType) {
+    event.preventDefault();
+    fetch(filePath)
+      .then(response => response.text())
+      .then(content => {
+        const newWindow = window.open('', '_blank', 'width=800,height=600');
+        newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${filePath.split('/').pop()}</title>
+          <style>
+            body { font-family: monospace; white-space: pre; padding: 20px; }
+          </style>
+        </head>
+        <body>${content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</body>
+        </html>
+      `);
+        newWindow.document.close();
+      })
+      .catch(error => console.error('Error loading file:', error));
+  }
+</script>

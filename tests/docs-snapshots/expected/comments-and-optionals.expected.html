@@ -1,0 +1,102 @@
+<h2>Comments and optionally included text</h2>
+<p>It’s possible to define new directives which provide additional functionality. Since most markdown
+  flavours don’t provide a way to comment out text, in the markdown source, <code>jmarkdown</code> provides a container
+  directive which does that. So writing the following:</p>
+<pre><code class="hljs language-markdown">:::comment
+All of this text will be ignored.
+
+And the comment can span multiple blocks.
+:::
+</code></pre>
+<p>will cause everything from the start to the end of the directive to be omitted from the output.
+  What if you decide, later, that you want to include it? Simply pass a setting which says to do that:</p>
+<pre><code class="hljs language-markdown">:::comment{include=true}
+All of this text will now be included in the output.
+
+And the comment can span multiple blocks.
+:::
+</code></pre>
+<p>The <code>comment</code> directive is intended for commenting out parts of the markdown source. Sometimes,
+  though, you might want to mark parts of the text for optional inclusion, for reasons that
+  have nothing to do with it being a comment. Like answers for a question set. To handle
+  these cases, <code>jmarkdown</code> supports the following line in the metadata header:</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">Optionals:</span> <span class="hljs-string">answers</span> <span class="hljs-string">directions[true]</span> <span class="hljs-string">...other</span> <span class="hljs-string">names...</span>
+</code></pre>
+<p>The line after <code>Optionals</code> should be a space-separate list of names, for the custom directives.
+  All optionals will default to being <em>not included</em>. If you would like them to default to
+  <em>being included</em>, simply put <code>[true]</code> after the name. If you want to be pedantic, there’s
+  no harm in adding <code>false</code> between the square brackets syntax (e.g., <code>answers[false]</code>).
+</p>
+<p>In addition, directives can include more than three <code>:</code>, to indicate higher levels of nesting.
+  So, in our hypothetical quiz case, you could write the following:</p>
+<pre><code class="hljs language-markdown">::::my-quiz
+<span class="hljs-bullet">1.</span> What is the answer to this question?
+   :::answer
+   <span class="hljs-emphasis">*Answer.*</span> I don't know.
+   :::
+
+<span class="hljs-bullet">2.</span> What is the answer to this harder question?
+   :::answer
+   <span class="hljs-emphasis">*Answer.*</span> I still don’t know!
+
+   Why are you asking me?
+   :::
+
+<span class="hljs-bullet">3.</span> Write your thoughts about this exam.
+::::
+</code></pre>
+<p>And that would appear as follows:</p>
+<my-quiz>
+  <ol>
+    <li>
+      <p>What is the answer to this question?</p>
+      <answer>
+        <p><strong>Answer.</strong> I don't know.</p>
+      </answer>
+    </li>
+    <li>
+      <p>What is the answer to this harder question?</p>
+      <answer>
+        <p><strong>Answer.</strong> I still don’t know!</p>
+        <p>Why are you asking me?</p>
+      </answer>
+    </li>
+    <li>
+      <p>Write your thoughts about this exam.</p>
+    </li>
+  </ol>
+</my-quiz>
+<p>If you want to generate the answers, simply change the declaration in the header to</p>
+<pre><code class="hljs language-yaml"><span class="hljs-attr">Optionals:</span> <span class="hljs-string">answers[true]</span> <span class="hljs-string">directions[true]</span> <span class="hljs-string">...other</span> <span class="hljs-string">names...</span>
+</code></pre>
+<p>and you’ll get </p>
+<my-quiz>
+  <ol>
+    <li>
+      <p>What is the answer to this question?</p>
+      <answer include="true">
+        <p><strong>Answer.</strong> I don't know.</p>
+      </answer>
+    </li>
+    <li>
+      <p>What is the answer to this harder question?</p>
+      <answer include="true">
+        <p><strong>Answer.</strong> I still don’t know!</p>
+        <p>Why are you asking me?</p>
+      </answer>
+    </li>
+    <li>
+      <p>Write your thoughts about this exam.</p>
+    </li>
+  </ol>
+</my-quiz>
+<div class="markdown-alert markdown-alert-tip">
+  <p class="markdown-alert-title"><svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path>
+    </svg>Tip</p>
+  <p> If you were going to be doing this a lot, I would suggest defining
+    your own custom directive for <code>answer</code> rather than using the simple method
+    provided by the <code>Optionals</code> header line. Why? Because defining your
+    own custom directive would allow the “<strong>Answer.</strong>” text to be automatically
+    generated, so you wouldn’t have to write that on every line.</p>
+</div>

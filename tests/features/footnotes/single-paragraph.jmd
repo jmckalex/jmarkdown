@@ -1,0 +1,4 @@
+Title: single-paragraph
+------------------------------------
+
+This sentence has an inline footnote[^a: a short single-paragraph note].

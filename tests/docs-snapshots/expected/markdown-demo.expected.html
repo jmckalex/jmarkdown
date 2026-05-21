@@ -1,0 +1,51 @@
+<h2>Demonstrating markdown code</h2>
+<p>You’ll have noticed that this web page has a lot of side-by-side
+  demonstrations of markdown code and the formatted output.
+  That, too, was generated using a special <code>jmarkdown</code> extension.
+  A special directive named <code>markdown-demo</code> takes its content
+  and creates two <code>&lt;div&gt;</code> containers, with the left showing
+  the markdown code and the right showing the formatted output. So,
+  for example, the following:</p>
+<pre><code class="hljs language-markdown">:::markdown-demo
+:span[This is a coloured span.]{.goldenrod}
+
+<span class="hljs-bullet">1.</span> This is a list <span class="hljs-emphasis">*containing markdown code*</span>
+<span class="hljs-bullet">2.</span> Isn’t that /cool/?
+   a. A sublist item with math $\alpha + \beta$.
+   b. Another sublist item.
+   c. And another.
+<span class="hljs-bullet">3.</span> So there you are.
+::: 
+</code></pre>
+<p>generates the following:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">:span[This is a coloured span.]{.goldenrod}
+
+<span class="hljs-bullet">1.</span> This is a list <span class="hljs-emphasis">*containing markdown code*</span>
+<span class="hljs-bullet">2.</span> Isn’t that /cool/?
+   a. A sublist item with math $\alpha + \beta$.
+   b. Another sublist item.
+   c. And another.
+<span class="hljs-bullet">3.</span> So there you are.</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p><span class="goldenrod">This is a coloured span.</span></p>
+    <ol>
+      <li>This is a list <strong>containing markdown code</strong></li>
+      <li>Isn’t that <em>cool</em>?<ol type="a">
+          <li>A sublist item with math $\alpha + \beta$.</li>
+          <li>Another sublist item.</li>
+          <li>And another.</li>
+        </ol>
+      </li>
+      <li>So there you are.</li>
+    </ol>
+
+  </div>
+</div>
+<p>That’s very useful because you only have to write the markdown
+  code once, which guarantees that the demo and the output
+  will never be out of sync.</p>

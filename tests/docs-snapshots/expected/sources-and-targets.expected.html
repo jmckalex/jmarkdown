@@ -1,0 +1,124 @@
+<h2>Sources and targets</h2>
+<p>HTML is a very expressive language and normal markdown allows for only a fraction
+  of that to be expressed. In normal markdown you can’t, for example, construct a two-column table showing
+  two different snippets of code, in different languages, side-by-side.</p>
+<p><code>jmarkdown</code> provides a very simple solution which greatly increases what can be done.
+  The idea? It uses an inline directive to mark a location as a “target” and then a container
+  directive to act as a “source” for that target, with the id of the target given.
+  Once the HTML has been constructed, <code>jmarkdown</code> uses <a href="https://cheerio.js.org/">cheerio</a> to
+  replace the target with the contents of the source. Essentially, you can think of
+  sources and targets working together to say “put <em>this</em> content <em>there</em>”.</p>
+<p>Here's a simple illustration:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">| <span class="hljs-emphasis">*JavaScript*</span> |   <span class="hljs-emphasis">*Python*</span>   |
+|--------------|--------------|
+| :target[id1] | :target[id2] |
+
+:::source{target=id1}
+<span class="hljs-code">```js
+function foo() {
+	let x = 10;
+	let y = 20;
+	return x+y;
+}
+```</span>
+:::
+
+:::source{target=id2}
+<span class="hljs-code">```python
+def foo()
+	x = 10
+	y = 20
+	return x+y
+```</span>
+:::</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <table>
+      <thead>
+        <tr>
+          <th><strong>JavaScript</strong></th>
+          <th><strong>Python</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div><pre><code class="hljs language-js"><span class="hljs-keyword">function</span> <span class="hljs-title function_">foo</span>(<span class="hljs-params"></span>) {
+	<span class="hljs-keyword">let</span> x = <span class="hljs-number">10</span>;
+	<span class="hljs-keyword">let</span> y = <span class="hljs-number">20</span>;
+	<span class="hljs-keyword">return</span> x+y;
+}
+</code></pre>
+            </div>
+          </td>
+          <td>
+            <div><pre><code class="hljs language-python"><span class="hljs-keyword">def</span> <span class="hljs-title function_">foo</span>()
+	x = <span class="hljs-number">10</span>
+	y = <span class="hljs-number">20</span>
+	<span class="hljs-keyword">return</span> x+y
+</code></pre>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<p>There's also a special syntax abbreviation for indicating a target. If you write <code>🎯target-id</code> that
+  will create a target exactly the same as if you wrote <code>:target[target-id]</code>.</p>
+<p>Multiple targets for the same id can exist. The source will simply be cloned before each replacement.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">| <span class="hljs-emphasis">*JavaScript 1*</span> | <span class="hljs-emphasis">*JavaScript 2*</span> | <span class="hljs-emphasis">*JavaScript 3*</span> |
+|----------------|----------------|----------------|
+|    🎯id1       |     🎯id1      |     🎯id1      |</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <table>
+      <thead>
+        <tr>
+          <th><strong>JavaScript 1</strong></th>
+          <th><strong>JavaScript 2</strong></th>
+          <th><strong>JavaScript 3</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div><pre><code class="hljs language-js"><span class="hljs-keyword">function</span> <span class="hljs-title function_">foo</span>(<span class="hljs-params"></span>) {
+	<span class="hljs-keyword">let</span> x = <span class="hljs-number">10</span>;
+	<span class="hljs-keyword">let</span> y = <span class="hljs-number">20</span>;
+	<span class="hljs-keyword">return</span> x+y;
+}
+</code></pre>
+            </div>
+          </td>
+          <td>
+            <div><pre><code class="hljs language-js"><span class="hljs-keyword">function</span> <span class="hljs-title function_">foo</span>(<span class="hljs-params"></span>) {
+	<span class="hljs-keyword">let</span> x = <span class="hljs-number">10</span>;
+	<span class="hljs-keyword">let</span> y = <span class="hljs-number">20</span>;
+	<span class="hljs-keyword">return</span> x+y;
+}
+</code></pre>
+            </div>
+          </td>
+          <td>
+            <div><pre><code class="hljs language-js"><span class="hljs-keyword">function</span> <span class="hljs-title function_">foo</span>(<span class="hljs-params"></span>) {
+	<span class="hljs-keyword">let</span> x = <span class="hljs-number">10</span>;
+	<span class="hljs-keyword">let</span> y = <span class="hljs-number">20</span>;
+	<span class="hljs-keyword">return</span> x+y;
+}
+</code></pre>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

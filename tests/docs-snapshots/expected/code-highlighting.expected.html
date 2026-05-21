@@ -1,0 +1,19 @@
+<h1>Code highlighting</h1>
+<p>jmarkdown supports standard fenced code blocks with syntax highlighting. E.g., here is some HTML:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'id'</span> <span class="hljs-attr">class</span>=<span class="hljs-string">'class1 class2'</span>&gt;</span>
+	This is some text in a paragraph with <span class="hljs-tag">&lt;<span class="hljs-name">em</span>&gt;</span>emphasis<span class="hljs-tag">&lt;/<span class="hljs-name">em</span>&gt;</span> and <span class="hljs-tag">&lt;<span class="hljs-name">strong</span>&gt;</span>boldface<span class="hljs-tag">&lt;/<span class="hljs-name">strong</span>&gt;</span>.
+<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>And here is some JavaScript:</p>
+<pre><code class="hljs language-javascript">marked.<span class="hljs-title function_">use</span>(
+	<span class="hljs-title function_">markedHighlight</span>({
+		<span class="hljs-attr">emptyLangClass</span>: <span class="hljs-string">'hljs'</span>,
+		<span class="hljs-attr">langPrefix</span>: <span class="hljs-string">'hljs language-'</span>,
+		<span class="hljs-title function_">highlight</span>(<span class="hljs-params">code, lang, info</span>) {
+			<span class="hljs-keyword">const</span> language = hljs.<span class="hljs-title function_">getLanguage</span>(lang) ? lang : <span class="hljs-string">'plaintext'</span>;
+			<span class="hljs-keyword">return</span> hljs.<span class="hljs-title function_">highlight</span>(code, { language }).<span class="hljs-property">value</span>;
+		}
+	})
+);
+</code></pre>
+<p>The syntax highlighting theme is set in the <a href="#toc-metadata-header">metadata header</a>.</p>

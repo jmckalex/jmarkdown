@@ -1,0 +1,43 @@
+<h2>Support for Mermaid diagrams</h2>
+<p><code>jmarkdown</code> provides a custom directive which detects <a href="https://mermaid.js.org/">Mermaid</a> diagrams and will
+  generate HTML so that they will be automatically detected and formatted.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">:::mermaid 
+graph LR
+<span class="hljs-code">    A[Square Rect] -- Link text --&gt; B((Circle))
+    A --&gt; C(Round Rect)
+    B --&gt; D{Rhombus}
+    C --&gt; D
+::: </span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="mermaid">
+      graph LR
+      A[Square Rect] -- Link text --&gt; B((Circle))
+      A --&gt; C(Round Rect)
+      B --&gt; D{Rhombus}
+      C --&gt; D</div>
+  </div>
+</div>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">:::mermaid
+pie title Pets adopted by volunteers
+<span class="hljs-code">    "Dogs" : 386
+    "Cats" : 85
+    "Rats" : 15
+:::</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="mermaid">
+      pie title Pets adopted by volunteers
+      "Dogs" : 386
+      "Cats" : 85
+      "Rats" : 15</div>
+  </div>
+</div>

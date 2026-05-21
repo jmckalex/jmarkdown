@@ -1,0 +1,78 @@
+<h1>Configuration files</h1>
+<p>When <code>jmarkdown</code> is started, it checks to see if <code>.jmarkdown/config.json</code> exists
+  in two locations:</p>
+<ol>
+  <li>The current user’s home directory.</li>
+  <li>The current working directory where <code>jmarkdown</code> was invoked.</li>
+</ol>
+<p>If neither <code>config.json</code> file exists, the default settings of <code>jmarkdown</code> contain some
+  hard-coded settings which provide enough information to ensure that <code>jmarkdown</code> will likely
+  produce a working output file regardless. Like what? Like this:</p>
+<ul>
+  <li>A URL to load the free version of the <a href="https://fontawesome.com/">FontAwesome</a> icons.</li>
+  <li>A URL to load <a href="https://mermaid.js.org/">Mermaid</a>, the diagramming language.</li>
+  <li>A URL to configure a highlighting theme for <code>highlight.js</code>.</li>
+  <li>A basic MathJax configuration.</li>
+</ul>
+<p>If one or more of the <code>config.json</code> files exist, what happens is the following:</p>
+<ol>
+  <li>
+    <p><code>jmarkdown</code> reads the contents of <code>~/.jmarkdown/config.json</code> and merges that with its
+      default configuration. Any settings in <code>~/.jmarkdown/config.json</code> which have the
+      same key will be <em>merged</em>, with more recent values overwriting earlier values. (The
+      one exception to the merge rule is when a key has an array as its value: in that case,
+      the array overwrites the previous value of that key).</p>
+  </li>
+  <li>
+    <p><code>jmarkdown</code> then reads the contents of <code>.jmarkdown/config.json</code> from its current
+      working directory, which is where the jmarkdown file currently being processed lives.
+      As before, more recent settings overwrite earlier settings.</p>
+  </li>
+</ol>
+<p>How do you know what configuration settings are available? If you run</p>
+<blockquote>
+  <p><code>jmarkdown options</code></p>
+</blockquote>
+<p>from the command-line, it will show the default configuration options as a formatted
+  JSON file. Here's the current version: </p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Lang"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"en"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Highlight theme"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"atom-one-light"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Body classes"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">""</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Biblify activate"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Biblify"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"add helper function"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"add section heading"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"add toc entry"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"bibliography"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">""</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"bibliography style"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">""</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"defer"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span>
+    <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Directives"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Extensions"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Fontawesome"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/js/all.min.js"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Mermaid"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Highlight src"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"HTML header"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"HTML footer"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"LaTeX preamble"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"MathJax"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"configuration"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"MathJax = {\n\t\t\ttex: {\n\t\t\t    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],\n\t\t\t    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],\n\t\t\t\ttags: 'ams'\n\t\t\t}\n\t\t}"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"src"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"</span>
+    <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Optionals"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Template"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"default"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"TiKZ libgs"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"TiKZ optimise"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"group-attributes,collapse-groups"</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>If you type</p>
+<blockquote>
+  <p><code>jmarkdown init</code></p>
+</blockquote>
+<p>from the command line in a directory which does not yet have a <code>.jmarkdown/</code> directory <em>or</em>
+  a <code>config.json</code> file, <code>jmarkdown</code> with automatically create that directory and create a file
+  called <code>config-template.json</code> inside it. Why <code>config-template.json</code> rather than <code>config.json</code>?
+  Because the file it creates contains just the default options hardwired in the source code,
+  and so if that file had the name <code>config.json</code> then, given the merge rules above, that would
+  clobber any global configuration settings you have set.</p>

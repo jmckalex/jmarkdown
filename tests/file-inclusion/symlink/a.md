@@ -1,0 +1,1 @@
+../symlink-target/real.md
