@@ -16,6 +16,7 @@ tests/features/
 ├── conditionals/   :TeX / :HTML inline and container forms
 ├── flags/          CLI flag variants (e.g. --normal-syntax)
 ├── footnotes/      single-, multi-paragraph, anonymous
+├── games/          :::game directive — sgame LaTeX output
 ├── headings/       depth → \chapter/\section/... mapping
 ├── inline-syntax/  /italics/, *strong*, ==highlight==, **intense**,
 │                   __underline__, sub/sup, nested
@@ -83,6 +84,7 @@ Currently covered (with `.expected.tex`):
 - Heading depth mapping (`\chapter` … `\subparagraph`)
 - Math passthrough (`$..$`, `$$..$$`, `\(..\)` → `$..$`, `\[..\]` → `$$..$$`)
 - Tables (GFM, colspan, rowspan via `\multicolumn` / `\multirow`)
+- Strategic-form games (`:::game` → sgame `\begin{game}` environment)
 
 Intentionally missing (current LaTeX path not yet meaningful):
 - `flags/normal-syntax` — `--normal-syntax` is an HTML-author convenience.

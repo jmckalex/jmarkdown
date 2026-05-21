@@ -82,6 +82,8 @@ const strategicFormGame = {
 	},
 	renderer(token) {
 		if (token.meta.name === "game") {
+			if (global.isLatex) return renderGameLatex(this.parser, token);
+
 			let row_label = false;
 			if (token['row'] != undefined) {
 				row_label = this.parser.parseInline(token['row']);
@@ -180,6 +182,86 @@ const strategicFormGame = {
 		}
 		return false;
 	}
+}
+
+
+/*
+	Render a strategic-form game as LaTeX for the `sgame` package (Osborne).
+	The package must be loaded with \usepackage{sgame} in the preamble.
+
+	The jmarkdown `:::game` syntax was deliberately designed to mirror sgame's
+	`game` environment, so the translation is almost mechanical: prepend an
+	empty top-left corner cell to the strategy-label row, wrap payoffs in `$`
+	(sgame's default is \gamemathfalse), and end every row but the last with
+	`\\`.
+
+	Optional arguments are positional in sgame: a lone `[...]` is the game
+	label (caption); a `[...][...]` pair is the two player labels; all three
+	together are `[row][column][caption]`. So a caption that coexists with
+	player labels needs all three slots, with an empty `[]` standing in for
+	any player label that was not supplied.
+*/
+function renderGameLatex(parser, token) {
+	const matrix = token['matrix'];
+	const number_of_columns = get_column_strategies(matrix).length;
+
+	// Strategy labels are either tokenised (math: default) or left raw for
+	// math mode (math: all). The tokenizer only populates these arrays in the
+	// tokenised case, so their presence is the reliable switch.
+	const tokenised = Array.isArray(token['column strategies']);
+
+	// First body line: an empty top-left corner cell, then the column labels.
+	let column_labels;
+	if (tokenised) {
+		column_labels = token['column strategies'].map(toks => parser.parseInline(toks));
+	}
+	else {
+		column_labels = get_column_strategies(matrix).map(s => `$${s}$`);
+	}
+	const header_line = ['', ...column_labels].join(' & ');
+
+	// Payoff rows: drop the column-strategy line, then split each remaining
+	// row into its leading strategy label and its payoff cells.
+	let payoff_rows = matrix.split("\n").map(str => str.trim());
+	payoff_rows.shift();
+	const number_of_rows = payoff_rows.length;
+
+	const body_lines = payoff_rows.map((row, i) => {
+		let cells = row.split("&").map(el => el.trim());
+		let raw_label = cells.shift();
+		let label;
+		if (tokenised) {
+			label = parser.parseInline(token['row strategies'][i]);
+		}
+		else {
+			label = `$${raw_label}$`;
+		}
+		const payoffs = cells.map(el => `$${el}$`);
+		return [label, ...payoffs].join(' & ');
+	});
+
+	// Optional sgame arguments (see the comment block above).
+	const row_label = token['row'] !== undefined ? parser.parseInline(token['row']) : null;
+	const column_label = token['column'] !== undefined ? parser.parseInline(token['column']) : null;
+	const caption_label = token['caption'] !== undefined ? parser.parseInline(token['caption']) : null;
+
+	let optional_args = '';
+	if (row_label !== null || column_label !== null) {
+		optional_args = `[${row_label ?? ''}][${column_label ?? ''}]`;
+		if (caption_label !== null) {
+			optional_args += `[${caption_label}]`;
+		}
+	}
+	else if (caption_label !== null) {
+		optional_args = `[${caption_label}]`;
+	}
+
+	// Every row but the last ends with `\\`; the last has none, as in the
+	// sgame manual's examples.
+	const lines = [header_line, ...body_lines].map(line => '\t' + line);
+	return `\\begin{game}{${number_of_rows}}{${number_of_columns}}${optional_args}\n` +
+	       lines.join(' \\\\\n') +
+	       `\n\\end{game}\n\n`;
 }
 
 

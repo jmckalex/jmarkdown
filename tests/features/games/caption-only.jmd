@@ -1,0 +1,10 @@
+Title: caption-only
+------------------------------------
+
+:::game
+     L     & R
+T    & (2,2) & (0,3)
+B    & (3,0) & (1,1)
+
+caption: A game with a caption but no player labels
+:::

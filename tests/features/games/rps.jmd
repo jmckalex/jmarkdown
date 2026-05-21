@@ -1,0 +1,13 @@
+Title: rps
+------------------------------------
+
+:::game
+         Rock   & Paper  & Scissors
+Rock     & (0,0)  & (-1,1) & (1,-1)
+Paper    & (1,-1) & (0,0)  & (-1,1)
+Scissors & (-1,1) & (1,-1) & (0,0)
+
+row: Player 1
+column: Player 2
+caption: The game of Rock-Paper-Scissors
+:::
