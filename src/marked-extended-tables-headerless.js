@@ -119,7 +119,7 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
       if (allMerged) {
         cells[0].emptyRow = true;
         for (i = 0; i < cells.length; i++) {
-          cells[i].rowSpanTarget.rowspan -= 1;
+          if (cells[i].rowSpanTarget) cells[i].rowSpanTarget.rowspan -= 1;
         }
       }
     }
