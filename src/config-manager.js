@@ -197,6 +197,9 @@ class ConfigManager {
 				else {
 					const template_name = path.basename(str, ".csl");
 					this.config["Biblify"]["bibliography style"] = template_name;
+					// DEFAULT_CONFIG.Biblify has no `template` key, so create it
+					// on first use of a custom CSL style before assigning into it.
+					this.config["Biblify"]["template"] ??= {};
 					this.config["Biblify"]["template"]["name"] = template_name;
 					this.config["Biblify"]["template"]["file"] = str;
 				}
