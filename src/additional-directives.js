@@ -97,7 +97,7 @@ const additionalDirectives = [
 		label: "label",
 		renderer(token) {
 			if (token.meta.name === "label") {
-				return `<span class='xref-label' data-key='${token.text}'></span>`;
+				return `<span class='xref-label' data-key='${token.text.replaceAll("'", '&#39;')}'></span>`;
 			}
 			return false;
 		}
@@ -108,7 +108,7 @@ const additionalDirectives = [
 		label: "ref",
 		renderer(token) {
 			if (token.meta.name === "ref") {
-				return `<span class='xref-ref' data-key='${token.text}'></span>`;
+				return `<span class='xref-ref' data-key='${token.text.replaceAll("'", '&#39;')}'></span>`;
 			}
 			return false;
 		}
