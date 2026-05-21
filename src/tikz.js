@@ -141,6 +141,9 @@ function createTiKZ(marker) {
 		},
 		renderer(token) {
 			if (token.meta.name === "TiKZ") {
+				// The TiKZ directive emits an SVG <img>/<div>; suppress it in
+				// LaTeX mode rather than leaking raw HTML into the .tex output.
+				if (global.isLatex) return '';
 				if (token['has_error']) {
 					// Create a button that opens the error log
 					const errorLogBase64 = Buffer.from(token['error_log']).toString('base64');

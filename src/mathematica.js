@@ -118,6 +118,9 @@ export function createMathematica(marker) {
 		},
 		renderer(token) {
 			if (token.meta.name === "Mathematica") {
+				// The Mathematica directive emits an SVG <img>/<div>; suppress
+				// it in LaTeX mode rather than leaking raw HTML into the .tex.
+				if (global.isLatex) return '';
 				if (token['has_error']) {
 					// Create a button that opens the error log
 					const errorLogBase64 = Buffer.from(token['error_log']).toString('base64');
@@ -360,6 +363,7 @@ export const inlineMathematica = {
 		else {
 			// Embedding SVG code from mathematica is generally a bad idea
 			// as it doesn't generate unique IDs for the output
+			if (global.isLatex) return '';
 			console.log(token.include);
 			return `<img class='mathematica svg' src='Mathematica/${token.include}'>`;
 			//return fs.readFileSync(token.include, 'utf8');

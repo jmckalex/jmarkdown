@@ -17,6 +17,9 @@ export function createMermaid(marker) {
 		},
 		renderer(token) {
 			if (token.meta.name === "mermaid") {
+				// Mermaid renders client-side; there is no LaTeX equivalent,
+				// so emit nothing rather than leaking a <div> into the .tex.
+				if (global.isLatex) return '';
 				return `<div class="mermaid">${token.text}</div>`;
 			}
 			return false;
