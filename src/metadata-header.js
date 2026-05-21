@@ -571,8 +571,11 @@ function addComplexExtension(delimiters, definition, name) {
 
 
 function create_inline_comment_extension(character, include_in_comment) {
-	const start_regexp = RegExp(`${character}`);
-	const match_regexp = RegExp(`^${character}(.*?)(?:\\n|$)`);
+	// The comment character is author-supplied; escape any regex metacharacters
+	// so a value like `*` or `(` does not throw or match wrongly.
+	const escaped = character.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const start_regexp = RegExp(escaped);
+	const match_regexp = RegExp(`^${escaped}(.*?)(?:\\n|$)`);
 
 	const inlineCommentExtension = {
 	  name: 'inlineComment',
