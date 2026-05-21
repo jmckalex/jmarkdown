@@ -75,7 +75,7 @@ export const moustache = {
     renderer(token) {
         if (token.text in metadata) {
             let contents = metadata[token.text];
-            return contents.join('');
+            return Array.isArray(contents) ? contents.join('') : String(contents);
         }
         else {
             return `{{${token.text}}}`;
