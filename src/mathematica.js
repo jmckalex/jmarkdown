@@ -100,7 +100,7 @@ export function createMathematica(marker) {
 					token['has_error'] = true;
 					// Try to read the log file
 					try {
-						const log_name = file_name.replace('.tex', '.log');
+						const log_name = file_name.replace(/\.m$/, '.log');
 						if (fs.existsSync(log_name)) {
 							token['error_log'] = fs.readFileSync(log_name, 'utf8');
 						} else {
