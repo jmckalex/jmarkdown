@@ -5,7 +5,9 @@ export const blockFunctions = {
     name: 'blockFunction',
     level: 'block',
     start(src) {
-        const match = src.match(/function\(/);
+        // Block-level: only fire when a line itself starts with `function(`,
+        // so a literal `function(` in prose does not trigger JS extraction.
+        const match = src.match(/^function\(/m);
         return match ? match.index : -1;
     },
     tokenizer(src, tokens) {
@@ -53,7 +55,9 @@ export const inlineFunctions = {
     name: 'inlineFunction',
     level: 'inline',
     start(src) {
-        const match = src.match(/func\(/);
+        // Require a word boundary so `func(` does not fire mid-identifier
+        // (e.g. inside `funcResult(`).
+        const match = src.match(/\bfunc\(/);
         return match ? match.index : -1;
     },
     tokenizer(src, tokens) {
@@ -63,7 +67,7 @@ export const inlineFunctions = {
             //console.log(exp);
             const expression = src.slice(0, exp.end);
             //console.log(expression);
-            const output = runInThisContext("(" + expression.replace('func', 'function') + ")()");
+            const output = runInThisContext("(" + expression.replace(/^func/, 'function') + ")()");
             // const tex = math.parse(obj.toString()).toTex();
             // console.log(obj.toString());
 
