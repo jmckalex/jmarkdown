@@ -53,12 +53,12 @@ program
 
 // Default command for processing files
 program
-	.command('process <filename>', { isDefault: true })
-	.description('Process a JMarkdown file')
+	.command('process [filename]', { isDefault: true })
+	.description("Process a JMarkdown file (use '-' or pipe to stdin to read from stdin)")
 	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface*, etc., and revert to normal Markdown syntax')
 	.option('--fragment', 'Output an HTML fragment without the template wrapper (no <html>, <head>, <body>)')
 	.option('--to <format>', 'Output format: html (default) or latex', 'html')
-	.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension)')
+	.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension; stdout in stdin mode)')
 	.action((filename, options) => {
 		program.file_to_process = filename;
 		program.process_options = options;
@@ -74,17 +74,42 @@ if (!['html', 'latex'].includes(outputFormat)) {
 }
 const isLatex = outputFormat === 'latex';
 
-// Get the markdown file we are supposed to process
-const filename = program.file_to_process;
-if (!filename) {
-	console.error('Please provide a filename');
+// Get the markdown file we are supposed to process, or detect stdin mode.
+// stdin is used when the filename is '-', or when no filename is given and
+// stdin is not a TTY (i.e. the user is piping input in).
+const rawFilename = program.file_to_process;
+const isStdin = rawFilename === '-' || (rawFilename === undefined && !process.stdin.isTTY);
+if (!rawFilename && process.stdin.isTTY) {
+	console.error("Please provide a filename (or pipe input via stdin, or pass '-' to read from stdin)");
 	process.exit(1);
 }
 
-global.current_file = filename;
+const filename = isStdin ? null : rawFilename;
+global.current_file = isStdin ? '<stdin>' : filename;
 global.isLatex = isLatex;
 const markdownFile = filename;
-const markdownFileDirectory = path.dirname(path.resolve(process.cwd(), markdownFile));
+// In stdin mode, [[file.md]] inclusions and the "Markdown file directory"
+// config (used by mathematica/tikz/template/metadata-header) resolve against
+// the current working directory — there's no source file to anchor to.
+const markdownFileDirectory = isStdin
+	? process.cwd()
+	: path.dirname(path.resolve(process.cwd(), markdownFile));
+
+// When the rendered output will go to stdout, redirect console.log to stderr so
+// progress chatter from extensions (mathematica, tikz, metadata-header, …) can't
+// corrupt the document stream. console.error / console.warn already go to stderr.
+// Also handle EPIPE gracefully (e.g. `… | head`) instead of crashing.
+const writingToStdout = isStdin && !options.output;
+if (writingToStdout) {
+	const origLog = console.log;
+	console.log = (...args) => { console.error(...args); };
+	// Keep a reference so anything that grabbed console.log earlier still works.
+	void origLog;
+	process.stdout.on('error', (err) => {
+		if (err.code === 'EPIPE') process.exit(0);
+		throw err;
+	});
+}
 
 import { runInThisContext, marked, marked_copy, registerExtension, registerExtensions } from './utils.js';
 
@@ -444,8 +469,29 @@ import { metadata, processYAMLheader } from './metadata-header.js';
 import processFileInclusions from './file-inclusion.js';
 import { processTemplate } from './html-template.js';
 
-const input = fs.readFileSync(filename, 'utf8');
-const outFile = options.output || filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html');
+async function readStdin() {
+	const chunks = [];
+	for await (const chunk of process.stdin) chunks.push(chunk);
+	return Buffer.concat(chunks).toString('utf8');
+}
+
+const input = isStdin ? await readStdin() : fs.readFileSync(filename, 'utf8');
+// In stdin mode without -o, write to stdout (outFile === null is the sentinel).
+const outFile = options.output
+	|| (isStdin ? null : filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html'));
+
+function writeOutput(text) {
+	if (outFile === null) {
+		process.stdout.write(text);
+	} else {
+		fs.writeFileSync(outFile, text);
+	}
+}
+
+// The inverse-search click handler embeds an absolute path to the source file,
+// so it's only meaningful when we have a real input file and a full HTML
+// document to inject the script into.
+const skipInverseSearch = options.fragment || isLatex || isStdin;
 
 const markdown_no_metadata = await processYAMLheader(input);
 const text_no_inclusions = processFileInclusions(markdown_no_metadata, markdownFileDirectory);
@@ -495,8 +541,8 @@ const renderer = {
 
 
 // Install the source position tracker and the renderer that stamps data-source-line attributes.
-// In fragment mode or LaTeX output, skip this — the attributes are only useful with the inverse search script.
-if (!options.fragment && !isLatex) {
+// In fragment / LaTeX / stdin modes, skip this — the attributes are only useful with the inverse search script.
+if (!skipInverseSearch) {
 	marked.use(sourcePositions(text, header_length), { renderer });
 } else if (!isLatex) {
 	// Fragment mode: still strip {-} from headings even though we skip source-position tracking.
@@ -528,17 +574,23 @@ import * as PostProcessor from './post-processor.js';
 if (isLatex) {
 	// LaTeX output: write the parsed content directly — no post-processing,
 	// no template wrapping, no inverse-search injection.
-	fs.writeFileSync(outFile, content);
+	writeOutput(content);
 } else {
 	// HTML output: full pipeline with post-processing, template, and inverse search.
 
 	// Append the collected inline footnotes section, if any.
 	const contentWithFootnotes = content + getFootnotesHTML();
 
-	// Inject the inverse-search click handler script into the template data.
-	// This provides click-to-edit functionality: clicking any element with a
-	// data-source-line attribute opens the source file at that line in Sublime Text.
-	const inverseSearchScript = `
+	let html = options.fragment ? contentWithFootnotes : processTemplate(contentWithFootnotes);
+
+	html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment });
+	html = PostProcessor.runPostprocessScripts(html);
+
+	// Inject the inverse-search click handler script. Clicking any element with
+	// a data-source-line attribute (while holding Cmd) opens the source file at
+	// that line in Sublime Text. Skipped in fragment / LaTeX / stdin modes.
+	if (!skipInverseSearch) {
+		const inverseSearchScript = `
 <script>
   document.addEventListener('click', function(e) {
     if (!e.metaKey) return;
@@ -553,17 +605,9 @@ if (isLatex) {
   });
 </script>
 `;
-
-	let html = options.fragment ? contentWithFootnotes : processTemplate(contentWithFootnotes);
-
-	html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment });
-	html = PostProcessor.runPostprocessScripts(html);
-
-	// Insert the inverse-search script before </body> (skip in fragment mode)
-	if (!options.fragment) {
 		html = html.replace('</body>', inverseSearchScript + '</body>');
 	}
 
 	html = PostProcessor.beautifyHTML(html);
-	fs.writeFileSync(outFile, html);
+	writeOutput(html);
 }
