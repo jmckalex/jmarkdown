@@ -7,6 +7,7 @@ import * as cheerio from 'cheerio';
 export { cheerio };
 import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
+import { resolveCitations } from './biblify-compile.js';
 
 // Post-process HTML output using cheerio
 export function postProcessHTML(html, options = {}) {
@@ -38,6 +39,14 @@ export function postProcessHTML(html, options = {}) {
 	}
 	process_crossrefs($);
 	replaceTargetsBySources($);
+
+	// Resolve compile-time citations (\cite-family commands + ::Bibliography),
+	// when enabled. HTML only — LaTeX output is handled natively by natbib and
+	// never reaches the post-processor.
+	if (configManager.get('Biblify.resolve') && !global.isLatex) {
+		resolveCitations($, { fragment: !!options.fragment, outBase: options.outBase });
+	}
+
 	// Only hoist styles to <head> in full-document mode; in fragment mode there's no <head>.
 	if (!options.fragment) {
 		moveBodyStylesToHead($);

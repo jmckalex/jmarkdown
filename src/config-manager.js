@@ -18,7 +18,11 @@ export const DEFAULT_CONFIG = {
 		"add toc entry": true,
 		"bibliography": "",
 		"bibliography style": "",
-		"defer": false
+		"defer": false,
+		"resolve": false,
+		"tooltips": false,
+		"minimal": false,
+		"latex bib style": ""
 	},
 	"Directives": [],
 	"Extensions": [],
@@ -188,6 +192,24 @@ class ConfigManager {
 			case "Bibliography":
 				str = value[0].trim();
 				this.config["Biblify"]["bibliography"] = str;
+				break;
+			case "Resolve_citations":
+				// Switch on compile-time citation resolution (vs. the runtime
+				// Biblify client). See src/biblify-compile.js.
+				str = value[0].trim().toLowerCase();
+				this.config["Biblify"]["resolve"] = (str == "true");
+				break;
+			case "Citation_tooltips":
+				str = value[0].trim().toLowerCase();
+				this.config["Biblify"]["tooltips"] = (str == "true");
+				break;
+			case "Minimal_bibliography":
+				str = value[0].trim().toLowerCase();
+				this.config["Biblify"]["minimal"] = (str == "true");
+				break;
+			case "LaTeX_bib_style":
+				// natbib .bst name used for \bibliographystyle in LaTeX output.
+				this.config["Biblify"]["latex bib style"] = value[0].trim();
 				break;
 			case "Bibliography_style":
 				str = value[0].trim();

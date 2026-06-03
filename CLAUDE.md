@@ -77,6 +77,18 @@ Script blocks, function extensions, and post-processor scripts share a single VM
 ### File inclusion
 `[[name.md]]` on a line by itself splices the contents of `name.md` into the source before parsing. Relative paths resolve against the directory of the **including** file (not cwd), so includes work regardless of where `jmarkdown` is invoked from. Includes are recursive; cycle detection rejects only active-chain cycles (A→B→A), so the same file may be reused at multiple independent sites. Tokens inside fenced code blocks and `$$…$$` math are left literal. (4-space-indent code blocks are disabled in JMarkdown — see `src/index.js:312` — so an indented include directive still expands.) Included files are not re-parsed for metadata.
 
+### Citations (Biblify): runtime vs compile-time
+Two independent paths share the `\cite`-family syntax (`\cite`, `\citet`, `\citep`, `\citeauthor[*]`, `\fullcite`, `\nocite`, optional `[prenote][postnote]` args, comma-separated keys — the natbib grammar):
+
+- **Runtime** (default, `Biblify activate: true`): the HTML template loads the browser Biblify client (`citation.min.js` + `biblify.js`) which resolves `\cite` commands in the page. Source lives in `../biblify/src/biblify.js`.
+- **Compile-time** (`Resolve citations: true`): citations are resolved during the build. Two pieces, both in `src/`:
+  - `citations.js` — the parse-time extensions. The inline `\cite`-family tokenizer claims each raw command **before** marked's inline rules can mangle the `[...]` args / `*` / keys (and never fires inside code spans, so literal examples are safe). The `::Bibliography` block extension marks where a bibliography goes (`::Bibliography{style="apa" scope="#sec" all}`); it's a dedicated block extension, not a labelled directive, because the directive framework requires trailing content so bare `::Bibliography` wouldn't tokenize.
+  - `biblify-compile.js` — a cheerio post-pass (HTML only, called from `post-processor.js`) that is a faithful port of the runtime client: it indexes the `.bib`, resolves the placeholders with `citation-js` + CSL, and assembles bibliographies. The inline formatters (`generic_paren_processor`, `bjps_processor`) and Vancouver range-collapsing are ported from Biblify so output matches.
+
+Output split: **LaTeX emits native natbib** — the `\cite` commands pass through verbatim (`\fullcite`→`\bibentry`) and `::Bibliography` emits `\bibliographystyle`+`\bibliography`; real bibtex/biber does the work (author supplies `\usepackage{natbib}`, and `bibentry` if using `\fullcite`, in their surrounding document — LaTeX output is body-only). **HTML uses the CSL engine.** When `Resolve citations` is on, the runtime client scripts are suppressed (`{{^Biblify.resolve}}` in `default-template.html.mustache`).
+
+Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path), `Bibliography style` (apa/harvard1/vancouver/bjps/chicago/ajp/econometrica/ergo, or a custom `foo.csl`), `Resolve citations`, `Citation tooltips`, `Minimal bibliography` (writes `<out>.cited.bib`), `LaTeX bib style` (natbib `.bst`). Bundled CSL files live in `src/csl/`. `citation-js` is a dependency, loaded via `createRequire` (it's CJS; `require('citation-js')` returns the `Cite` constructor with `Cite.plugins` static). Vancouver is a whole-document mode; per-section style switching and scoped/sectional bibliographies are HTML-only.
+
 ## Style
 
 - ES modules, `import`/`export`. No CommonJS in new code.
