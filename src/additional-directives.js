@@ -4,6 +4,34 @@
 	jmarkdown additional commands like LaTeX.
 */
 
+/*
+	Shared render bodies for the four directives that the `:::begin(name)` block
+	environment mirrors (see begin-end.js), so `:::begin(abstract)` renders
+	identically to `:::abstract`.  abstract/feedback delegate to these; the
+	trivial :::TeX / :::HTML bodies are mirrored here for begin-end's use.
+
+	Note: like the directives, renderAbstract/renderFeedback have no LaTeX branch
+	— they emit their HTML in both output modes.  That existing behaviour is
+	preserved deliberately for parity.
+*/
+export function renderAbstract(innerHtml) {
+	return `<div class="abstract"><div class='label'>Abstract</div>${innerHtml}</div>`;
+}
+
+export function renderFeedback(innerHtml) {
+	return `<p class='feedback'>Feedback</p><section class="feedback">${innerHtml}</section>`;
+}
+
+// :::TeX — raw LaTeX, emitted only in LaTeX output.
+export function renderTeXEnv(rawText) {
+	return global.isLatex ? rawText : '';
+}
+
+// :::HTML — markdown prose, emitted only in HTML output.
+export function renderHTMLEnv(innerHtml) {
+	return global.isLatex ? '' : innerHtml;
+}
+
 const additionalDirectives = [
 	{
 		'level': 'block',
@@ -208,8 +236,7 @@ const additionalDirectives = [
 		label: "abstract",
 		renderer(token) {
 			if (token.meta.name === "abstract") {
-				let html = marked.parser(token.tokens);
-				return `<div class="abstract"><div class='label'>Abstract</div>${html}</div>`;
+				return renderAbstract(marked.parser(token.tokens));
 			}
 			return false;
 		}
@@ -220,8 +247,7 @@ const additionalDirectives = [
 		label: "feedback",
 		renderer(token) {
 			if (token.meta.name === "feedback") {
-				let html = marked.parser(token.tokens);
-				return `<p class='feedback'>Feedback</p><section class="feedback">${html}</section>`;
+				return renderFeedback(marked.parser(token.tokens));
 			}
 			return false;
 		}

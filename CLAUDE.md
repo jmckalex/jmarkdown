@@ -65,6 +65,16 @@ New directives go through `createDirectives()` in `extended-directives.js`. Thre
 - **Custom tokenizers** suppress marked's lexer on the directive's content. Use this only when needed — e.g. `:::TeX` uses an empty custom tokenizer so raw LaTeX (with `$`, `_`, `\`) is preserved verbatim. `:::HTML` deliberately omits one so markdown prose gets processed.
 - The asymmetry between `:::TeX` (no markdown processing) and `:::HTML` (markdown processing) is **intentional**. Don't try to unify it.
 
+### Named block environments (`@begin(name) … @end(name)`)
+An alternative to the colon-counted container directives, in `src/begin-end.js`. Because the closer *names* what it closes, blocks nest by name — no colon counting, and no renumbering when you wrap or insert a block. Purely **additive**: the `:::name … :::` directives are unchanged. The `@` sigil follows texinfo's `@example … @end example` convention and is otherwise unused in JMarkdown.
+
+- **Syntax:** `@begin(name)[label]{attrs}` — `()` = name, `[]` = optional text/label, `{}` = attributes (parsed with `attributes-parser`, same as directives). Closer is bare `@end(name)` (name required, no args).
+- **Generic rendering, any name:** HTML `<div class="name" …attrs>…markdown…</div>` (the name merges into any author `class`); LaTeX `\begin{name}[label]…\end{name}`. The author supplies the matching CSS / `\newenvironment`; JMarkdown invents no meaning for the name.
+- **Parity:** four names mirror existing directives exactly, so `@begin(x)` ≡ `:::x`: `abstract`, `feedback`, `TeX` (verbatim, LaTeX-only), `HTML` (markdown, HTML-only). Their render bodies are exported from `additional-directives.js` and shared by both routes (no drift).
+- **Nesting:** same-name nesting is depth-counted in the tokenizer; differently-named nesting is free (inner block is re-lexed as markdown). An orphan opener (no `@end`) is emitted literally with a stderr warning — it never swallows the document or throws.
+- **Registration:** a block extension registered in `index.js`. Because `@` is an unused sigil, nothing competes for `@begin(...)`, so — unlike the `:::` directives — its registration order doesn't matter.
+- Fixtures: `tests/features/begin-end/`.
+
 ### Extension registration order matters
 Inline extensions registered **later** are checked first in marked.js. The inline footnote extension is registered after `marked-footnote` for this reason. Document any ordering dependencies you introduce.
 

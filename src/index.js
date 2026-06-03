@@ -451,6 +451,12 @@ configManager.loadOptionals();
 // For some reason, this has to be installed here or it doesn't work
 marked.use(createDirectives([titleBox]));
 
+// Named-scope block environments: @begin(name) … @end(name) (see begin-end.js).
+// `@` is an otherwise-unused sigil, so nothing else matches `@begin(...)` and the
+// registration position doesn't matter; it lives here, after the directive set.
+import { beginEnd } from './begin-end.js';
+marked.use({ extensions: [beginEnd] });
+
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';
 

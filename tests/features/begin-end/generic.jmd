@@ -1,0 +1,7 @@
+@begin(warning)
+A *generic* block with /emphasis/.
+@end(warning)
+
+@begin(aside)[Side note]{class="highlight" id="n1"}
+Attributes merge into the class; the label becomes a data attribute.
+@end(aside)
