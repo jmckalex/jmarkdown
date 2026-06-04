@@ -43,7 +43,11 @@ export const DEFAULT_CONFIG = {
 	'Template': 'default',
 	'TiKZ libgs': '/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib',
 	'TiKZ optimise': 'group-attributes,collapse-groups',
-	'Code language': 'text'
+	'Code language': 'text',
+	// How a generic @begin(name) block renders in HTML (see src/begin-end.js):
+	// 'hyphenated' → hyphenated names become custom elements, others div.class;
+	// 'all' → always a custom element; 'none' → always a div.class.
+	'Block elements': 'hyphenated'
 };
 
 class ConfigManager {
@@ -207,6 +211,11 @@ class ConfigManager {
 			case "Body_classes":
 				str = value.join(" ").trim();
 				formattedMetadata[formattedKey] = str;
+				break;
+			case "Block_elements":
+				// Written to the space-keyed config so begin-end.js can read it
+				// directly via configManager.get('Block elements').
+				this.config["Block elements"] = value[0].trim().toLowerCase();
 				break;
 			default:
 				formattedMetadata[formattedKey] = value;

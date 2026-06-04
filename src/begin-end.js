@@ -18,17 +18,30 @@
 		       ^^^^  ^^^^^  ^^^^^^^^^^^^^^^^^^^^^^
 		       name  text   attributes
 
-	Rendering — the whole feature, for *any* name the author invents:
+	HTML output — the name becomes either a `<div class="name">` or a custom
+	element `<name>`:
 
-		HTML   → <div class="name" …attrs>…markdown content…</div>
-		LaTeX  → \begin{name}[label] …content… \end{name}
+		@begin(name)    → <div class="name">…</div>   (no hyphen → class)
+		@begin(na-me)   → <na-me>…</na-me>            (hyphen → custom element)
+		@begin(.name)   → <div class="name">…</div>   (`.` forces a class)
+		@begin(<name>)  → <name>…</name>             (`<…>` forces an element)
+
+	The hyphen default follows the HTML spec: a *valid* custom-element name must
+	contain a hyphen.  It is overridable per block with the `.` / `<…>` sigils
+	above, and document-wide with the `Block elements` metadata key — `hyphenated`
+	(default), `all` (always an element) or `none` (always a class).  The per-block
+	sigils always win over the config.
+
+	LaTeX output is always `\begin{name}[label] …content… \end{name}`, regardless
+	of the class/element distinction (which is HTML-only).
 
 	The author supplies the matching CSS (HTML) or `\newenvironment` (LaTeX);
 	JMarkdown does not invent meaning for the name.  The only names with bespoke
 	output are the four existing directives, so that `@begin(x)` renders
 	identically to `:::x`: `abstract`, `feedback`, `TeX` (verbatim, LaTeX-only)
-	and `HTML` (markdown, HTML-only).  Those share their render bodies with the
-	directives in additional-directives.js, so the two routes can never drift.
+	and `HTML` (markdown, HTML-only) — these ignore the class/element sigils and
+	share their render bodies with the directives in additional-directives.js, so
+	the two routes can never drift.
 
 	Nesting: differently-named blocks nest for free (the inner block is just part
 	of the outer block's markdown content and is re-lexed normally).  Only
@@ -47,6 +60,7 @@
 
 import attributesParser from 'attributes-parser';
 import { renderAbstract, renderFeedback, renderTeXEnv, renderHTMLEnv } from './additional-directives.js';
+import { configManager } from './config-manager.js';
 
 // Names that must mirror an existing directive exactly (parity).  ctx carries
 // the already-rendered inner content (`inner`, HTML or LaTeX depending on
@@ -90,23 +104,40 @@ function dedent(text) {
 	return lines.map(l => l.startsWith(prefix) ? l.slice(prefix.length) : l).join('\n');
 }
 
-// Build the opening `<div …>` for a generic environment.  The environment name
-// becomes a class; if the author also supplied a class we merge into it rather
-// than emit two class attributes (the browser would otherwise drop one).
-function genericHtmlOpen(name, attrs, text) {
+// Decide the HTML tag for a generic environment: 'div' (name as a CSS class) or
+// the name itself (a custom element). The per-block override ('class'/'element')
+// always wins; otherwise the `Block elements` policy decides.
+function resolveTag(name, override) {
+	if (override === 'class') return 'div';
+	if (override === 'element') return name;
+	const policy = String(configManager.get('Block elements', 'hyphenated') || 'hyphenated').toLowerCase();
+	if (policy === 'all') return name;     // everything is a custom element
+	if (policy === 'none') return 'div';   // everything is a div.class
+	return name.includes('-') ? name : 'div';  // 'hyphenated' (default)
+}
+
+// Render a generic environment to HTML as either <div class="name"> or a custom
+// element <name>. The optional [text] is exposed as a data-label attribute.
+function renderGenericHTML(name, attrs, text, inner, override) {
+	const tag = resolveTag(name, override);
+	const label = text ? ` data-label="${String(text).replace(/"/g, '&quot;')}"` : '';
 	let attrStr = attrs ? String(attrs).trim() : '';
-	const classRe = /class\s*=\s*"([^"]*)"/;
-	let out;
-	if (classRe.test(attrStr)) {
-		attrStr = attrStr.replace(classRe, (_m, c) => `class="${name} ${c}"`);
-		out = `<div ${attrStr}`;
-	} else {
-		out = `<div class="${name}"${attrStr ? ' ' + attrStr : ''}`;
+
+	if (tag === 'div') {
+		// The name becomes a class; merge into any author-supplied class rather
+		// than emit two class attributes (the browser would drop one).
+		const classRe = /class\s*=\s*"([^"]*)"/;
+		if (classRe.test(attrStr)) {
+			attrStr = attrStr.replace(classRe, (_m, c) => `class="${name} ${c}"`);
+			return `<div ${attrStr}${label}>\n${inner}\n</div>\n`;
+		}
+		const a = attrStr ? ' ' + attrStr : '';
+		return `<div class="${name}"${a}${label}>\n${inner}\n</div>\n`;
 	}
-	// The optional [text] is exposed as a data attribute in HTML (no visual
-	// opinion); CSS/JS can pick it up. In LaTeX it becomes the env's optional arg.
-	if (text) out += ` data-label="${String(text).replace(/"/g, '&quot;')}"`;
-	return out + '>';
+
+	// Custom element: the name is the tag; author attrs pass through unchanged.
+	const a = attrStr ? ' ' + attrStr : '';
+	return `<${tag}${a}${label}>\n${inner}\n</${tag}>\n`;
 }
 
 export const beginEnd = {
@@ -120,12 +151,15 @@ export const beginEnd = {
 	},
 
 	tokenizer(src) {
-		// Opener line: @begin(name) optionally followed by [text] and/or {attrs}.
-		const open = /^@begin\(\s*([A-Za-z][\w-]*)\s*\)([^\n]*)(?:\n|$)/.exec(src);
+		// Opener line: @begin(name) — name optionally prefixed `.` (force class) or
+		// wrapped in <…> (force element) — then optional [text] and/or {attrs}.
+		const open = /^@begin\(\s*(\.|<)?\s*([A-Za-z][\w-]*)\s*(>)?\s*\)([^\n]*)(?:\n|$)/.exec(src);
 		if (!open) return;
-		const name = open[1];
-		const argStr = open[2] || '';
+		const sigil = open[1];
+		const name = open[2];
+		const argStr = open[4] || '';
 		const openLen = open[0].length;
+		const override = sigil === '.' ? 'class' : sigil === '<' ? 'element' : undefined;
 
 		const text = (argStr.match(/\[([^\]]*)\]/) || [])[1];
 		const attrsMatch = argStr.match(/\{([^}]*)\}/);
@@ -135,10 +169,11 @@ export const beginEnd = {
 		}
 
 		// Find the matching @end(name), depth-counting same-name @begin(name).
-		// A begin line may carry trailing [text]{attrs}; an end line may not.
+		// Match by the bare name, allowing the optional `.`/`<…>` sigils on either
+		// side. A begin line may carry trailing [text]{attrs}; an end line may not.
 		const nameEsc = regexEscape(name);
 		const scanRe = new RegExp(
-			`^@(?:(begin)\\(\\s*${nameEsc}\\s*\\)[^\\n]*|(end)\\(\\s*${nameEsc}\\s*\\)[ \\t]*)$`,
+			`^@(?:(begin)\\(\\s*[.<]?\\s*${nameEsc}\\s*>?\\s*\\)[^\\n]*|(end)\\(\\s*[.<]?\\s*${nameEsc}\\s*>?\\s*\\)[ \\t]*)$`,
 			'gm'
 		);
 		scanRe.lastIndex = openLen;
@@ -176,6 +211,7 @@ export const beginEnd = {
 			name,
 			text,
 			attrs,
+			override,
 			mode,
 			rawText: inner,
 			// Re-lex markdown content so nested blocks / prose render normally;
@@ -205,7 +241,7 @@ export const beginEnd = {
 			const opt = token.text ? `[${token.text}]` : '';
 			return `\\begin{${token.name}}${opt}\n${inner}\n\\end{${token.name}}\n\n`;
 		}
-		return `${genericHtmlOpen(token.name, token.attrs, token.text)}\n${inner}\n</div>\n`;
+		return renderGenericHTML(token.name, token.attrs, token.text, inner, token.override);
 	}
 };
 
