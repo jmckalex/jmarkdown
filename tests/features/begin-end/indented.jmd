@@ -1,0 +1,20 @@
+@begin(outer)
+  Outer body, indented.
+
+  @begin(middle)
+    Middle body.
+
+    @begin(inner)
+      Deepest, three levels in.
+    @end(inner)
+  @end(middle)
+@end(outer)
+
+@begin(note)
+  Indented body with a code fence whose internal indentation survives:
+
+  ```python
+  def f():
+      return 1
+  ```
+@end(note)

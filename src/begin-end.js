@@ -37,8 +37,12 @@
 	closer is left literal (with a warning) rather than swallowing the rest of the
 	document or throwing.
 
-	Openers/closers sit at the start of the line (column 0); the names carry the
-	structure, so nested blocks need not be indented.
+	Indentation: a top-level block's opener/closer sit at column 0.  A *nested*
+	block may be indented for readability, as long as its own opener and closer
+	share the same indentation and its body is indented consistently.  Each block
+	strips the common leading whitespace from its body (dedent) before processing,
+	so the body — and any nested blocks within it — are handled as if at column 0.
+	Relative indentation (e.g. inside a fenced code block) is preserved.
 */
 
 import attributesParser from 'attributes-parser';
@@ -62,6 +66,28 @@ function contentModeFor(name) {
 
 function regexEscape(s) {
 	return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Strip the common leading-whitespace prefix shared by all non-blank lines, so a
+// nested block's body can be indented for readability and still be processed as
+// if it were at column 0.  Works on the actual whitespace prefix (not a count),
+// so it's correct for tabs or spaces; relative indentation within the body
+// (e.g. inside a code fence) is preserved.  Top-level bodies are unindented, so
+// this is a no-op there.
+function dedent(text) {
+	const lines = text.split('\n');
+	let prefix = null;
+	for (const line of lines) {
+		if (line.trim() === '') continue;                 // ignore blank lines
+		const ws = line.match(/^[ \t]*/)[0];
+		if (prefix === null) { prefix = ws; continue; }
+		let i = 0;
+		while (i < prefix.length && i < ws.length && prefix[i] === ws[i]) i++;
+		prefix = prefix.slice(0, i);
+		if (prefix === '') break;
+	}
+	if (!prefix) return text;
+	return lines.map(l => l.startsWith(prefix) ? l.slice(prefix.length) : l).join('\n');
 }
 
 // Build the opening `<div …>` for a generic environment.  The environment name
@@ -137,7 +163,9 @@ export const beginEnd = {
 			return { type: 'beginEnd', raw: open[0], literal: open[0].replace(/\n$/, '') };
 		}
 
-		const inner = src.slice(openLen, closeStart);
+		// Dedent the body so an indented nested block is processed as if at
+		// column 0 (recursively, at each level).
+		const inner = dedent(src.slice(openLen, closeStart));
 		let consumed = closeEnd;
 		if (src[consumed] === '\n') consumed++;
 		const mode = contentModeFor(name);
