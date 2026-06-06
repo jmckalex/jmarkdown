@@ -50,12 +50,13 @@
 	closer is left literal (with a warning) rather than swallowing the rest of the
 	document or throwing.
 
-	Indentation: a top-level block's opener/closer sit at column 0.  A *nested*
-	block may be indented for readability, as long as its own opener and closer
-	share the same indentation and its body is indented consistently.  Each block
-	strips the common leading whitespace from its body (dedent) before processing,
-	so the body — and any nested blocks within it — are handled as if at column 0.
-	Relative indentation (e.g. inside a fenced code block) is preserved.
+	Indentation: openers and closers may sit at any indentation — JMarkdown finds
+	`@begin`/`@end` regardless of leading whitespace — so nested blocks can be
+	indented for readability, in any style, or not at all (no consistent-indent
+	requirement). Each block then strips the common leading whitespace from its own
+	body (dedent) before processing, so its prose and any deeper nested blocks are
+	handled cleanly; relative indentation (e.g. inside a fenced code block) is
+	preserved.
 */
 
 import attributesParser from 'attributes-parser';
@@ -145,7 +146,9 @@ export const beginEnd = {
 	level: 'block',
 
 	start(src) {
-		const m = src.match(/(?:^|\n)@begin\(/);
+		// Allow leading whitespace so indented (nested) openers are found, which
+		// also lets marked break a paragraph before an indented @begin line.
+		const m = src.match(/(?:^|\n)[ \t]*@begin\(/);
 		if (!m) return undefined;
 		return m.index + (src[m.index] === '\n' ? 1 : 0);
 	},
@@ -153,7 +156,8 @@ export const beginEnd = {
 	tokenizer(src) {
 		// Opener line: @begin(name) — name optionally prefixed `.` (force class) or
 		// wrapped in <…> (force element) — then optional [text] and/or {attrs}.
-		const open = /^@begin\(\s*(\.|<)?\s*([A-Za-z][\w-]*)\s*(>)?\s*\)([^\n]*)(?:\n|$)/.exec(src);
+		// Leading whitespace is allowed (indented nested blocks).
+		const open = /^[ \t]*@begin\(\s*(\.|<)?\s*([A-Za-z][\w-]*)\s*(>)?\s*\)([^\n]*)(?:\n|$)/.exec(src);
 		if (!open) return;
 		const sigil = open[1];
 		const name = open[2];
@@ -173,7 +177,7 @@ export const beginEnd = {
 		// side. A begin line may carry trailing [text]{attrs}; an end line may not.
 		const nameEsc = regexEscape(name);
 		const scanRe = new RegExp(
-			`^@(?:(begin)\\(\\s*[.<]?\\s*${nameEsc}\\s*>?\\s*\\)[^\\n]*|(end)\\(\\s*[.<]?\\s*${nameEsc}\\s*>?\\s*\\)[ \\t]*)$`,
+			`^[ \\t]*@(?:(begin)\\(\\s*[.<]?\\s*${nameEsc}\\s*>?\\s*\\)[^\\n]*|(end)\\(\\s*[.<]?\\s*${nameEsc}\\s*>?\\s*\\)[ \\t]*)$`,
 			'gm'
 		);
 		scanRe.lastIndex = openLen;
