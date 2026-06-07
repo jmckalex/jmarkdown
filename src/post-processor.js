@@ -8,6 +8,7 @@ export { cheerio };
 import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
+import { resetCrossrefs, recordLabel, lookupLabel } from './crossref.js';
 
 // Post-process HTML output using cheerio
 export function postProcessHTML(html, options = {}) {
@@ -37,6 +38,7 @@ export function postProcessHTML(html, options = {}) {
 	if (configManager.get("Headings") && configManager.get("Headings")[0] == "numeric") {
 		add_labels_to_headers($);
 	}
+	resetCrossrefs();
 	process_crossrefs($);
 	replaceTargetsBySources($);
 
@@ -100,32 +102,45 @@ function add_labels_to_headers($) {
 	})
 }
 
-let crossrefs = {};
 function process_crossrefs($) {
+	// First pass: record every :label's number + anchor in the registry.
 	$(".xref-label").each((i, elem) => {
 		let $elem = $(elem);
 		let key = $elem.attr('data-key');
+		let anchor = $elem.attr('id');
+		let number;
 		let in_footnote = $elem.closest('[id^="footnote-"]').length > 0 ? true : false;
 		if (in_footnote) {
 			let $footnote = $elem.closest('[id^="footnote-"]');
 			const $ol = $footnote.closest("ol");
 			const $allItems = $ol.children('li');
 			const currentIndex = $allItems.index($footnote);
-			crossrefs[key] = `${currentIndex+1}`;
+			number = `${currentIndex+1}`;
 		}
 		else {
-			let $xref =  $elem.prevAll(".xref").first();
-			crossrefs[key] = $xref.text();
+			// The nearest preceding .xref is the number span a numbered heading
+			// prepends (see add_labels_to_headers). Needs Headings: numeric.
+			let $xref = $elem.prevAll(".xref").first();
+			number = $xref.text();
 		}
+		if (number != undefined && number.endsWith('.')) {
+			number = number.slice(0, -1);
+		}
+		recordLabel(key, { number, anchor });
 	});
 
+	// Second pass: turn each :ref into a hyperlink carrying the number. An
+	// unknown key renders as '??', mirroring LaTeX's own undefined-reference mark.
 	$(".xref-ref").each((i, elem) => {
-		let key = $(elem).attr('data-key');
-		let str = crossrefs[key];
-		if (str != undefined && str.endsWith('.')) {
-		    str = str.slice(0, -1);
+		let $elem = $(elem);
+		let key = $elem.attr('data-key');
+		let info = lookupLabel(key);
+		if (info && info.number !== undefined && info.number !== '') {
+			$elem.replaceWith(`<a class="xref-ref" href="#${info.anchor}">${info.number}</a>`);
 		}
-		$(elem).text(str);
+		else {
+			$elem.text('??');
+		}
 	});
 }
 

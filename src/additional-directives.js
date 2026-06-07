@@ -128,7 +128,13 @@ const additionalDirectives = [
 		label: "label",
 		renderer(token) {
 			if (token.meta.name === "label") {
-				return `<span class='xref-label' data-key='${token.text.replaceAll("'", '&#39;')}'></span>`;
+				// LaTeX: emit \label and let the engine attach it to the current
+				// counter (works inside \section{…} and after captions).
+				if (global.isLatex) return `\\label{${token.text}}`;
+				// HTML: an invisible, anchored marker. The post-processor reads
+				// the nearest preceding number for it; the id is the :ref target.
+				const key = token.text.replaceAll("'", '&#39;');
+				return `<span class='xref-label' id='xref-${key}' data-key='${key}'></span>`;
 			}
 			return false;
 		}
@@ -139,6 +145,9 @@ const additionalDirectives = [
 		label: "ref",
 		renderer(token) {
 			if (token.meta.name === "ref") {
+				// LaTeX: native \ref (bare number). HTML: a placeholder the
+				// post-processor turns into a hyperlink carrying the number.
+				if (global.isLatex) return `\\ref{${token.text}}`;
 				return `<span class='xref-ref' data-key='${token.text.replaceAll("'", '&#39;')}'></span>`;
 			}
 			return false;
