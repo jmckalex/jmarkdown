@@ -12,16 +12,13 @@
 
 import { configManager } from './config-manager.js';
 import { requirePackage } from './preamble.js';
+import { escapeLatexText as escapeLatex } from './latex-escape.js';
 
-// LaTeX prose escaping. Only `&` and `#` need escaping at this layer:
-// `_` and `%` are JMarkdown source-level syntax (subscript / comment), so
-// any surviving instance has already been escaped by the author. `$` is
-// reserved for math, which the HTML pipeline validates via MathJax and
-// is passed through verbatim to LaTeX.
-function escapeLatex(text) {
-	if (text == null) return '';
-	return String(text).replace(/&/g, '\\&').replace(/#/g, '\\#');
-}
+// Candidate \mintinline delimiters, tried in order. \mintinline takes its code
+// verbatim between a delimiter pair (like \verb), so the delimiter just has to
+// be a character the code does not contain — that is what lets inline code keep
+// literal braces, backslashes, %, & and so on.
+const MINTINLINE_DELIMS = ['|', '!', '+', '@', '/', ':', ';', '"', "'", '~', '?', '='];
 
 // The LaTeX sectioning ladder, deepest-up. Heading depth N maps to the command
 // `base + (N - 1)` rungs down this ladder, clamped at the bottom.
@@ -81,7 +78,15 @@ const latexRenderer = {
 	codespan(token) {
 		requirePackage('minted');
 		const lang = configManager.get('Code language') || 'text';
-		return `\\mintinline{${lang}}{${token.text}}`;
+		const code = token.text;
+		// Use a delimiter the code doesn't contain. The brace form
+		// \mintinline{lang}{code} breaks on a literal `}` in the code (the group
+		// closes early); a \verb-style delimiter avoids that.
+		const delim = MINTINLINE_DELIMS.find(c => !code.includes(c));
+		if (delim) return `\\mintinline{${lang}}${delim}${code}${delim}`;
+		// Pathological: code contains every candidate delimiter. Fall back to the
+		// brace form, which still works when the braces in the code are balanced.
+		return `\\mintinline{${lang}}{${code}}`;
 	},
 
 	code(token) {

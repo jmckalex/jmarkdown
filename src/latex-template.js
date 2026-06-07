@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import { configManager } from './config-manager.js';
 import { assemblePreamble } from './preamble.js';
+import { escapeLatexText } from './latex-escape.js';
 
 // Metadata values arrive as single-element arrays (from the metadata-header
 // parser) or as strings (from config files / DEFAULT_CONFIG). Coerce to a
@@ -49,9 +50,11 @@ export function processLatexTemplate(content) {
 	const preamble = assemblePreamble({ engine, userPackages, userPreamble });
 
 	// Frontmatter from Title / Author / Date metadata. No Title → no \maketitle.
-	const title = asString(meta('Title'));
-	const author = asString(meta('Author'));
-	const date = asString(meta('Date'));
+	// These are plain-text metadata values (not markdown-parsed), so escape the
+	// prose specials &/# before they hit \title{}/\author{}.
+	const title = escapeLatexText(asString(meta('Title')));
+	const author = escapeLatexText(asString(meta('Author')));
+	const date = escapeLatexText(asString(meta('Date')));
 	let frontmatter = '';
 	if (title) {
 		frontmatter += `\\title{${title}}\n`;

@@ -1,0 +1,4 @@
+Title: inline-code-braces
+------------------------------------
+
+Inline `arr[i]}` and `obj = {x: 1}` and `a|b` stay intact.

@@ -85,6 +85,12 @@ if render engine-lua; then
 	want   "lua/default class" "$TEX" '\documentclass{article}'
 fi
 
+# --- frontmatter-escape.jmd: plain-text Title/Author escape &/# before \title{} ---
+if render frontmatter-escape; then
+	want "escape/title"  "$TEX" '\title{Risk \& Reward \#1}'
+	want "escape/author" "$TEX" '\author{A \& B}'
+fi
+
 echo
 echo "latex-document: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
