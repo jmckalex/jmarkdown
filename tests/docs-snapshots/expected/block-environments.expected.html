@@ -1,0 +1,228 @@
+<h1 id="toc-block-environments-begin--end">Block environments (<code>@begin … @end</code>)</h1>
+<p>A <strong>block environment</strong> wraps a span of your document in a named container, in the
+  spirit of a LaTeX environment:</p>
+<pre><code class="hljs">@begin(name)
+  …content…
+@end(name)
+</code></pre>
+<p>Because the closing tag <strong>names</strong> what it closes, environments nest by name — you
+  can wrap a block in another, or drop one into the middle of another, without the
+  colon-counting that JMarkdown's colon-delimited container directives require. The
+  <code>@</code> sigil is borrowed from texinfo's <code>@example … @end example</code> and is otherwise
+  unused, so it never collides with your prose.
+</p>
+<p>The real point of this page is that <span class="intense">you can define your own environments</span> —
+  either inline in a script block or in a reusable file — and a single
+  definition produces both polished HTML and LaTeX. (Throughout, the live demos
+  below show the source on the left and its rendered result on the right.) We start
+  with the syntax, then spend most of our time on defining environments.</p>
+<h2 id="toc-the-syntax">The syntax</h2>
+<p>An opener takes a name and two optional arguments, one bracket type per job:</p>
+<pre><code class="hljs">@begin(name)[label]{key="value" …}
+       ^^^^  ^^^^^  ^^^^^^^^^^^^^^^
+       name  label  attributes
+</code></pre>
+<p>The closer is always the bare <code>@end(name)</code>. Both the <code>[label]</code> and the
+  <code>{attributes}</code> are handed to your environment's renderer (as <code>ctx.text</code> and
+  <code>ctx.attrs</code> — see below), so you decide what they mean.
+</p>
+<h2 id="toc-what-an-undefined-name-does">What an undefined name does</h2>
+<p>If you use a name you have <strong>not</strong> defined, JMarkdown still does something sensible
+  so the environment is useful out of the box:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(warning)
+A plain name becomes a <span class="hljs-code">`&lt;div&gt;`</span> whose class is the name.
+@end(warning)
+
+@begin(pull-quote)
+A <span class="hljs-emphasis">*hyphenated*</span> name becomes a custom element instead,
+because the HTML spec requires a hyphen in a valid
+custom-element name.
+@end(pull-quote)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="warning">
+      <p>A plain name becomes a <code>&lt;div&gt;</code> whose class is the name.</p>
+    </div>
+    <pull-quote>
+      <p>A <strong>hyphenated</strong> name becomes a custom element instead,
+        because the HTML spec requires a hyphen in a valid
+        custom-element name.</p>
+    </pull-quote>
+
+  </div>
+</div>
+<p>You can force either form with a sigil — <code>@begin(.name)</code> is always a <code>&lt;div&gt;</code>,
+  <code>@begin(&lt;name&gt;)</code> is always an element — or set the document-wide policy with the
+  <code>Block elements</code> metadata key (<code>hyphenated</code> (default) · <code>all</code> · <code>none</code>). In
+  LaTeX, every environment renders as <code>\begin{name}[label]…\end{name}</code> regardless,
+  so you supply the matching CSS for the web and the matching <code>\newenvironment</code> for
+  print. JMarkdown invents no meaning for the name — that is your job, which brings
+  us to:
+</p>
+<h1 id="toc-defining-your-own-environments">Defining your own environments</h1>
+<p>A definition is a <span class="intense">name</span> plus a <span class="intense">handler</span> — an object that says how the
+  environment renders. The one required key is <code>html</code>; everything else is optional:</p>
+<table>
+  <thead>
+    <tr>
+      <th>key</th>
+      <th>meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>html</code></td>
+      <td><code>(ctx) =&gt; string</code> — the HTML renderer (required)</td>
+    </tr>
+    <tr>
+      <td><code>latex</code></td>
+      <td><code>(ctx) =&gt; string</code> — the LaTeX renderer (optional; if omitted, the <code>html</code> output is reused in LaTeX mode)</td>
+    </tr>
+    <tr>
+      <td><code>render</code></td>
+      <td><code>(ctx) =&gt; string</code> — a single renderer used for <strong>every</strong> output format, when HTML and LaTeX would be identical</td>
+    </tr>
+    <tr>
+      <td><code>mode</code></td>
+      <td>how the body is read: <code>'markdown'</code> (default), <code>'verbatim'</code> (kept raw — for code or TeX), or <code>'custom'</code></td>
+    </tr>
+    <tr>
+      <td><code>tokenize</code></td>
+      <td><code>(body, token) =&gt; …</code> — only for <code>mode: 'custom'</code>, for environments that parse their own body</td>
+    </tr>
+  </tbody>
+</table>
+<p>The renderer receives a single <span class="intense">context</span> object, <code>ctx</code>:</p>
+<table>
+  <thead>
+    <tr>
+      <th><code>ctx</code> field</th>
+      <th>what it holds</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>ctx.inner</code></td>
+      <td>the body, already rendered (HTML or LaTeX, to match the output)</td>
+    </tr>
+    <tr>
+      <td><code>ctx.text</code></td>
+      <td>the <code>[label]</code> string, or <code>undefined</code></td>
+    </tr>
+    <tr>
+      <td><code>ctx.attrs</code></td>
+      <td>the <code>{attributes}</code> as an object — <code>ctx.attrs.kind</code>, <code>ctx.attrs.id</code>, … (numbers are coerced)</td>
+    </tr>
+    <tr>
+      <td><code>ctx.rawText</code></td>
+      <td>the body as raw, unrendered source</td>
+    </tr>
+    <tr>
+      <td><code>ctx.name</code></td>
+      <td>the environment name</td>
+    </tr>
+    <tr>
+      <td><code>ctx.format</code></td>
+      <td><code>'html'</code> or <code>'latex'</code></td>
+    </tr>
+    <tr>
+      <td><code>ctx.parser</code></td>
+      <td>the active marked parser, if you need to render sub-content yourself</td>
+    </tr>
+  </tbody>
+</table>
+<h2 id="toc-defining-an-environment-in-a-script-block">Defining an environment in a script block</h2>
+<p>The most direct way — and the most LaTeX-like — is to define an environment in a
+  jmarkdown script block (one with <code>data-type="jmarkdown"</code>) with
+  <code>defineEnvironment(name, handler)</code>.
+  The definition runs while the document is being read, so <span class="intense">define an environment
+    before the first <code>@begin</code> that uses it</span> (just as you would <code>\newenvironment</code>
+  before the environment in LaTeX).
+</p>
+<p>Here a <code>callout</code> environment uses both the <code>[label]</code> and a <code>{kind}</code> attribute:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">data-type</span>=<span class="hljs-string">"jmarkdown"</span>&gt;</span><span class="language-javascript">
+<span class="hljs-title function_">defineEnvironment</span>(<span class="hljs-string">'callout'</span>, {
+	<span class="hljs-attr">html</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span>
+		<span class="hljs-string">`&lt;aside class="callout <span class="hljs-subst">${ctx.attrs?.kind ?? <span class="hljs-string">'note'</span>}</span>"&gt;
+			&lt;strong&gt;<span class="hljs-subst">${ctx.text ?? <span class="hljs-string">''</span>}</span>&lt;/strong&gt; <span class="hljs-subst">${ctx.inner}</span>
+		&lt;/aside&gt;`</span>,
+});
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+
+@begin(callout)[Tip]{kind="info"}
+Define it once, then use it like */any/* other
+environment — the body is processed as markdown, so
+*emphasis* and $math$ work inside it.
+@end(callout)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <aside class="callout info">
+      <strong>Tip</strong>
+      <p>Define it once, then use it like <strong><em>any</em></strong> other
+        environment — the body is processed as markdown, so
+        <strong>emphasis</strong> and $math$ work inside it.
+      </p>
+    </aside>
+  </div>
+</div>
+<p>Because the same <code>ctx</code> is available whatever the output, you give the environment
+  a LaTeX form simply by adding a <code>latex</code> key — one source, two outputs:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">data-type</span>=<span class="hljs-string">"jmarkdown"</span>&gt;</span><span class="language-javascript">
+<span class="hljs-title function_">defineEnvironment</span>(<span class="hljs-string">'callout'</span>, {
+	<span class="hljs-attr">html</span>:  <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`&lt;aside class="callout <span class="hljs-subst">${ctx.attrs?.kind ?? <span class="hljs-string">'note'</span>}</span>"&gt;&lt;strong&gt;<span class="hljs-subst">${ctx.text ?? <span class="hljs-string">''</span>}</span>&lt;/strong&gt; <span class="hljs-subst">${ctx.inner}</span>&lt;/aside&gt;`</span>,
+	<span class="hljs-attr">latex</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`\\begin{callout}{<span class="hljs-subst">${ctx.attrs?.kind ?? <span class="hljs-string">'note'</span>}</span>}[<span class="hljs-subst">${ctx.text ?? <span class="hljs-string">''</span>}</span>]\n<span class="hljs-subst">${ctx.inner}</span>\n\\end{callout}\n\n`</span>,
+});
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</code></pre>
+<p>With that definition, <code>@begin(callout)[Tip]{kind="info"}</code> produces a
+  <code>&lt;aside class="callout info"&gt;…</code> for the web and
+  <code>\begin{callout}{info}[Tip]…\end{callout}</code> for print, from the same source.
+</p>
+<h2 id="toc-loading-environments-from-a-file">Loading environments from a file</h2>
+<p>When you have a set of environments you want across many documents, keep them in
+  a <code>.js</code> file and pull them in from the metadata header with <code>Load environments:</code>
+  — exactly parallel to <code>Load directives</code> and <code>Load extensions</code>. Each export is a
+  handler:</p>
+<pre><code class="hljs language-js"><span class="hljs-comment">// my-environments.js</span>
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> warning = {
+	<span class="hljs-attr">html</span>:  <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`&lt;aside class="warning"&gt;&lt;strong&gt;<span class="hljs-subst">${ctx.text ?? <span class="hljs-string">''</span>}</span>&lt;/strong&gt;<span class="hljs-subst">${ctx.inner}</span>&lt;/aside&gt;`</span>,
+	<span class="hljs-attr">latex</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`\\begin{warning}[<span class="hljs-subst">${ctx.text ?? <span class="hljs-string">''</span>}</span>]\n<span class="hljs-subst">${ctx.inner}</span>\n\\end{warning}\n\n`</span>,
+};
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> theorem = {
+	<span class="hljs-attr">html</span>:  <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`&lt;div class="theorem"&gt;<span class="hljs-subst">${ctx.inner}</span>&lt;/div&gt;`</span>,
+	<span class="hljs-attr">latex</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`\\begin{theorem}\n<span class="hljs-subst">${ctx.inner}</span>\n\\end{theorem}\n\n`</span>,
+};
+</code></pre>
+<p>Then, in the document's metadata header, either name the exports you want…</p>
+<pre><code class="hljs">Load environments: warning, theorem from my-environments.js
+</code></pre>
+<p>…or, if the file's default export is a <code>{ name: handler }</code> map, load them all at
+  once:</p>
+<pre><code class="hljs">Load environments: my-environments.js
+</code></pre>
+<p>Paths are resolved relative to the document, so the file travels with your
+  project. (For environments you want available to <strong>every</strong> project, list the file
+  under the <code>Environments</code> key in a global or project <code>.jmarkdown/config.json</code>,
+  using an absolute path.)</p>
+<h2 id="toc-built-in-environments">Built-in environments</h2>
+<p>A handful of names are predefined so that <code>@begin(x)</code> matches its corresponding
+  container directive exactly:</p>
+<ul>
+  <li><code>abstract</code> and <code>feedback</code> — styled containers for the web;</li>
+  <li><code>TeX</code> — raw LaTeX, passed through verbatim and emitted only in LaTeX output;</li>
+  <li><code>HTML</code> — markdown prose emitted only in HTML output;</li>
+  <li><code>comment</code> (and any names you declare under <code>Optionals</code>) — hidden by default,
+    shown with <code>@begin(comment){include=true}</code>;</li>
+  <li><code>game</code> — a strategic-form game (see <a href="strategic-form-games.html">Strategic-Form Games</a>).</li>
+</ul>
+<p>You can use these immediately, and you can define your own alongside them with
+  either method above.</p>

@@ -1,0 +1,341 @@
+Title: Output Templates
+Address: Department of Philosophy, Logic and Scientific Method<br>
+	London School of Economics and Political Science
+------------------------------------
+
+# Output templates
+
+⚓️templates
+When JMarkdown finishes turning your Markdown into HTML, it has produced only the
+*body* of a page — the headings, paragraphs, tables and figures that make up your
+content. Something still has to wrap that body in a complete HTML document: the
+`<!DOCTYPE html>` line, a `<head>` with the right stylesheets and scripts, a
+`<title>`, the `<body>` element, and so on. That wrapping is the job of the
+**output template**.
+
+JMarkdown ships with a built-in default template that is wired to cooperate with
+the keys you set in your [metadata header](metadata-header.html) and
+[configuration files](configuration-files.html): give it a `Title`, some `CSS`,
+or an `HTML header`, and the template drops each value into the right place. For
+many documents the default template is all you will ever need. But you are not
+locked into it. When you want a different page shell — a custom layout, your own
+boilerplate scripts, a print-oriented wrapper, a project-wide house style — you
+can write your **own** Mustache template and tell JMarkdown to use it instead.
+
+This page explains how templating works, what variables the template can draw on,
+the one rule a custom template must obey, and how to select your template through
+the `Template` key.
+
+> **Templates apply to HTML output only.** They wrap the body produced by the
+> HTML pipeline. LaTeX output (`--to latex`) is written directly and is never
+> passed through a template; the corresponding job in print is the LaTeX
+> preamble. Likewise, `--fragment` mode deliberately *skips* the template so you
+> get a bare body with no `<head>` or `<body>` wrapper — useful when you are
+> embedding JMarkdown output inside another page.
+
+## How templating works
+
+JMarkdown uses [Mustache](https://mustache.github.io/), a small, logic-light
+templating language. The flow is straightforward:
+
+1. JMarkdown parses your Markdown and renders the body to an HTML string.
+2. It assembles a **data object** from your configuration, your metadata header,
+   and a few values it injects itself (the full list is in the
+   [reference below](#templatevariables)).
+3. It reads the template file, hands it the data object, and Mustache fills in the
+   placeholders.
+4. The filled-in template is run through `js-beautify` and written out as your
+   `.html` file.
+
+A Mustache placeholder is a name in double braces. The two forms you will use are:
+
+* `{{name}}` — insert the value of `name`, with HTML-special characters escaped.
+* `{{{name}}}` — insert the value of `name` **verbatim**, with no escaping. Use
+  the triple-brace form whenever the value is itself HTML (a stylesheet link, a
+  block of CSS, your rendered content) so the markup is not double-escaped.
+
+Mustache also has *sections* — `{{#name}} … {{/name}}` — that render the enclosed
+block only when `name` has a value, and once per element when `name` is a list.
+The default template uses sections heavily so that, for example, a `<link>` tag
+appears for each `CSS` file you listed and nothing appears when you listed none.
+
+## The one rule: `{{{Content}}}`
+
+A custom template can otherwise look however you like, but it **must** contain the
+placeholder
+
+```
+{{{Content}}}
+```
+
+somewhere in its body. That is where JMarkdown inserts the rendered HTML of your
+document. The triple braces matter: your content is already HTML, so it must be
+inserted verbatim. Use the double-brace form `{{Content}}` by mistake and the
+whole document body will arrive HTML-escaped — you will see your tags rendered as
+literal text rather than as a page. If `{{{Content}}}` is missing entirely, your
+prose simply will not appear in the output.
+
+## The default template
+
+The built-in template lives in the JMarkdown source tree as
+`default-template.html.mustache`. Reading it is the best way to learn which
+variables exist and where each one lands, because every special metadata and
+configuration key is consumed somewhere in it. Its structure is, in outline:
+
+```html
+<!DOCTYPE html>
+<html lang='{{Lang}}'>
+<head>
+	<meta charset="utf-8">
+	<title>{{Title}}</title>
+	{{#MathJax.configuration}}
+	<script>
+		{{{MathJax.configuration}}};
+	</script>
+	{{/MathJax.configuration}}
+	{{#Fontawesome}}
+	<script src="{{{Fontawesome}}}" crossorigin="anonymous"></script>
+	{{/Fontawesome}}
+	<style>
+	{{{Jmarkdown_css}}}
+	</style>
+	{{#CSS}}
+	<link rel="stylesheet" href="{{{.}}}">
+	{{/CSS}}
+	{{#MathJax.src}}
+	<script src="{{{MathJax.src}}}"></script>
+	{{/MathJax.src}}
+	{{#Highlight_src}}
+	<link rel="stylesheet" href="{{{Highlight_src}}}">
+	{{/Highlight_src}}
+	{{#Mermaid}}
+	<script src="{{{Mermaid}}}"></script>
+	{{/Mermaid}}
+	{{#Script}}
+	<script src="{{{.}}}"></script>
+	{{/Script}}
+	<!-- jQuery and the Biblify libraries are loaded here -->
+	{{#Custom_elements}}
+	{{{.}}}
+	{{/Custom_elements}}
+	{{#HTML_header}}
+	{{{.}}}
+	{{/HTML_header}}
+</head>
+<body class='{{Body_classes}}'>
+{{{Content}}}
+{{#HTML_footer}}
+{{{.}}}
+{{/HTML_footer}}
+{{#Biblify_configuration}}
+<script>
+{{{.}}}
+</script>
+{{/Biblify_configuration}}
+</body>
+</html>
+```
+
+A few patterns in there are worth noticing, because you will reuse them in your
+own templates:
+
+* **Conditional blocks.** `{{#Fontawesome}} … {{/Fontawesome}}` emits the
+  FontAwesome script tag only when a `Fontawesome` URL is set, and nothing
+  otherwise. Wrapping optional markup this way keeps the output clean.
+* **List blocks and the `{{.}}` placeholder.** `CSS`, `Script`, `HTML header`,
+  and `HTML footer` arrive as *arrays* (each `CSS:` line in your header adds an
+  element). A section over an array repeats once per element, and inside it the
+  lone `{{.}}` — or `{{{.}}}` for verbatim — stands for the current element. That
+  is how one `<link>` tag is produced for each stylesheet you named.
+* **Verbatim everywhere it matters.** `Content`, `Jmarkdown_css`, the CSS hrefs,
+  the script srcs, and the custom-element scripts all use triple braces, because
+  they are HTML or URLs that must not be escaped.
+
+## Selecting a template: the `Template` key
+
+Which template JMarkdown uses is governed by a single key, `Template`, that you
+can set in a [configuration file](configuration-files.html) or, for one document,
+in its [metadata header](metadata-header.html). Its default value is the special
+string `default`:
+
+| `Template` value | Effect |
+|---|---|
+| `default` (the default) | Use JMarkdown's built-in template. |
+| any other string | A path to your own Mustache template file. |
+
+When the value is anything other than `default`, JMarkdown treats it as a path to
+a template file and resolves it **relative to the directory of the Markdown file
+being processed** — so the template travels with your project and works no matter
+where you invoke `jmarkdown` from. (There is no fixed file-name convention; a
+`.mustache` or `.html` extension is conventional but not required.)
+
+To use a custom template for a single document, name it in that document's
+metadata header:
+
+```yaml
+Title: My Page
+Template: my-template.html.mustache
+------------------------------------
+```
+
+To use it for an entire project, set the same key in the project's
+`.jmarkdown/config.json` so every document in that directory inherits it:
+
+```json
+{
+    "Template": "book.html.mustache"
+}
+```
+
+Because the metadata header is the last configuration layer to be applied, a
+single document can still override a project-wide template (or fall back to the
+built-in one by writing `Template: default`) without disturbing the rest of the
+project. The precedence rules are covered in full on the
+[configuration files](configuration-files.html) page.
+
+## Writing your own template
+
+A minimal custom template needs only a document shell and the required
+`{{{Content}}}` placeholder. This is already a complete, working template:
+
+```html
+<!DOCTYPE html>
+<html lang="{{Lang}}">
+<head>
+	<meta charset="utf-8">
+	<title>{{Title}}</title>
+	<link rel="stylesheet" href="house-style.css">
+</head>
+<body class="{{Body_classes}}">
+	<main>
+		{{{Content}}}
+	</main>
+</body>
+</html>
+```
+
+It hard-codes a single stylesheet and ignores most of the optional keys, which is
+perfectly fine if your project never uses them. As soon as you *do* want a key to
+take effect — multiple `CSS` files, an `HTML header`, MathJax, code highlighting —
+you must include the corresponding placeholder, because a custom template only
+honours the keys it actually mentions. (This is the usual reason a feature
+"stops working" under a custom template: the relevant placeholder was simply left
+out.) The simplest robust starting point is to copy the default template and edit
+it down, so every wired-up key is present and you remove only what you do not
+want.
+
+Note that JMarkdown's own jQuery and Biblify library tags, and the FontAwesome
+and Mermaid tags, live in the *default* template — they are not injected
+automatically. If your document relies on [bibliographies](bibliographic-support.html),
+[Mermaid diagrams](mermaid-diagrams.html), or FontAwesome icons, make sure the
+loader tags for those libraries are present in your custom template too. (The
+`{{{Biblify_configuration}}}` placeholder, described below, supplies the
+per-document Biblify *configuration* script, but it still needs the Biblify
+*library* to have been loaded.)
+
+⚓️templatevariables
+## Reference: template variables
+
+The data object handed to Mustache is built from three sources: every
+[configuration key](configuration-files.html), every key in the document's
+[metadata header](metadata-header.html), and a handful of values JMarkdown injects
+itself. One transformation is applied along the way: **spaces in key names become
+underscores**. So the metadata/config key `Body classes` is referenced in the
+template as `{{Body_classes}}`, `HTML header` as `{{HTML_header}}`, and so on.
+
+### Injected by JMarkdown
+
+These values are computed by JMarkdown and added to the data object every time;
+they do not come from your configuration.
+
+| Variable | Type | Meaning |
+|---|---|---|
+| `{{{Content}}}` | HTML | The rendered body of your document. **Required** in every template. |
+| `{{{Jmarkdown_css}}}` | CSS | JMarkdown's built-in stylesheet, inlined into a `<style>` block by the default template. |
+| `{{{Custom_elements}}}` | HTML | Registration scripts for any [custom elements](metadata-header.html) you declared with the `Custom element` key. Empty when you declared none. |
+| `{{{Biblify_configuration}}}` | JS | The per-document [Biblify](bibliographic-support.html) configuration script. Present only when bibliographies are activated; otherwise the section is empty and renders nothing. |
+
+### From configuration and metadata
+
+These come straight from your config files and metadata header (with spaces in
+the key turned into underscores). The defaults are the built-in configuration
+values; see [configuration files](configuration-files.html) for the authoritative
+list.
+
+| Variable | Type | Source key | Notes |
+|---|---|---|---|
+| `{{Lang}}` | string | `Lang` | The document language; goes in the root element's `lang` attribute. |
+| `{{Title}}` | string | `Title` | The page title (metadata header). |
+| `{{Body_classes}}` | string | `Body classes` | Class string for the `<body>` element. |
+| `{{{Fontawesome}}}` | URL | `Fontawesome` | FontAwesome script URL; wrap in a section to make it optional. |
+| `{{{Mermaid}}}` | URL | `Mermaid` | [Mermaid](mermaid-diagrams.html) script URL. |
+| `{{{Highlight_src}}}` | URL | `Highlight src` | The [code-highlighting](code-highlighting.html) stylesheet URL, already interpolated with the `Highlight theme`. |
+| `{{{MathJax.configuration}}}` | JS | `MathJax.configuration` | The inline [MathJax](math-support.html) config script. |
+| `{{{MathJax.src}}}` | URL | `MathJax.src` | The MathJax library URL. |
+| `{{CSS}}` | array | `CSS` | One stylesheet path per `CSS:` line; iterate with a section and `{{{.}}}`. |
+| `{{Script}}` | array | `Script` | One script path per `Script:` line; iterate with a section and `{{{.}}}`. |
+| `{{HTML_header}}` | array | `HTML header` | Raw HTML inserted before `</head>`; iterate with `{{{.}}}`. |
+| `{{HTML_footer}}` | array | `HTML footer` | Raw HTML inserted before `</body>`; iterate with `{{{.}}}`. |
+
+Beyond these, **any** key you put in the metadata header is available to the
+template under the same name (spaces → underscores). If your header defines
+`Author: Ada Lovelace` and `Date: 1843`, then `{{Author}}` and `{{Date}}` work in
+your template. This is what makes templates flexible: invent a key, set it in the
+header, and place it wherever you want in the page shell.
+
+## Variable interpolation inside the document
+
+The same metadata values are also reachable from *within your prose*, not just
+from the template. Writing `{{key}}` in the body of your document substitutes the
+value of that metadata key right there. This is handy for boilerplate you would
+rather define once in the header — an address, an author name, a release version —
+and reuse in the text. For example, with a header that defines
+
+```yaml
+Address: Department of Philosophy, Logic and Scientific Method<br>
+	London School of Economics and Political Science
+```
+
+you can drop the address into a sentence:
+
+:::markdown-demo
+You can write to me at:<br>
+{{Address}}
+:::
+
+If a key was given more than once in the header, `{{key}}` expands to all of its
+values concatenated. (This in-body interpolation is documented alongside the rest
+of the header machinery on the [metadata header](metadata-header.html) page; it is
+mentioned here because it draws on the very same data object the template uses.)
+
+## Notes and gotchas
+
+* **`{{{Content}}}` is mandatory.** Omit it and your document body vanishes; write
+  it with double braces and the body is HTML-escaped into visible gibberish. Triple
+  braces, always.
+* **A custom template honours only the keys it mentions.** Unlike the default
+  template, your template has no hidden machinery. If you want `CSS`, `HTML
+  header`, MathJax, highlighting, FontAwesome, Mermaid, or Biblify to work, the
+  matching placeholders and library tags must be present. Copy the default and
+  trim it rather than starting from a bare shell, unless your needs are genuinely
+  minimal.
+* **Template paths are relative to the document.** A non-`default` `Template`
+  value is resolved against the directory of the Markdown file being processed, so
+  the path is the same regardless of where you run `jmarkdown` from.
+* **Templates are an HTML-only concern.** They do not affect `--to latex` output,
+  and they are bypassed entirely in `--fragment` mode.
+* **Spaces become underscores.** Reference `Body classes` as `{{Body_classes}}`,
+  `HTML header` as `{{HTML_header}}`, and so on.
+
+## See also
+
+* [Metadata Header](metadata-header.html) — the `Template` key in header form,
+  the special keys the default template consumes (`Title`, `CSS`, `Script`,
+  `HTML header`/`footer`, `Custom element`, …), and in-body `{{key}}`
+  interpolation.
+* [Configuration Files](configuration-files.html) — setting `Template`
+  project-wide, and the full merge/precedence rules for every configuration key.
+* [Bibliographic Support](bibliographic-support.html) — what the
+  `{{{Biblify_configuration}}}` placeholder supplies and the library it needs.
+* [Sources and Targets](sources-and-targets.html) — HTML vs. LaTeX output and the
+  `--fragment` flag.

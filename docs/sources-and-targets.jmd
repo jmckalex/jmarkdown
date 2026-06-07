@@ -1,0 +1,225 @@
+Title: Sources And Targets
+------------------------------------
+
+# Sources and targets
+
+HTML is a far more expressive medium than Markdown exposes. Ordinary Markdown
+gives you headings, paragraphs, lists, links, emphasis, and tables — but it has
+no way to say "render this rich block of content *over here*, but write its source
+*somewhere else*." A common case: a two-column table that shows the same algorithm
+in two languages side by side. The table cell is a cramped place to author a fenced
+code block, and Markdown table syntax does not allow a cell to span multiple lines.
+
+JMarkdown's **sources and targets** mechanism solves this. You mark a spot in the
+document as a *target* — a placeholder — and elsewhere you write a *source* block
+that carries the real content. After the page is rendered, JMarkdown splices each
+source into the target (or targets) that name it. The slogan is: **put *this*
+content *there*.**
+
+The two halves are deliberately asymmetric:
+
+- A **target** is an *inline* placeholder. It is tiny and can live anywhere inline
+  text can live — including inside a table cell, a list item, or a heading.
+- A **source** is a *container* block. It can hold anything a normal block of
+  Markdown can hold: paragraphs, fenced code, math, nested directives, images.
+
+This separation is what makes the table-of-code-snippets case work: the targets sit
+in the table, the bulky sources sit below it where there is room to write them.
+
+## A first example
+
+Here a two-column table places two targets, and two source blocks supply the code.
+After rendering, each source is moved into its matching cell:
+
+::::markdown-demo
+| *JavaScript* |   *Python*   |
+|--------------|--------------|
+| :target[js] | :target[py] |
+
+:::source{target=js}
+```js
+function foo() {
+	let x = 10;
+	let y = 20;
+	return x + y;
+}
+```
+:::
+
+:::source{target=py}
+```python
+def foo():
+	x = 10
+	y = 20
+	return x + y
+```
+:::
+::::
+
+Notice that the source blocks were written *after* the table, in document order,
+yet their content ended up *inside* the table cells. The source blocks themselves
+leave no trace where they were written — only the spliced-in copies remain.
+
+## How it works
+
+The mechanism has two phases.
+
+**During parsing**, each piece renders to a small marker element:
+
+- A target becomes an empty span carrying a `data-target-id` attribute:
+  `<span data-target-id='js'></span>`.
+- A source becomes a `<div>` carrying a `data-target` attribute, with its body
+  rendered as ordinary Markdown inside it: `<div data-target='js'>…</div>`.
+
+At this point the markers are just sitting in the document where you wrote them.
+
+**During post-processing**, JMarkdown loads the rendered HTML into
+[cheerio](https://cheerio.js.org/) and performs the splice. For every source div,
+it finds every target span whose id matches the source's `target` attribute,
+replaces each such span with a **clone** of the source's content, and then removes
+the original source div. (Post-processing happens after cross-reference resolution,
+so anchors and references defined inside a source are resolved before the splice.)
+
+Because the source is *cloned* per target, a single source can fill any number of
+targets — see [Reusing one source for many targets](#reusing-one-source-for-many-targets)
+below.
+
+> **HTML output only.** The splice runs in the cheerio post-processing stage, and
+> that stage runs only on the HTML path. In LaTeX output there is no
+> post-processing, so sources and targets are not rewritten. Reach for this feature
+> for web output; for print, write the content where it belongs.
+
+## Syntax
+
+There are two ways to write a target and one way to write a source.
+
+### Targets
+
+The canonical form is an inline directive whose label is the target id:
+
+```
+:target[my-id]
+```
+
+The id is the text in the brackets; surrounding whitespace is trimmed. There may be
+more than one target with the same id (this is how one source fills several places).
+
+There is also a shorthand. Writing the target-emoji immediately followed by an id
+is exactly equivalent to the directive form:
+
+::::markdown-demo
+The bullseye emoji marks a target inline: 🎯spot — and the directive form
+:target[spot] marks the same one.
+
+:::source{target=spot}
+**Spliced in** from a single source into both targets above.
+:::
+::::
+
+The shorthand id may contain only letters, digits, hyphens, and underscores
+(`[a-zA-Z0-9_-]`); the emoji must sit flush against the id with no space between
+them. If you need an id with other characters, or want a space after the marker,
+use the `:target[…]` directive form, which is more permissive.
+
+### Sources
+
+A source is a container directive. Its required `target` attribute names the id it
+supplies, and its body is whatever you want spliced in:
+
+```
+:::source{target=my-id}
+Any Markdown you like — **prose**, code, math, lists, images, nested directives.
+:::
+```
+
+The `target` attribute may be quoted or unquoted — `{target=my-id}` and
+`{target="my-id"}` behave identically. The body is parsed as ordinary Markdown,
+so everything you can write in the document body you can write in a source.
+
+Like all of JMarkdown's container directives, `source` accepts longer colon fences
+(four, five, six … colons) when you need to nest containers — the standard
+colon-counting rule applies. See [Directive syntax](directives-syntax.html) for the
+general nesting convention. In the first example on this page the outer
+`markdown-demo` uses four colons precisely so the inner `source` blocks can use
+three.
+
+## Reusing one source for many targets
+
+Because each splice inserts a *clone*, a single source can supply as many targets as
+you like. Define the source once and scatter its targets freely:
+
+::::markdown-demo
+| *Column 1* | *Column 2* | *Column 3* |
+|------------|------------|------------|
+|   🎯cell   |   🎯cell   |   🎯cell   |
+
+:::source{target=cell}
+The **same** source, cloned into every matching target.
+:::
+::::
+
+This is handy for a value or snippet that should appear in several places but be
+authored in exactly one — change the source and every copy updates.
+
+## Edge cases and gotchas
+
+The splice is forgiving rather than strict; understanding what it does in the
+corner cases will save you a confusing afternoon.
+
+- **A target with no matching source** is left in place as an empty, invisible
+  span (`<span data-target-id='…'></span>`). Nothing is shown there, and no error
+  is raised. Check your spelling if a target stays blank.
+
+- **A source with no matching target is removed entirely.** After looking for
+  targets to fill, the post-processor deletes the source div whether or not it
+  found any. So a source whose `target` id matches nothing simply vanishes from
+  the output — it is *not* rendered where you wrote it. Do not use a `source` block
+  as an ordinary container expecting it to display in place; that is what a plain
+  container directive or a [block environment](block-environments.html) is for.
+
+- **Ids must match exactly.** Matching is a literal attribute comparison, so
+  `target=Fig1` and `:target[fig1]` will not connect. Pick a convention (lowercase
+  with hyphens is a reasonable one) and stick to it.
+
+- **Authoring order is irrelevant.** A source may be written before or after its
+  targets; the splice is a whole-document pass that runs after the page is built.
+  Place sources wherever they read best — conventionally, just after the structure
+  that holds their targets.
+
+- **A target receives the source's *rendered* content.** By the time the splice
+  runs, the source body is already HTML, so the inserted content is fully formatted
+  (code is highlighted, emphasis is applied, math is typeset). Targets are not
+  re-parsed.
+
+## Reference
+
+### Syntax summary
+
+| Form | Role | Renders to | Notes |
+|---|---|---|---|
+| `:target[id]` | target (inline directive) | `<span data-target-id='id'></span>` | id is the bracketed label; whitespace trimmed |
+| `🎯id` | target (emoji shorthand) | `<span data-target-id='id'></span>` | id is `[a-zA-Z0-9_-]+`, flush against the emoji |
+| `:::source{target=id}` | source (container directive) | `<div data-target='id'>…body…</div>` | `target` required; quoted or unquoted; body is Markdown |
+
+### Behaviour summary
+
+| Situation | Result |
+|---|---|
+| One source, one target | Target replaced by the source's content |
+| One source, several targets (same id) | Each target replaced by an independent clone |
+| Target with no source | Empty invisible span left in place |
+| Source with no target | Source removed from the output entirely |
+| LaTeX output | No splicing — feature is HTML-only |
+
+## See also
+
+- [Directive syntax](directives-syntax.html) — the general rules for inline and
+  container directives, including colon-fence nesting.
+- [The `markdown-demo` directive](markdown-demo.html) — the side-by-side demo
+  container used throughout this page.
+- [Tables and alerts](tables-and-alerts.html) — the table syntax these examples
+  build on.
+- [Post-processing](post-processing.html) — the cheerio stage in which the splice
+  takes place.
+- [Block environments](block-environments.html) — for content that should render
+  *where you write it* rather than be moved elsewhere.

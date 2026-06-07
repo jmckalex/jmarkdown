@@ -1,0 +1,692 @@
+/*
+ * jmarkdown documentation styles
+ *
+ * Restyled to the "dynamo" design system: a warm "paper" palette,
+ * Crimson Pro serif body text, JetBrains Mono for code and small
+ * uppercase eyebrow labels, h2 headings with a top divider rule,
+ * bordered zebra-striped tables, and warm rounded code panels.
+ *
+ * This file consolidates:
+ *   1. jmarkdown's built-in CSS (from the default template), reskinned
+ *   2. Document-specific styles used across the documentation
+ *   3. Description list and checkbox list extension styles
+ *
+ * Every JMarkdown-specific component rule (markdown-demo grid, table.game
+ * and its sub-rules, markdown-alert variants, description-list dl grid,
+ * title-box, TOC, alignment helpers, feedback, checkbox lists, emoji image)
+ * is preserved by selector — only the palette/typography has changed.
+ *
+ * Include this in the documentation shell page's <head>.
+ */
+
+
+/* ============================================================
+   Dynamo design tokens
+   ============================================================ */
+
+:root {
+  --ink:     #2c2c2c;
+  --ink2:    #555;
+  --ink3:    #888;
+  --paper:   #faf9f7;
+  --paper2:  #f5f4f2;
+  --card:    #fff;
+  --accent:  #8b7355;
+  --accent2: #6d5a43;
+  --border:  #e2e0dc;
+  --divider: #e8e5e0;
+  /* Warm code panel surfaces */
+  --code-panel:  #f6f3ee;
+  --code-inline: #f1ede6;
+  --code-inline-border: #e6e1d8;
+  --row-stripe:  #fcfbf9;
+}
+
+
+/* ============================================================
+   Reading layout & typography
+   ============================================================ */
+
+.content-area {
+  color: var(--ink);
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 18px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.content-area code,
+.content-area pre,
+.content-area .mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.content-area a {
+  color: var(--accent2);
+  text-decoration: none;
+}
+
+.content-area a:hover {
+  text-decoration: underline;
+}
+
+/* Headings */
+
+.content-area h1 {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.content-area h2 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 48px 0 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+
+.content-area h3 {
+  font-size: 21px;
+  font-weight: 600;
+  margin: 32px 0 6px;
+}
+
+.content-area h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 22px 0 4px;
+}
+
+.content-area p {
+  margin: 10px 0;
+}
+
+.content-area ul,
+.content-area ol {
+  margin: 10px 0;
+  padding-left: 24px;
+}
+
+.content-area li {
+  margin: 4px 0;
+}
+
+.content-area blockquote {
+  margin: 14px 0;
+  padding: 2px 18px;
+  border-left: 3px solid var(--border);
+  color: var(--ink2);
+}
+
+.content-area hr {
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: 28px 0;
+}
+
+
+/* ============================================================
+   Code panels
+   ============================================================ */
+
+pre code.hljs {
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+.content-area pre {
+  background: var(--code-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 14px 0;
+}
+
+.content-area :not(pre) > code {
+  background: var(--code-inline);
+  border: 1px solid var(--code-inline-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.86em;
+}
+
+.content-area pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* highlight.js: take the theme's token colours but keep our warm panel. */
+.content-area pre code.hljs {
+  background: transparent;
+  padding: 0;
+  color: var(--ink);
+}
+
+code {
+  font-size: 14px;
+}
+
+
+/* ============================================================
+   Tables (bordered, zebra-striped, mono uppercase headers)
+   ============================================================ */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 15.5px;
+}
+
+table:not(.game),
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 8px 11px;
+}
+
+th {
+  background: var(--paper2);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink2);
+  font-weight: 500;
+  text-align: left;
+}
+
+table:not(.game) tr:nth-child(even) td {
+  background: var(--row-stripe);
+}
+
+td,
+th {
+  vertical-align: top;
+}
+
+
+/* ============================================================
+   Emoji
+   ============================================================ */
+
+.marked-emoji-img {
+  height: 1em;
+  vertical-align: -0.15em;
+}
+
+
+/* ============================================================
+   GFM alerts
+   ============================================================ */
+
+.markdown-alert-title {
+  margin-top: 0pt;
+  margin-bottom: 3pt;
+}
+
+.markdown-alert svg.octicon {
+  margin: 3pt;
+  vertical-align: middle;
+}
+
+.markdown-alert {
+  padding: 0.5rem 0.5rem;
+  margin-bottom: 16px;
+  border-left: .25em solid;
+  border-radius: 4px;
+}
+
+.markdown-alert-note {
+  border-color: #0969DA;
+  background-color: #DAEEFF;
+}
+
+.markdown-alert-warning {
+  border-color: #9A6700;
+  background-color: #FFF8E5;
+}
+
+.markdown-alert-tip {
+  border-color: #1A7F37;
+  background-color: #DDFBE6;
+}
+
+.markdown-alert-important {
+  border-color: #CF222E;
+  background-color: #FFEBE9;
+}
+
+
+/* ============================================================
+   Markdown-demo (side-by-side source / output grid)
+   ============================================================ */
+
+.markdown-demo-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "codelabel outlabel"
+    "code      out";
+  column-gap: 16px;
+  row-gap: 4px;
+  align-items: start;
+  margin: 16px 0;
+}
+
+.markdown-demo-code-label   { grid-area: codelabel; }
+.markdown-demo-output-label { grid-area: outlabel; }
+.markdown-demo-markdown     { grid-area: code; }
+.markdown-demo-parsed       { grid-area: out; }
+
+/* The fix for the runaway-width problem: a CSS grid track's implicit
+   min-width is `auto`, so a <pre> of long code lines expands its column
+   past its 1fr share and squeezes the output column to a sliver.
+   `min-width: 0` lets the 1fr win; the <pre> then scrolls horizontally
+   within its own column (see overflow-x below) instead of growing it. */
+.markdown-demo-markdown,
+.markdown-demo-parsed {
+  min-width: 0;
+}
+
+.markdown-demo-container pre {
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+.markdown-demo-container code {
+  height: auto;
+  display: block;
+  box-sizing: border-box;
+}
+
+/* Source (left) pane: flush code, no panel chrome, so it uses the full column. */
+.markdown-demo-markdown pre {
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+div.markdown-demo-markdown code.hljs {
+  font-size: 10.5pt;
+  background-color: transparent;
+}
+
+div.markdown-demo-parsed {
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.markdown-demo-parsed ol,
+.markdown-demo-parsed ul,
+.markdown-demo-parsed p {
+  margin: 0pt;
+}
+
+.markdown-demo-code-label,
+.markdown-demo-output-label {
+  font-weight: bold;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+/* Mobile: stack the source above the output, each under its own label,
+   instead of two cramped side-by-side columns. */
+@media (max-width: 720px) {
+  .markdown-demo-container {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "codelabel"
+      "code"
+      "outlabel"
+      "out";
+  }
+  .markdown-demo-output-label {
+    margin-top: 12px;
+  }
+}
+
+
+/* ============================================================
+   Strategic-form games
+   ============================================================ */
+
+table.game caption {
+  caption-side: bottom;
+  padding-top: 10px;
+  text-align: center;
+  color: inherit;
+}
+
+table.game {
+  border-collapse: collapse;
+}
+
+table.game td {
+  border: 1px solid var(--ink);
+  border-collapse: collapse;
+  text-align: center;
+}
+
+table.game tr:first-child td:first-child {
+  border: none;
+}
+
+table.game td.columnLabel {
+  border: none;
+}
+
+table.game .caption {
+  padding: 6pt;
+}
+
+table.game td.rowLabel {
+  border: none;
+  vertical-align: middle;
+  padding-right: 6pt;
+}
+
+table.game td.strategyLabels {
+  border: none;
+}
+
+table.game tr.no-border td {
+  border: none;
+}
+
+table.game td.rowStrategies {
+  text-align: left;
+  padding-right: 12px;
+}
+
+table.game td.columnStrategies {
+  text-align: center;
+  min-width: 4em;
+}
+
+table.game td.payoffs {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+table.game.playerLabels td {
+  border: 1px solid var(--ink) !important;
+  text-align: center !important;
+}
+
+table.game.playerLabels tr:first-child td {
+  border: none !important;
+}
+
+table.game.playerLabels tr:nth-child(2) td {
+  border: none !important;
+}
+
+table.game.playerLabels tr:nth-child(3) td:first-child {
+  border: none !important;
+  vertical-align: middle;
+}
+
+table.game.playerLabels tr:nth-child(3) td:nth-child(2) {
+  border: none !important;
+}
+
+table.game td.caption p {
+  margin: 0pt;
+}
+
+table.game td.rowLabel p {
+  margin: 0pt;
+}
+
+table.game td.columnLabel p {
+  margin: 0pt;
+}
+
+
+/* ============================================================
+   TiKZ error display
+   ============================================================ */
+
+.tikz-error {
+  border: 2px solid #ff6b6b;
+  background-color: #fff5f5;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.tikz-error-message {
+  color: #d63031;
+  font-weight: bold;
+  margin-top: 0;
+}
+
+.tikz-error button {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tikz-error button:hover {
+  background-color: var(--accent2);
+}
+
+
+/* ============================================================
+   Document-specific styles
+   ============================================================ */
+
+div.no-colon dt::after {
+  content: "";
+}
+
+div.foo p {
+  background: red;
+}
+
+div.bar p {
+  font-size: 24pt;
+}
+
+.right {
+  float: right;
+}
+
+.red {
+  background-color: red;
+}
+
+.goldenrod {
+  background-color: goldenrod;
+}
+
+.lightgreen {
+  background-color: lightgreen;
+}
+
+.big {
+  font-size: 24pt;
+}
+
+.left {
+  text-align: left;
+}
+
+
+/* ============================================================
+   Feedback / marking styles
+   ============================================================ */
+
+p.feedback {
+  font-size: 14pt;
+  margin-top: 8pt;
+}
+
+section.feedback {
+  margin-top: 8pt;
+}
+
+section.feedback > p:first-child {
+  margin-bottom: 6pt;
+}
+
+section.feedback .question {
+  margin-bottom: 6pt;
+  margin-top: 6pt;
+}
+
+section.feedback .mark {
+  background-color: var(--paper2);
+}
+
+
+/* ============================================================
+   Typography helpers
+   ============================================================ */
+
+sup, sub {
+  line-height: 0pt;
+}
+
+
+/* ============================================================
+   Alignment extensions
+   ============================================================ */
+
+.jmarkdown-right p {
+  text-align: right;
+}
+
+.jmarkdown-right p:not(:first-of-type) {
+  margin-top: 12pt;
+}
+
+.jmarkdown-center p {
+  text-align: center;
+}
+
+.jmarkdown-center p:not(:first-of-type) {
+  margin-top: 12pt;
+}
+
+
+/* ============================================================
+   Title box directive
+   ============================================================ */
+
+div.title-box div.title {
+  border: solid 1pt var(--accent);
+  background-color: var(--accent);
+  color: white;
+  border-top-left-radius: 8pt;
+  border-top-right-radius: 8pt;
+  padding: 6pt;
+}
+
+div.title-box div.title p {
+  margin: 0pt;
+}
+
+div.title-box div.body {
+  border: solid 1pt var(--border);
+  background-color: var(--paper2);
+  border-top: none;
+  border-bottom-left-radius: 8pt;
+  border-bottom-right-radius: 8pt;
+  padding: 6pt;
+}
+
+div.title-box div.body > :last-child {
+  margin-bottom: 0pt;
+}
+
+
+/* ============================================================
+   Description lists (dl grid)
+   ============================================================ */
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  margin-top: 0pt;
+  margin-bottom: 0pt;
+}
+
+dl dt {
+  font-weight: bold;
+}
+
+dl dt:after {
+  content: ":";
+}
+
+dl dd p:first-child {
+  margin-top: 0pt;
+}
+
+dl dd p {
+  margin-bottom: 6pt !important;
+}
+
+dl dd p:not(:first-of-type) {
+  margin-top: 6pt !important;
+}
+
+dl dt.clean:after {
+  content: '';
+}
+
+
+/* ============================================================
+   Custom elements
+   ============================================================ */
+
+foo-bar::part(top),
+foo-bar::part(bottom) {
+  margin-top: 0pt;
+  margin-bottom: 0pt;
+}
+
+
+/* ============================================================
+   TOC
+   ============================================================ */
+
+p#toc {
+  font-weight: bold;
+}
+
+
+/* ============================================================
+   Checkbox lists
+   ============================================================ */
+
+li:has(input[type="checkbox"]:first-child) {
+  list-style: none;
+  margin-left: -18pt;
+}

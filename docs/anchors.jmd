@@ -1,0 +1,163 @@
+Title: Anchors
+------------------------------------
+
+# Anchors
+
+An *anchor* is a named landmark you drop into the middle of your prose so that
+you — or a reader, or another part of the document — can link straight to that
+spot. HTML has long supported this through the `id` attribute and same-page links
+of the form `#name`, but plain Markdown gives you no convenient way to place an
+`id` on an arbitrary point in a paragraph. JMarkdown closes that gap with a tiny,
+single-purpose piece of inline syntax: the anchor symbol.
+
+When you write the unicode anchor emoji immediately followed by a name, JMarkdown
+emits an empty `<span>` whose `id` is that name. The span has no visible content
+and no styling of its own, so it never disturbs the surrounding text — it simply
+marks a position you can jump to.
+
+## The syntax
+
+An anchor is the anchor emoji (⚓️, unicode U+2693 followed by the variation
+selector U+FE0F) followed immediately, with no space, by a name:
+
+```
+⚓️name
+```
+
+The name may contain letters, digits, hyphens, and underscores
+(`[a-zA-Z0-9_-]`). Matching stops at the first character outside that set, so the
+anchor ends cleanly where the name ends and ordinary prose resumes — you do not
+need a delimiter or a trailing space to close it. The example below places an
+anchor and then, a little later, links back to it. Notice that the anchor itself
+produces nothing you can see; only the link is visible:
+
+:::markdown-demo
+Here is a paragraph with an ⚓️landmark planted inside
+it. The anchor is invisible, but it gives us a target.
+
+Much later, somewhere else on the page, we can [jump to that
+landmark](#landmark).
+:::
+
+An anchor may sit anywhere a span of inline text may appear — at the start of a
+line, mid-sentence, or at the very end. Because the tokenizer is an inline
+extension, it does not need a line of its own:
+
+:::markdown-demo
+A definition can begin ⚓️def-utility right where the
+term is introduced, so a cross-reference lands the
+reader on the exact sentence rather than the top of a
+section.
+
+See the [definition of utility](#def-utility) above.
+:::
+
+## How an anchor renders
+
+The renderer is deliberately minimal. The anchor
+
+```
+⚓️introduction
+```
+
+becomes exactly
+
+```html
+<span id="introduction"></span>
+```
+
+That is the whole of it: an empty element carrying the `id`. There is no class,
+no inline style, and no text content, so anchors add nothing to the visual flow
+of the document and cannot accidentally introduce a stray blank line or a gap.
+You attach the meaning — anchors are purely a target for links.
+
+### Linking to an anchor
+
+Once an anchor exists, you reach it with an ordinary same-page Markdown link
+whose destination is `#` followed by the anchor's name:
+
+```markdown
+You planted the anchor with ⚓️results, and you reach it
+with [a link to the results](#results).
+```
+
+Same-page links are a standard browser feature, so this needs nothing special
+from JMarkdown beyond the anchor itself. Clicking the link scrolls the page to
+the anchored span; the URL gains a `#results` fragment, which means the position
+is also shareable and bookmarkable.
+
+## Choosing good anchor names
+
+Because the `id` you write becomes a fragment in the page's URL and an HTML `id`,
+a couple of small disciplines pay off:
+
+- **Keep names unique within a page.** Two elements with the same `id` are
+  invalid HTML, and a `#name` link will jump to whichever the browser finds
+  first. If you anchor `intro` twice, only one of them is reliably reachable.
+- **Prefer readable, hyphenated names.** `proof-of-lemma-3` is kinder in a URL
+  than `pol3`, and it survives editing better.
+- **Mind the allowed characters.** Only letters, digits, hyphens, and
+  underscores are part of the name; the anchor stops at anything else. So
+  `⚓️section.2` anchors `section` and leaves `.2` as ordinary text — use
+  `⚓️section-2` instead.
+
+## Anchors and the `{#id}` directive
+
+JMarkdown offers a second, related way to create a link target, and it helps to
+know when each is the right tool. The inline attribute directive
+(documented under [Syntax Adjustments](syntax-adjustments.html)) attaches an
+`id` — and optionally classes — to the *element that contains it*:
+
+:::markdown-demo
+1. This list item is given an id of its own {#first-step}
+2. A second item, with classes attached {.note}
+3. A third, ordinary item.
+:::
+
+The two features are complementary, not redundant:
+
+| | anchor (`⚓️name`) | attribute directive (`{#name}`) |
+|---|---|---|
+| What it targets | a fresh empty `<span>` at the exact spot you write it | the enclosing block element (list item, paragraph, heading, …) |
+| Leaves a visible element? | yes — an empty span, but it is invisible | no — the marker span is removed in post-processing |
+| Can it add classes? | no | yes (`{.class #id}`) |
+| Best when | you want to point at a precise position inside running prose | you want to label and style a whole block |
+
+Reach for an anchor when the target is a *point* — a particular sentence, a term
+as it is first defined, the line a footnote refers back to. Reach for the
+attribute directive when the target is a *block* you also want to address as a
+unit (and perhaps style).
+
+Headings are a third case worth remembering: JMarkdown already gives every
+heading an automatic `id` derived from its text, so you can usually link to a
+section with `#the-heading-text` without placing any anchor at all. Anchors are
+for the places automatic ids do not reach.
+
+## Output formats
+
+Anchors are an HTML-oriented feature. The renderer emits the same empty `<span>`
+in every output format, so in LaTeX output the literal span markup is passed
+through rather than translated into a `\label`. If you are authoring for print as
+well as the web and need a print cross-reference target, place an explicit
+`\label{…}` in a LaTeX-only context (for example with the `:TeX[…]` inline
+directive or a `:::TeX` block) alongside the anchor, and use the anchor for the
+HTML side.
+
+## Reference
+
+| Item | Value |
+|---|---|
+| Syntax | `⚓️name` (anchor emoji, then the name, no space) |
+| Anchor emoji | ⚓️ — unicode U+2693 (ANCHOR) + U+FE0F (variation selector) |
+| Allowed name characters | letters, digits, `-`, `_` (`[a-zA-Z0-9_-]+`) |
+| Level | inline — may appear anywhere inline text is allowed |
+| HTML output | `<span id="name"></span>` |
+| How to link to it | a same-page Markdown link to `#name` |
+| Registered on | both parsers (the main `marked` instance and `marked_copy`) |
+
+## See also
+
+- [Syntax Adjustments](syntax-adjustments.html) — the `{#id}` and `{.class}`
+  attribute directive that labels whole block elements.
+- [Table Of Contents](table-of-contents.html) — automatic, heading-derived link
+  targets generated for you.

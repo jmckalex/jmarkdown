@@ -1,0 +1,263 @@
+Title: Code Highlighting
+------------------------------------
+
+# Code highlighting
+
+Most of what you write in a JMarkdown document is prose, but a technical
+document almost always needs to show *code* — a shell command, a fragment of
+JavaScript, a snippet of HTML, a configuration file. JMarkdown handles code the
+way ordinary Markdown does, with backtick spans and fenced blocks, and then adds
+two things on top: **syntax highlighting** for the web (via
+[highlight.js](https://highlightjs.org/), wired in through
+[marked-highlight](https://www.npmjs.com/package/marked-highlight)) and a
+matching **LaTeX path** that emits [minted](https://ctan.org/pkg/minted)
+environments for print. One source, both outputs — no special syntax required.
+
+This page covers the two kinds of code (inline and block), how each is rendered
+for HTML and for LaTeX, how to choose a colour theme, and the edge cases worth
+knowing about.
+
+## Inline code
+
+A run of text wrapped in single backticks becomes an inline code span. Use it
+for identifiers, function names, file paths, and short literals that appear in
+the flow of a sentence:
+
+:::markdown-demo
+The function `someFunction()` returns a value; assign
+it to a variable like `result` and you can pass it to
+`another.identifier`.
+:::
+
+Inline code is *not* syntax-highlighted on the web — it is rendered as a plain
+`<code>` element, because there is no language to highlight against and colouring
+a single identifier mid-sentence would be more distracting than useful. Style it
+with CSS by targeting `code` if you want a tinted background or a different font.
+
+In LaTeX output the same span becomes a `\mintinline` command, so it still gets
+monospaced, minted-styled treatment in print. The language minted uses for an
+inline span is the document-wide default set by the `Code language` metadata key
+(see [Choosing the LaTeX language](#toc-choosing-the-latex-language) below);
+without that key it falls back to `text`. So `` `someFunction()` `` becomes
+`\mintinline{text}{someFunction()}` unless you have set a default language.
+
+## Fenced code blocks
+
+For anything longer than a fragment, use a fenced block — three backticks, an
+optional language hint on the opening fence, your code, then three backticks to
+close. The language hint is what drives highlighting:
+
+:::markdown-demo
+```js
+const greet = (name) => `Hello, ${name}!`;
+greet('world');
+```
+:::
+
+On the web this produces a `<pre><code>` block whose class is
+`hljs language-js`, with highlight.js wrapping each token in a `<span>` so your
+chosen theme can colour keywords, strings, function names, and the rest. The
+colours you see above come from whichever highlight.js stylesheet is loaded —
+see [Choosing a colour theme](#toc-choosing-a-colour-theme).
+
+JMarkdown does not invent its own list of languages: it accepts any language
+that highlight.js knows. That includes the obvious ones — `js` (or
+`javascript`), `html` (or `xml`), `css`, `json`, `python`, `bash` (or `shell`),
+`c`, `cpp`, `java`, `sql` — and the long tail besides. Here is HTML, highlighted
+as markup:
+
+:::markdown-demo
+```html
+<p id="greeting" class="lead bold">
+	Hello, <em>world</em> and <strong>everyone</strong>.
+</p>
+```
+:::
+
+### Blocks with no language hint
+
+If you omit the language on the opening fence, the block is rendered verbatim —
+no highlighting is attempted, and no guessing is done. The element still carries
+the `hljs` class (so it inherits the theme's background and padding), but it has
+no `language-…` class and none of the per-token colouring:
+
+:::markdown-demo
+```
+PATH=/usr/local/bin:$PATH
+export EDITOR=subl
+plain text, no highlighting applied
+```
+:::
+
+This is deliberate: automatic language *detection* is easy to get wrong on short
+snippets, so JMarkdown highlights only when you have named a language. If a block
+would be mis-highlighted, dropping the language hint is the clean way to turn
+highlighting off for that block.
+
+If you name a language that highlight.js does not recognise, it does not error —
+it quietly falls back to `plaintext`, so the block renders unhighlighted rather
+than breaking the page.
+
+## Choosing a colour theme
+
+The colours come entirely from a highlight.js CSS stylesheet, which JMarkdown
+loads into the document `<head>`. You pick the theme by name; you do not have to
+know the URL. Two metadata keys control this:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Highlight theme` | `atom-one-light` | The name of a [highlight.js theme](https://highlightjs.org/examples) |
+| `Highlight src` | a CDN URL template | Where to fetch the theme stylesheet from |
+
+The default `Highlight src` is a [cdnjs](https://cdnjs.com/) URL with the theme
+name spliced into it:
+
+```
+https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css
+```
+
+The `{{Highlight_theme}}` placeholder is filled in with the value of your
+`Highlight theme` key, so in the common case you set just the theme name and
+leave the URL alone. To switch to highlight.js's dark "Atom One" theme, the
+metadata header needs only one line:
+
+```
+Title: My document
+Highlight theme: atom-one-dark
+------------------------------------
+```
+
+Any theme name that exists in the highlight.js distribution works — `github`,
+`github-dark`, `monokai`, `nord`, `vs2015`, `default`, and dozens more. Browse
+the [theme gallery](https://highlightjs.org/examples) to preview them.
+
+### Pointing somewhere else for the stylesheet
+
+If you host the stylesheet yourself, pin a different highlight.js version, or
+want to bypass the CDN, override `Highlight src` directly. You can still use the
+`{{Highlight_theme}}` placeholder so the theme name stays in one place:
+
+```
+Highlight theme: monokai
+Highlight src: /assets/css/highlight/{{Highlight_theme}}.min.css
+------------------------------------
+```
+
+Because these are ordinary configuration keys, you are not limited to setting
+them per document. Putting them in a project or global
+`.jmarkdown/config.json` makes the theme the default for every document you
+process — see [Configuration files](configuration-files.html) and
+[The metadata header](metadata-header.html) for how the layers combine.
+
+## How highlighting actually works
+
+It helps to know the moving parts, because they explain the behaviour above.
+
+JMarkdown registers `marked-highlight` with highlight.js as the highlighter. For
+each fenced block, the registered function asks highlight.js whether it knows the
+fence's language; if it does, the code is highlighted against that language, and
+if not, it is highlighted as `plaintext` (i.e. left alone). The highlighted
+output is wrapped in `<pre><code class="hljs language-…">`. The `hljs` class is
+what the theme stylesheet hooks onto for the block's background colour, and the
+nested `<span>`s carry the `hljs-keyword`, `hljs-string`, and similar classes
+that the theme paints.
+
+This is also why **the highlighting is pure CSS**: the HTML JMarkdown emits is
+the same regardless of theme, and the theme is just the stylesheet you load. You
+can change the look of every code block in a document by changing one metadata
+line, and you can restyle them further with your own CSS by overriding the
+`hljs-*` classes.
+
+### Highlighting inside live demos
+
+The side-by-side "Markdown code / Markdown output" panels throughout this manual
+are themselves highlighted with the same highlight.js instance. The left panel
+of a demo shows its source highlighted as `markdown`; pass `{type=html}` on the
+demo's opening fence and the source is highlighted as `html` instead — useful
+when the example contains raw HTML or a script. See
+[Live Markdown demos](markdown-demo.html) for the directive itself.
+
+## Code in LaTeX output
+
+When you process a document with `--to latex`, every code construct is rendered
+for the `minted` package instead of for the browser:
+
+- An inline span becomes `\mintinline{lang}{…}`.
+- A fenced block becomes a `minted` environment:
+
+```latex
+\begin{minted}{js}
+const greet = (name) => `Hello, ${name}!`;
+greet('world');
+\end{minted}
+```
+
+A fenced block uses the language named on its fence. If the fence has no
+language, minted uses the document-wide default (`Code language`, falling back
+to `text`). Inline spans always use that document-wide default, since an inline
+span carries no language of its own.
+
+On the LaTeX path, highlight.js is bypassed entirely: the raw source is handed
+straight to minted, which does its own highlighting at compile time. There are
+no `hljs` spans in the `.tex` file, and the `Highlight theme` / `Highlight src`
+keys have no effect on LaTeX output — they are web-only.
+
+### Choosing the LaTeX language
+
+The `Code language` metadata key sets the default minted language for inline
+spans and for fenced blocks that have no fence hint:
+
+```
+Code language: python
+------------------------------------
+```
+
+With that set, an inline `` `range(10)` `` becomes `\mintinline{python}{range(10)}`,
+and a fence written as three backticks with no language becomes a Python
+`minted` block. Named fences always win over this default, so a `` ```js `` block
+stays `js` regardless.
+
+### LaTeX requirements
+
+`minted` needs a real syntax highlighter behind it and therefore a few things in
+your build:
+
+- `\usepackage{minted}` in the LaTeX preamble (set this via the
+  `LaTeX preamble` metadata key — see [The metadata header](metadata-header.html)).
+- [Pygments](https://pygments.org/) installed (minted shells out to it).
+- Compilation with shell-escape enabled, e.g. `pdflatex -shell-escape` or
+  `lualatex -shell-escape`.
+
+Without these, the `.tex` file JMarkdown writes is still correct — it simply
+will not compile until minted's own prerequisites are in place.
+
+## Reference
+
+### Syntax
+
+| Source | HTML output | LaTeX output |
+|---|---|---|
+| `` `code` `` (inline) | `<code>code</code>`, unhighlighted | `\mintinline{<default>}{code}` |
+| Fence with a language | `<pre><code class="hljs language-X">` + highlight.js spans | `\begin{minted}{X}…\end{minted}` |
+| Fence with no language | `<pre><code class="hljs">`, unhighlighted | `\begin{minted}{<default>}…\end{minted}` |
+| Fence, unknown language | falls back to `plaintext` (unhighlighted) | `\begin{minted}{X}…\end{minted}` |
+
+`<default>` is the value of `Code language` (default `text`).
+
+### Metadata / configuration keys
+
+| Key | Default | Applies to | Effect |
+|---|---|---|---|
+| `Highlight theme` | `atom-one-light` | HTML | Name of the highlight.js theme stylesheet to load |
+| `Highlight src` | cdnjs URL template | HTML | Where the theme stylesheet is fetched from; `{{Highlight_theme}}` is substituted |
+| `Code language` | `text` | LaTeX | Default minted language for inline spans and language-less fences |
+
+All three may be set per document (metadata header) or globally
+(`.jmarkdown/config.json`).
+
+## See also
+
+- [Live Markdown demos](markdown-demo.html) — the side-by-side panels used throughout this manual.
+- [The metadata header](metadata-header.html) — where `Highlight theme`, `Highlight src`, and `Code language` are set per document.
+- [Configuration files](configuration-files.html) — setting those keys globally or per project.
+- [Math support](math-support.html) — typesetting mathematics rather than code.

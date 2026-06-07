@@ -1,0 +1,422 @@
+Title: Metadata Header
+Custom element: callout-box
+	<p part='top'><strong>Note</strong></p>
+	<slot></slot>
+Address: Department of Philosophy, Logic and Scientific Method<br>
+	London School of Economics and Political Science<br>
+	London, United Kingdom WC2A 2AE
+------------------------------------
+
+# Metadata header
+
+Most documents need to say a few things *about* themselves before the prose
+begins: a title for the browser tab, which stylesheets to load, which highlight
+theme to use, whether to switch on bibliographies. JMarkdown collects all of
+this in a **metadata header** — a short block of `Key: value` lines at the very
+top of the file, separated from the body by a horizontal rule. The header is
+parsed, stripped, and acted upon *before* a single line of your prose reaches the
+Markdown parser.
+
+The header is the per-document layer of JMarkdown's configuration system. The
+same settings can also be supplied machine-wide or project-wide through
+[configuration files](configuration-files.html); the header always has the final
+say, so it is where you put one-off, document-specific choices. This page is the
+authoritative reference for the header's *syntax* and for every key it
+understands. Keys that have a larger story of their own — bibliographies,
+optional regions, custom extensions — are documented in depth on their own pages
+and cross-referenced below.
+
+## The shape of a header
+
+When `jmarkdown` opens a file it inspects the first line. If that line looks like
+a key — letters, digits, spaces or hyphens, followed by a colon — JMarkdown
+treats the file as having a metadata header:
+
+```yaml
+Key description: value assigned to the key
+```
+
+It then reads line after line until it reaches a line that begins with **at least
+three hyphens** (`---`). Everything above that rule is the header; everything
+below it is your document. The header is removed before parsing, so the rule and
+the keys never appear in the output.
+
+A representative header looks like this:
+
+```yaml
+Title: The Rise of Computational Philosophy
+Date: 24 January 2025
+Author: J. McKenzie Alexander
+CSS: book.css
+CSS: chapter.css
+Highlight theme: atom-one-dark
+HTML header: <!-- build 2025-01-24 -->
+------------------------------------
+```
+
+Two rules about values are worth fixing in mind from the outset, because the rest
+of the page leans on them:
+
+* **Values may span several lines.** A line that is *not* itself a `Key:` line is
+  treated as a continuation of the value above it. This is how a single key can
+  carry a multi-line block of HTML, a paragraph of explanation, or a postal
+  address (see [Multi-line values](#toc-multi-line-values) below).
+* **A key may appear more than once.** Repeating a key does not overwrite the
+  earlier value; both are kept. What that *means* depends on the key — some keys
+  (`CSS`, `HTML header`) act on every value in turn; for variable interpolation
+  the repeated values are concatenated. This is covered under
+  [Repeated keys](#toc-repeated-keys).
+
+### The optional YAML fence
+
+JMarkdown's native form is the bare `Key: value` block shown above. For
+compatibility with the wider Markdown ecosystem — Pandoc, Jekyll, Hugo, Obsidian
+— you may also wrap the header in a pair of `---` fences, the convention those
+tools use:
+
+```yaml
+---
+Title: The Rise of Computational Philosophy
+Author: J. McKenzie Alexander
+---
+```
+
+The opening `---` is recognised only when it is the very first line of the file.
+The closing fence is the same "three or more hyphens" rule that terminates the
+bare form, so the two styles share one terminator. If what follows a leading
+`---` does not actually look like a header, JMarkdown backs off and treats the
+`---` as an ordinary horizontal rule, so you never lose a real `<hr>` to a false
+positive. Both styles are equivalent; pick whichever you prefer.
+
+### When there is no header
+
+If the first line does not look like a key, JMarkdown concludes the file has no
+header and parses the whole file as prose. A document with no header is perfectly
+valid: every key has a built-in default (or a value inherited from a
+configuration file), chosen so that a header-less file still produces a working
+HTML page.
+
+## Multi-line values
+
+Because a continuation line is any line that does not start a new `Key:`, you can
+give a key a value of arbitrary length and structure simply by indenting (or not)
+the continuation lines beneath it. JMarkdown joins the lines back together with
+newlines and hands the whole block to the key:
+
+```yaml
+HTML header: <!-- A multi-line comment
+	that continues across several lines
+	and ends here -->
+LaTeX preamble: \usepackage{amsmath}
+	\usepackage{tikz}
+	\usetikzlibrary{arrows.meta}
+```
+
+Indentation of the continuation lines is conventional, not required — it simply
+makes the header easier to read. What matters is only that a continuation line
+must not itself match the `Key:` pattern, or it would be read as the start of a
+new key.
+
+## Repeated keys
+
+Listing a key twice keeps both values. The behaviour you get depends on how the
+key is consumed:
+
+* **List-valued keys** act on each occurrence independently. Two `CSS:` lines
+  produce two separate stylesheet links; two `HTML header:` lines inject two
+  blocks of markup. This is the normal way to load several stylesheets or scripts.
+* **For variable interpolation** (see below), the repeated values are
+  concatenated into one string.
+
+```yaml
+CSS: reset.css
+CSS: typography.css
+CSS: print.css
+```
+
+The three stylesheets above are emitted as three `<link>` elements, in order.
+
+## Variable interpolation in the body
+
+The header is not only a place to configure the build — it doubles as a small
+table of document variables. Any key you define, **including keys JMarkdown
+assigns no special meaning to**, can be recalled in the body with a
+double-brace reference:
+
+```
+{{Key name}}
+```
+
+When the document is parsed, `{{Key name}}` is replaced by that key's value. The
+name inside the braces is matched literally, *spaces and all*, against the keys
+in the header. If the key is not defined, the reference is left untouched in the
+output (so a stray `{{…}}` is a visible signal that you mistyped the name rather
+than a silent blank).
+
+This page's own header defines an `Address` key. Because that key is live,
+the reference below truly resolves — the demo's right-hand pane is rendered from
+the same source you see on the left:
+
+:::markdown-demo
+You can reach me at:
+
+{{Address}}
+:::
+
+Interpolation is the reason multi-line values and repeated keys matter even for
+keys JMarkdown does not otherwise touch: a multi-line `Address` becomes a
+multi-line block when interpolated, and a key repeated several times interpolates
+to all of its values run together.
+
+## Reference: special keys
+
+The keys below have built-in meaning. Keys not in this list are still stored and
+remain available for [interpolation](#toc-variable-interpolation-in-the-body).
+Every one of these keys may *also* be set in a [configuration file](configuration-files.html);
+the header overrides the file. The dedicated page linked from a key's description
+is the authoritative source for that feature's full behaviour.
+
+### Document and appearance
+
+| Key | Effect |
+|---|---|
+| `Title` | Wrapped in the `<title>` element in the document head; this is the browser-tab title. |
+| `Lang` | The `lang` attribute on the root `<html>` element (default `en`). |
+| `CSS` | Path to a stylesheet, relative to the document. Emitted as a `<link>` in the head. Repeat for several stylesheets. |
+| `Script` | Path to a JavaScript file, relative to the document. Emitted as a `src` script in the head. For scripts needing extra attributes, use `HTML header` instead. |
+| `Body classes` | Text placed in the `class` attribute of the `<body>` element, so your CSS can key off it. |
+| `Highlight theme` | The `highlight.js` theme name for [code highlighting](code-highlighting.html). |
+| `HTML header` | Markup written verbatim just before the closing `</head>` tag. Repeatable. |
+| `HTML footer` | Markup written verbatim just before the closing `</body>` tag. Repeatable. |
+| `Template` | `default` uses the built-in HTML template; any other value is a path to a custom [Mustache template](output-templates.html). |
+| `Custom element` | Defines a web component that pairs with a [container directive](directives-syntax.html). See [Custom elements](#toc-custom-elements) below. |
+
+### Loading code
+
+| Key | Effect |
+|---|---|
+| `Load directives` | Dynamically import custom [directives](directives-syntax.html) from a `.js` module. See [Loading code from files](#toc-loading-code-from-files). |
+| `Load extensions` | Dynamically import custom marked.js [extensions](extensions-simple.html) from a `.js` module. |
+| `Load environments` | Dynamically import custom [block environments](block-environments.html) (`@begin … @end`) from a `.js` module. |
+| `Load javascript` | Read a `.js` file and evaluate it in the shared script context (the same context [script blocks](inline-scripts.html) use). |
+| `Extension <name>` | Declare a simple inline [extension](extensions-simple.html) inline in the header, with no separate file. |
+
+### Content control
+
+| Key | Effect |
+|---|---|
+| `Optionals` | Declare named, hide-able regions. See [Comments and optionals](comments-and-optionals.html). |
+| `Inline comment` | Choose the inline comment character (default `%`). See [Comments and optionals](comments-and-optionals.html). |
+
+### Bibliographies
+
+| Key | Effect |
+|---|---|
+| `Biblify activate` | Set to `true` to switch on [bibliographic support](bibliographic-support.html). |
+| `Bibliography` | Path to a BibTeX database, relative to the document. |
+| `Bibliography style` | A built-in style name (`apa`, `harvard1`, `vancouver`, `bjps`, `chicago`) or a path to a CSL file. |
+
+### LaTeX and diagrams
+
+| Key | Effect |
+|---|---|
+| `LaTeX preamble` | Lines inserted verbatim into the LaTeX preamble. Useful for `\usepackage` lines needed by [TiKZ](tikz-diagrams.html) pictures or by LaTeX output generally. |
+
+The sections that follow expand on the keys whose behaviour is not obvious from
+the table.
+
+## Custom elements
+
+A [container directive](directives-syntax.html) such as the following…
+
+```markdown
+:::my-aside
+Some text /inside/ a *container* that even has $\alpha$ math.
+:::
+```
+
+…is converted, because the name contains a hyphen, into a [custom HTML
+element](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements):
+
+```html
+<my-aside>
+Some text <em>inside</em> a <strong>container</strong> that even has $\alpha$ math.
+</my-aside>
+```
+
+A modern browser will display that element happily, but by default it carries no
+special appearance or structure. The `Custom element` key is the easy way to give
+it one. You supply the element's name on the first line and, on the indented
+continuation lines, the HTML that should populate its shadow DOM:
+
+```yaml
+Custom element: my-aside
+	<p part='top'><strong>The start of my container</strong></p>
+	<slot></slot>
+	<p part='bottom'><strong>The end of my container</strong></p>
+```
+
+When the document is compiled, JMarkdown generates and injects a registration
+script at the top of the output. For the definition above it produces a module
+script equivalent to the following — note the `<slot>`, which is where the
+directive's own content is projected:
+
+```html
+<script type="module">
+	class custom_element extends HTMLElement {
+		constructor() {
+			super();
+			this.attachShadow({ mode: 'open' });
+			this.shadowRoot.innerHTML = `<p part='top'><strong>The start of my container</strong></p>
+<slot></slot>
+<p part='bottom'><strong>The end of my container</strong></p>`;
+		}
+	}
+	customElements.define('my-aside', custom_element);
+</script>
+```
+
+From then on, every `my-aside` container in the document renders as a fully
+styled component. The custom-element name must contain a hyphen — that is an HTML
+requirement for custom elements, not a JMarkdown one. The registration script is
+part of the document *template*, so it is emitted in a full HTML build but not in
+[fragment mode](sources-and-targets.html) (`--fragment`), where there is no head
+to inject it into.
+
+## Loading code from files
+
+Four keys pull external JavaScript into the build. Three of them — `Load
+directives`, `Load extensions`, and `Load environments` — share one syntax with
+two forms.
+
+The **named form** imports only the exports you list:
+
+```
+Load directives: foobar, barfoo from definitions.js
+```
+
+The **whole-file form** imports the module's default export:
+
+```
+Load directives: definitions.js
+```
+
+A file that provides both named exports *and* a default export collecting them
+can be loaded either way — name a subset, or take the lot:
+
+```js
+// definitions.js
+export const foobar = {
+	level: 'container',
+	marker: ':::',
+	label: 'foobar',
+	renderer(token) {
+		if (token.meta.name === 'foobar') return '<strong>FOOBAR</strong>';
+		return false;
+	}
+};
+
+export const barfoo = {
+	level: 'container',
+	marker: ':::',
+	label: 'barfoo',
+	renderer(token) {
+		if (token.meta.name === 'barfoo') return '<strong>BARFOO</strong>';
+		return false;
+	}
+};
+
+export default [ foobar, barfoo ];
+```
+
+The three keys differ only in *what* they register:
+
+* **`Load directives`** registers [directives](directives-syntax.html) — objects
+  conforming to the [marked-directive](https://www.npmjs.com/package/marked-directive)
+  shape. (JMarkdown uses an extended implementation that also accepts a custom
+  tokeniser alongside the renderer.)
+* **`Load extensions`** registers marked.js [extensions](extensions-simple.html).
+  For example, given `Load extensions: jmckalex from my-extensions.js` and a
+  module exporting an inline extension named `jmckalex`, that extension is loaded
+  into the parser:
+
+```js
+// my-extensions.js
+export const jmckalex = {
+	name: 'jmckalex',
+	level: 'inline',
+	start(src) { return src.match(/jmckalex/)?.index; },
+	tokenizer(src) {
+		const match = src.match(/^jmckalex/);
+		if (match) {
+			return { type: 'jmckalex', raw: match[0], text: match[0], tokens: [] };
+		}
+	},
+	renderer(token) { return 'J. McKenzie Alexander'; }
+};
+```
+
+* **`Load environments`** registers [block environments](block-environments.html)
+  used with `@begin(name) … @end(name)`. Each named export is a handler; the
+  default export, if used in the whole-file form, must be a `{ name: handler }`
+  map.
+
+For all three, **paths are resolved relative to the document**, so the loaded
+files travel with your project. (The corresponding configuration-file keys —
+`Directives`, `Extensions`, `Environments` — take *absolute* paths instead; see
+[configuration files](configuration-files.html).)
+
+The fourth key, **`Load javascript`**, is different: rather than registering a
+directive or extension, it reads the named file and evaluates it in the shared
+script context — the same context used by [script blocks and inline
+scripts](inline-scripts.html). Anything the file assigns to `global.*` becomes
+visible to every script and function-extension downstream. Use it to define
+helper functions or data you want available across the document.
+
+## Header-declared extensions
+
+For a one-off inline extension you can skip the separate file altogether and
+declare it directly in the header with an `Extension <name>` key. This is the
+quickest route to bespoke inline notation — a delimiter pair that wraps text in a
+particular `<span>`, say — and is documented fully on the [simple
+extensions](extensions-simple.html) page. The header form looks like this:
+
+```yaml
+Extension keycap: ⌜ ⌝ false 1
+	<kbd>${content1}</kbd>
+```
+
+That declares an extension that turns `⌜Ctrl⌝` into a `<kbd>Ctrl</kbd>` element.
+The first line after the name gives the opening delimiter, the closing delimiter,
+whether to parse the captured content as Markdown, and the number of arguments;
+the indented lines are the replacement template. See [extensions
+(simple)](extensions-simple.html) and [extensions
+(complex)](extensions-complex.html) for the full grammar.
+
+## How the header drives the output
+
+The header is the per-document layer of JMarkdown's layered configuration, and it
+wins over the machine-wide and project-wide [configuration files](configuration-files.html).
+The values it sets are fed into the HTML build through a [Mustache
+template](output-templates.html): the default template reads `Title`, `Lang`,
+`CSS`, `Script`, `Body classes`, `HTML header`, `HTML footer`, the custom-element
+scripts, and more, and assembles them into the final document head and body. If
+you write your own template you can read any header key you like, special or not,
+by referencing it with Mustache's own `{{Key}}` syntax (spaces in key names
+become underscores in the template — `Body classes` is `{{Body_classes}}`).
+
+## See also
+
+* [Configuration Files](configuration-files.html) — the machine-wide and
+  project-wide layers beneath the header, and the JSON form of every key.
+* [Output Templates](output-templates.html) — writing a custom Mustache template
+  that consumes header keys.
+* [Comments and Optionals](comments-and-optionals.html) — the `Optionals` and
+  `Inline comment` keys.
+* [Bibliographic Support](bibliographic-support.html) — the `Biblify` keys in
+  depth.
+* [Directives Syntax](directives-syntax.html), [Simple
+  Extensions](extensions-simple.html), [Block Environments](block-environments.html)
+  — what `Load directives`, `Load extensions`, and `Load environments` register.
+* [Inline Scripts](inline-scripts.html) — the shared script context that `Load
+  javascript` evaluates into.

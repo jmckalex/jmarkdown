@@ -1,0 +1,347 @@
+Title: Directives Syntax
+------------------------------------
+
+# Directives syntax
+
+A *directive* is a compact, uniform way to attach an HTML element — with an `id`,
+classes, and arbitrary attributes — to a piece of your document, without dropping
+out of Markdown into raw HTML. One small grammar covers three scales: an inline
+fragment (a `span`), a single block-level element, and a *container* that wraps a
+whole span of Markdown. The same `{#id .class key=value}` attribute syntax applies
+at every scale, so once you have learned it for a `span` you already know it for a
+`section`.
+
+Directives are the workhorse of structural authoring in JMarkdown. They are what
+you reach for when prose alone cannot say what you mean — when a paragraph needs a
+class for styling, when a region needs to become a `section` or an `aside` element
+for semantics, or when you want to wrap content in a custom web element you have
+defined yourself. JMarkdown's directive support follows the `marked-directives`
+convention but is extended here with a custom-tokenizer hook (see *Defining your
+own directives*, below) that the upstream package does not provide.
+
+This page covers the directive grammar itself. For the closely related
+`@begin(name) … @end(name)` form — which solves the same "wrap a region" problem
+but nests by *name* rather than by counting colons, and which can render to both
+HTML and LaTeX from one definition — see [Block environments](block-environments.html).
+
+## The three levels at a glance
+
+Every directive begins with one, two, or three colons; the count selects the
+*level*. After the colons comes a *name* (the HTML tag or custom-element name),
+followed by an optional bracketed text and an optional braced attribute block.
+
+| Level | Colons | Form | Produces |
+|---|---|---|---|
+| Inline | one | name, then `[text]` and `{attrs}` | an inline element (default tag `span`) on the current line |
+| Block | two | name, then `[text]` and `{attrs}` | one block-level element (default tag `div`) |
+| Container | three or more | name and `{attrs}`, then a closing fence | a block element wrapping everything up to the close |
+
+The exact characters for each level are shown in fenced code blocks throughout this
+page (and gathered in the *Reference* section). They are deliberately kept out of
+running prose: the colon markers are live syntax, and writing them inline would
+trip the parser.
+
+The `name` may be any valid HTML tag (`span`, `section`, `aside`, `figure`, `mark`,
+`time`, …) or any custom-element name you have defined (`my-card`, `exam-feedback`,
+…). JMarkdown does not check the name against a whitelist; whatever you write
+becomes the tag. That is deliberate — it is how directives reach custom elements.
+
+## Inline directives
+
+An inline directive, prefixed with a single colon, injects an inline element into
+the middle of running text. Its bracketed text is its content (processed as
+Markdown inline syntax), and its braced attribute block sets the `id`, classes, and
+other attributes. The general form is:
+
+```markdown
+:name[text]{#id .class key=value}
+```
+
+The default tag is `span`, so the demo below produces three inline elements in one
+sentence:
+
+::::markdown-demo
+A plain :span[span of text]{.highlight}, an :em[emphasized fragment], and a
+:mark[highlighted note]{.warn} all live inside one sentence.
+::::
+
+The name can be any inline HTML element — `em`, `mark`, `time`, `abbr`, `cite`,
+`code` — or a custom inline element. The content in brackets is itself Markdown, so
+inline emphasis and math work inside it:
+
+::::markdown-demo
+:span[This has **bold**, *italics*, and math $E=mc^2$ inside it]{.callout}
+::::
+
+Because an inline directive is, at heart, just a way to emit an inline element, it
+slots in wherever inline content is allowed — including as the body of a list item.
+Used at the start of a list item, it replaces the item's generated marker with your
+element while keeping the item in sequence:
+
+::::markdown-demo
+1. An ordinary item.
+2. Another ordinary item.
+:li[A styled item]{.red}
+4. Numbering continues as written.
+::::
+
+## Block directives
+
+A block directive, prefixed with two colons, emits a *single* block-level element.
+The default tag is `div`. Its content comes from the optional bracketed text — and
+this is the important part to understand, because it is easy to expect the wrong
+thing.
+
+A block directive **does not** swallow the lines that follow it. It consumes only
+its own one-line form. The text after it remains an ordinary, separate paragraph:
+
+::::markdown-demo
+::aside[A self-contained aside, with its content in the brackets.]{.note}
+
+This paragraph is **not** inside the aside — it is a normal paragraph that
+happens to come next.
+::::
+
+If you want to wrap several paragraphs, a list, or any multi-line region, that is
+a job for a *container* directive (next section), not a block directive. A block
+directive is for inserting one element in one place.
+
+A block directive with no bracketed text produces an *empty* element — which is
+exactly what you want when the element is a placeholder you will populate later with
+JavaScript, or a void element such as a horizontal rule:
+
+::::markdown-demo
+::ul{#dynamic-list .js-target}
+
+::hr{.section-break}
+::::
+
+Inspect the rendered output of the first line and you will find an empty
+`<ul id="dynamic-list" class="js-target">`, ready for a script to fill. The second
+line shows a void element: JMarkdown knows the HTML void elements (`hr`, `br`,
+`img`, `input`, `col`, …) and self-closes them rather than emitting a stray closing
+tag.
+
+> [!WARNING]
+> The tag name `p` is a poor choice for a block directive. Because marked's own
+> paragraph handling competes with it, a `p`-named block directive does not wrap
+> its bracketed text the way other block tags do — the text leaks out as separate
+> paragraphs. Reach for a `div` (the default) or a semantic block element such as
+> `aside`, `section`, `figure`, or `blockquote` instead.
+
+## Container directives
+
+A container directive is the one you will use most. It opens with three colons, a
+name, and an optional attribute block; it runs until a closing line of three
+colons; and it wraps everything between the fences in the named element. The
+general form is:
+
+```markdown
+:::name{#id .class key=value}
+…any amount of Markdown…
+:::
+```
+
+Unlike a block directive, a container processes its body as full Markdown —
+paragraphs, lists, headings, math, even other directives all work inside it:
+
+::::markdown-demo
+:::section{#intro .goldenrod}
+This whole region is wrapped in a section element with the given id and class.
+
+1. A list inside the container.
+2. Another item, with an inline directive: :span[styled]{.red}.
+
+And some math: $\int_0^1 x^2\,dx = \tfrac{1}{3}$.
+:::
+::::
+
+The closing fence must sit on a line by itself. Everything up to it — across as
+many paragraphs and blocks as you like — becomes the container's content.
+
+### Custom elements as containers
+
+Because the name is used verbatim as the tag, a container is the natural way to
+emit a custom web element that decorates or augments its content. When marking
+exams, for instance, you might define a minimal `exam-feedback` element and write:
+
+```markdown
+:::exam-feedback
+Your proof of Lemma 2 is correct, but the appeal to compactness in the
+final step needs justification.
+:::
+```
+
+The browser then runs whatever upgrade logic that element defines. Custom elements
+also give downstream tools a stable hook: a region wrapped in `exam-feedback` can,
+for example, be targeted by [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html)
+for a local bibliography.
+
+JMarkdown places no requirement on the name's form here — `my-card`, `pull-quote`,
+or `exam-feedback` are all emitted exactly as written. (This is unlike the
+`@begin … @end` block environments, where an unhyphenated name becomes a `div` and
+a hyphenated one becomes a custom element; container directives always use the
+literal name.)
+
+### Nesting containers
+
+Containers nest, but because each level is delimited by a *count* of colons, an
+inner container must use a **different** colon count from the one that encloses it —
+otherwise the inner closing fence would be read as closing the outer container. The
+convention is to give the outer container *more* colons. The example below uses four
+colons for the outer container and three for the inner one:
+
+```markdown
+::::div{.outer}
+Outer content.
+
+:::aside{.inner}
+Inner content, fully nested.
+:::
+::::
+```
+
+That source renders to:
+
+::::::markdown-demo
+::::div{.outer}
+Outer content.
+
+:::aside{.inner}
+Inner content, fully nested.
+:::
+::::
+::::::
+
+JMarkdown registers container markers from three colons up to eight, so you have
+room for deeply nested structures. This colon-counting is the one real friction
+point of container directives: wrapping an existing block in a new outer container
+means bumping the colon count of every level inside it. If that bookkeeping bothers
+you, the name-delimited [Block environments](block-environments.html)
+(`@begin … @end`) avoid it entirely — they nest by name with no counting.
+
+## The attribute syntax
+
+The braced block after a directive name is parsed by the `attributes-parser`
+library — the same parser the block-environment attributes use. It accepts a
+space-separated mix of shorthands and key/value pairs:
+
+| Form | Meaning | Example |
+|---|---|---|
+| `#name` | sets the element's `id` | `#main-figure` |
+| `.name` | adds a class (repeatable, and merged with any `class=`) | `.lead .muted` |
+| `key=value` | a plain attribute | `role=note` |
+| `key="value"` | a quoted attribute value (use this whenever the value is not a bare identifier or number) | `aria-label="More info"` |
+| `key=42` | a numeric value | `data-count=42` |
+| `key` | a boolean / shorthand attribute | `hidden` |
+
+Shorthands and explicit attributes combine cleanly. Multiple class shorthands
+accumulate, and they merge with an explicit `class="…"`:
+
+::::markdown-demo
+:span[merged classes]{#x .a .b key=value}
+::::
+
+Inspect that span and you will see `id="x"`, `class="a b"`, and `key="value"` — the
+two class shorthands collapsed into a single `class` attribute.
+
+> [!CAUTION]
+> **Quote any value that is not a bare identifier or number.** The attribute parser
+> treats characters such as `-` outside an identifier as token boundaries. An
+> *unquoted* `datetime=2026-06-07` parses as `datetime="2026"` plus a spurious
+> attribute, whereas `datetime="2026-06-07"` parses correctly. Dates, CSS values,
+> URLs, anything with hyphens, slashes, colons, or spaces — wrap it in quotes.
+
+## Reference
+
+### Levels and markers
+
+| Level | Open | Close | Default tag | Body |
+|---|---|---|---|---|
+| Inline | one colon, name, `[text]`, `{attrs}` | — (self-contained) | `span` | the bracketed text, as inline Markdown |
+| Block | two colons, name, `[text]`, `{attrs}` | — (self-contained) | `div` | the bracketed text, as inline Markdown; empty if none |
+| Container | three or more colons, name, `{attrs}` | the same colon count on its own line | `div` | everything up to the closing fence, as full Markdown |
+
+Container markers from three to eight colons are all registered, so containers can
+nest by increasing the count.
+
+### Built-in directives
+
+JMarkdown ships several directives with fixed behaviour. The ones below are
+documented in full on their own pages; they are listed here so you know they exist
+and where the directive grammar already carries meaning. (Their colon markers are
+described rather than written, to keep this prose parser-safe.)
+
+| Directive | Level | Purpose | See |
+|---|---|---|---|
+| `today` | inline | inserts today's date | [Anchors](anchors.html) |
+| `label` / `ref` | inline | cross-reference anchor and reference | [Anchors](anchors.html) |
+| `TeX` | inline / container | raw LaTeX, emitted only in LaTeX output | [Sources & targets](sources-and-targets.html) |
+| `HTML` | inline / container | content emitted only in HTML output | [Sources & targets](sources-and-targets.html) |
+| `title` / `subtitle` / `author` / `institution` / `date` | block | title-block fields | [Metadata header](metadata-header.html) |
+| `abstract` / `feedback` | container | styled prose containers | [Block environments](block-environments.html) |
+| `comment` (and `Optionals`) | container | hidden-by-default regions | [Comments & optionals](comments-and-optionals.html) |
+| `markdown-demo` | container | source-and-output side-by-side demos | [Demonstrating markdown](markdown-demo.html) |
+| `game` | container | strategic-form game tables | [Strategic-form games](strategic-form-games.html) |
+| `mermaid` / `tikz` | container | diagrams | [Mermaid](mermaid-diagrams.html), [TiKZ](tikz-diagrams.html) |
+
+## Gotchas and edge cases
+
+**Directives emit HTML even in LaTeX mode.** The generic directive renderer always
+produces an HTML tag; it has no LaTeX branch. In LaTeX output, a `section` container
+directive therefore leaks a literal `<section>` tag into the `.tex` file. This is
+fine for HTML-only documents, but if you author for *both* targets, prefer the
+[Block environments](block-environments.html) (`@begin … @end`) for structural
+wrapping — a single environment definition renders correctly to both HTML and
+LaTeX. The built-in `TeX` and `HTML` directives exist precisely to handle the format
+split for content that genuinely differs between targets.
+
+**Demonstrating a container directive inside a markdown-demo.** Because
+`markdown-demo` is itself a container directive, a three-colon directive placed
+directly inside a three-colon `markdown-demo` collides on the closing fence and
+crashes the build. The fix is the same colon-counting rule as for any nesting: give
+the demo a *higher* colon count than the directive you are showing. The container
+demos on this page use a four-colon `markdown-demo` wrapping three-colon directives
+for exactly this reason. When the inner example itself contains nested containers,
+bump the demo's count further still.
+
+**Use the `type=html` demo variant for raw HTML or scripts.** A `markdown-demo`
+highlights its source as Markdown by default. When the example you are showing is
+raw HTML or a script, add `{type=html}` to the demo's attribute block so the code
+panel highlights it as HTML. See [Demonstrating markdown](markdown-demo.html).
+
+**The closing fence wants its own line.** A container's closing colons must be alone
+on their line. Trailing content on the same line, or a missing closer, will fold the
+rest of the document into the container.
+
+## Defining your own directives
+
+For most authoring you will not need this — the generic grammar above already
+reaches any tag and any custom element. But when you want a directive that does
+real work (computes its content, parses its body specially, or emits a fixed HTML
+structure), JMarkdown lets you register one. A directive definition is an object
+with a `level`, a `marker`, a `label` (the name the directive matches), an optional
+custom `tokenizer`, and a `renderer`. JMarkdown's `createDirectives()` factory adds
+the custom-tokenizer hook that the upstream `marked-directives` package lacks; the
+empty tokenizer is what lets the `TeX` container, for example, keep its body
+verbatim instead of running Markdown over raw LaTeX.
+
+The built-in definitions in `additional-directives.js` are the canonical models to
+copy. To make your directives available to a document, point at a `.js` file from
+the metadata header — `Load directives:` works exactly like `Load extensions:` —
+or list it under `Directives` in a `.jmarkdown/config.json` for project- or
+machine-wide availability. See [Extensions (complex)](extensions-complex.html) and
+[Configuration files](configuration-files.html) for the loading mechanics, which
+directives share.
+
+## See also
+
+- [Block environments](block-environments.html) — the `@begin … @end` form: nests
+  by name, no colon-counting, renders to both HTML and LaTeX from one definition.
+- [Demonstrating markdown](markdown-demo.html) — the `markdown-demo` directive used
+  throughout this page.
+- [Comments & optionals](comments-and-optionals.html) — hidden and optional regions.
+- [Sources & targets](sources-and-targets.html) — the `TeX` and `HTML` directives
+  and format-specific output.
+- [Strategic-form games](strategic-form-games.html), [Mermaid](mermaid-diagrams.html),
+  [TiKZ](tikz-diagrams.html) — directives that do substantial work.

@@ -1,0 +1,335 @@
+Title: Syntax Adjustments
+------------------------------------
+
+# Syntax adjustments
+
+Plain Markdown gives you emphasis, links, lists, headings, and code, and very
+little else. For day-to-day prose that is enough; for the kind of writing this
+manual is built for — technical, typographic, dual-targeted at the web *and*
+print — it leaves several common needs unspoken. How do you mark a passage as
+*intense* without leaning on raw HTML? How do you typeset a chemical formula or
+an exponent? How do you flush a stanza to the right margin, or attach a CSS class
+to a list item, without abandoning Markdown altogether?
+
+JMarkdown answers with a small set of **syntax adjustments**: a handful of inline
+shorthands, two block alignment forms, emoji and icon insertion, and a way to
+pin classes and an `id` onto an element. None of them require dropping into HTML,
+and — crucially — the typographic ones produce both HTML *and* LaTeX from the
+same source, so a document written once typesets correctly for screen and for
+the printed page.
+
+This page is a tour of those adjustments, from the inline emphasis shorthands
+through alignment, icons, and class attachment. Throughout, the live demos show
+the source on the left and its rendered result on the right, so nothing here can
+drift from what JMarkdown actually does.
+
+> **One inline syntax replaces Markdown's, by design.** The emphasis shorthands
+> below — `/italics/`, `*strong*`, and the rest — are JMarkdown's *own* inline
+> grammar, registered in place of (not alongside) the CommonMark spellings. This
+> is deliberate: a single, unambiguous set of markers. If you would rather author
+> in standard Markdown emphasis (`_italics_`, `**bold**`), pass the `-n`
+> (`--normal-syntax`) flag to `jmarkdown process`, which suppresses the whole
+> family in this section and reverts to stock behaviour. Everything else on this
+> page (alignment, emoji, classes) is always available.
+
+## Inline emphasis
+
+JMarkdown provides six inline emphasis markers. Each wraps a short run of text,
+each nests inside the others, and each renders to the natural HTML element for
+the screen and the natural command for LaTeX.
+
+:::markdown-demo
+Writing /italics/ gives italics.
+
+Writing *strong* gives strong (bold).
+
+Writing __underline__ gives an underline.
+
+Writing ==highlight== marks text as highlighted.
+
+Writing **intense** gives bold-italic emphasis.
+:::
+
+### The six markers
+
+| You write | Web (HTML) | Print (LaTeX) | Meaning |
+|---|---|---|---|
+| `/text/` | `<em>` | `\emph{…}` | italics / emphasis |
+| `*text*` | `<strong>` | `\textbf{…}` | strong (bold) |
+| `__text__` | `span.underline` | `\underline{…}` | underline |
+| `==text==` | `span.highlight` | `\hl{…}` | highlight |
+| `**text**` | `span.intense` | `\textbf{\emph{…}}` | intense (bold-italic) |
+
+A few points worth knowing:
+
+- **The web and print forms are not the same element.** `==highlight==` and
+  `**intense**` render as a styled `<span>` on the web, so you control their
+  appearance entirely through CSS (the docs stylesheet, for instance, gives
+  `span.highlight` a coloured background and `span.intense` a heavier weight).
+  In LaTeX they map to commands: `==…==` becomes `\hl{…}`, which is provided by
+  the **`soul`** package — add `\usepackage{soul}` (or `\usepackage{xcolor}` +
+  `soul`) to your preamble if you use highlighting in print.
+- **`**…**` is *intense*, not Markdown's bold.** In stock Markdown a double
+  asterisk means bold; in JMarkdown it means bold-italic (the "intense" style),
+  and a *single* asterisk is the one that means bold. This is the most common
+  surprise for authors arriving from CommonMark, so it is worth fixing in
+  memory: one star is strong, two stars are intense.
+
+### Nesting
+
+The emphasis markers nest, which lets you combine effects. The reliable way to
+combine two is to bracket the inner pair *inside* the outer pair — closing the
+markers in the reverse of the order you opened them, exactly as you would nest
+parentheses:
+
+:::markdown-demo
+Bold inside italic: /*italic bold*/.
+
+Italic inside bold: */bold italic/*.
+
+Underline can wrap mixed emphasis:
+__underline with *bold* and /italic/ inside__.
+:::
+
+That is, `/*…*/` reads as "open italic, open bold, close bold, close italic" and
+produces correctly nested `<em><strong>…</strong></em>`; `*/…/*` does the same
+the other way round. Properly nested markers always behave; *crossed* markers
+(opening italic then bold but closing italic first, as in `/*…/*`) do **not**
+form a clean nest and will produce ragged output, so keep your pairs balanced.
+
+### How the italics marker reads its content
+
+The slash marker is intentionally conservative about what it will treat as
+italics, so that ordinary slashes in prose — dates, paths, and/or fractions —
+are not swept up by accident. A run of `/…/` becomes italics only when the text
+between the slashes contains **no internal slash** and **no sentence-ending
+punctuation** (`.`, `?`, `!`) except, optionally, a single such mark at the very
+end:
+
+:::markdown-demo
+Multi-word italics work: /two whole words/.
+
+A trailing full stop is allowed: /like this./
+
+But a slash in a path is left alone: see /usr/local/bin for the binary.
+:::
+
+This is why `and/or` and `/usr/local` survive untouched: each contains an
+interior slash, so the tokenizer declines to treat it as emphasis. When you want
+italics around a phrase that itself contains a slash or a mid-sentence full stop,
+reach for the explicit container form (`:span[…]{}`) described in
+[Directives](directives-syntax.html), or fall back to `\emph` / `<em>` directly.
+
+### Subscripts and superscripts
+
+Two more inline markers handle the most common scientific typesetting needs
+without invoking the math engine. An underscore introduces a subscript; a caret
+introduces a superscript. By default each consumes a single following character;
+to subscript or superscript a longer run, wrap it in braces:
+
+:::markdown-demo
+Water is H_2O and the famous identity is E=mc^2.
+
+For longer runs, brace them: H_{2}O and x^{2n+1}.
+:::
+
+On the web these become `<sub>` and `<sup>`; in LaTeX they become
+`\textsubscript{…}` and `\textsuperscript{…}`. Note that these are *text-mode*
+sub/superscripts for use in running prose. For mathematical sub/superscripts
+inside an expression, write the expression as math — see
+[Math Support](math-support.html) — where `_` and `^` carry their usual TeX
+meaning.
+
+## Aligned blocks
+
+Two block-level forms set a span of text flush right or centred, without any
+per-line break markup. Both are line-oriented: each source line becomes its own
+line in the output, so they suit addresses, verse, attributions, and short
+display passages where Markdown's "lines flow into one paragraph" behaviour is
+exactly what you do *not* want.
+
+### Flush right
+
+Prefix each line with `>>` to push the block to the right margin. Line breaks
+within the block are preserved (you do not need trailing-space breaks, which
+JMarkdown disables anyway — see [Disabled Syntax](disabled-syntax.html)), and
+blank lines start new paragraphs as usual:
+
+:::markdown-demo
+>> This text is right aligned.
+>> Multiple lines can be included as
+>> line breaks are not assumed
+>> to be significant.
+>>
+>> And multiple paragraphs can be included
+>> as well!
+:::
+
+### Centred
+
+To centre instead, mark *both ends* of every line: open with `>>` and close with
+`<<`. The trailing `<<` is what distinguishes a centred block from a flush-right
+one, so the closing markers need not line up in any particular column — pad them
+to wherever is convenient in your source:
+
+:::markdown-demo
+>> This text is center aligned.      <<
+>> Multiple lines can be included as <<
+>> line breaks are not assumed       <<
+>> to be significant.                <<
+>>                                   <<
+>> Multiple paragraphs are           <<
+>> supported, too!                   <<
+:::
+
+Both forms emit a wrapping `<div>` — `div.jmarkdown-right` and
+`div.jmarkdown-center` respectively — and the body of that `<div>` is parsed as
+full Markdown, so emphasis, links, and the other inline shorthands all work
+inside an aligned block. The alignment itself is supplied by CSS on those two
+classes (the docs stylesheet sets `text-align` accordingly).
+
+## Emoji and icons
+
+JMarkdown recognises a colon-delimited shorthand for two icon families: GitHub's
+"octocat" emoji set, and Font Awesome icons.
+
+### GitHub emoji
+
+Put an emoji's short name between colons. The name is replaced by an inline image
+of the corresponding emoji:
+
+:::markdown-demo
+I :heart: writing in JMarkdown.
+:::
+
+The full set of recognised names is large; consult the
+[list of octocat emoji](https://gist.github.com/rxaviers/7360908) for the
+complete catalogue.
+
+### Font Awesome icons
+
+The same `:name:` syntax doubles as a Font Awesome shorthand, *provided the name
+begins with `fa-` immediately after the opening colon*. A bare `:fa-thumbs-up:`
+renders the thumbs-up icon:
+
+:::markdown-demo
+A job well done: :fa-thumbs-up:
+:::
+
+You can append extra Font Awesome modifier classes after the icon name, separated
+by spaces. You do **not** repeat the `fa-` prefix on the modifiers — JMarkdown
+adds it for you — so `:fa-thumbs-up lg rotate-90:` is shorthand for the classes
+`fa-thumbs-up fa-lg fa-rotate-90`:
+
+:::markdown-demo
+Sized and rotated: :fa-thumbs-up lg rotate-90:
+:::
+
+Two practical requirements:
+
+- **The `fa-` must come first.** The `fa-` prefix has to follow the opening colon
+  *immediately* (`:fa-thumbs-up:`, never `:thumbs-up fa-...:`); that prefix is how
+  JMarkdown tells a Font Awesome request apart from an octocat name.
+- **Load the Font Awesome stylesheet/script.** Font Awesome icons are rendered as
+  an `<i class="fa-solid …">` element, which only displays once the Font Awesome
+  package is linked in your document's `<head>`. JMarkdown emits the markup but
+  does not bundle the library; add the appropriate Font Awesome link (commonly via
+  the [Add to head](output-templates.html) metadata, or your output template) so
+  the glyphs appear. Octocat emoji, by contrast, are plain images and need no
+  external library.
+
+> **A note on LaTeX output.** The emoji and icon shorthands target the web. In
+> LaTeX mode they currently emit their HTML markup unchanged rather than a print
+> equivalent, so avoid them in passages destined for print, or guard the icon in a
+> web-only block. The emphasis, sub/superscript, and alignment forms above *do*
+> translate to LaTeX, as the tables note.
+
+## Classes and an id on any element
+
+Standard Markdown gives you no way to attach a CSS class or an `id` to the element
+it generates. JMarkdown borrows the directive system's attribute syntax for this:
+write a brace block beginning with `.` (a class) or `#` (an id) at the end of the
+text, and the class(es) and id are attached to the **enclosing element** — the
+list item, paragraph, heading, or whatever Markdown produced from that text.
+
+Assuming `.red` and `.lightgreen` are classes you have defined in CSS, you can tag
+individual list items:
+
+:::markdown-demo
+1. This is a list item {.red}
+2. This is another item {.lightgreen #foo}
+3. This is yet another.
+:::
+
+The same brace block works on a paragraph — placing it at the end of the
+paragraph's text attaches the class to the `<p>`:
+
+:::markdown-demo
+This whole paragraph carries a class. {.lightgreen}
+:::
+
+You can list several classes and an id together; classes start with `.`, the id
+with `#`, separated by spaces, as in `{.red .lightgreen #foo}`. The brace block
+is consumed — it never appears in the output — and the attributes are hoisted onto
+the parent element after rendering.
+
+How it works under the hood is worth a sentence, because it explains the one
+limitation. JMarkdown cannot rewrite an element that has not been generated yet,
+so the marker first emits an invisible placeholder span carrying the requested
+classes and id as data attributes; a post-processing pass then walks the rendered
+HTML, copies those attributes onto the placeholder's parent element, and deletes
+the placeholder. The practical consequence: the brace block attaches to whatever
+element *directly contains* it, so place it inside the text of the element you mean
+to tag.
+
+In **LaTeX** mode the class/id marker emits nothing at all — there is no general
+mapping from a CSS class to a LaTeX construct. When you need print-specific
+formatting at the same spot, supply it explicitly with the `:TeX[…]` inline
+directive (see [Directives](directives-syntax.html)). For richer structural
+attributes — turning a region into a `section` or `aside`, setting arbitrary
+`key=value` attributes — the full [Directives](directives-syntax.html) grammar is
+the better tool; the `{.class #id}` shorthand is the lightweight option for the
+common case of "just put a class on this".
+
+## Reference
+
+### Inline markers
+
+| Marker | Example | Web | LaTeX |
+|---|---|---|---|
+| Italics | `/text/` | `<em>` | `\emph{…}` |
+| Strong | `*text*` | `<strong>` | `\textbf{…}` |
+| Underline | `__text__` | `span.underline` | `\underline{…}` |
+| Highlight | `==text==` | `span.highlight` | `\hl{…}` (needs `soul`) |
+| Intense | `**text**` | `span.intense` | `\textbf{\emph{…}}` |
+| Subscript | `_x` or `_{xyz}` | `<sub>` | `\textsubscript{…}` |
+| Superscript | `^x` or `^{xyz}` | `<sup>` | `\textsuperscript{…}` |
+
+### Block and inline forms
+
+| Form | Syntax | Produces |
+|---|---|---|
+| Flush right | each line prefixed `>>` | `div.jmarkdown-right` |
+| Centred | each line `>>` … `<<` | `div.jmarkdown-center` |
+| GitHub emoji | `:name:` | inline emoji image |
+| Font Awesome | `:fa-name modifiers:` | `<i class="fa-solid fa-name …">` |
+| Class / id | `{.class #id}` at end of text | classes + id on the parent element |
+
+### The `-n` / `--normal-syntax` flag
+
+| Flag | Effect |
+|---|---|
+| `-n`, `--normal-syntax` | Disable JMarkdown's inline emphasis family (italics, strong, underline, highlight, intense, sub/superscript) and revert to standard Markdown emphasis (`_em_`, `**bold**`). Alignment, emoji, icons, and class/id are unaffected. |
+
+## Related pages
+
+- [Directives](directives-syntax.html) — the full `{#id .class key=value}`
+  attribute grammar at inline, block, and container scale, of which the
+  `{.class #id}` shorthand here is the lightweight special case.
+- [Disabled Syntax](disabled-syntax.html) — the two CommonMark rules JMarkdown
+  switches off (trailing-space line breaks and indented code blocks), which is
+  why the aligned blocks above need no break markup.
+- [Math Support](math-support.html) — for mathematical sub/superscripts and full
+  expressions, as opposed to the text-mode `_`/`^` shorthands here.
+- [Markdown Demo](markdown-demo.html) — the live side-by-side demo container used
+  throughout this page.

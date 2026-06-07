@@ -1,0 +1,258 @@
+Title: Table Of Contents
+------------------------------------
+
+# Table of contents
+
+A *table of contents* is an automatically generated, linkable outline of a
+document's headings. You write a single placeholder where you want the outline to
+appear, and JMarkdown fills it in — collecting every heading on the page, nesting
+the entries to mirror the heading levels, and wiring each entry to jump to its
+section. There is nothing to maintain by hand: insert a heading, move a section,
+rename a chapter, and the contents list updates itself the next time the document
+is built.
+
+This very page provides a working example. The outline immediately below is not
+hand-written: it is the contents list JMarkdown generated for this page from its
+own section headings.
+
+{{TOC}}
+
+The placeholder is the *moustache token* `{{TOC}}`. Put it on a line of its own
+at the point where the contents should appear — typically near the top, after the
+title and any introductory matter:
+
+```
+# My Document
+
+A short introduction.
+
+{{TOC}}
+
+# First section
+
+…
+```
+
+That is the whole of the basic feature. The rest of this page explains exactly
+what JMarkdown produces, how the contents list interacts with heading ids and
+with [numbered headings](#toc-numbered-headings-and-back-links), the handful of
+gotchas worth knowing, and how to style the result.
+
+## What gets generated
+
+When the document is parsed, JMarkdown gathers every heading (`#` through
+`######`) in document order, assigns each one a stable id, and substitutes a
+`<div class="toc">` for the `{{TOC}}` placeholder. The div opens with a title
+paragraph and then a set of nested unordered lists — one level of nesting per
+heading level — with each entry a same-page link to its heading.
+
+For a document whose headings are
+
+```
+# First section
+## A subsection
+### Deeper still
+## Another subsection
+# Second section
+```
+
+the generated contents list has this shape (whitespace added here for clarity):
+
+```html
+<div class="toc">
+  <p id="toc">Table of contents</p>
+  <ul>
+    <li><a data-id="toc-first-section" href="#toc-first-section">First section</a>
+      <ul>
+        <li><a data-id="toc-a-subsection" href="#toc-a-subsection">A subsection</a>
+          <ul>
+            <li><a data-id="toc-deeper-still" href="#toc-deeper-still">Deeper still</a></li>
+          </ul>
+        </li>
+        <li><a data-id="toc-another-subsection" href="#toc-another-subsection">Another subsection</a></li>
+      </ul>
+    </li>
+    <li><a data-id="toc-second-section" href="#toc-second-section">Second section</a></li>
+  </ul>
+</div>
+```
+
+A few details are worth pointing out, because you may want to target them with
+CSS or scripts:
+
+- The outer container is always `<div class="toc">`. (Under
+  [numbered headings](#toc-numbered-headings-and-back-links) it gains a second
+  class, `numeric`.)
+- The first child is `<p id="toc">Table of contents</p>` — a fixed title
+  paragraph carrying the id `toc`, so the contents list itself is a link target.
+- Each entry's `href` points at the heading's id; the same value is also stored in
+  a `data-id` attribute. The `data-id` is what lets JMarkdown rewrite an entry's
+  visible text later (for example, to inject a section number), without having to
+  re-derive the link.
+
+## Heading ids
+
+To make the contents list clickable, every heading needs an `id`, and JMarkdown
+assigns one automatically. The id is derived from the heading's text — lower-cased,
+with spaces turned into hyphens and punctuation dropped — and is given a `toc-`
+prefix to keep these generated ids from colliding with ids you set yourself. So
+
+```
+## A subsection
+```
+
+becomes
+
+```html
+<h2 id="toc-a-subsection">A subsection</h2>
+```
+
+These ids exist whether or not you place a `{{TOC}}` in the document, which means
+you can link to any section directly — `[see above](#toc-a-subsection)` — without
+adding an [anchor](anchors.html) of your own. The contents list simply makes use
+of the ids that are already there.
+
+Two headings with identical text would otherwise produce identical ids; the
+slugger that builds them appends a numeric suffix to keep each id unique within
+the page, so a second "Overview" heading becomes `toc-overview-1`, and so on.
+
+## Numbered headings and back-links
+
+If the document opts into numbered headings — by setting `Headings: numeric` in
+the [metadata header](metadata-header.html) — the contents list is upgraded in
+two ways during post-processing.
+
+First, the section numbers that get prepended to each heading (1, 1.1, 1.2, 2, …)
+are also injected into the matching contents entry, so the outline reads as a
+properly numbered table of contents rather than a bare list of titles. This is
+why each entry carries a `data-id`: post-processing looks the heading up by id and
+copies its numbered text into the entry.
+
+Second, the container picks up an extra class — `<div class="toc numeric">` — so
+you can style numbered and unnumbered contents lists differently, and every
+heading on the page is turned into a link back to `#toc` (the title paragraph of
+the contents list). Readers can therefore jump from any section heading straight
+back to the table of contents.
+
+To configure numbered headings, use the YAML-fenced form of the metadata header
+(see the [metadata header](metadata-header.html) page):
+
+```
+---
+Title: My Document
+Headings: numeric
+---
+
+{{TOC}}
+
+# Introduction
+## Background
+# Methods
+```
+
+A heading marked unnumbered with the `{-}` suffix (for example `# Preface {-}`)
+keeps a clean id and a clean contents entry — the `{-}` marker is stripped before
+the id is built, so you get `toc-preface` and a "Preface" entry, not a stray
+marker in the link text.
+
+## Placement and frequency
+
+Place `{{TOC}}` on a line by itself at the spot where the outline should appear.
+Because the substitution happens after the whole document is parsed, the position
+of the placeholder has no effect on which headings are collected — a `{{TOC}}` at
+the very top still lists sections that come later. The contents list therefore
+sits wherever you write the placeholder while always describing the entire
+document.
+
+Use the placeholder **exactly once**. The substitution replaces the *first*
+`{{TOC}}` it finds; a second one is left untouched and will show up literally as
+the text `{{TOC}}` in the output. If you have not placed a `{{TOC}}` anywhere, no
+contents list is generated and nothing is left behind.
+
+## Output formats
+
+The `{{TOC}}` placeholder is an HTML-facing feature. In HTML output it expands to
+the `<div class="toc">` described above. In LaTeX output the placeholder is simply
+removed, leaving nothing in its place — JMarkdown does not emit a LaTeX contents
+command for it.
+
+For a print contents list, use LaTeX's own mechanism instead. Drop a
+`\tableofcontents` command into a LaTeX-only context — for example a TeX block (the
+three-colon `TeX` container directive documented under the directives pages) — at
+the point where the contents should appear, and let the document class number and
+format it:
+
+```
+:::TeX
+\tableofcontents
+:::
+```
+
+A document that targets both the web and print can keep both: a `{{TOC}}` for the
+HTML build and a `\tableofcontents` in a TeX-only block for the print build, since
+each is ignored by the other format.
+
+## Styling the contents list
+
+JMarkdown generates the *structure* of the contents list and leaves its
+appearance to you, in keeping with the rest of the system: you supply the CSS. The
+hooks the generated markup gives you are:
+
+| Selector | Matches |
+|---|---|
+| `.toc` | the whole contents container |
+| `.toc.numeric` | the container, only under `Headings: numeric` |
+| `p#toc` | the "Table of contents" title paragraph |
+| `.toc ul` | the nested lists (one level per heading depth) |
+| `.toc a` | each entry's link |
+
+The documentation theme used for these pages, for instance, does little more than
+make the title paragraph bold:
+
+```css
+p#toc {
+  font-weight: bold;
+}
+```
+
+From there you can collapse the bullet markers, indent by level, add leader dots,
+or restyle the numbered variant — all with ordinary CSS against the selectors
+above.
+
+## A note on live demos
+
+The other pages in this manual favour live `markdown-demo` blocks that render an
+example and show its output side by side. The table of contents is the one feature
+that cannot be demonstrated that way: a demo renders its sample in an isolated
+parse that does not run the `{{TOC}}` substitution, and a `{{TOC}}` written inside
+a demo interferes with the surrounding document's substitution. For that reason
+the examples on this page are shown as code with their output described, rather
+than as live demos. To see a real contents list, place a single `{{TOC}}` in your
+own document and build it.
+
+## Reference
+
+| Item | Value |
+|---|---|
+| Placeholder | `{{TOC}}` (a moustache token; put it on its own line) |
+| How many | once per document — only the first occurrence is replaced |
+| Collects | every heading, `#` through `######`, in document order |
+| Container | `<div class="toc">` (adds class `numeric` under `Headings: numeric`) |
+| Title element | `<p id="toc">Table of contents</p>` |
+| Entry markup | nested `<ul>`/`<li>` with `<a data-id="…" href="#…">` per heading |
+| Heading id scheme | slug of the heading text, lower-cased, prefixed `toc-` |
+| Numbered headings | section numbers copied into entries; headings link back to `#toc` |
+| LaTeX output | placeholder removed; use `\tableofcontents` in a TeX block instead |
+
+## See also
+
+- [Metadata header](metadata-header.html) — where `Headings: numeric` is set, and
+  the general format of the document header.
+- [Anchors](anchors.html) — the `⚓️name` syntax for link targets at an arbitrary
+  point in your prose, complementing the automatic heading ids the contents list
+  relies on.
+- [Syntax Adjustments](syntax-adjustments.html) — the `{#id}` attribute directive
+  for giving a block your own id.
+- [File inclusion](file-inclusion.html) — assembling a long work from several
+  source files; the contents list spans every heading after the includes are
+  expanded.

@@ -1,0 +1,350 @@
+<h1 id="toc-bibliographic-support-cite">Bibliographic support (<code>\​cite{…}</code>)</h1>
+<p>A scholarly document needs citations and a bibliography. JMarkdown provides
+  both with a deliberately familiar interface: you write LaTeX-style citation
+  commands — <code>\​cite{…}</code>, <code>\​citep{…}</code>, <code>\​nocite{…}</code>, and friends — directly
+  in your prose, point JMarkdown at a BibTeX <code>.bib</code> database and a citation
+  style, and a fully formatted bibliography is assembled automatically, complete
+  with an optional heading and table-of-contents entry.</p>
+<p>The work is split between two stages, and understanding the split explains
+  everything else on this page:</p>
+<ul>
+  <li><span class="intense">At build time, JMarkdown does almost nothing to your citations.</span> It leaves
+    every <code>\​cite{…}</code> command in the HTML output exactly as you typed it, and
+    wires the page up to use a small JavaScript library called
+    <a href="https://jmckalex.org/software/bibtex-in-webpages.html">Biblify</a>.
+  </li>
+  <li><span class="intense">In the browser, Biblify does the real work.</span> When the page loads, Biblify
+    fetches your <code>.bib</code> file, scans the rendered document for citation commands,
+    replaces each one with a properly formatted inline citation, and appends the
+    bibliography to the end of the document.</li>
+</ul>
+<p>Biblify is a browser-side implementation of a useful subset of BibTeX and
+  <code>natbib</code>, built on <a href="https://citation.js.org/">citation.js</a> and the
+  <a href="https://citationstyles.org/">Citation Style Language</a> (CSL). It was originally
+  written to give <a href="https://revealjs.com/">reveal.js</a> presentations real
+  bibliographic support, and it slots into JMarkdown's HTML output unchanged.
+</p>
+<blockquote>
+  <p><span class="intense">Web only.</span> Because the formatting happens in the browser, bibliographic
+    support applies to JMarkdown's <span class="intense">HTML</span> output. It is not part of the LaTeX
+    pipeline, where you would use BibTeX or biblatex directly.</p>
+</blockquote>
+<h2 id="toc-turning-it-on">Turning it on</h2>
+<p>Support is <span class="intense">off by default</span>, because JMarkdown cannot guess which database or
+  style you want. You switch it on by supplying three things in the document's
+  <a href="metadata-header.html">metadata header</a> (or in a
+  <a href="configuration-files.html">configuration file</a> — see below):
+</p>
+<pre><code class="hljs">Title: A Paper About Conventions
+
+Biblify activate: true
+Bibliography: references.bib
+Bibliography style: chicago
+
+# Introduction
+
+As argued in \​cite{Lewis:1969}, …
+</code></pre>
+<p>Each key does one job:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Metadata key</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Biblify activate</code></td>
+      <td><code>true</code> to enable bibliographic support; <code>false</code> (the default) to leave it off.</td>
+    </tr>
+    <tr>
+      <td><code>Bibliography</code></td>
+      <td>A path to a BibTeX <code>.bib</code> database, relative to the rendered HTML file.</td>
+    </tr>
+    <tr>
+      <td><code>Bibliography style</code></td>
+      <td>One of the preloaded style names, or a path to a CSL style file.</td>
+    </tr>
+  </tbody>
+</table>
+<p>If <code>Biblify activate</code> is <code>true</code> but no <code>Bibliography</code> is given, Biblify logs an
+  error to the browser console and leaves your citation commands untouched —
+  activation enables the machinery, but you still have to point it at a database.</p>
+<h2 id="toc-citation-styles">Citation styles</h2>
+<p><code>Bibliography style</code> accepts either one of Biblify's preloaded style names or
+  the path to your own CSL file.</p>
+<p>The preloaded names recognised directly are:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Style</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>apa</code></td>
+      <td>American Psychological Association (author–date)</td>
+    </tr>
+    <tr>
+      <td><code>chicago</code></td>
+      <td>Chicago Manual of Style (author–date)</td>
+    </tr>
+    <tr>
+      <td><code>harvard1</code></td>
+      <td>Harvard, numbered variant</td>
+    </tr>
+    <tr>
+      <td><code>vancouver</code></td>
+      <td>Vancouver (numeric, superscript)</td>
+    </tr>
+    <tr>
+      <td><code>bjps</code></td>
+      <td><strong>British Journal for the Philosophy of Science</strong></td>
+    </tr>
+  </tbody>
+</table>
+<p>Any other value is treated as a <span class="intense">path to a CSL file</span> (a <code>.csl</code> or <code>.xml</code>
+  document). Biblify loads it through citation.js and registers it under a name
+  derived from the file's basename, so</p>
+<pre><code class="hljs">Bibliography style: ergo.csl
+</code></pre>
+<p>formats your citations and bibliography with the <strong>Ergo</strong> style defined in
+  <code>ergo.csl</code>. This is how you support a journal whose style is not preloaded:
+  download its CSL file (the <a href="https://www.zotero.org/styles">Zotero Style Repository</a>
+  is a comprehensive source), drop it beside your document, and name it here.
+</p>
+<h2 id="toc-the-citation-commands">The citation commands</h2>
+<p>JMarkdown does not parse the citation commands itself — it passes them through
+  verbatim — so the grammar Biblify recognises in the browser is what matters.
+  The commands mirror LaTeX and <code>natbib</code>. Every command names one or more keys
+  from your <code>.bib</code> file inside braces; multiple keys are separated by commas.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Command</th>
+      <th>Result</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>\​cite{key}</code></td>
+      <td>Textual (author-as-subject) citation — author names followed by a parenthesised year, e.g. <strong>Lewis (1969)</strong>.</td>
+    </tr>
+    <tr>
+      <td><code>\​citet{key}</code></td>
+      <td>The same as <code>\​cite</code> — <code>t</code> for <strong>textual</strong>; the default when no suffix is given.</td>
+    </tr>
+    <tr>
+      <td><code>\​citep{key}</code></td>
+      <td>Parenthetical citation — everything in parentheses, e.g. <strong>(Lewis 1969)</strong>.</td>
+    </tr>
+    <tr>
+      <td><code>\​citeauthor{key}</code></td>
+      <td>The author names only, with no year.</td>
+    </tr>
+    <tr>
+      <td><code>\​citeauthor*{key}</code></td>
+      <td>The author names with full given names, and all authors listed (no <strong>et al.</strong> truncation).</td>
+    </tr>
+    <tr>
+      <td><code>\​nocite{key}</code></td>
+      <td>Adds the entry to the bibliography but prints nothing inline. Accepts several comma-separated keys at once.</td>
+    </tr>
+    <tr>
+      <td><code>\​fullcite{key}</code></td>
+      <td>Inserts the entry's complete bibliography-style reference inline, at that spot.</td>
+    </tr>
+  </tbody>
+</table>
+<p>Two <span class="intense">optional arguments</span>, in square brackets <strong>before</strong> the brace, work exactly
+  as in <code>natbib</code>: a lone <code>[postnote]</code> is appended inside the citation, and a
+  <code>[prenote][postnote]</code> pair brackets it on both sides. They are most useful with
+  the parenthetical form:
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Source</th>
+      <th>Renders as</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>\​citep{Lewis:1969}</code></td>
+      <td>(Lewis 1969)</td>
+    </tr>
+    <tr>
+      <td><code>\​citep[42]{Lewis:1969}</code></td>
+      <td>(Lewis 1969, 42)</td>
+    </tr>
+    <tr>
+      <td><code>\​citep[see][ch. 3]{Lewis:1969}</code></td>
+      <td>(see Lewis 1969, ch. 3)</td>
+    </tr>
+    <tr>
+      <td><code>\​cite[42]{Lewis:1969}</code></td>
+      <td>Lewis (1969, 42)</td>
+    </tr>
+  </tbody>
+</table>
+<p>A few details worth knowing:</p>
+<ul>
+  <li><span class="intense">Multiple keys.</span> <code>\​citep{Axelrod/Hamilton:1981,Skyrms:1996}</code> produces a
+    single parenthetical group listing both works, separated by a semicolon.</li>
+  <li><span class="intense">The default is textual.</span> <code>\​cite{…}</code> behaves like <code>\​citet{…}</code>; reach for
+    <code>\​citep{…}</code> when you want the author and year fully inside parentheses.
+  </li>
+  <li><span class="intense"><code>\​nocite</code> is the way to pad a bibliography.</span> Use it for works you want
+    listed but do not cite in the body — for instance <code>\​nocite{*}</code>-style
+    curation, one key at a time or several at once.</li>
+</ul>
+<blockquote>
+  <p><span class="intense">Showing the syntax versus using it.</span> This very page is built with Biblify
+    active, so any citation command left literally in the text would be resolved
+    in your browser. The commands in the tables above are shown with an invisible
+    break so they display as syntax instead of resolving. When <strong>you</strong> write a real
+    <code>\​cite{…}</code> in your own document, type it without any such break and it will
+    be processed normally.
+  </p>
+</blockquote>
+<h2 id="toc-what-gets-added-to-the-page">What gets added to the page</h2>
+<p>When the page loads and at least one citation is found, Biblify assembles the
+  bibliography and appends it to the end of the document, after any
+  <a href="footnotes.html">footnotes</a>. By default it also adds, for convenience:
+</p>
+<ul>
+  <li>a <code>Bibliography</code> heading (an <code>h1</code> with <code>id="bib"</code>) above the list, and</li>
+  <li>if the document has a <a href="table-of-contents.html">table of contents</a>, a
+    <code>Bibliography</code> entry linking to that heading.
+  </li>
+</ul>
+<p>Each inline citation is wrapped in a <code>span</code> carrying a <code>data-bibtex</code> attribute
+  that records the key(s) it came from, which makes citations easy to style or to
+  hook tooltips onto. The bibliography itself is rendered into citation.js's
+  standard <code>div.csl-bib-body</code> structure, so CSL stylesheets and CSS that target
+  those classes work as they do anywhere else.</p>
+<h2 id="toc-fine-tuning-biblify">Fine-tuning Biblify</h2>
+<p>Beyond the three activation keys, Biblify's behaviour is controlled through the
+  nested <code>Biblify</code> object in a <a href="configuration-files.html">configuration file</a>.
+  These are the keys and their defaults:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Config key (under <code>Biblify</code>)</th>
+      <th>Default</th>
+      <th>Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>add helper function</code></td>
+      <td><code>true</code></td>
+      <td>Inject the script that adds the heading and TOC entry.</td>
+    </tr>
+    <tr>
+      <td><code>add section heading</code></td>
+      <td><code>true</code></td>
+      <td>Place a <code>Bibliography</code> heading above the list.</td>
+    </tr>
+    <tr>
+      <td><code>add toc entry</code></td>
+      <td><code>true</code></td>
+      <td>Add a <code>Bibliography</code> link to the table of contents.</td>
+    </tr>
+    <tr>
+      <td><code>bibliography</code></td>
+      <td><code>""</code></td>
+      <td>The <code>.bib</code> database path (set via the <code>Bibliography</code> metadata key).</td>
+    </tr>
+    <tr>
+      <td><code>bibliography style</code></td>
+      <td><code>""</code></td>
+      <td>The style name or CSL path (set via <code>Bibliography style</code>).</td>
+    </tr>
+    <tr>
+      <td><code>defer</code></td>
+      <td><code>false</code></td>
+      <td>If <code>true</code>, Biblify is configured but does <span class="intense">not</span> auto-process on load.</td>
+    </tr>
+  </tbody>
+</table>
+<p>A typical project-level <code>.jmarkdown/config.json</code> looks like this, so that every
+  document in the project shares one database and style without repeating it in
+  each header:</p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"Biblify activate"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Biblify"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"bibliography"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"references.bib"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"bibliography style"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"chicago"</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"add section heading"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"add toc entry"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+    <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+<p>Metadata keys in an individual document still apply on top of the project
+  configuration, so a single paper can override the shared style — set
+  <code>Bibliography style</code> in its header — while inheriting everything else.
+</p>
+<h3 id="toc-deferred-processing">Deferred processing</h3>
+<p>Setting <code>Bibliography defer: true</code> in the metadata header (or <code>"defer": true</code>
+  in the config) tells Biblify to load and configure itself but <span class="intense">not</span> to scan
+  and replace citations automatically when the page loads. This is for documents
+  whose content is built or revealed dynamically — the original reveal.js use
+  case, where slides appear over time — and you want to trigger processing
+  yourself once the relevant content exists. Deferring also suppresses the
+  heading/TOC helper, because there may be nothing to process yet. For an ordinary
+  static document, leave <code>defer</code> at its default of <code>false</code>.</p>
+<h2 id="toc-a-complete-minimal-example">A complete minimal example</h2>
+<p>Putting it together, here is a self-contained document that cites three works in
+  different forms and produces a Chicago-style bibliography in the browser:</p>
+<pre><code class="hljs">Title: Signalling and Convention
+
+Biblify activate: true
+Bibliography: references.bib
+Bibliography style: chicago
+
+# Signalling and Convention
+
+The idea that meaning rests on convention is developed at length in
+\​cite{Lewis:1969}, and given a game-theoretic foundation by
+\​citet{Skyrms:1996}. The evolutionary stability of cooperation is a
+related thread \​citep[see][]{Axelrod/Hamilton:1981}.
+
+\​nocite{Lewis:2002}
+</code></pre>
+<p>When this file is rendered to HTML and opened in a browser, Biblify fetches
+  <code>references.bib</code>, turns the three citations into formatted Chicago references,
+  silently adds <code>Lewis:2002</code> to the reference list via <code>\​nocite</code>, and appends a
+  <code>Bibliography</code> section listing all four works.
+</p>
+<h2 id="toc-gotchas-and-limitations">Gotchas and limitations</h2>
+<ul>
+  <li><span class="intense">Open it in a browser.</span> Nothing about a citation is resolved at build time.
+    If you inspect the raw HTML you will see your <code>\​cite{…}</code> commands sitting
+    there literally; that is correct. They become formatted citations only when
+    the page is loaded and Biblify runs.</li>
+  <li><span class="intense">The <code>.bib</code> file must be reachable from the HTML.</span> Biblify fetches it with a
+    relative URL, so the path in <code>Bibliography</code> is resolved against the <span class="intense">output
+      HTML file</span>, and the file must be served from somewhere the browser can reach
+    (a local file or a web server). Citations will silently fail to resolve if the
+    fetch fails — check the browser console for a load error.</li>
+  <li><span class="intense">One database, one style per document.</span> Biblify configures a single
+    bibliography file and a single style for the whole page.</li>
+  <li><span class="intense">Citation commands are matched anywhere in the body.</span> Biblify scans every
+    text node, including inside code blocks. If you need to <strong>show</strong> a citation
+    command as literal text on a Biblify-active page (as this documentation does),
+    break it so the pattern no longer matches — for example by inserting a soft
+    hyphen between the backslash and <code>cite</code>.</li>
+</ul>
+<h2 id="toc-see-also">See also</h2>
+<ul>
+  <li><a href="metadata-header.html">Metadata Header</a> — where the activation keys live.</li>
+  <li><a href="configuration-files.html">Configuration Files</a> — project- and user-wide
+    Biblify defaults.</li>
+  <li><a href="footnotes.html">Footnotes</a> — the bibliography is appended after footnotes.</li>
+  <li><a href="table-of-contents.html">Table of Contents</a> — gains an automatic
+    <code>Bibliography</code> entry.
+  </li>
+</ul>

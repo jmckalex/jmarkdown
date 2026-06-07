@@ -1,0 +1,279 @@
+Title: Extensions Complex
+Extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
+	<span style='float: right; font-weight: bold; position: relative; top: 6pt'>Grade <span class='mark' style='padding: 3pt; border: 1pt solid black'>${content1}</span></span>
+Extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
+	<span>Candidate: <strong class='candidate'>${content1}</strong></span><br>
+Extension subscripts:  /[pxyz][0-9k]+/	/^([pxyz])([0-9k]+)/	false 2
+	<span>\(${content1}_{${content2}}\)</span>
+Extension boxform: /BOX\[[^\]]+\]/	/^BOX\[([^\]]+)\]/	inline 1
+	**${content1}**
+------------------------------------
+
+# Regular-expression syntax extensions
+
+JMarkdown lets you invent new inline syntax without writing a marked.js
+extension by hand. The [simpler form](extensions-simple.html) takes a fixed
+opening and closing delimiter — say `⌜` and `⌝` — and substitutes whatever
+lies between them into a replacement template. That covers a great many cases,
+but it cannot recognise *patterns*: a delimiter is a literal string, not a
+shape.
+
+The **complex form** documented here replaces the two literal delimiters with
+two *regular expressions*. Instead of matching "everything between these two
+marks", you match any text that fits a pattern, capture the interesting parts
+with parenthesised groups, and splice those parts into the replacement template.
+This is what lets `jmarkdown` turn casually written, *patterned* prose —
+`x1`, `[59]`, `Candidate: 123456` — into properly typeset HTML automatically,
+and (because the template is plain HTML, optionally carrying classes) into
+markup you can later target programmatically during
+[post-processing](post-processing.html).
+
+Like every metadata-header extension, a regular-expression extension is defined
+once in the header and is then available everywhere in the document. The cost is
+that you must write two regular expressions rather than two delimiters; the
+payoff is that you can match anything a regular expression can describe.
+
+## Why two regular expressions?
+
+A complex extension definition supplies **two** patterns, not one:
+
+```
+Extension name: /start/ /tokenizer/ parseInfo numArgs
+	replacement template
+```
+
+The first regular expression, `/start/`, is a *quick scan*. On every span of
+input, marked.js first asks each inline extension "could you possibly match
+somewhere ahead?" — and `start` answers cheaply by reporting the index of its
+first possible match (or nothing). The second regular expression,
+`/tokenizer/`, is the *real* matcher: it is anchored to the current position and
+must match the whole construct, capturing the pieces you care about in
+parenthesised groups.
+
+The two exist because that is exactly how marked.js structures an inline
+extension: a light `start` hook to locate candidates, and a `tokenizer` to
+consume one. In practice the two patterns are closely related — `start` is
+usually `tokenizer` with the capturing parentheses removed and the leading `^`
+dropped. Keeping `start` cheap matters: it runs against a lot of text, so resist
+the urge to make it as elaborate as the tokenizer.
+
+> JMarkdown anchors the tokenizer for you. You may write the leading `^`
+> yourself (several examples below do, for clarity), but it is added
+> automatically if you omit it, so both styles work.
+
+## The shape of a definition
+
+Each definition begins with the keyword `Extension`, a space, and a unique
+identifier — a short word or phrase that names this extension. JMarkdown
+recognises the *complex* form (rather than the simple delimiter form) by one
+thing: **the value begins with a `/`.** That is the signal that you are giving
+regular expressions rather than literal delimiters.
+
+After the name come four fields on the first line, then the replacement template
+on the following indented line(s):
+
+| field | meaning |
+|---|---|
+| `/start/` | the quick-scan regular expression used to find candidate matches |
+| `/tokenizer/` | the full, anchored regular expression; its capture groups become `${content1}`, `${content2}`, … |
+| `parseInfo` | how the captured pieces are treated — see the table below |
+| `numArgs` | how many capture groups the tokenizer exposes (the count of `${contentN}` slots) |
+| *template* | the replacement, on the following indented line(s); each `${contentN}` is replaced by capture group *N* |
+
+The fields on the first line are separated by whitespace (spaces or tabs — use
+whichever lines up nicely). The replacement template lives on the next line and
+must be **indented**; it may span several indented lines, which are joined.
+
+A worked skeleton, matching two capture groups and treating both verbatim:
+
+```yaml
+Extension subscripts:  /[pxyz][0-9k]+/	/^([pxyz])([0-9k]+)/	false 2
+	<span>\(${content1}_{${content2}}\)</span>
+```
+
+Here `start` is `/[pxyz][0-9k]+/` (find a letter from `pxyz` followed by digits
+or `k`), `tokenizer` is `/^([pxyz])([0-9k]+)/` (capture the letter and the
+trailing run separately), `parseInfo` is `false` (use both captures verbatim),
+and `numArgs` is `2`. The template then assembles them into a MathJax subscript.
+
+### The `parseInfo` field
+
+`parseInfo` controls what happens to the captured text before it lands in the
+template. It accepts five forms:
+
+| value | effect |
+|---|---|
+| `false` | every capture is inserted **verbatim** — no further markdown processing |
+| `true` | every capture is first run through the **inline** markdown parser, so emphasis, math, links, etc. inside a capture are honoured |
+| `[true, false, …]` | a per-argument array: capture *i* is parsed as inline markdown when entry *i* is `true`, verbatim when `false` |
+| `inline` | the captures are substituted into the template, and then the **whole template** is re-parsed as inline markdown |
+| `block` | as `inline`, but the substituted template is parsed with the **block** tokenizer |
+
+The array form is the most flexible when an extension takes several arguments
+and you want some processed and others left raw — for instance a verbatim code
+fragment alongside a prose caption.
+
+The `inline` and `block` forms differ from the others in an important way. With
+`true`/`false`/array, the *captures* are processed individually and then dropped
+into a template that is emitted as-is. With `inline`/`block`, the captures are
+substituted first and then the *assembled result* is handed back to the parser.
+That makes `inline` handy when your template itself is written in markdown
+rather than HTML (see the `boxform` example below).
+
+> **Gotcha — `block` is rarely what you want.** These regular-expression
+> extensions are registered at marked's **inline** level. An inline extension
+> fires *inside* an already-formed block (usually a paragraph), so a `block`
+> template that tries to emit, say, a blockquote (`> …`) will not be promoted to
+> a real `<blockquote>` — the `>` is left sitting inside the surrounding
+> paragraph. Reach for `block` only when you understand that constraint; for the
+> overwhelming majority of cases use `false`, `true`, the array form, or
+> `inline`.
+
+### Capture groups and `${contentN}`
+
+The `${contentN}` placeholders in the template are filled from the *capturing*
+parentheses of the tokenizer, numbered left to right starting at `1`.
+`numArgs` must equal the number of placeholders you intend to use. Note that
+only capturing groups count — if you need grouping without capture, use
+`(?:…)` so the numbering is not thrown off.
+
+There is no automatic markdown-escaping of substituted text: a `false` capture
+is inserted exactly as matched. If a capture might contain HTML-special
+characters and you do not want them interpreted, account for that yourself in
+the template or choose a parse mode accordingly.
+
+## Worked examples
+
+The metadata header of *this very page* defines the extensions demonstrated
+below, so every result you see is produced live by `jmarkdown` from the
+templates shown.
+
+### Floating a numeric mark
+
+The first extension matches any two digits inside brackets, and floats the
+number to the right margin in a bordered box:
+
+```yaml
+Extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
+	<span style='float: right; font-weight: bold; position: relative; top: 6pt'>Grade <span class='mark' style='padding: 3pt; border: 1pt solid black'>${content1}</span></span>
+```
+
+So writing `[59]` in prose produces the floated badge you see at the right.[59]
+The motivation is concrete: when marking student essays in markdown, it is far
+nicer to type `[59]` than the surrounding HTML, and to have it formatted
+consistently every time. Note the inner `class='mark'`: it does double duty,
+because it lets you later sweep the document during
+[post-processing](post-processing.html) and extract every mark for tallying. A
+syntax extension is not only about appearance — it is also about giving the
+generated document *structure* you can compute over.
+
+### Recognising a labelled field
+
+The second extension matches the literal `Candidate:` followed by optional
+whitespace and a run of digits:
+
+```yaml
+Extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
+	<span>Candidate: <strong class='candidate'>${content1}</strong></span><br>
+```
+
+:::markdown-demo
+Candidate: 123456
+:::
+
+Again the payoff is twofold: the number is set in bold, and the surrounding
+`<strong class='candidate'>` makes the candidate number addressable later. This
+is the recurring pattern — recognise *patterned data* in the prose, render it
+attractively, and tag it for downstream automation.
+
+### Old-school subscripts
+
+On the old internet mathematics newsgroups it was conventional to write
+`x1, x2, x3, …` for subscripted variables. Because the matcher is a regular
+expression, you can support that convention directly in your source:
+
+```yaml
+Extension subscripts:  /[pxyz][0-9k]+/	/^([pxyz])([0-9k]+)/	false 2
+	<span>\(${content1}_{${content2}}\)</span>
+```
+
+:::markdown-demo
+Consider points p1, p2, p3 in three-dimensional space,
+where the respective components of p1 are denoted
+by x1, y1, and z1 respectively.
+:::
+
+Two capture groups separate the variable letter from its index, and the
+template feeds both into a MathJax subscript. (See [Math Support](math-support.html)
+for how the `\( … \)` is typeset.)
+
+### A markdown template with `inline`
+
+When the replacement is itself written in markdown rather than HTML, use the
+`inline` parse mode so the assembled template is run back through the inline
+parser. This `boxform` extension turns `BOX[…]` into bold text, and because the
+*whole* template is re-parsed, any markdown the author wrote inside the brackets
+is honoured too:
+
+```yaml
+Extension boxform: /BOX\[[^\]]+\]/	/^BOX\[([^\]]+)\]/	inline 1
+	**${content1}**
+```
+
+:::markdown-demo
+Please read the BOX[*important* warning] before continuing.
+:::
+
+Note how the inner emphasis survives: the captured text `*important* warning`
+is substituted into `**…**`, and the combined string `**​*important* warning**`
+is then parsed as inline markdown, yielding bold text with nested emphasis.
+
+## Quoting and escaping
+
+A few details of the definition syntax repay attention.
+
+- **Slashes inside a pattern.** Each regular expression is delimited by `/`, so
+  a literal forward slash inside a pattern must be escaped as `\/`.
+- **Whitespace between fields.** Fields on the first line are separated by runs
+  of spaces or tabs; the parser collapses them, so you may align the fields with
+  tabs for readability (as the examples here do).
+- **The template must be indented.** The replacement begins on the line *after*
+  the first line and must be indented (tab or spaces). Unindented, non-blank
+  lines are read as the *next* metadata key.
+- **Avoid key-shaped template lines.** Because the metadata parser treats a line
+  matching `word(s):` as a new key, do not let a template line *begin* with a
+  bare word-then-colon at the left margin — it would be mistaken for a new
+  metadata entry. Indentation normally prevents this; the examples here begin
+  their templates with `<span …>` or `**`, which is safe.
+- **Non-capturing groups.** Use `(?:…)` for grouping you do not want counted, so
+  that `${contentN}` numbering tracks only the capture groups you actually want.
+
+## Relationship to the simple form
+
+The [simple delimiter form](extensions-simple.html) and this complex form are
+two faces of the same `addExtension` machinery, dispatched purely on whether the
+value begins with a `/`. Everything you know from the simple form carries over:
+the `${contentN}` placeholders, the `parseInfo` rule (including the per-argument
+array), and multiple arguments. The only difference is that the *opening and
+closing literal delimiters* of the simple form are replaced by the *start and
+tokenizer regular expressions* of the complex form — trading the convenience of
+fixed delimiters for the power to match arbitrary patterns.
+
+Reach for the complex form when the thing you want to recognise is a *shape*
+(digits in brackets, a labelled number, a variable-plus-index) rather than text
+wrapped in fixed marks; reach for the simple form when fixed delimiters will do.
+
+## Where to go next
+
+Regular-expression extensions shine when paired with the rest of the pipeline:
+
+- [Extensions (simple)](extensions-simple.html) — the fixed-delimiter form and
+  the shared `parseInfo` rules.
+- [Post-processing](post-processing.html) — sweep the classes your templates add
+  (`mark`, `candidate`, …) to extract or transform data after rendering.
+- [Inline Scripts](inline-scripts.html) — when a pattern needs real computation
+  rather than a static template, drop into JavaScript.
+- [Metadata Header](metadata-header.html) — the full set of header keys,
+  including how `Extension` entries are parsed.
+- [Math Support](math-support.html) — for templates that emit MathJax, as the
+  subscript example does.

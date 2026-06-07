@@ -1,0 +1,190 @@
+Title: Disabled Syntax
+------------------------------------
+
+# Disabled syntax
+
+JMarkdown supports nearly all of ordinary Markdown, but it deliberately switches
+off two CommonMark rules that, in practice, cause more trouble than they are
+worth:
+
+1. **Trailing-whitespace hard line breaks** — the rule that *two or more spaces
+   at the end of a line* (and, in CommonMark, a trailing backslash) become a
+   `<br>`.
+2. **Indented code blocks** — the rule that a line *indented four spaces or a
+   tab* becomes a block of code.
+
+Both are turned off at the source by clearing the relevant marked.js tokenizers
+(see `src/index.js`, where the `br` and `code` tokenizers are replaced with
+no-ops). This page explains *why* each rule is gone, exactly *what* takes its
+place, and the one subtle consequence worth knowing about. Nothing else in
+Markdown changes: emphasis, links, lists, blockquotes, headings, thematic
+breaks, fenced code, and so on all behave as you would expect.
+
+## Trailing-whitespace line breaks
+
+In stock Markdown, ending a line with two (or more) spaces produces a hard line
+break. JMarkdown does not honour this. Two trailing spaces are simply collapsed
+like any other run of whitespace, and the line joins the next one into the same
+paragraph:
+
+:::markdown-demo
+This line ends with two trailing spaces
+but no line break appears — the two lines flow together
+into a single paragraph.
+:::
+
+(The first line in the source above really does end in two spaces; you cannot
+see them, which is precisely the point.)
+
+### Why it is disabled
+
+Significant whitespace at the *start* of a line is already a known nuisance — but
+at least we have decades of experience taming it, from Makefiles to Python, and
+editors render leading indentation visibly. Trailing whitespace is worse on
+every count:
+
+- **It is invisible.** Nothing in the source reveals that a line ends in two
+  spaces rather than one, or none. Unless your editor is configured to highlight
+  trailing whitespace, the break is encoded in characters you cannot see.
+- **It is fragile.** Editors that "trim trailing whitespace on save" — a common
+  and otherwise desirable default — will silently delete your line breaks.
+  Reformatting, copy-paste, and diff tools all conspire against it.
+- **It is unreviewable.** A reviewer reading a diff has no way to tell an
+  intentional hard break from an accidental one.
+
+A markup rule whose meaning hinges on characters no one can see is a bad rule, so
+JMarkdown drops it.
+
+### How to get an explicit line break
+
+When you genuinely want a hard break inside a paragraph, write a literal `<br>`
+HTML tag. It is explicit, visible in the source, and survives whitespace
+trimming:
+
+:::markdown-demo
+Roses are red,<br>
+violets are blue,<br>
+this break is explicit,<br>
+and visible to you.
+:::
+
+For whole blocks of short lines — addresses, verse, aligned columns — the
+flush-right (`>>`) and centre directives are usually a better fit, because they
+treat each source line as its own line *without* requiring any break markup at
+all. See [Syntax Adjustments](syntax-adjustments.html) for those.
+
+> Note: because JMarkdown clears the line-break tokenizer wholesale, a *trailing
+> backslash* at the end of a line — the other CommonMark hard-break spelling — is
+> inert too. A line that ends in `\` is left as a literal backslash followed by a
+> normal soft wrap.
+
+## Indented code blocks
+
+In stock Markdown, indenting a line by four spaces (or one tab) turns it into a
+code block. JMarkdown does not do this. Indented text is treated as ordinary
+prose — here it just becomes part of the surrounding paragraph:
+
+:::markdown-demo
+Here is a normal paragraph.
+
+    This line is indented four spaces, but it is NOT code —
+    it is just an ordinary paragraph.
+:::
+
+### Why it is disabled
+
+The four-space rule fights directly with using indentation to express *nested
+list structure*. Description lists, multi-level ordered lists, and lists with
+several block-level children all rely on indentation to show hierarchy, and the
+indent thresholds for "this is a deeper list level" and "this is a code block"
+overlap badly. The result, under the standard rule, is that a perfectly innocent
+nested item can tip over into a code block the moment its indentation crosses
+four spaces — a surprise that is tedious to diagnose and worse to author around.
+
+With the rule gone, indentation means exactly one thing — list nesting — so deep
+list structures stay readable and predictable:
+
+:::markdown-demo
+1. First item
+    1. A nested item, indented four spaces
+    2. Another nested item
+        - And a bullet nested deeper still
+2. Second item
+:::
+
+Under standard Markdown the four-space-indented sub-items above would risk being
+swallowed into a code block; in JMarkdown they are unambiguously list items.
+
+### How to get a code block
+
+Use a fenced code block — three backticks (or three tildes), optionally with a
+language tag for syntax highlighting. Fences are unaffected by this change and
+are superior anyway: the boundaries are explicit, the content can itself contain
+indentation freely, and the language is declared rather than guessed.
+
+:::markdown-demo
+```python
+def greet(name):
+    return f"Hello, {name}!"
+```
+:::
+
+Fences also work where you most need them — *inside* list items — without any
+indentation ambiguity, since the fence markers, not the indentation, delimit the
+code:
+
+:::markdown-demo
+1. Run the function:
+
+   ```python
+   greet("world")
+   ```
+
+2. Observe the result.
+:::
+
+See [Code Highlighting](code-highlighting.html) for the full range of options on
+fenced blocks.
+
+## A subtlety: where the rules are disabled
+
+The two tokenizers are cleared on JMarkdown's **main** parser only. JMarkdown
+keeps a second parser instance (`marked_copy`) for re-parsing Markdown that is
+generated *during* processing — for example, the output of a jmarkdown script
+block or an inline function extension. That secondary parser is left with stock
+behaviour and still honours both rules.
+
+In day-to-day authoring this never surfaces, because everything you write in your
+source document flows through the main parser. It matters only if you write an
+extension that feeds programmatically generated Markdown back through
+`marked_copy` and that text happens to contain trailing-space breaks or
+four-space indentation; there, the standard CommonMark rules still apply. The
+live demos throughout this page are processed by the main parser (the
+`markdown-demo` container lexes its body with the main lexer), which is why they
+faithfully show the disabled behaviour.
+
+## Reference
+
+| Standard Markdown rule | Status in JMarkdown | Use instead |
+|---|---|---|
+| Two+ trailing spaces → `<br>` | Disabled | A literal `<br>` tag, or the `>>` flush-right / centre directives |
+| Trailing backslash → `<br>` | Disabled | A literal `<br>` tag |
+| Four-space / tab indent → code block | Disabled | A fenced code block (` ``` ` or `~~~`) |
+
+| What still works exactly as in standard Markdown |
+|---|
+| Fenced code blocks (with or without a language tag) |
+| Inline code spans with backticks |
+| List nesting by indentation (now unambiguous) |
+| Emphasis, links, images, blockquotes, headings, thematic breaks, tables |
+
+## Related pages
+
+- [Syntax Adjustments](syntax-adjustments.html) — the inline syntax JMarkdown
+  *adds* (`/italics/`, `*strong*`, `__underline__`) plus the `>>` flush-right and
+  centre directives.
+- [Code Highlighting](code-highlighting.html) — fenced code blocks and language
+  highlighting in detail.
+- [Enhanced Lists](enhanced-lists.html) and
+  [Description Lists](description-lists.html) — the nested-list features that the
+  disabled indented-code rule makes reliable.

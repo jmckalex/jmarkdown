@@ -4,7 +4,6 @@ bibliography.bib
 philsci.csl
 src/dt-parser.js
 TiKZ/
-docs/*
 config.json
 foo.html
 my-directives.js

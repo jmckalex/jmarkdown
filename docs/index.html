@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JMarkdown Documentation</title>
+
+  <!-- Web Awesome kit (includes CSS, components, and Font Awesome) -->
+  <script src="https://kit.webawesome.com/47077a146a6d4924.js" crossorigin="anonymous"></script>
+
+  <!-- Fonts: Crimson Pro serif body + JetBrains Mono for code/eyebrow labels -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- MathJax -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'ams'
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <!-- Highlight.js (github theme to match the warm paper aesthetic) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+
+  <link rel="stylesheet" href="jmarkdown.css">
+  <link rel="stylesheet" href="docs-styles.css">
+  <!-- Font Awesome is included via the Web Awesome kit -->
+
+  <!-- Mermaid -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  <style>
+    /* ---- Dynamo design tokens ---- */
+    :root {
+      --ink:     #2c2c2c;
+      --ink2:    #555;
+      --ink3:    #888;
+      --paper:   #faf9f7;
+      --paper2:  #f5f4f2;
+      --card:    #fff;
+      --accent:  #8b7355;
+      --accent2: #6d5a43;
+      --border:  #e2e0dc;
+      --divider: #e8e5e0;
+
+      /* ---- Map Web Awesome theming onto the warm paper palette ---- */
+      --wa-color-surface-default:  var(--paper);
+      --wa-color-surface-raised:   var(--card);
+      --wa-color-surface-lowered:  var(--paper2);
+      --wa-color-surface-alt:      var(--paper2);
+      --wa-color-surface-border:   var(--border);
+      --wa-color-text-normal:      var(--ink);
+      --wa-color-text-default:     var(--ink);
+      --wa-color-text-quiet:       var(--ink2);
+      --wa-color-text-secondary:   var(--ink2);
+      --wa-color-text-link:        var(--accent2);
+      --wa-color-brand-fill-loud:  var(--accent);
+      --wa-color-brand-on-loud:    #fff;
+
+      --wa-font-family-body:    'Crimson Pro', Georgia, serif;
+      --wa-font-family-heading: 'Crimson Pro', Georgia, serif;
+      --wa-font-family-code:    'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    html, body {
+      min-height: 100%;
+      padding: 0;
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Crimson Pro', Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Navigation styling */
+    nav[slot='navigation'] {
+      background: var(--paper2);
+    }
+
+    .nav-tree {
+      padding: var(--wa-space-s) 0;
+      font-size: 0.95rem;
+    }
+
+    .nav-tree wa-tree-item::part(label) {
+      white-space: normal;
+      line-height: 1.4;
+      color: var(--ink2);
+    }
+
+    .nav-tree wa-tree-item::part(item) {
+      border-inline-start: none;
+    }
+
+    .nav-tree wa-tree-item:hover::part(label) {
+      color: var(--accent);
+    }
+
+    .nav-header {
+      padding: var(--wa-space-m) var(--wa-space-l);
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--paper2);
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .nav-version {
+      font-size: 0.7rem;
+      font-weight: normal;
+      letter-spacing: 0.04em;
+      color: var(--ink3);
+    }
+
+    /* Main content area */
+    .content-area {
+      max-width: 52rem;
+      padding: var(--wa-space-l) var(--wa-space-xl);
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 18px;
+      line-height: 1.65;
+    }
+
+    .content-area img {
+      max-width: 100%;
+    }
+
+    /* Loading state */
+    .loading-message {
+      color: var(--ink3);
+      padding: var(--wa-space-xl);
+      text-align: center;
+    }
+
+    /* Header bar */
+    div[slot='header'] {
+      background: rgba(250, 249, 247, 0.94);
+      backdrop-filter: blur(6px);
+    }
+
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--wa-space-l);
+      height: 100%;
+    }
+
+    .site-header h1 {
+      font-size: 1.35rem;
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+
+    .site-header-links {
+      display: flex;
+      gap: var(--wa-space-m);
+      align-items: center;
+    }
+
+    .site-header-links a {
+      color: var(--accent2);
+      text-decoration: none;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.8rem;
+    }
+
+    .site-header-links a:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    /* Selected nav item highlight */
+    wa-tree-item[selected]::part(item) {
+      background: var(--card);
+      border-radius: var(--wa-border-radius-s);
+    }
+
+    wa-tree-item[selected]::part(label) {
+      color: var(--accent2);
+      font-weight: 600;
+    }
+
+    /* Subheader with toggle */
+    div[slot='subheader'] {
+      background: var(--paper2);
+    }
+
+    .subheader-bar {
+      display: flex;
+      align-items: center;
+      padding: 0 var(--wa-space-l);
+      height: 100%;
+    }
+
+    wa-page[view='desktop'] [data-toggle-nav] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<wa-page mobile-breakpoint="920">
+
+  <!-- Header -->
+  <div slot="header" style="border-bottom: 1px solid var(--wa-color-surface-border); height: 3.5rem;">
+    <div class="site-header">
+      <h1>jmarkdown</h1>
+      <div class="site-header-links">
+        <a href="https://github.com/jmckalex/jmarkdown">GitHub</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subheader with mobile nav toggle -->
+  <div slot="subheader" style="border-bottom: 1px solid var(--wa-color-surface-border); height: 2.5rem;">
+    <div class="subheader-bar">
+      <wa-button data-toggle-nav size="small" appearance="plain">
+        <wa-icon name="bars"></wa-icon>
+        Menu
+      </wa-button>
+    </div>
+  </div>
+
+  <!-- Navigation header -->
+  <div slot="navigation-header" class="nav-header">
+    Documentation <span class="nav-version">v0.5</span>
+  </div>
+
+  <!-- Navigation sidebar -->
+  <nav slot="navigation">
+    <wa-tree class="nav-tree" id="doc-nav">
+
+      <wa-tree-item data-page="introduction" selected>
+        Introduction
+      </wa-tree-item>
+
+      <wa-tree-item data-page="motivation">
+        Motivation
+      </wa-tree-item>
+
+      <wa-tree-item expanded>
+        Syntax
+        <wa-tree-item data-page="syntax-adjustments">Adjustments</wa-tree-item>
+        <wa-tree-item data-page="disabled-syntax">Disabled syntax</wa-tree-item>
+      </wa-tree-item>
+
+      <wa-tree-item expanded>
+        Content features
+        <wa-tree-item data-page="tables-and-alerts">Tables &amp; alerts</wa-tree-item>
+        <wa-tree-item data-page="description-lists">Description lists</wa-tree-item>
+        <wa-tree-item data-page="math-support">Math support</wa-tree-item>
+        <wa-tree-item data-page="enhanced-lists">Enhanced lists</wa-tree-item>
+        <wa-tree-item data-page="code-highlighting">Code highlighting</wa-tree-item>
+        <wa-tree-item data-page="bibliographic-support">Bibliographic support</wa-tree-item>
+      </wa-tree-item>
+
+      <wa-tree-item expanded>
+        Directives
+        <wa-tree-item data-page="directives-syntax">Overview</wa-tree-item>
+        <wa-tree-item data-page="comments-and-optionals">Comments &amp; optionals</wa-tree-item>
+        <wa-tree-item data-page="strategic-form-games">Strategic-form games</wa-tree-item>
+        <wa-tree-item data-page="markdown-demo">Demonstrating markdown</wa-tree-item>
+        <wa-tree-item data-page="mermaid-diagrams">Mermaid diagrams</wa-tree-item>
+        <wa-tree-item data-page="tikz-diagrams">TiKZ diagrams</wa-tree-item>
+        <wa-tree-item data-page="sources-and-targets">Sources &amp; targets</wa-tree-item>
+      </wa-tree-item>
+
+      <wa-tree-item data-page="anchors">
+        Anchors
+      </wa-tree-item>
+
+      <wa-tree-item data-page="table-of-contents">
+        Table of contents
+      </wa-tree-item>
+
+      <wa-tree-item expanded>
+        Metadata header
+        <wa-tree-item data-page="metadata-header">Overview</wa-tree-item>
+        <wa-tree-item data-page="extensions-simple">Extensions (simple)</wa-tree-item>
+        <wa-tree-item data-page="extensions-complex">Extensions (complex)</wa-tree-item>
+      </wa-tree-item>
+
+      <wa-tree-item expanded>
+        Scripting
+        <wa-tree-item data-page="inline-scripts">Inline scripts</wa-tree-item>
+        <wa-tree-item data-page="post-processing">Post-processing</wa-tree-item>
+        <wa-tree-item data-page="scripting-example">Detailed example</wa-tree-item>
+      </wa-tree-item>
+
+      <wa-tree-item data-page="output-templates">
+        Output templates
+      </wa-tree-item>
+
+      <wa-tree-item data-page="configuration-files">
+        Configuration files
+      </wa-tree-item>
+
+      <wa-tree-item data-page="file-inclusion">
+        File inclusion
+      </wa-tree-item>
+
+      <wa-tree-item data-page="footnotes">
+        Footnotes
+      </wa-tree-item>
+
+    </wa-tree>
+  </nav>
+
+  <!-- Main content area -->
+  <div class="content-area">
+    <wa-include
+      id="doc-content"
+      src="introduction.html"
+      allow-scripts>
+    </wa-include>
+    <p class="loading-message" id="loading-msg" style="display: none;">
+      <wa-spinner></wa-spinner> Loading…
+    </p>
+  </div>
+
+</wa-page>
+
+<script type="module">
+  const nav = document.getElementById('doc-nav');
+  const content = document.getElementById('doc-content');
+  const loadingMsg = document.getElementById('loading-msg');
+
+  // Navigate to a page by updating the wa-include src
+  function navigateTo(page) {
+    const src = `${page}.html`;
+    loadingMsg.style.display = 'block';
+    content.src = src;
+
+    // Update URL hash for bookmarkability
+    history.replaceState(null, '', `#${page}`);
+  }
+
+  // Handle tree item selection
+  nav.addEventListener('wa-selection-change', (e) => {
+    const selected = e.detail.selection[0];
+    if (selected && selected.dataset.page) {
+      navigateTo(selected.dataset.page);
+
+      // On mobile, close the nav drawer after selection
+      const waPage = document.querySelector('wa-page');
+      if (waPage.view === 'mobile') {
+        waPage.hideNavigation();
+      }
+    }
+  });
+
+  // Handle load complete
+  content.addEventListener('wa-load', () => {
+    loadingMsg.style.display = 'none';
+
+    // Re-trigger MathJax typesetting on the newly loaded content
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise();
+    }
+
+    // Re-trigger Mermaid rendering if present
+    if (window.mermaid) {
+      mermaid.run();
+    }
+
+    // Scroll main content to top
+    window.scrollTo(0, 0);
+  });
+
+  // Handle load error
+  content.addEventListener('wa-include-error', () => {
+    loadingMsg.style.display = 'none';
+    content.innerHTML = `
+      <div style="padding: var(--wa-space-xl); text-align: center; color: var(--wa-color-text-secondary);">
+        <wa-icon name="triangle-exclamation" style="font-size: 2rem;"></wa-icon>
+        <p>This section hasn't been written yet.</p>
+      </div>
+    `;
+  });
+
+  // Handle initial page load from URL hash
+  const initialPage = location.hash.slice(1) || 'introduction';
+  if (initialPage !== 'introduction') {
+    navigateTo(initialPage);
+
+    // Select the corresponding tree item
+    const item = nav.querySelector(`[data-page="${initialPage}"]`);
+    if (item) {
+      // Deselect the default
+      const defaultSelected = nav.querySelector('[selected]');
+      if (defaultSelected) defaultSelected.selected = false;
+      item.selected = true;
+    }
+  }
+</script>
+
+</body>
+</html>

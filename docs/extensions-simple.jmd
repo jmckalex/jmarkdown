@@ -1,0 +1,300 @@
+Title: Defining new inline syntax (simple form)
+Extension highlight3: [: :] [true,false,true] 3
+	<span class='test' style='background: #ffd5d5; padding: 0 .25em'>${content3}</span>
+	<span class='test' style='background: #d8f5d2; padding: 0 .25em'>${content1}</span>
+	<span class='test' style='background: #d2e8f5; padding: 0 .25em'>${content2}</span>
+Extension mark-box: @mark( ) false 1
+	<span class='mark' style='border: 1pt solid black; padding: 2pt 6pt; border-radius: 6pt'>${content1}</span>
+Extension small-caps: ↑ ↑ false 1
+	<span style="font-variant-caps: small-caps;">${content1}</span>
+Extension keycap: ⌜ ⌝ false 1
+	<kbd>${content1}</kbd>
+Extension lead-in: »» «« true 1
+	<span style="font-variant-caps: small-caps; letter-spacing: .03em;">${content1}</span>
+------------------------------------
+
+# Defining new inline syntax (simple form)
+
+JMarkdown ships with a generous set of inline conveniences — `/italics/`,
+`*strong*`, `==highlight==`, `__underline__`, subscripts and superscripts, and
+more. Sooner or later, though, you will want a piece of notation that is yours:
+a delimiter that wraps text in a particular `<span>`, a sigil that flags a value
+for later extraction, a bracket pair that means "small caps" in *your* documents.
+This page shows the quickest way to get one — a **simple extension**, declared
+entirely in the metadata header with no JavaScript at all.
+
+The idea is small and mechanical. You name an **opening delimiter**, a **closing
+delimiter**, and a chunk of **replacement HTML**. From then on, wherever your
+prose contains `OPEN…text…CLOSE`, JMarkdown drops the text into the replacement
+HTML and emits the result. Because the whole definition lives in the header, the
+notation is available to that one document the moment it is parsed; nothing has
+to be imported or registered by hand.
+
+> Simple extensions match on a **fixed pair of delimiters**. If instead you need
+> to recognise a *pattern* — two-digit grades in brackets, variables written
+> `x1`, `x2`, `x3`, and the like — you want the regular-expression form on the
+> [Defining new inline syntax (complex form)](extensions-complex.html) page. The
+> two share the same replacement machinery and the same `${content1}` slots, so
+> what you learn here carries straight over. For *block-level* containers (the
+> LaTeX-environment style), see [Block Environments](block-environments.html).
+
+## A first example
+
+Suppose you often want a small bracketed keycap, like the kind that shows a
+keyboard shortcut. Put this in the document's metadata header:
+
+```yaml
+Extension keycap: ⌜ ⌝ false 1
+	<kbd>${content1}</kbd>
+```
+
+That is a complete extension. The header line names it (`keycap`) and gives its
+delimiter spec — opening delimiter `⌜`, closing delimiter `⌝`, the body is *not*
+re-parsed as markdown (`false`), and there is one argument (`1`). The indented
+line beneath it is the replacement HTML, with `${content1}` standing in for
+whatever the author typed between the delimiters. With that in place, writing
+`⌜Ctrl+S⌝` in your prose produces ⌜Ctrl+S⌝, and `⌜Esc⌝` produces ⌜Esc⌝.
+
+Notice that `⌜` and `⌝` are ordinary Unicode characters. JMarkdown is fully
+Unicode-aware, which means you can pick delimiters that *look like what they do* —
+corner brackets for a keycap, arrows for small caps, guillemets for a lead-in —
+instead of overloading the handful of ASCII punctuation marks the base syntax
+already claims.
+
+## Anatomy of a definition
+
+Every simple extension is one metadata entry made of two parts:
+
+```yaml
+Extension <unique-id>: OPEN CLOSE [parse] [count]
+	replacement HTML, with ${content1}, ${content2}, … inside
+```
+
+### The header line
+
+The key must begin with the literal word **`Extension`**, followed by a space and
+a **unique identifier** of your choosing — a short word or phrase that names the
+extension. The identifier only has to be unique within the document; it does not
+appear in your prose and has no effect on the delimiters. `Extension keycap:` and
+`Extension small caps:` are both fine.
+
+After the colon comes the **delimiter spec**, a sequence of space-separated
+fields:
+
+| field | required? | meaning |
+|---|---|---|
+| `OPEN` | yes | the opening delimiter — any run of characters with **no spaces** |
+| `CLOSE` | yes | the closing delimiter — again, no spaces |
+| `parse` | no | how the captured text is treated: `true`, `false` (default), or an array such as `[true,false]` |
+| `count` | no | how many arguments the delimiters capture (default `1`) |
+
+Because the fields are split on spaces, **a delimiter may not itself contain a
+space.** `[:` and `:]` are valid delimiters; `[ :` is not. (This is the one
+constraint worth memorising.)
+
+### The replacement HTML
+
+Every line *after* the header line, up to the next blank line or the next
+metadata key, is the replacement HTML. It is emitted verbatim, with one
+exception: each occurrence of `${content1}`, `${content2}`, … is replaced by the
+corresponding captured argument. The numbering is **one-based**, and it is always
+numbered — even a single-argument extension uses `${content1}`, never a bare
+`${content}`.
+
+You may spread the HTML across several indented lines for readability; the lines
+are concatenated as written. (Be aware that any leading tab or spaces you use for
+indentation become literal whitespace in the output, which is occasionally
+visible between inline elements — the multi-argument example below shows this.)
+
+## Whether the body is parsed as markdown
+
+The third field of the delimiter spec controls whether the captured text is run
+through JMarkdown's inline parser before it lands in the replacement HTML.
+
+- **`false`** (the default) — the text is inserted verbatim. Choose this when the
+  body is a value to be displayed literally, or when markdown processing would get
+  in the way (for instance, a delimiter meant to show raw markup as-is).
+- **`true`** — the text is parsed as inline markdown first, so `*strong*`,
+  `/italics/`, `$math$`, and links all work inside your delimiters.
+
+Here a "lead-in" extension wraps its body in small-caps *and* re-parses it as
+markdown, so emphasis survives:
+
+:::markdown-demo
+The »»opening line«« of a chapter often gets special
+treatment.
+
+You can still *emphasise* a word inside
+it: »»the **crucial** point««.
+:::
+
+That extension is declared as:
+
+```yaml
+Extension lead-in: »» «« true 1
+	<span style="font-variant-caps: small-caps; letter-spacing: .03em;">${content1}</span>
+```
+
+The opening `»»` and closing `««` are each two characters — delimiters are not
+limited to a single glyph, only to being space-free.
+
+## Verbatim bodies
+
+When the body should *not* be reinterpreted, leave `parse` at `false`. This is
+how you build a delimiter for content that must survive untouched. The
+small-caps and keycap extensions used on this page are both verbatim:
+
+:::markdown-demo
+Press ⌜Cmd+Shift+P⌝ to open the command palette, then
+type ↑run↑.
+:::
+
+Their definitions:
+
+```yaml
+Extension small-caps: ↑ ↑ false 1
+	<span style="font-variant-caps: small-caps;">${content1}</span>
+Extension keycap: ⌜ ⌝ false 1
+	<kbd>${content1}</kbd>
+```
+
+Note that an extension's opening and closing delimiters may be **identical** —
+`↑ ↑` uses `↑` for both ends, just as `*…*` does in standard markdown. JMarkdown
+matches the nearest closing delimiter, so `↑small caps↑` captures `small caps`.
+
+## Several arguments at once
+
+Set the fourth field to an integer greater than `1` and the delimiters will
+capture that many **comma-separated** arguments. You refer to them positionally
+as `${content1}`, `${content2}`, and so on. If an argument needs to contain a
+literal comma, wrap it in `"double quotes"`; a quote *inside* a quoted argument
+is written `\"`.
+
+When there is more than one argument, the `parse` field can become an **array of
+booleans**, one per argument, so you can mix parsed and verbatim arguments in a
+single extension. The `i`^{th} argument is parsed as markdown when the `i`^{th}
+entry is `true`, and inserted verbatim when it is `false`.
+
+This three-argument extension lays its arguments out as coloured chips, and uses
+the array form `[true,false,true]` so that arguments 1 and 3 are parsed as
+markdown while argument 2 is kept verbatim:
+
+:::markdown-demo
+[:First *argument*, /second/ argument, __third__ argument:]
+:::
+
+Read the output against the definition and you can see the wiring exactly:
+
+```yaml
+Extension highlight3: [: :] [true,false,true] 3
+	<span class='test' style='background: #ffd5d5; padding: 0 .25em'>${content3}</span>
+	<span class='test' style='background: #d8f5d2; padding: 0 .25em'>${content1}</span>
+	<span class='test' style='background: #d2e8f5; padding: 0 .25em'>${content2}</span>
+```
+
+The chips come out in definition order, not argument order: argument 3 (red)
+prints first, then argument 1 (green), then argument 2 (blue). Arguments 1 and 3
+were parsed, so `*argument*` became bold and `__third__` became underlined;
+argument 2 was *not* parsed, which is why `/second/` shows its slashes literally
+instead of turning into italics. (The thin spaces between the chips are the tabs
+that indent the three lines of the definition — a small reminder that replacement
+HTML is emitted exactly as written.)
+
+The opening delimiter here is the two characters `[:` and the closing delimiter
+is `:]`; the commas separating the three arguments are supplied by the author in
+the prose.
+
+## A single argument, real markup
+
+Multiple arguments are the exception; most extensions take one. Here is a
+single-argument extension that boxes its content — handy for highlighting a grade
+or a tag — defined with `count` left at the default of `1`:
+
+:::markdown-demo
+The essay scored @mark(72) overall, with a
+standout @mark(A) for structure.
+:::
+
+Its definition:
+
+```yaml
+Extension mark-box: @mark( ) false 1
+	<span class='mark' style='border: 1pt solid black; padding: 2pt 6pt; border-radius: 6pt'>${content1}</span>
+```
+
+Here `@mark(` is the opening delimiter and the single character `)` is the
+closing delimiter — a readable, function-call-like notation that reads naturally
+in prose. Because a class (`mark`) is attached to the generated span, a
+[post-processing](post-processing.html) pass could later find every boxed value
+and, say, total the grades automatically. That combination — author-friendly
+notation on the way in, machine-friendly structure on the way out — is one of the
+main reasons to define your own syntax.
+
+## Reference
+
+### Delimiter spec
+
+```
+Extension <id>:  OPEN  CLOSE  [parse]  [count]
+```
+
+| position | name | default | notes |
+|---|---|---|---|
+| 1 | `OPEN` | — | opening delimiter; any space-free run of characters, ASCII or Unicode |
+| 2 | `CLOSE` | — | closing delimiter; may be identical to `OPEN` |
+| 3 | `parse` | `false` | `true` · `false` · or a boolean array like `[true,false,true]` |
+| 4 | `count` | `1` | number of comma-separated arguments captured |
+
+### Replacement placeholders
+
+| token | expands to |
+|---|---|
+| `${content1}` | the first captured argument |
+| `${content2}` | the second captured argument |
+| `${content`*n*`}` | the *n*-th captured argument |
+
+A placeholder with no matching argument is left in the output untouched, so a
+typo such as `${content2}` in a one-argument extension is a useful tell that
+something is off.
+
+### `parse` field behaviour
+
+| value | effect |
+|---|---|
+| `false` | every argument inserted verbatim |
+| `true` | every argument parsed as inline markdown first |
+| `[…booleans…]` | per-argument: `true` parses that argument, `false` keeps it verbatim |
+
+## Gotchas
+
+- **Delimiters cannot contain spaces.** The fields of the delimiter spec are
+  split on whitespace, so `>> <<` works but `> > < <` does not.
+- **Placeholders are one-indexed and always numbered.** Use `${content1}` even
+  for a single-argument extension; a bare `${content}` is *not* substituted.
+- **The definition ends at the first blank line.** The replacement HTML is the
+  run of indented lines immediately under the header line. Insert a blank line
+  inside it and everything after the blank line is lost from the definition. To
+  keep multi-line HTML together, simply do not leave blank lines between the
+  lines.
+- **A continuation line that looks like a metadata key starts a new key.** A line
+  whose text before a colon is only letters, digits, spaces, or hyphens (for
+  example `style: bold`) is read as the *next* metadata entry, truncating your
+  definition. If a definition line must begin that way, restructure it so the
+  colon is not in leading position.
+- **These are inline extensions.** They fire inside a paragraph, list item, or
+  table cell — not as standalone blocks. For block-level constructs, reach for a
+  container directive or a [block environment](block-environments.html).
+
+## Where to go next
+
+- [Defining new inline syntax (complex form)](extensions-complex.html) — the same
+  replacement machinery, driven by regular expressions, for recognising
+  *patterns* rather than fixed delimiters.
+- [Directives syntax](directives-syntax.html) — the `:`/`::`/`:::` family for
+  inline, block, and container constructs.
+- [Block Environments](block-environments.html) — `@begin(name) … @end(name)`,
+  the way to define your own block-level containers (and emit LaTeX as well as
+  HTML).
+- [Metadata header](metadata-header.html) — the full set of keys you can declare
+  at the top of a document, including `Load extensions` for pulling extensions in
+  from a shared `.js` file.

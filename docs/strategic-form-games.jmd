@@ -1,0 +1,418 @@
+Title: Strategic-Form Games
+------------------------------------
+
+# Strategic-form games (the `game` directive)
+
+A *strategic-form game* (also called a normal-form game) is the matrix that game
+theorists use to present the simultaneous-move interaction of two players: rows
+are one player's strategies, columns are the other's, and each cell holds the
+pair of payoffs that results. JMarkdown gives you a directive that takes a payoff
+matrix written almost exactly the way you would write it on paper and typesets it
+as a proper game table — borders, aligned strategy labels, player names, a
+caption, and mathematically set payoffs — for both the web and print.
+
+The design goal is fidelity to the way game theorists already write these tables
+in LaTeX. If you have used Martin Osborne's `sgame` package, the syntax will feel
+immediately familiar; in fact the directive was deliberately modelled on `sgame`
+so that the LaTeX it emits is a near-mechanical translation of what you type (see
+[LaTeX output](#latex-output)). You write the game once, and the same source
+produces a styled HTML table for the web and an `sgame` `game` environment for
+print.
+
+The game directive is one of JMarkdown's container directives. If the colon-fence
+syntax is unfamiliar, read [Directives](directives-syntax.html) first; this page
+assumes you know what a container directive is and focuses on the game grammar.
+
+## A first game
+
+Write the payoff matrix between an opening `game` directive fence and a matching
+closing fence. Columns are separated by `&`, exactly as in a LaTeX `tabular`, but — and
+this is the whole point — you do **not** end lines with `\\`, and the first row
+(the column strategy labels) has **no** leading `&`:
+
+::::markdown-demo
+:::game
+     L     & R
+T    & (1,1) & (0,0)
+B    & (0,0) & (1,1)
+:::
+::::
+
+That is the smallest useful game: a 2×2 coordination game. The first line lists
+the two column strategies, `L` and `R`; each subsequent line begins with a row
+strategy label (`T`, `B`) followed by the payoff cells. The directive counts the
+rows and columns for you, draws the grid with CSS, and typesets every payoff as
+mathematics — note that `(1,1)` comes out properly set, not as literal prose.
+
+### The shape of the matrix
+
+It helps to see the grid the directive reads. The leading cell of the first row
+is left empty (there is no strategy there), so the column labels line up over the
+payoff columns:
+
+```
+              col-strategy-1  &  col-strategy-2  &  …
+row-strategy-1  &   payoff     &     payoff      &  …
+row-strategy-2  &   payoff     &     payoff      &  …
+…
+```
+
+Whitespace around the `&` separators is trimmed, so you are free to align the
+columns in your source for readability; the alignment in the rendered table is
+handled by CSS, not by how you space the source. A payoff cell is normally a pair
+like `(1,1)`, but it can be any expression — the contents are set as mathematics,
+so `(a, b)`, `(3, -2)`, or `(\pi, e)` all work.
+
+## Player names, row/column labels, and captions
+
+A bare matrix is rarely enough. To name the players and give the game a caption,
+add an **information section** after the matrix: leave one blank line, then supply
+any of the keys `row`, `column`, and `caption`, each on its own line:
+
+::::markdown-demo
+:::game
+         Rock   & Paper  & Scissors
+Rock     & (0,0)  & (-1,1) & (1,-1)
+Paper    & (1,-1) & (0,0)  & (-1,1)
+Scissors & (-1,1) & (1,-1) & (0,0)
+
+row: Player 1
+column: Player 2
+caption: The game of Rock-Paper-Scissors
+:::
+::::
+
+The blank line is what separates the payoff matrix from the information section —
+the directive treats the first all-blank line as the divider. The `row` label is
+written down the left edge (spanning all the row strategies), the `column` label
+across the top (spanning all the column strategies), and the `caption` underneath
+the table. The keys are case-insensitive and may appear in any order; any you
+omit are simply left out.
+
+(Notice, too, that demonstrating a three-colon directive inside a live demo
+requires a *four*-colon `markdown-demo` fence, so the inner three-colon fence does
+not close the demo early. That is the ordinary colon-counting rule for nested
+container directives — see [Markdown demos](markdown-demo.html#nesting-demos-around-other-directives).)
+
+### Labels are processed as Markdown
+
+The text you give to `row`, `column`, and `caption` is run through the Markdown
+inline parser, so the full range of JMarkdown inline syntax is available inside a
+label: emphasis, inline math, coloured spans, line breaks, even footnotes. A
+label may also span several lines — handy for a long caption. This example bends
+every one of those:
+
+::::markdown-demo
+:::game
+         Rock   & Paper  & Scissors
+Rock     & (0,0)  & (-1,1) & (1,-1)
+Paper    & (1,-1) & (0,0)  & (-1,1)
+Scissors & (-1,1) & (1,-1) & (0,0)
+
+row: /Player 1/
+column: *Player A_1 $\alpha$*
+caption: The game of
+	:span[Rock-Paper-Scissors]{.goldenrod}<br>
+	has a multi-line caption<br>
+	with math $\int_{-1}^{+1}f(x)\,dx$
+:::
+::::
+
+A continuation line of a label (the second and third lines of the caption above)
+just keeps going under the same key until the next recognised key or the end of
+the section. Because the label text reaches the inline parser, the strategy
+labels in your matrix are processed the same way — so a strategy named `s_1` will
+be set with a subscript, and `*Hawk*` will come out emphasised.
+
+### Setting labels with attributes
+
+The `row`, `column`, and `caption` labels can be supplied as **attributes** on
+the opening fence instead of in an information section, using the usual
+`{key="value"}` directive-attribute syntax:
+
+::::markdown-demo
+:::game{row="Player 1" column="Player 2" caption="Set via attributes"}
+     L     & R
+T    & (1,1) & (0,0)
+B    & (0,0) & (1,1)
+:::
+::::
+
+This form is convenient when the labels are short and you would rather keep the
+matrix uncluttered. If a label is given both as an attribute *and* in an
+information section, the information section wins — so you can set a document-wide
+default in an attribute and override it per game with the inline section if you
+ever need to.
+
+## Mathematical strategy labels: `{math=all}`
+
+By default the *payoffs* are always set as mathematics, while the *strategy
+labels* are processed as ordinary Markdown (which is why `s_1` becomes a
+subscript through the `_…_` math route, and `*Hawk*` becomes emphasis). When your
+strategy names are themselves mathematical expressions that you want set in math
+mode wholesale, add `{math=all}`:
+
+::::markdown-demo
+:::game{math=all}
+       s_1    & s_2
+s_1    & (1,1) & (0,0)
+s_2    & (0,0) & (1,1)
+:::
+::::
+
+With `math=all`, every strategy label is wrapped in inline-math delimiters and
+passed through verbatim (it is *not* run through the Markdown parser), so `s_1`
+is typeset as a single mathematical symbol. The payoffs are unaffected — they are
+in math mode either way. The `math` attribute accepts two values:
+
+| Value | Strategy labels | Payoffs |
+|---|---|---|
+| `default` (or omitted) | processed as Markdown | math mode |
+| `all` | wrapped in math mode, verbatim | math mode |
+
+Reach for `math=all` when all of a game's strategy names are formulae; stay with
+the default when they are words (`Hawk`, `Dove`, `Cooperate`) or mixed prose and
+math.
+
+## Styling: the `class` attribute
+
+The directive emits a `<table class="game …">`, and JMarkdown injects a default
+stylesheet so games look right out of the box — collapsed borders around the
+payoff cells, borderless strategy and player labels, a centred caption beneath.
+Everything is drawn with CSS, so you can restyle any part of it from your own
+stylesheet by targeting the classes listed in the [reference](#html-structure)
+below.
+
+You can add your own classes to a particular game with the `class` attribute,
+which is merged into the table's class list. JMarkdown ships one extra built-in
+class, `playerLabels`, which draws a fully bordered grid (every cell boxed, in the
+style some textbooks prefer) rather than the default look:
+
+::::markdown-demo
+:::game{class="playerLabels"}
+     L     & R
+T    & (2,2) & (0,3)
+B    & (3,0) & (1,1)
+
+row: Row player
+column: Column player
+caption: The same game in the bordered `playerLabels` style
+:::
+::::
+
+Compare that with the default styling shown in the earlier examples. Beyond
+`playerLabels`, any class you name is yours to define — write the matching rules
+in your own CSS and they will apply to that game's table.
+
+## LaTeX output
+
+When you process a document with `--to latex`, the game directive emits an
+environment for Martin Osborne's `sgame` package instead of an HTML table. The
+JMarkdown syntax was designed to mirror `sgame` precisely, so the translation is
+almost mechanical. The Rock-Paper-Scissors game above becomes:
+
+```latex
+\begin{game}{3}{3}[Player 1][Player 2][The game of Rock-Paper-Scissors]
+	 & Rock & Paper & Scissors \\
+	Rock & $(0,0)$ & $(-1,1)$ & $(1,-1)$ \\
+	Paper & $(1,-1)$ & $(0,0)$ & $(-1,1)$ \\
+	Scissors & $(-1,1)$ & $(1,-1)$ & $(0,0)$
+\end{game}
+```
+
+The `{3}{3}` records the number of rows and columns. Payoffs are wrapped in `$…$`
+because `sgame`'s default is `\gamemathfalse` (it does not put cells in math mode
+on its own). Every row but the last ends with `\\`, exactly as in the `sgame`
+manual's examples.
+
+The optional player labels and caption map onto `sgame`'s positional optional
+arguments, which is the one detail worth knowing because the rule is order-, not
+keyword-, based:
+
+| What you supply | `sgame` optional arguments emitted |
+|---|---|
+| caption only | `[caption]` |
+| row and/or column labels | `[row][column]` |
+| row/column labels **and** a caption | `[row][column][caption]` |
+
+Because the slots are positional, a caption that coexists with player labels
+forces all three slots to be filled; a player label that was not supplied becomes
+an empty `[]` so the caption lands in the third position. The directive handles
+this bookkeeping for you. A caption-only game, for instance, emits a single
+`[caption]`:
+
+```latex
+\begin{game}{2}{2}[A game with a caption but no player labels]
+	 & L & R \\
+	T & $(2,2)$ & $(0,3)$ \\
+	B & $(3,0)$ & $(1,1)$
+\end{game}
+```
+
+To compile the result you must load `sgame` in your preamble:
+
+```latex
+\usepackage{sgame}
+```
+
+### `sgame` compatibility caveats
+
+`sgame` is an old and slightly cantankerous package. Keep these incompatibilities
+in mind when assembling a document that uses game tables:
+
+- It is **incompatible with the `memoir` document class**.
+- It is **incompatible with `tabularx` and with `array.sty`** — and therefore with
+  anything that loads `array`, including `colortbl` and `jurabib`. If your
+  preamble pulls in one of those, game tables will not compile.
+- For `beamer` presentations, use the `sgamevar` variant rather than `sgame`.
+
+These are constraints of the package, not of JMarkdown; consult the `sgame`
+documentation if you hit one.
+
+## The `@begin(game)` form
+
+Everything above uses the three-colon `game` container-directive spelling. The
+identical game is also available as a [block environment](block-environments.html),
+`@begin(game) … @end(game)`, which some authors prefer because the closer names
+what it closes and so blocks nest without colon counting:
+
+```
+@begin(game)
+         Rock   & Paper  & Scissors
+Rock     & (0,0)  & (-1,1) & (1,-1)
+Paper    & (1,-1) & (0,0)  & (-1,1)
+Scissors & (-1,1) & (1,-1) & (0,0)
+
+row: Player 1
+column: Player 2
+caption: The game of Rock-Paper-Scissors
+@end(game)
+```
+
+This is not a separate implementation — the block environment reuses the very
+same tokenizer and renderer as the directive, so the two forms are guaranteed to
+behave identically and can never drift apart. Attributes work the same way too:
+`@begin(game){math=all}` is the block-environment equivalent of the directive's
+`{math=all}` form.
+Choose whichever spelling reads better to you; mix them freely in one document if
+you like.
+
+## Reference
+
+### Syntax
+
+```
+:::game[{attributes}]
+col-strategy-1 & col-strategy-2 & …
+row-strategy-1 & payoff & payoff & …
+row-strategy-2 & payoff & payoff & …
+…
+
+row: …
+column: …
+caption: …
+:::
+```
+
+The blank line and the information section beneath it are optional; without them
+you get a bare game grid. The same grammar applies to the block-environment form,
+`@begin(game) … @end(game)`.
+
+### Matrix grammar
+
+| Element | Rule |
+|---|---|
+| Column separator | `&` (whitespace around it is trimmed) |
+| First matrix line | the column strategy labels; **no** leading `&` |
+| Each later line | a row strategy label, then one payoff per column |
+| Line terminator | none — do **not** write `\\` |
+| Payoff cells | set as mathematics (HTML: `\(…\)`; LaTeX: `$…$`) |
+| Strategy labels | processed as Markdown by default; as verbatim math under `math=all` |
+
+### Information-section keys
+
+| Key | Effect | Notes |
+|---|---|---|
+| `row` | label down the left edge, spanning the row strategies | Markdown-processed; may span lines |
+| `column` | label across the top, spanning the column strategies | Markdown-processed; may span lines |
+| `caption` | caption beneath the table | Markdown-processed; may span lines |
+
+Keys are case-insensitive and may appear in any order. Any of the three may
+instead be supplied as an attribute (next); if both are given, the information
+section wins.
+
+### Attributes
+
+| Attribute | Default | Effect |
+|---|---|---|
+| `math` | `default` | `default` processes strategy labels as Markdown; `all` wraps every strategy label in math mode verbatim. Payoffs are math mode regardless. |
+| `class` | — | extra CSS class(es) merged into the table's class list. The built-in `playerLabels` draws a fully bordered grid. |
+| `row` | — | row-player label (overridden by an information-section `row:`). |
+| `column` | — | column-player label (overridden by an information-section `column:`). |
+| `caption` | — | caption (overridden by an information-section `caption:`). |
+
+### HTML structure
+
+The directive renders to a single `<table class="game …">`. The default
+stylesheet JMarkdown injects targets these classes, and so can yours:
+
+| Class | Applied to |
+|---|---|
+| `game` | the table itself |
+| `playerLabels` | optional table modifier for a fully bordered grid |
+| `columnStrategies` | the column strategy label cells (top row) |
+| `rowStrategies` | the row strategy label cells (left column) |
+| `strategyLabels` | all strategy label cells (kept borderless) |
+| `payoffs` | the payoff cells |
+| `columnLabel` | the column-player label cell, and the strategy cells under it |
+| `rowLabel` | the row-player label cell |
+| `caption` | the caption cell |
+| `no-border` | rows that carry labels rather than payoffs |
+
+### LaTeX structure
+
+The directive renders to an `sgame` `game` environment:
+
+```latex
+\begin{game}{rows}{cols}[row][column][caption]
+	 & col-1 & col-2 \\
+	row-1 & $payoff$ & $payoff$ \\
+	…
+\end{game}
+```
+
+The optional arguments are positional (see [LaTeX output](#latex-output)). Load
+`\usepackage{sgame}`; mind the package caveats above.
+
+### Gotchas
+
+- **No `\\` and no leading `&`.** Unlike a hand-written LaTeX `tabular`, game
+  rows are not terminated with `\\`, and the first (column-label) row does not
+  start with `&`. The directive adds both for you in the LaTeX output.
+- **The blank line is significant.** The first all-blank line inside a `game`
+  block divides the payoff matrix from the information section. Do not leave a
+  stray blank line in the middle of your matrix, or everything after it will be
+  read as labels.
+- **Demonstrating a game in a live demo needs four colons.** Because both
+  `markdown-demo` and `game` are container directives, wrap a three-colon `game`
+  fence in a four-colon `markdown-demo` fence so the inner fence does not close
+  the demo early.
+- **`math=all` is verbatim.** Under `math=all` strategy labels are *not* run
+  through Markdown — they are wrapped in math delimiters as-is. Use the default
+  for word strategies (`Hawk`, `Cooperate`).
+- **`sgame` package required for print**, with the compatibility constraints
+  listed above (no `memoir`, no `array.sty`/`tabularx`/`colortbl`; `sgamevar` for
+  `beamer`).
+
+## Related pages
+
+- [Directives](directives-syntax.html) — the container-directive grammar that
+  the `game` directive is built on.
+- [Block environments](block-environments.html) — the `@begin(game) … @end(game)`
+  form and the wider environment system it belongs to.
+- [Markdown demos](markdown-demo.html) — the side-by-side panels used throughout
+  this page, and the colon-counting nesting rule.
+- [Math support](math-support.html) — how the payoffs and math-mode strategy
+  labels are typeset.
+- [Sources and targets](sources-and-targets.html) — choosing HTML versus LaTeX
+  output.
