@@ -29,11 +29,13 @@
 	{{#Script}}
 	<script src="{{{.}}}"></script>
 	{{/Script}}
-	<script src="https://code.jquery.com/jquery-3.7.1.min.js" 
-		integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+		integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
 		crossorigin="anonymous"></script>
-	<script src="https://jmckalex.org/prez/libs/original2/js/citation.min.js"></script>	
+	{{^Biblify.resolve}}
+	<script src="https://jmckalex.org/prez/libs/original2/js/citation.min.js"></script>
 	<script src="https://jmckalex.org/prez/libs/original2/js/biblify.js"></script>
+	{{/Biblify.resolve}}
 	{{#Custom_elements}}
 	{{{.}}}
 	{{/Custom_elements}}

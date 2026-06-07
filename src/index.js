@@ -440,6 +440,12 @@ registerExtension( mathjs );
 import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
 registerExtensions([ inlineFunctions, blockFunctions ]);
 
+// Compile-time citation support. Registered late so the inline \cite-family
+// tokenizer is checked before the markdown inline rules (links, emphasis), and
+// so the ::Bibliography block extension wins over the generic `::` directive.
+import { citations, bibliography } from './citations.js';
+registerExtensions([ citations, bibliography ]);
+
 // Load extensions and directives from the configuration file(s).
 // This should happen before the metadata header is processed.
 await configManager.loadExtensions();
@@ -494,6 +500,12 @@ function writeOutput(text) {
 const skipInverseSearch = options.fragment || isLatex || isStdin;
 
 const markdown_no_metadata = await processYAMLheader(input);
+
+// Decide whether citations are resolved at compile time (this run) or left
+// literal for the runtime Biblify client. Read after the metadata header has
+// been merged, so a `Resolve citations:` key in the header takes effect.
+global.resolveCitations = !!configManager.get('Biblify.resolve');
+
 const text_no_inclusions = processFileInclusions(markdown_no_metadata, markdownFileDirectory);
 
 // Collapse multi-paragraph inline footnotes so they stay within a single
@@ -583,7 +595,7 @@ if (isLatex) {
 
 	let html = options.fragment ? contentWithFootnotes : processTemplate(contentWithFootnotes);
 
-	html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment });
+	html = PostProcessor.postProcessHTML(html, { fragment: !!options.fragment, outBase: outFile });
 	html = PostProcessor.runPostprocessScripts(html);
 
 	// Inject the inverse-search click handler script. Clicking any element with

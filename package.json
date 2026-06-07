@@ -20,6 +20,7 @@
         "acorn": "^8.14.1",
         "algebra.js": "^0.2.6",
         "cheerio": "^1.0.0",
+        "citation-js": "^0.7.22",
         "commander": "^13.1.0",
         "highlight.js": "^11.11.1",
         "js-beautify": "^1.15.3",
