@@ -499,6 +499,18 @@ const gfmHeadingRenderer = gfmHeadingIdExtension.renderer.heading;
 marked.use(gfmHeadingIdExtension, {
 	hooks: {
 		postprocess(html) {
+			if (global.isLatex) {
+				// LaTeX has native contents lists; emit the commands and let the
+				// engine build them. (The post-processor, which builds the HTML
+				// lists, never runs for LaTeX.)
+				html = html.replace(/\{\{TOC\}\}/g, '\\tableofcontents');
+				html = html.replace(/\{\{LOF\}\}/g, '\\listoffigures');
+				html = html.replace(/\{\{LOT\}\}/g, '\\listoftables');
+				return html;
+			}
+			// HTML: build the table of contents here from the heading list.
+			// {{LOF}}/{{LOT}} are built later in the post-processor, once figures
+			// and tables have been numbered.
 			const headings = getHeadingList();
 			const toc = createTOC(headings);
 			html = html.replace("{{TOC}}", toc);

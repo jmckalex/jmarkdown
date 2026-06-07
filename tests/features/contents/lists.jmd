@@ -1,0 +1,22 @@
+Headings: numeric
+------------------------------------
+
+{{TOC}}
+
+{{LOF}}
+
+{{LOT}}
+
+# Introduction
+
+@begin(figure)[First figure]{id=fig:a}
+![a](a.png)
+@end(figure)
+
+# Data
+
+@begin(table)[First table]{id=tab:a}
+| A | B |
+|---|---|
+| 1 | 2 |
+@end(table)

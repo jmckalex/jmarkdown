@@ -37,6 +37,8 @@ export function postProcessHTML(html, options = {}) {
 	});
 
 	resetCrossrefs();
+	figureList = [];
+	tableList = [];
 	if (configManager.get("Headings") && configManager.get("Headings")[0] == "numeric") {
 		add_labels_to_headers($);
 	}
@@ -46,6 +48,7 @@ export function postProcessHTML(html, options = {}) {
 	number_theorems($);
 	number_equations($);
 	process_crossrefs($);
+	replace_float_lists($);
 	replaceTargetsBySources($);
 
 	// Resolve compile-time citations (\cite-family commands + ::Bibliography),
@@ -108,6 +111,30 @@ function add_labels_to_headers($) {
 	})
 }
 
+// Ordered caption text + anchor for each figure / table, collected during
+// numbering and consumed by replace_float_lists to build {{LOF}} / {{LOT}}.
+// Reset per run in postProcessHTML.
+let figureList = [];
+let tableList = [];
+
+// Replace {{LOF}} / {{LOT}} paragraphs with a list of figures / tables, each
+// entry linking to its float. LaTeX uses \listoffigures/\listoftables instead
+// (handled in the parse hook), so this is HTML-only.
+function replace_float_lists($) {
+	const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+	const build = (items, cls) => {
+		const lis = items.map(it => it.anchor
+			? `<li><a href="#${it.anchor}">${esc(it.text)}</a></li>`
+			: `<li>${esc(it.text)}</li>`).join('\n');
+		return `<nav class="${cls}"><ul>\n${lis}\n</ul></nav>`;
+	};
+	$('p').each((i, el) => {
+		const t = $(el).text().trim();
+		if (t === '{{LOF}}') $(el).replaceWith(build(figureList, 'list-of-figures'));
+		else if (t === '{{LOT}}') $(el).replaceWith(build(tableList, 'list-of-tables'));
+	});
+}
+
 // Number figure floats (@begin(figure), see floats.js) in document order: prefix
 // each caption with "Figure N:" and record the figure's id in the cross-ref
 // registry so :ref/:cref resolve. LaTeX numbers figures natively, so this is
@@ -134,9 +161,10 @@ function number_figures($) {
 			}
 		});
 
-		// Number the parent figure (its own direct figcaption).
-		$fig.children('figcaption').first()
-			.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
+		// Number the parent figure (its own direct figcaption) + collect for LOF.
+		const $cap = $fig.children('figcaption').first();
+		$cap.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
+		figureList.push({ text: $cap.text(), anchor: id });
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'figure', anchor: id });
 		}
@@ -152,8 +180,9 @@ function number_tables($) {
 		const $tab = $(elem);
 		n++;
 		const id = $tab.attr('id');
-		$tab.children('figcaption').first()
-			.prepend(`<span class="table-label xref">Table ${n}:</span> `);
+		const $cap = $tab.children('figcaption').first();
+		$cap.prepend(`<span class="table-label xref">Table ${n}:</span> `);
+		tableList.push({ text: $cap.text(), anchor: id });
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'table', anchor: id });
 		}
