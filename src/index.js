@@ -455,7 +455,14 @@ marked.use(createDirectives([titleBox]));
 // `@` is an otherwise-unused sigil, so nothing else matches `@begin(...)` and the
 // registration position doesn't matter; it lives here, after the directive set.
 import { beginEnd } from './begin-end.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
 marked.use({ extensions: [beginEnd] });
+
+// Let users define their own @begin environments from a <script data-type="jmarkdown">
+// block, the same way export_to_jmarkdown is exposed for inline functions. The
+// callback receives the full ctx — including ctx.text ([label]) and ctx.attrs
+// ({attributes}). Define an environment before the @begin that uses it.
+global.defineEnvironment = registerBlockEnvironment;
 
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';
