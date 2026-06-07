@@ -444,6 +444,7 @@ registerExtensions([ inlineFunctions, blockFunctions ]);
 // This should happen before the metadata header is processed.
 await configManager.loadExtensions();
 await configManager.loadDirectives();
+await configManager.loadEnvironments();
 
 // No await is needed because this doesn't read from a file.
 configManager.loadOptionals();
