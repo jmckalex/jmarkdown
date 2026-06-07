@@ -16,6 +16,8 @@
 	deferred). Because the directive and @begin(name) forms share these bodies,
 	the branch keeps them in parity automatically.
 */
+import { requirePackage } from './preamble.js';
+
 export function renderAbstract(inner) {
 	if (global.isLatex) return `\\begin{abstract}\n${inner.trim()}\n\\end{abstract}\n\n`;
 	return `<div class="abstract"><div class='label'>Abstract</div>${inner}</div>`;
@@ -149,6 +151,36 @@ const additionalDirectives = [
 				// post-processor turns into a hyperlink carrying the number.
 				if (global.isLatex) return `\\ref{${token.text}}`;
 				return `<span class='xref-ref' data-key='${token.text.replaceAll("'", '&#39;')}'></span>`;
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "cref",
+		renderer(token) {
+			if (token.meta.name === "cref") {
+				// Typed reference: "section 3". LaTeX uses cleveref's \cref
+				// (loaded on demand); HTML resolves the type word + number in
+				// the post-processor.
+				if (global.isLatex) { requirePackage('cleveref'); return `\\cref{${token.text}}`; }
+				const key = token.text.replaceAll("'", '&#39;');
+				return `<span class='xref-cref' data-key='${key}' data-cap='0'></span>`;
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "Cref",
+		renderer(token) {
+			if (token.meta.name === "Cref") {
+				// Sentence-start typed reference: "Section 3" → cleveref's \Cref.
+				if (global.isLatex) { requirePackage('cleveref'); return `\\Cref{${token.text}}`; }
+				const key = token.text.replaceAll("'", '&#39;');
+				return `<span class='xref-cref' data-key='${key}' data-cap='1'></span>`;
 			}
 			return false;
 		}

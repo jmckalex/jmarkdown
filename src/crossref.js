@@ -27,7 +27,7 @@ export function resetCrossrefs() {
 //             number  resolved number text (e.g. '3' or '2.1')
 //             anchor  the element id a :ref should link to
 //             type    the kind of target ('section', 'figure', …) — used by the
-//                     typed :cref/:Cref form; optional here
+//                     typed :cref/:Cref form
 export function recordLabel(key, info) {
 	labels[key] = info;
 }
@@ -35,4 +35,25 @@ export function recordLabel(key, info) {
 // Look up a recorded target, or undefined if the key is unknown.
 export function lookupLabel(key) {
 	return labels[key];
+}
+
+// The word a typed (:cref/:Cref) reference uses for each target type. Identity
+// for most; extend as new counter types arrive (figure/table/theorem already map
+// to themselves). LaTeX's cleveref produces the equivalent words natively.
+const TYPE_NAMES = {
+	part: 'part', chapter: 'chapter', section: 'section', subsection: 'subsection',
+	subsubsection: 'subsubsection', paragraph: 'paragraph', subparagraph: 'subparagraph',
+	figure: 'figure', table: 'table', theorem: 'theorem', equation: 'equation',
+	listing: 'listing', footnote: 'footnote'
+};
+
+// Format a cleveref-style typed reference, e.g. ('section', '3') -> 'section 3',
+// capitalized -> 'Section 3'. The &#160; non-breaking space keeps the word and
+// number on one line (cleveref uses ~ for the same reason); this output is HTML
+// only — LaTeX uses \cref, which spaces natively. Falls back to the bare number
+// when the type is unknown.
+export function typedRefText(type, number, capitalized = false) {
+	let name = TYPE_NAMES[type] || type || '';
+	if (capitalized && name) name = name.charAt(0).toUpperCase() + name.slice(1);
+	return name ? `${name}&#160;${number}` : `${number}`;
 }

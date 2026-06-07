@@ -55,6 +55,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		inline-syntax)     extra='\usepackage{color}\usepackage{soul}';   needs='soul.sty' ;;
 		code)              extra='\usepackage{minted}';                   needs='minted.sty' ;;
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
+		crossref)          extra='\usepackage{cleveref}';                 needs='cleveref.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 

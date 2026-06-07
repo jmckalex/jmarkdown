@@ -13,38 +13,13 @@
 import { configManager } from './config-manager.js';
 import { requirePackage } from './preamble.js';
 import { escapeLatexText as escapeLatex } from './latex-escape.js';
+import { commandForDepth } from './sectioning.js';
 
 // Candidate \mintinline delimiters, tried in order. \mintinline takes its code
 // verbatim between a delimiter pair (like \verb), so the delimiter just has to
 // be a character the code does not contain — that is what lets inline code keep
 // literal braces, backslashes, %, & and so on.
 const MINTINLINE_DELIMS = ['|', '!', '+', '@', '/', ':', ';', '"', "'", '~', '?', '='];
-
-// The LaTeX sectioning ladder, deepest-up. Heading depth N maps to the command
-// `base + (N - 1)` rungs down this ladder, clamped at the bottom.
-const SECTIONING = ['part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph'];
-
-// Coerce a metadata/config value (string, or single-element array from the
-// metadata-header parser) to a trimmed lower-case string.
-function metaWord(key) {
-	const v = configManager.getMeta(key);
-	if (v == null) return '';
-	return (Array.isArray(v) ? v.join(' ') : String(v)).trim().toLowerCase();
-}
-
-// Which sectioning command a depth-1 heading (`#`) maps to. An explicit
-// `Heading base` wins; otherwise it is derived from the document class —
-// chapter-bearing classes (book/report/memoir…) start at \chapter, everything
-// else (article, the default) starts at \section. This keeps the DEFAULT output
-// (\documentclass{article}, which has no \chapter) compilable.
-function headingBaseIndex() {
-	const explicit = metaWord('Heading base');
-	if (explicit && SECTIONING.includes(explicit)) return SECTIONING.indexOf(explicit);
-
-	const cls = metaWord('Document class') || 'article';
-	const chapterClasses = ['book', 'report', 'memoir', 'scrbook', 'scrreprt', 'extbook', 'extreport'];
-	return SECTIONING.indexOf(chapterClasses.includes(cls) ? 'chapter' : 'section');
-}
 
 const latexRenderer = {
 
@@ -54,8 +29,7 @@ const latexRenderer = {
 
 	heading(token) {
 		let content = this.parser.parseInline(token.tokens);
-		const idx = Math.min(headingBaseIndex() + (token.depth - 1), SECTIONING.length - 1);
-		const command = SECTIONING[idx];
+		const command = commandForDepth(token.depth);
 
 		// Check for {-} suffix, which signals an unnumbered heading.
 		let starred = '';

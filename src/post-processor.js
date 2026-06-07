@@ -8,7 +8,8 @@ export { cheerio };
 import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
-import { resetCrossrefs, recordLabel, lookupLabel } from './crossref.js';
+import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
+import { commandForDepth } from './sectioning.js';
 
 // Post-process HTML output using cheerio
 export function postProcessHTML(html, options = {}) {
@@ -126,7 +127,20 @@ function process_crossrefs($) {
 		if (number != undefined && number.endsWith('.')) {
 			number = number.slice(0, -1);
 		}
-		recordLabel(key, { number, anchor });
+		// Type word for the typed :cref/:Cref form: footnotes are 'footnote';
+		// a heading-anchored label takes the sectioning word for its depth
+		// (section/subsection/chapter…), honouring Heading base / Document class.
+		let type;
+		if (in_footnote) {
+			type = 'footnote';
+		} else {
+			const $heading = $elem.closest(':header');
+			if ($heading.length) {
+				const level = parseInt($heading.prop('tagName').slice(1), 10);
+				type = commandForDepth(level);
+			}
+		}
+		recordLabel(key, { number, anchor, type });
 	});
 
 	// Second pass: turn each :ref into a hyperlink carrying the number. An
@@ -137,6 +151,20 @@ function process_crossrefs($) {
 		let info = lookupLabel(key);
 		if (info && info.number !== undefined && info.number !== '') {
 			$elem.replaceWith(`<a class="xref-ref" href="#${info.anchor}">${info.number}</a>`);
+		}
+		else {
+			$elem.text('??');
+		}
+	});
+
+	// Typed (cleveref-style) references: :cref -> "section 3", :Cref -> "Section 3".
+	$(".xref-cref").each((i, elem) => {
+		let $elem = $(elem);
+		let key = $elem.attr('data-key');
+		let cap = $elem.attr('data-cap') === '1';
+		let info = lookupLabel(key);
+		if (info && info.number !== undefined && info.number !== '') {
+			$elem.replaceWith(`<a class="xref-cref" href="#${info.anchor}">${typedRefText(info.type, info.number, cap)}</a>`);
 		}
 		else {
 			$elem.text('??');
