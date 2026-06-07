@@ -470,6 +470,8 @@ marked.use({ extensions: [beginEnd] });
 import './floats.js';
 // Theorem-like environments (@begin(theorem|lemma|proof|…)) — same pattern.
 import './theorems.js';
+// Numbered display equations (@begin(equation)).
+import './equations.js';
 
 // Let users define their own @begin environments from a <script data-type="jmarkdown">
 // block, the same way export_to_jmarkdown is exposed for inline functions. The

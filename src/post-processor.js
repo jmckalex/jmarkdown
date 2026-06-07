@@ -43,6 +43,7 @@ export function postProcessHTML(html, options = {}) {
 	number_figures($);
 	number_tables($);
 	number_theorems($);
+	number_equations($);
 	process_crossrefs($);
 	replaceTargetsBySources($);
 
@@ -195,6 +196,23 @@ function number_theorems($) {
 		if ($firstP.length) $firstP.prepend(labelHtml);
 		else $p.prepend(labelHtml);
 		$p.append('<span class="qed">&#8718;</span>');
+	});
+}
+
+// Number display equations (@begin(equation), see equations.js) in document
+// order with their own counter: append "(N)" and record the id for :ref/:cref.
+// HTML-only — LaTeX numbers equations natively. Numbers stay in step with LaTeX
+// because both count the equations in order.
+function number_equations($) {
+	let n = 0;
+	$('div.equation').each((i, elem) => {
+		const $eq = $(elem);
+		n++;
+		const id = $eq.attr('id');
+		$eq.append(`<span class="eqn-number">(${n})</span>`);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'equation', anchor: id });
+		}
 	});
 }
 

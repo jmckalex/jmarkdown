@@ -310,3 +310,19 @@ figure.table-float table {
 .qed {
 	float: right;
 }
+
+
+/* Numbered display equations (@begin(equation)): centred math with the number
+   (N) flush right, vertically centred against the equation. */
+.equation {
+	position: relative;
+	margin: 1em 0;
+	text-align: center;
+}
+
+.equation .eqn-number {
+	position: absolute;
+	right: 0.5em;
+	top: 50%;
+	transform: translateY(-50%);
+}

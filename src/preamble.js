@@ -48,6 +48,15 @@ export function addLatePreamble(line) {
 	if (!latePreambleLines.includes(line)) latePreambleLines.push(line);
 }
 
+// Force cleveref to spell a reference type out in full ("figure 1"/"table 1"/
+// "equation 1", not cleveref's abbreviated defaults), matching JMarkdown's HTML
+// cross-ref wording. Only takes effect when cleveref is loaded.
+export function crefName(type, singular, plural) {
+	const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+	addLatePreamble(`\\crefname{${type}}{${singular}}{${plural}}`);
+	addLatePreamble(`\\Crefname{${type}}{${cap(singular)}}{${cap(plural)}}`);
+}
+
 // Clear all registrations. Not needed for a normal single-document CLI run, but
 // keeps tests and any future multi-document driver honest.
 export function resetPreamble() {

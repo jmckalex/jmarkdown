@@ -58,5 +58,8 @@ const TYPE_NAMES = {
 export function typedRefText(type, number, capitalized = false) {
 	let name = TYPE_NAMES[type] || type || '';
 	if (capitalized && name) name = name.charAt(0).toUpperCase() + name.slice(1);
-	return name ? `${name}&#160;${number}` : `${number}`;
+	// Equations are referenced with a parenthesised number ("equation (2)"),
+	// matching cleveref's convention; everything else is a bare number.
+	const num = type === 'equation' ? `(${number})` : number;
+	return name ? `${name}&#160;${num}` : `${num}`;
 }
