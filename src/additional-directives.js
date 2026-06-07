@@ -10,12 +10,15 @@
 	identically to `:::abstract`.  abstract/feedback delegate to these; the
 	trivial :::TeX / :::HTML bodies are mirrored here for begin-end's use.
 
-	Note: like the directives, renderAbstract/renderFeedback have no LaTeX branch
-	— they emit their HTML in both output modes.  That existing behaviour is
-	preserved deliberately for parity.
+	Note: renderAbstract now branches — LaTeX gets the standard `abstract`
+	environment (so it compiles), HTML keeps the labelled div. renderFeedback
+	still has no LaTeX branch (no standard LaTeX env; it emits HTML in both modes,
+	deferred). Because the directive and @begin(name) forms share these bodies,
+	the branch keeps them in parity automatically.
 */
-export function renderAbstract(innerHtml) {
-	return `<div class="abstract"><div class='label'>Abstract</div>${innerHtml}</div>`;
+export function renderAbstract(inner) {
+	if (global.isLatex) return `\\begin{abstract}\n${inner.trim()}\n\\end{abstract}\n\n`;
+	return `<div class="abstract"><div class='label'>Abstract</div>${inner}</div>`;
 }
 
 export function renderFeedback(innerHtml) {
