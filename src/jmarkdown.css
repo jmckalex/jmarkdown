@@ -231,3 +231,38 @@ span.underline {
 span.highlight {
 	background: yellow;
 }
+
+
+/* Figure floats (@begin(figure)) and subfigures (@begin(subfigure)).
+   A figure centres its contents and caption; subfigures sit side by side,
+   each sized by its {width=…} inline style, wrapping when the row is full. */
+figure.figure {
+	margin: 1.25em 0;
+	text-align: center;
+}
+
+figure.figure > figcaption {
+	margin-top: 0.5em;
+	font-size: 0.95em;
+}
+
+figure.subfigure {
+	display: inline-block;
+	vertical-align: top;
+	margin: 0 1% 0.5em;
+}
+
+figure.subfigure img {
+	max-width: 100%;
+	height: auto;
+}
+
+figure.subfigure > figcaption {
+	margin-top: 0.3em;
+	font-size: 0.9em;
+}
+
+.figure-label,
+.subfigure-label {
+	font-weight: bold;
+}

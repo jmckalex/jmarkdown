@@ -115,8 +115,24 @@ function number_figures($) {
 		const $fig = $(elem);
 		n++;
 		const id = $fig.attr('id');
-		const $cap = $fig.find('figcaption').first();
-		$cap.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
+
+		// Sub-number any subfigures: (a), (b), … with combined refs like "1a".
+		let sub = 0;
+		$fig.children('figure.subfigure').each((j, subelem) => {
+			const $sub = $(subelem);
+			const letter = String.fromCharCode(97 + sub);
+			sub++;
+			const subId = $sub.attr('id');
+			$sub.children('figcaption').first()
+				.prepend(`<span class="subfigure-label">(${letter})</span> `);
+			if (subId) {
+				recordLabel(subId, { number: `${n}${letter}`, type: 'figure', anchor: subId });
+			}
+		});
+
+		// Number the parent figure (its own direct figcaption).
+		$fig.children('figcaption').first()
+			.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'figure', anchor: id });
 		}
