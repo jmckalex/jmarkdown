@@ -89,6 +89,36 @@ registerBlockEnvironment('table', {
 	}
 });
 
+// @begin(listing) — a captioned, numbered, referenceable code float. The body is
+// a fenced code block; this wraps it with a caption and a number.
+//
+//     @begin(listing)[A caption]{id=lst:hello}
+//     ```python
+//     print("hi")
+//     ```
+//     @end(listing)
+registerBlockEnvironment('listing', {
+	mode: 'markdown',
+
+	// Caption below the code; the post-processor prefixes "Listing N:" and
+	// records the cross-ref.
+	html: (ctx) => {
+		const id = ctx.attrs?.id ? ` id="${ctx.attrs.id}"` : '';
+		const caption = ctx.text ? htmlEscape(ctx.text) : '';
+		return `<figure class="listing"${id}>\n${ctx.inner}\n<figcaption class="listing-caption">${caption}</figcaption>\n</figure>\n`;
+	},
+
+	// minted's `listing` float environment wraps the minted code block; \caption
+	// after it, \label after \caption so it captures the listing counter.
+	latex: (ctx) => {
+		requirePackage('minted');
+		crefName('listing', 'listing', 'listings');
+		const caption = ctx.text ? `\\caption{${escapeLatexText(ctx.text)}}\n` : '';
+		const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}\n` : '';
+		return `\\begin{listing}[htbp]\n${ctx.inner}\n${caption}${label}\\end{listing}\n\n`;
+	}
+});
+
 // @begin(subfigure) — a sub-panel inside an @begin(figure). Each gets its own
 // caption, its own label, and a sub-letter ((a), (b), …) so a reference reads
 // "1a"/"figure 1a". Width is {width=0.45} (a fraction of \textwidth / of the

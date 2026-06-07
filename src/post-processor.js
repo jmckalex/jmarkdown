@@ -42,6 +42,7 @@ export function postProcessHTML(html, options = {}) {
 	}
 	number_figures($);
 	number_tables($);
+	number_listings($);
 	number_theorems($);
 	number_equations($);
 	process_crossrefs($);
@@ -155,6 +156,23 @@ function number_tables($) {
 			.prepend(`<span class="table-label xref">Table ${n}:</span> `);
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'table', anchor: id });
+		}
+	});
+}
+
+// Number code-listing floats (@begin(listing), see floats.js) in document order
+// with their own counter: prefix each caption with "Listing N:" and record the
+// id for :ref/:cref. HTML-only (LaTeX numbers listings natively via minted).
+function number_listings($) {
+	let n = 0;
+	$('figure.listing').each((i, elem) => {
+		const $lst = $(elem);
+		n++;
+		const id = $lst.attr('id');
+		$lst.children('figcaption').first()
+			.prepend(`<span class="listing-label xref">Listing ${n}:</span> `);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'listing', anchor: id });
 		}
 	});
 }

@@ -59,6 +59,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		floats)            extra='\usepackage[draft]{graphicx}\usepackage{subcaption}\usepackage{cleveref}'; needs='subcaption.sty cleveref.sty' ;;
 		theorems)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[sibling=theorem]{lemma}\declaretheorem[sibling=theorem]{corollary}\declaretheorem[sibling=theorem]{proposition}\declaretheorem[style=definition,sibling=theorem]{definition}\declaretheorem[style=definition,sibling=theorem]{example}\declaretheorem[style=remark,sibling=theorem]{remark}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
 		equations)         extra='\usepackage{amsmath}\usepackage{cleveref}'; needs='cleveref.sty' ;;
+		listings)          extra='\usepackage{minted}\usepackage{cleveref}'; needs='minted.sty cleveref.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -75,7 +76,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
