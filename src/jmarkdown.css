@@ -262,7 +262,22 @@ figure.subfigure > figcaption {
 	font-size: 0.9em;
 }
 
+figure.table-float {
+	margin: 1.25em 0;
+	text-align: center;
+}
+
+figure.table-float > figcaption {
+	margin-bottom: 0.5em;
+	font-size: 0.95em;
+}
+
+figure.table-float table {
+	margin: 0 auto;
+}
+
 .figure-label,
-.subfigure-label {
+.subfigure-label,
+.table-label {
 	font-weight: bold;
 }

@@ -1,0 +1,8 @@
+@begin(table)[Results summary]{id=tab:results}
+| Method | Score |
+|--------|-------|
+| A      | 0.9   |
+| B      | 0.7   |
+@end(table)
+
+See :ref[tab:results] for numbers, or more precisely :cref[tab:results].

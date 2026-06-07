@@ -41,6 +41,7 @@ export function postProcessHTML(html, options = {}) {
 		add_labels_to_headers($);
 	}
 	number_figures($);
+	number_tables($);
 	process_crossrefs($);
 	replaceTargetsBySources($);
 
@@ -135,6 +136,23 @@ function number_figures($) {
 			.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'figure', anchor: id });
+		}
+	});
+}
+
+// Number table floats (@begin(table), see floats.js) in document order, with a
+// counter independent of figures: prefix each caption with "Table N:" and record
+// the id for :ref/:cref. HTML-only (LaTeX numbers tables natively).
+function number_tables($) {
+	let n = 0;
+	$('figure.table-float').each((i, elem) => {
+		const $tab = $(elem);
+		n++;
+		const id = $tab.attr('id');
+		$tab.children('figcaption').first()
+			.prepend(`<span class="table-label xref">Table ${n}:</span> `);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'table', anchor: id });
 		}
 	});
 }

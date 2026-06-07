@@ -21,12 +21,14 @@ import { registerBlockEnvironment } from './begin-end-core.js';
 import { requirePackage, addLatePreamble } from './preamble.js';
 import { escapeLatexText } from './latex-escape.js';
 
-// Force cleveref to spell floats out in full ("figure 1", not the default
-// "fig. 1") so LaTeX matches JMarkdown's HTML cross-ref wording. Emitted only
-// when cleveref is loaded (see assemblePreamble), and harmless otherwise.
-function fullCrefName(type) {
-	addLatePreamble(`\\crefname{${type}}{figure}{figures}`);
-	addLatePreamble(`\\Crefname{${type}}{Figure}{Figures}`);
+// Force cleveref to spell a reference type out in full ("figure 1"/"table 1",
+// not cleveref's default "fig."/"tab."), matching JMarkdown's HTML cross-ref
+// wording. Emitted only when cleveref is loaded (see assemblePreamble).
+// Subfigures use the figure word, so a subfigure ref reads "figure 1a".
+function fullCrefName(type, singular, plural) {
+	const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+	addLatePreamble(`\\crefname{${type}}{${singular}}{${plural}}`);
+	addLatePreamble(`\\Crefname{${type}}{${cap(singular)}}{${cap(plural)}}`);
 }
 
 function htmlEscape(s) {
@@ -60,10 +62,40 @@ registerBlockEnvironment('figure', {
 	// the contents (and below a row of subfigures).
 	latex: (ctx) => {
 		requirePackage('graphicx');
-		fullCrefName('figure');
+		fullCrefName('figure', 'figure', 'figures');
 		const caption = ctx.text ? `\\caption{${escapeLatexText(ctx.text)}}\n` : '';
 		const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}\n` : '';
 		return `\\begin{figure}[htbp]\n\\centering\n${ctx.inner}\n\n${caption}${label}\\end{figure}\n\n`;
+	}
+});
+
+// @begin(table) — a captioned, numbered, referenceable table float. The body is
+// a JMarkdown table; this wraps it with a caption (above, per LaTeX convention)
+// and a number. Same machinery as figures, with its own counter.
+//
+//     @begin(table)[A caption]{id=tab:results}
+//     | A | B |
+//     |---|---|
+//     | 1 | 2 |
+//     @end(table)
+registerBlockEnvironment('table', {
+	mode: 'markdown',
+
+	// Caption first (above the table); the post-processor prefixes "Table N:"
+	// and records the cross-ref.
+	html: (ctx) => {
+		const id = ctx.attrs?.id ? ` id="${ctx.attrs.id}"` : '';
+		const caption = ctx.text ? htmlEscape(ctx.text) : '';
+		return `<figure class="table-float"${id}>\n<figcaption class="table-caption">${caption}</figcaption>\n${ctx.inner}\n</figure>\n`;
+	},
+
+	// The native table float; \caption before the tabular, \label after \caption
+	// so it captures the table counter.
+	latex: (ctx) => {
+		fullCrefName('table', 'table', 'tables');
+		const caption = ctx.text ? `\\caption{${escapeLatexText(ctx.text)}}\n` : '';
+		const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}\n` : '';
+		return `\\begin{table}[htbp]\n\\centering\n${caption}${label}${ctx.inner}\n\\end{table}\n\n`;
 	}
 });
 
@@ -88,7 +120,7 @@ registerBlockEnvironment('subfigure', {
 	// resolve to "1a". \hfill lets adjacent panels share a row.
 	latex: (ctx) => {
 		requirePackage('subcaption');
-		fullCrefName('subfigure');
+		fullCrefName('subfigure', 'figure', 'figures');
 		const w = ctx.attrs?.width != null ? ctx.attrs.width : 0.45;
 		const caption = ctx.text ? `\\caption{${escapeLatexText(ctx.text)}}\n` : '';
 		const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}\n` : '';
