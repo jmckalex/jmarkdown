@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import { marked } from './utils.js';
-import { addExtension, loadExtensionsFromSpec, loadDirectivesFromSpec, parseOptionals } from './metadata-header.js';
+import { addExtension, loadExtensionsFromSpec, loadDirectivesFromSpec, loadEnvironmentsFromSpec, parseOptionals } from './metadata-header.js';
 
 // Default configuration values
 export const DEFAULT_CONFIG = {
@@ -26,6 +26,7 @@ export const DEFAULT_CONFIG = {
 	},
 	"Directives": [],
 	"Extensions": [],
+	"Environments": [],
 	'Fontawesome': 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/js/all.min.js',
 	'Mermaid': 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js',
 	'Highlight src': 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css',
@@ -47,7 +48,11 @@ export const DEFAULT_CONFIG = {
 	'Template': 'default',
 	'TiKZ libgs': '/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib',
 	'TiKZ optimise': 'group-attributes,collapse-groups',
-	'Code language': 'text'
+	'Code language': 'text',
+	// How a generic @begin(name) block renders in HTML (see src/begin-end.js):
+	// 'hyphenated' → hyphenated names become custom elements, others div.class;
+	// 'all' → always a custom element; 'none' → always a div.class.
+	'Block elements': 'hyphenated'
 };
 
 class ConfigManager {
@@ -230,6 +235,11 @@ class ConfigManager {
 				str = value.join(" ").trim();
 				formattedMetadata[formattedKey] = str;
 				break;
+			case "Block_elements":
+				// Written to the space-keyed config so begin-end.js can read it
+				// directly via configManager.get('Block elements').
+				this.config["Block elements"] = value[0].trim().toLowerCase();
+				break;
 			default:
 				formattedMetadata[formattedKey] = value;
 			}
@@ -303,7 +313,15 @@ class ConfigManager {
 			else {
 				// Assume the file path is absolute
 				await loadExtensionsFromSpec(extension);
-			}			
+			}
+		}
+	}
+
+	async loadEnvironments() {
+		let environments = this.get("Environments");
+		for (const environment of environments) {
+			// Config-supplied paths are absolute (loadEnvironmentsFromSpec uses them as-is).
+			await loadEnvironmentsFromSpec(environment);
 		}
 	}
 }

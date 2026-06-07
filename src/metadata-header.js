@@ -63,6 +63,11 @@ export async function processYAMLheader(markdown) {
 			await loadJavascript();
 		}
 
+		const load_environments_key = Object.keys(metadata).find(k => k.toLowerCase() === "Load environments".toLowerCase());
+		if (load_environments_key) {
+			await loadEnvironments();
+		}
+
 		const optionals_key = Object.keys(metadata).find(k => k.toLowerCase() === "Optionals".toLowerCase());
 		if (optionals_key) {
 			parseOptionals(metadata[optionals_key]);
@@ -139,6 +144,7 @@ function parseOptionalString(optionsString) {
 
 import { marked } from 'marked';
 import { createDirectives } from './extended-directives.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
 export function createMultilevelOptionals(name, default_value) {
 	const directives = [];
 	[3,4,5,6,7,8].forEach(level => {
@@ -151,7 +157,7 @@ export function createMultilevelOptionals(name, default_value) {
 		      if (token.meta.name === name) {
 		        // First check if attr exists and has include property
 		        const shouldInclude = token.attrs?.include ?? default_value;
-		        return shouldInclude 
+		        return shouldInclude
 		          ? marked.parser(token.tokens)
 		          : '';
 		      }
@@ -160,6 +166,24 @@ export function createMultilevelOptionals(name, default_value) {
 		});
 	});
 	marked.use(createDirectives(directives));
+
+	// Mirror the same optional as a named block environment, so @begin(name)
+	// behaves exactly like :::name — same include/exclude rule, same default.
+	// This is what closes the footgun for `comment`: @begin(comment) now hides
+	// its content by default (default_value false), matching :::comment, instead
+	// of falling through to the generic block renderer that would *show* it.
+	//
+	// HTML is a bare passthrough of the parsed body (the begin-end equivalent of
+	// the directive's marked.parser(token.tokens)). LaTeX restores a trailing
+	// block separator: the core trims ctx.inner (right for wrapped environments),
+	// but here the shown content would otherwise merge into the following
+	// paragraph. The two renderers share one include test.
+	const included = (ctx) => (ctx.attrs?.include ?? default_value);
+	registerBlockEnvironment(name, {
+		mode: 'markdown',
+		html:  (ctx) => (included(ctx) ? ctx.inner : ''),
+		latex: (ctx) => (included(ctx) ? ctx.inner + '\n\n' : '')
+	});
 }
 
 function parseKeyedData(text) {
@@ -353,6 +377,54 @@ function loadJavascript() {
 	}
 }
 
+
+
+/*
+	Load @begin block environments from a user file, mirroring "Load directives" /
+	"Load extensions". Two forms:
+
+		Load environments: warning, theorem from envs.js   (named exports = handlers)
+		Load environments: envs.js                          (default export = { name: handler } map)
+
+	Each handler is the same shape defineEnvironment / registerBlockEnvironment
+	takes: { mode?, tokenize?, html, latex?, render? }. `resolve` maps a spec's
+	file reference to an importable path (relative-to-the-markdown-file for the
+	metadata header, identity for config-supplied absolute paths).
+*/
+async function importEnvironmentSpec(spec, resolve) {
+	if (FROM_KEYWORD.test(spec)) {
+		let [names, file] = spec.split(FROM_KEYWORD);
+		const list = names.split(",").map(s => s.trim()).filter(s => s !== '');
+		const mod = await import(resolve(file.trim()));
+		for (const name of list) {
+			registerBlockEnvironment(name, mod[name]);
+		}
+	}
+	else {
+		const mod = await import(resolve(spec.trim()));
+		for (const [name, handler] of Object.entries(mod.default || {})) {
+			registerBlockEnvironment(name, handler);
+		}
+	}
+}
+
+async function loadEnvironments() {
+	for (let k in metadata) {
+		if (k.toLowerCase() === "Load environments".toLowerCase()) {
+			if (Array.isArray(metadata[k])) {
+				const base = configManager.get('Markdown file directory');
+				for (const spec of metadata[k]) {
+					await importEnvironmentSpec(spec, (f) => path.join(base, f));
+				}
+			}
+		}
+	}
+}
+
+// Config-level form: the config stores absolute paths, so resolution is identity.
+export async function loadEnvironmentsFromSpec(spec) {
+	await importEnvironmentSpec(spec, (f) => f);
+}
 
 
 export function addExtension(spec, name) {

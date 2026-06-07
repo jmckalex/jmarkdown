@@ -1,0 +1,272 @@
+Title: Description Lists
+------------------------------------
+
+# Description lists
+
+<style>
+	dl {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		column-gap: 0.75em;
+	}
+	dl dt {
+		font-weight: bold;
+	}
+	dl dt:after {
+		content: ":";
+	}
+	dl dd p {
+		margin-bottom: 6pt !important;
+	}
+	dl dd p:not(:first-of-type) {
+		margin-top: 6pt !important;
+	}
+	dl dl {
+		margin-top: 0.5em;
+	}
+</style>
+
+A *description list* (also called a definition list) pairs a **term** with the
+**description** of that term — a glossary entry, a parameter and its meaning, a
+keyboard shortcut and what it does. HTML has had the `<dl>` / `<dt>` / `<dd>`
+elements for this since the beginning, but standard Markdown offers no syntax to
+produce them. JMarkdown fills the gap with a lightweight, indentation-based
+notation, so you can write a glossary in prose and get a real `<dl>` without
+dropping to raw HTML.
+
+The notation is deliberately quiet: a term, a double colon, and the description.
+Because the description is taken from the indented block that follows, a single
+description can run to many paragraphs, contain code, hold a list — even contain
+another description list nested inside it.
+
+## The basic form
+
+Write the term, then `::`, then the description. The description may sit on the
+same line as the term, or begin on the next line indented past the term:
+
+:::markdown-demo
+HTTP:: HyperText Transfer Protocol.
+
+CSS::
+   Cascading Style Sheets — the stylesheet
+   language of the web.
+
+JMarkdown:: A Markdown authoring system that
+   produces both HTML and LaTeX from a single source.
+:::
+
+Each `term:: description` pair becomes a `<dt>`/`<dd>` couple, and consecutive
+pairs are gathered into one surrounding `<dl>`. A blank line *between* pairs is
+fine — it does not end the list — which lets you space entries out for
+readability in the source.
+
+The `::` is the only special marker. The term is everything to its left; the
+description is everything to its right (and below). The marker must be followed
+by whitespace or the end of the line, so a doubled colon that is part of prose
+or code — `foo::bar` with no space — is left untouched.
+
+### Single colons are safe in the term
+
+Only the *double* colon splits a term from its description. A lone colon inside
+the term is ordinary text, so terms that themselves contain a colon work without
+escaping:
+
+:::markdown-demo
+Status: Active:: The record is live and visible.
+
+RFC 2616: HTTP/1.1:: The specification that defined
+   HTTP version 1.1.
+:::
+
+## Rich terms and rich descriptions
+
+The two halves are processed differently, and the difference is what makes the
+feature useful.
+
+The **term** is rendered as *inline* Markdown. Emphasis, code spans, math, and
+JMarkdown's own inline syntax all work, but block constructs do not — a term is,
+by nature, a single line.
+
+The **description** is rendered as a full *block*: it can hold multiple
+paragraphs, fenced code, blockquotes, ordered and unordered lists, and anything
+else that is valid Markdown in a block context.
+
+:::markdown-demo
+A `code` term with $\alpha$ math::
+   The description begins here and can run across
+   several lines; they are joined into one paragraph.
+
+   A second paragraph belongs to the *same* description,
+   because it is still indented past the term.
+
+   ```js
+   function greet(name) {
+       return `Hello, ${name}`;
+   }
+   ```
+
+   - It can even contain a list,
+   - with as many items as you like.
+:::
+
+## How the indentation works
+
+The shape of a description list is governed entirely by indentation, measured
+against the column where the **first term** of the list begins (its *base
+indent*). The rules are:
+
+- A line at the base indent that contains `::` starts a **new term/description
+  pair**.
+- A line indented **past** the base indent is **continuation** — it belongs to
+  the current description.
+- A **blank** line is absorbed into the current description (so descriptions may
+  contain paragraph breaks).
+- A line at or below the base indent that is **not** a term **ends** the list;
+  that line is handed back to the normal Markdown parser.
+
+"Indented past" means strictly greater — any amount will do. One extra space, a
+few spaces, or a tab all mark a line as continuation; you do not have to match a
+fixed width. Pick whatever reads well and stay consistent within a document.
+
+The example below shows a description ending: the dedented paragraph is outside
+the list and renders as an ordinary paragraph.
+
+:::markdown-demo
+Term one:: Its description.
+
+Term two:: Another description.
+
+This paragraph is back at the left margin, so it is not part
+of the list — it closes the `<dl>` and stands on its own.
+:::
+
+## Nested description lists
+
+Because a description is a full block, it may itself contain a description list.
+To nest, indent the inner list past the description it lives in. The inner terms
+become a base indent of their own, and JMarkdown emits a `<dl>` inside the outer
+`<dd>`.
+
+:::markdown-demo
+Configuration:: JMarkdown reads settings from three
+   places, in order:
+
+   Global config:: `~/.jmarkdown/config.json`,
+      applied to every document.
+
+   Project config:: `./.jmarkdown/config.json`,
+      applied within one project.
+
+   Metadata header:: keys at the top of the file —
+      highest priority of all.
+
+   The three are merged, with later sources winning.
+:::
+
+Nesting can be arbitrarily deep; each level simply needs to be indented past the
+one that contains it. Differently structured content — a nested list followed by
+a closing paragraph, as above — works because the description is parsed as a
+complete block.
+
+## Footnotes inside descriptions
+
+A description is parsed by JMarkdown's main parser, so footnotes used inside one
+are collected into the document's footnote section just as they are anywhere
+else. Both the reference form and JMarkdown's [inline footnote](footnotes.html)
+form work:
+
+:::markdown-demo
+Replicator dynamics:: A model of how strategy
+   frequencies change over time in a
+   population.[^rep: An inline footnote, body and all in one place.]
+
+Reference form:: Also fine.[^ref]
+
+[^ref]: Defined with the usual reference-style footnote syntax.
+:::
+
+(The footnote markers in the rendered panel above link down to the page's
+footnote section, which collects every footnote in the document.)
+
+## Styling the list
+
+JMarkdown emits plain, unstyled `<dl>`, `<dt>`, and `<dd>` elements and invents
+no appearance for them — the look is yours to supply with CSS, exactly as with the
+[block environments](block-environments.html) you define. A two-column layout,
+with the term in one column and the description in the next, reads well for
+glossaries; CSS grid makes it a few lines. The CSS used to format every example
+on this page is:
+
+```html
+<style>
+	dl {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		column-gap: 0.75em;
+	}
+	dl dt {
+		font-weight: bold;
+	}
+	dl dt:after {
+		content: ":";
+	}
+	dl dd p {
+		margin-bottom: 6pt !important;
+	}
+	dl dd p:not(:first-of-type) {
+		margin-top: 6pt !important;
+	}
+</style>
+```
+
+Place a style block like this in the document's metadata-driven head, in a
+project stylesheet, or inline near the top of the source. The `grid-template-columns: auto 1fr`
+rule sizes the term column to its content and lets the description take the rest;
+the `dt:after` rule appends the trailing colon as decoration so you do not type
+it. None of this is required — without it the list still renders correctly, just
+with the browser's default block styling.
+
+## Reference
+
+### Syntax
+
+| Form | Meaning |
+|---|---|
+| `term:: description` | Term and description on one line |
+| `term::` then an indented block | Description begins on the following indented line(s) |
+| Indented `::` line inside a description | Starts a nested description list |
+| Blank line within a description | Paragraph break; does not end the list |
+| Line at/below base indent without `::` | Ends the list |
+
+### Generated structure
+
+| Source | HTML |
+|---|---|
+| The whole run of pairs | `<dl>…</dl>` |
+| Each term | `<dt>…</dt>`, rendered as **inline** Markdown |
+| Each description | `<dd>…</dd>`, rendered as a **block** of Markdown |
+
+### Matching rules
+
+| Detail | Behaviour |
+|---|---|
+| Marker | A double colon `::` |
+| Required after marker | Whitespace or end of line (so `foo::bar` is left alone) |
+| Single colon in the term | Allowed — treated as ordinary text |
+| Continuation indent | Strictly greater than the term's base indent; any amount (spaces or tab) |
+| Inline Markdown in term | Yes |
+| Block Markdown in description | Yes — paragraphs, code, lists, nested lists |
+| Metadata or extension to enable | None — the extension is always registered |
+
+## Output format and limitations
+
+Description lists are an **HTML feature**. The extension emits literal `<dl>`,
+`<dt>`, and `<dd>` markup, and it does so even when JMarkdown is run in LaTeX
+mode (`--to latex`) — it has no LaTeX renderer, so the raw HTML tags would leak
+into a `.tex` file. If you are authoring for print, wrap a glossary in your own
+[block environment](block-environments.html) (where you can supply both an
+`html` and a `latex` renderer) rather than relying on the description-list
+syntax.
+
+For other Markdown extensions in JMarkdown, see [Inline Syntax](inline-syntax.html)
+and [Block Environments](block-environments.html).

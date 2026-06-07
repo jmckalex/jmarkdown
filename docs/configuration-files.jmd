@@ -1,0 +1,368 @@
+Title: Configuration Files
+------------------------------------
+
+# Configuration files
+
+A JMarkdown document rarely lives alone. You usually want the same highlighting
+theme, the same MathJax setup, the same web fonts, and perhaps the same custom
+directives across every file in a project — and a different, personal set of
+defaults across *all* your projects. Repeating that boilerplate in every
+document's [metadata header](metadata-header.html) is tedious and drifts out of
+sync. **Configuration files** solve this: they let you set defaults once, at the
+machine level and at the project level, and have every document inherit them.
+
+A configuration file is a JSON file named `config.json` living inside a
+`.jmarkdown/` directory. JMarkdown reads up to two of them, layers them on top of
+its own built-in defaults, and then lets the document's metadata header have the
+final say. The result is a clean precedence chain: ship sensible defaults, override
+them per machine, override *those* per project, and override *those* per document.
+
+This page explains where the files live, exactly how they are merged, what every
+setting means, and the command-line tools (`jmarkdown options` and
+`jmarkdown init`) that help you create and inspect them.
+
+## Where configuration comes from
+
+When `jmarkdown` starts, it assembles the active configuration from up to four
+layers. Each layer is merged on top of the one before it, so **later layers win**:
+
+| Order | Layer | Scope | How to edit |
+|---|---|---|---|
+| 1 | Built-in defaults | Hard-coded in JMarkdown | (not editable; see `jmarkdown options`) |
+| 2 | User config | Everything you process on this machine | `~/.jmarkdown/config.json` |
+| 3 | Project config | Files processed from this working directory | `./.jmarkdown/config.json` |
+| 4 | Metadata header | The single document being processed | the document's own header |
+
+The two `config.json` files are looked up in fixed locations:
+
+1. In the **current user's home directory**: `~/.jmarkdown/config.json`. Use this
+   for personal, machine-wide preferences — your preferred highlight theme, a
+   FontAwesome kit URL, a TiKZ Ghostscript path, and so on.
+2. In the **current working directory** from which `jmarkdown` is invoked:
+   `./.jmarkdown/config.json`. This is the directory where the document being
+   processed lives, so use it for project-specific settings — the bibliography
+   file, project-wide directives, a custom output template.
+
+Both files are optional. If neither exists, JMarkdown falls back entirely to its
+built-in defaults, which are deliberately chosen so that a document will produce
+a working HTML file with no configuration at all. Those defaults include:
+
+* A URL that loads the free version of the [FontAwesome](https://fontawesome.com/)
+  icon set.
+* A URL that loads [Mermaid](mermaid-diagrams.html), the diagramming language.
+* A URL for a `highlight.js` theme used for [code highlighting](code-highlighting.html).
+* A basic [MathJax](math-support.html) configuration for rendering mathematics.
+
+Because of layer 4, anything you set in a config file can still be overridden for
+one document by writing the same key in that document's metadata header. The
+[metadata header](metadata-header.html) page documents the header form of each
+key; this page documents the JSON form and the merge rules that tie the two
+together.
+
+## File format
+
+A configuration file is ordinary JSON: a single object whose keys are
+configuration settings. Keys are written as **capitalised words with spaces** —
+`"Highlight theme"`, `"Body classes"`, `"LaTeX preamble"` — not hyphenated or
+camel-cased. A minimal personal config might be as short as this:
+
+```json
+{
+    "Highlight theme": "atom-one-dark",
+    "Body classes": "wide serif"
+}
+```
+
+You only list the keys you want to change. Every key you omit keeps its value
+from the layer below (the built-in default, or the user config). There is no need
+to copy the entire default object into your file — in fact you should not, because
+copying a key freezes it at the value you copied, defeating future default
+changes.
+
+## How layers are merged
+
+Merging is **key by key**, and the rule depends on the *type* of the value:
+
+* **Scalars** (strings, numbers, booleans) — a later layer's value replaces the
+  earlier one outright. Setting `"Highlight theme"` in the project config wins
+  over the same key in the user config.
+* **Objects** (nested settings, e.g. `"Biblify"` or `"MathJax"`) — merged
+  *recursively*, key by key. You can override one field of a nested object without
+  having to restate the others. For example, supplying only a new `"MathJax.src"`
+  leaves the existing `"MathJax.configuration"` intact.
+* **Arrays** (e.g. `"Directives"`, `"Extensions"`, `"HTML header"`) — the later
+  layer's array **replaces** the earlier one wholesale; arrays are *not*
+  concatenated. This is the one exception to the "merge recursively" rule, and it
+  is deliberate: it lets a project config declare exactly the directives it wants
+  without inheriting a stray entry from your personal config.
+
+To make the array rule concrete, suppose your user config declares two extension
+files:
+
+```json
+{
+    "Extensions": [
+        "/Users/me/.jmarkdown/ext/smallcaps.js",
+        "/Users/me/.jmarkdown/ext/sidenote.js"
+    ]
+}
+```
+
+…and a project config declares its own:
+
+```json
+{
+    "Extensions": [
+        "/path/to/project/ext/glossary.js"
+    ]
+}
+```
+
+The project that runs in that directory gets **only** `glossary.js` — the two
+personal extensions are *replaced*, not added to. If you want all three, list all
+three in the project file. (Contrast this with a nested object such as `"Biblify"`,
+where setting just `"bibliography"` in the project config leaves the other Biblify
+fields untouched.)
+
+## Inspecting the defaults: `jmarkdown options`
+
+To see exactly what JMarkdown's built-in defaults are — the values that sit at the
+very bottom of the merge chain — run:
+
+```
+jmarkdown options
+```
+
+It prints the default configuration as formatted JSON. This is the canonical
+reference for which keys exist and what their default values are; it is generated
+from the source, so it can never drift from reality. The current output is:
+
+```json
+{
+    "Lang": "en",
+    "Highlight theme": "atom-one-light",
+    "Body classes": "",
+    "Biblify activate": false,
+    "Biblify": {
+        "add helper function": true,
+        "add section heading": true,
+        "add toc entry": true,
+        "bibliography": "",
+        "bibliography style": "",
+        "defer": false
+    },
+    "Directives": [],
+    "Extensions": [],
+    "Environments": [],
+    "Fontawesome": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/js/all.min.js",
+    "Mermaid": "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js",
+    "Highlight src": "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css",
+    "HTML header": [],
+    "HTML footer": [],
+    "LaTeX preamble": [],
+    "MathJax": {
+        "configuration": "MathJax = {\n\t\t\ttex: {\n\t\t\t    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],\n\t\t\t    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],\n\t\t\t\ttags: 'ams'\n\t\t\t}\n\t\t}",
+        "src": "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+    },
+    "Optionals": [],
+    "Template": "default",
+    "TiKZ libgs": "/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib",
+    "TiKZ optimise": "group-attributes,collapse-groups",
+    "Code language": "text",
+    "Block elements": "hyphenated"
+}
+```
+
+Treat this as a menu, not a template: copy *individual* keys into your own
+`config.json` when you want to change them, but don't paste the whole object.
+
+## Creating a project: `jmarkdown init`
+
+To scaffold a new project in the current directory, run:
+
+```
+jmarkdown init
+```
+
+If the directory does not already have a `.jmarkdown/` directory, `init` creates
+it. Inside it, `init` writes a file called **`config-template.json`** containing
+the full set of built-in defaults (the same object `jmarkdown options` prints).
+
+Why `config-template.json` rather than `config.json`? Because the file is a
+*starting point*, not a live configuration. Recall the merge rules: a project
+`config.json` is layer 3, sitting on top of your personal `~/.jmarkdown/config.json`
+(layer 2). If `init` wrote a `config.json` pre-filled with *every* default value,
+that file would override every setting you had carefully customised in your
+personal config — silently clobbering them. By writing `config-template.json`
+instead, `init` hands you a complete reference you can read, then rename to
+`config.json` after pruning it down to only the keys this project actually needs
+to change.
+
+So the intended workflow is:
+
+1. `jmarkdown init` — creates `.jmarkdown/config-template.json`.
+2. Open `config-template.json`, delete every key you are happy to inherit, and
+   keep only the few you want to override for this project.
+3. Rename (or copy) the trimmed file to `.jmarkdown/config.json`.
+
+`init` is conservative: if a `.jmarkdown/config.json` already exists it does not
+touch it, and if `config-template.json` already exists it will not overwrite that
+either, so re-running `init` is safe. (`init` has further options — `-f` to
+scaffold a starter document, `-m` for a Makefile, `-p` for the PDF-export
+utility — which are covered on the [Sources and Targets](sources-and-targets.html)
+page.)
+
+## Reference: configuration keys
+
+Every key below may appear in either `config.json` file or in a document's
+metadata header. Keys that the metadata header expresses differently are
+cross-referenced to the [metadata header](metadata-header.html) page, which is
+the authoritative source for the header syntax.
+
+### Output and appearance
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `Lang` | string | `"en"` | The `lang` attribute on the output document's root element. |
+| `Highlight theme` | string | `"atom-one-light"` | The `highlight.js` theme name for [code highlighting](code-highlighting.html). It is interpolated into `Highlight src` (below). |
+| `Highlight src` | string | a cdnjs URL | The stylesheet URL for the highlight theme. The token `{{Highlight_theme}}` inside it is replaced with the `Highlight theme` value, so changing the theme name is usually all you need. |
+| `Body classes` | string | `""` | Text placed in the `class` attribute of the output `body` element, so your CSS can key off it. |
+| `Template` | string | `"default"` | `"default"` uses JMarkdown's built-in HTML template; any other value is a path (relative to the document) to a custom [Mustache template](output-templates.html). |
+| `Code language` | string | `"text"` | The fallback language used by the [LaTeX renderer](sources-and-targets.html) for fenced code blocks that carry no language tag. |
+
+### Injected markup and scripts
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `Fontawesome` | string | a jsDelivr URL | URL of the FontAwesome script loaded in the document head. Set to a falsy value to omit it. |
+| `Mermaid` | string | a jsDelivr URL | URL of the [Mermaid](mermaid-diagrams.html) script loaded in the head. |
+| `HTML header` | array | `[]` | Lines of raw HTML inserted just before the closing head tag. |
+| `HTML footer` | array | `[]` | Lines of raw HTML inserted just before the closing body tag. |
+| `MathJax` | object | see defaults | `MathJax.configuration` is the inline config script; `MathJax.src` is the MathJax library URL. See [Math support](math-support.html). |
+
+### Extensibility
+
+These keys take **arrays of file paths**, loaded when the document is processed.
+In a config file the paths are taken as given, so use **absolute paths**. (In a
+metadata header you instead use the `Load directives`, `Load extensions`, and
+`Load environments` keys, whose paths resolve relative to the document — see the
+[metadata header](metadata-header.html) page.)
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `Directives` | array | `[]` | Custom [container/inline directives](directives-syntax.html) to register, by file path. |
+| `Extensions` | array | `[]` | Custom marked.js [extensions](extensions-simple.html) to register, by file path. |
+| `Environments` | array | `[]` | Custom [block environments](block-environments.html) (`@begin … @end`) to register, by file path. |
+| `Optionals` | array | `[]` | Names (optionally with `[true]`/`[false]`) for [optional containers](comments-and-optionals.html) that include or exclude their contents. |
+| `Block elements` | string | `"hyphenated"` | How an undefined `@begin(name)` block renders in HTML: `"hyphenated"` (hyphenated names become custom elements, others `div.class`), `"all"` (always a custom element), or `"none"` (always `div.class`). See [block environments](block-environments.html). |
+
+### Bibliographies
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `Biblify activate` | boolean | `false` | Whether to enable [bibliographic support](bibliographic-support.html). |
+| `Biblify` | object | see defaults | Nested Biblify settings: `bibliography` (path to a `.bib` file), `bibliography style` (a built-in style name or a path to a CSL file), `defer`, `add helper function`, `add section heading`, `add toc entry`. |
+
+Because `Biblify` is a nested object, project-level overrides merge field by
+field. A project config can point at a project-specific bibliography without
+restating the rest:
+
+```json
+{
+    "Biblify activate": true,
+    "Biblify": {
+        "bibliography": "/path/to/project/refs.bib",
+        "bibliography style": "chicago"
+    }
+}
+```
+
+### TiKZ
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `TiKZ libgs` | string | a Homebrew path | Absolute path to the Ghostscript shared library used when rasterising [TiKZ diagrams](tikz-diagrams.html). Almost always needs editing for your machine. |
+| `TiKZ optimise` | string | `"group-attributes,collapse-groups"` | SVG optimisation passes applied to TiKZ output. |
+| `LaTeX preamble` | array | `[]` | Lines added verbatim to the LaTeX preamble — useful for `\usepackage` lines needed by TiKZ pictures or by LaTeX output generally. |
+
+The `TiKZ libgs` default points at a specific Homebrew Ghostscript build and will
+not match your system, so a personal `~/.jmarkdown/config.json` that fixes the
+path once is the typical first thing to set up if you use TiKZ:
+
+```json
+{
+    "TiKZ libgs": "/opt/homebrew/lib/libgs.dylib"
+}
+```
+
+## A worked example
+
+Here is a realistic two-file setup. The personal config, in
+`~/.jmarkdown/config.json`, captures preferences that apply to everything this
+author writes:
+
+```json
+{
+    "Highlight theme": "atom-one-dark",
+    "TiKZ libgs": "/opt/homebrew/lib/libgs.dylib",
+    "HTML header": [
+        "<link rel=\"icon\" href=\"/favicon.svg\">"
+    ]
+}
+```
+
+The project config, in `./.jmarkdown/config.json`, layers project-specific
+settings on top — turning on bibliographies and a project template, while
+*inheriting* the dark highlight theme and the Ghostscript path from the personal
+config above:
+
+```json
+{
+    "Template": "book.html.mustache",
+    "Body classes": "manuscript",
+    "Biblify activate": true,
+    "Biblify": {
+        "bibliography": "/Users/me/book/references.bib",
+        "bibliography style": "chicago"
+    }
+}
+```
+
+A document processed from the project directory therefore receives: the dark
+theme and Ghostscript path (from the personal config), the template, body class,
+and bibliography (from the project config), and everything else from the built-in
+defaults. Any one document can still override any of these in its own metadata
+header — for instance, a single chapter that wants the light theme can write
+`Highlight theme: atom-one-light` in its header without disturbing the rest of the
+project.
+
+## Notes and gotchas
+
+* **Edit, don't copy.** Put only the keys you want to change in a `config.json`.
+  Copying the whole default object freezes every value and stops you from
+  inheriting future default improvements.
+* **Arrays replace; objects merge.** The single most common surprise is expecting
+  array keys (`Directives`, `Extensions`, `Environments`, `HTML header`, …) to
+  accumulate across layers. They do not — a later array wins entirely. Nested
+  objects (`Biblify`, `MathJax`) *do* merge field by field.
+* **Absolute paths in config files.** Paths listed under `Directives`,
+  `Extensions`, and `Environments` in a `config.json` are used as given, so make
+  them absolute. The metadata-header forms (`Load …`) resolve relative to the
+  document instead.
+* **`config-template.json` is inert.** `jmarkdown init` writes a *template*, not a
+  live config, precisely so it cannot clobber your personal settings. Nothing reads
+  `config-template.json`; rename it to `config.json` once you have trimmed it.
+* **The metadata header always wins.** A document's own header is the last layer,
+  so it can override anything a config file set. Use this for one-off exceptions
+  rather than scattering project settings across many headers.
+
+## See also
+
+* [Metadata Header](metadata-header.html) — the per-document form of every setting,
+  plus header-only keys such as `CSS`, `Script`, and `Custom element`.
+* [Output Templates](output-templates.html) — writing the Mustache template named
+  by the `Template` key.
+* [Sources and Targets](sources-and-targets.html) — the other `jmarkdown init`
+  options (`-f`, `-m`, `-p`) and HTML-vs-LaTeX output.
+* [Bibliographic Support](bibliographic-support.html) — the `Biblify` keys in
+  depth.

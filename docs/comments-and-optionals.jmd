@@ -1,0 +1,339 @@
+Title: Comments And Optionals
+Optionals: answers directions
+------------------------------------
+
+# Comments and optionals
+
+Almost every authoring system has prose that you do *not* want in the final
+document: a reminder to yourself, a passage you have cut but are not ready to
+delete, an aside that is true but off-topic. Standard Markdown has no syntax for
+this — the closest you can do is wrap text in an HTML comment, which is awkward
+across multiple paragraphs and useless when you are targeting LaTeX. JMarkdown
+fills the gap with two related facilities:
+
+- **Comments** — text that is hidden by default but that you can switch back on
+  without deleting it. There is a block form (the `comment` environment) for
+  whole passages and an inline form (a `%`-to-end-of-line marker, TeX-style) for
+  trailing notes.
+- **Optionals** — *named* hide-able regions that you declare once in the
+  metadata header and can flip on or off as a group. The motivating case is a
+  worksheet whose answers are present in the source but emitted only when you
+  ask for the answer key.
+
+Both rest on a single underlying behaviour: a *named region whose content is
+emitted only when its `include` flag is true*. A comment is just an optional
+named `comment` whose default is "off"; an optional you declare is the same
+mechanism under a name of your choosing. Understanding that one idea makes the
+whole page fall into place, so we lead with it.
+
+(Throughout, the live demos show the source on the left and its rendered result
+on the right, so the examples can never drift from what JMarkdown actually does.)
+
+## Block comments
+
+The `comment` environment is built in — it is always available, with no
+declaration or import. Anything inside it is dropped from the output:
+
+```markdown
+:::comment
+All of this text will be ignored.
+
+And the comment can span multiple blocks.
+:::
+```
+
+It is genuinely multi-block: paragraphs, lists, headings, and even other
+environments inside it all vanish together, which is what makes it suitable for
+parking large passages you may want back later. When that day comes, you do not
+have to hunt for the closing marker and unwrap anything — you flip one
+attribute:
+
+```markdown
+:::comment{include=true}
+All of this text will now be included in the output.
+
+And the comment can span multiple blocks.
+:::
+```
+
+`{include=true}` says "emit this region after all"; with it, the body is
+processed and rendered exactly as ordinary prose. (`{include=false}` is the
+default and is accepted explicitly if you like to be unambiguous.) That single
+toggle is the whole comment/optional model: hidden by default, shown on request.
+
+### The `@begin … @end` form
+
+Every comment region has an equivalent spelling as a [block
+environment](block-environments.html). The named-block form
+
+```
+@begin(comment)
+…hidden text…
+@end(comment)
+```
+
+behaves identically to the colon-delimited `comment` directive — same default
+(hidden), same `{include=true}` toggle. Use whichever you prefer; the two are
+interchangeable.
+
+The named-block form is often the more comfortable one when a comment lives
+*inside* another container, because the closer names what it closes and so does
+not depend on counting colons. Here is a live demonstration — the first comment
+is hidden, the second carries `{include=true}` and so appears in the output on
+the right:
+
+:::markdown-demo
+Visible before the notes.
+
+@begin(comment)
+A private reminder to myself — hidden by default, so it
+does not appear.
+@end(comment)
+
+@begin(comment){include=true}
+This note carries `include=true`, so it *is* rendered on the right.
+@end(comment)
+
+Visible after the notes.
+:::
+
+The directive form produces exactly the same result. (Note the colon counting:
+the outer `markdown-demo` container uses *more* colons than the `comment`
+directive inside it — five against three — because colon-delimited containers
+nest by colon count. This is precisely the bookkeeping the `@begin … @end` form
+lets you skip.)
+
+:::::markdown-demo
+Visible before the notes.
+
+:::comment
+Hidden by default — a private reminder that does not appear.
+:::
+
+:::comment{include=true}
+Shown, because `include=true`.
+:::
+
+Visible after the notes.
+:::::
+
+## Inline comments
+
+For a short note at the end of a line — too small to be worth a whole
+environment — JMarkdown provides an inline comment marker. By default it is the
+`%` character, exactly as in TeX: everything from the marker to the end of the
+line is removed.
+
+:::markdown-demo
+This sentence is visible. %but this trailing note is stripped from the output
+The next line continues normally.
+:::
+
+The comment does not vanish without a trace: it is replaced by an HTML comment,
+so the rendered page contains `<!-- Markdown source commented out -->` where the
+note used to be. That marker is invisible in the browser but visible if you view
+source — a deliberate, low-noise breadcrumb that *something* was elided here.
+
+### Choosing and preserving the comment text
+
+The inline marker is configured through the `Inline comment` metadata key, whose
+value is the marker character optionally followed by a boolean:
+
+```
+Inline comment: <character> [true|false]
+```
+
+- The **character** sets the marker. Any single character (or short string)
+  works; regex metacharacters such as `*` or `(` are handled safely, so you are
+  free to pick `#` or `;;` if `%` clashes with your prose.
+- The **boolean** (default `false`) controls whether the comment *text* is kept.
+  With `false`, the note is replaced by the generic
+  `<!-- Markdown source commented out -->` placeholder shown above. With `true`,
+  the actual text is preserved inside the HTML comment, so the source
+  `Visible %hidden note` renders as `Visible <!-- hidden note -->` — handy when
+  the comments are review notes you want to read in the page source.
+
+For example, `Inline comment: ## true` makes `##` the marker *and* preserves the
+commented text in the output. If the key is absent, JMarkdown behaves as though
+you had written `Inline comment: % false`.
+
+### A note on `%` and mathematics
+
+Because `%` is the TeX comment character and JMarkdown treats it the same way,
+take care if your prose contains literal percent signs — `50% off` would lose
+everything after the `%`. Two facts soften this:
+
+- Inside math, `%` is safe. Math spans such as `$50\%$` are passed through
+  untouched, so the marker only fires in ordinary prose.
+- If your text uses percent signs heavily, change the marker to something you
+  never type at the start of a comment (for instance `Inline comment: ;;`).
+
+## Optionals
+
+The `comment` environment is for text you are hiding *because it is a comment*.
+Often, though, you want to mark a region for conditional inclusion for reasons
+that have nothing to do with commenting — the classic case being the answers in
+a problem set, which live in the same source as the questions but should appear
+only in the instructor's copy. **Optionals** are named, declarable comment
+regions built for exactly this.
+
+You declare them once, in the metadata header, as a space-separated list of
+names:
+
+```
+Optionals: answers directions
+```
+
+Each name becomes a hide-able region usable both as a colon-delimited container
+directive and as a named block environment, with the same `{include=true}`
+toggle as a comment. The two spellings for a declared `answers` optional are:
+
+```markdown
+:::answers
+…answer text…
+:::
+```
+
+```
+@begin(answers)
+…answer text…
+@end(answers)
+```
+
+By default every optional is **not included** — declaring `answers` gives you a
+region that is hidden unless asked for, just like a comment but under a name that
+documents its purpose.
+
+### Default state and the `[true]` suffix
+
+If a particular optional should default to *being shown*, put `[true]` after its
+name. You can mix defaults freely:
+
+```
+Optionals: answers directions[true] hints
+```
+
+Here `directions` are shown by default while `answers` and `hints` are hidden.
+For symmetry you may write `[false]` explicitly (`answers[false]`); it is the
+default and changes nothing, but it can make intent clear in a long list.
+
+### Using a declared optional
+
+Once declared, an optional region is written like any other hide-able
+environment. This page declares `Optionals: answers directions` in its own
+header, so the demo below is live — `answers` defaults to hidden, and you can see
+that the answer region is correctly absent from the rendered output on the
+right:
+
+:::::::markdown-demo
+::::my-quiz
+1. What is the answer to this question?
+   :::answers
+   *Answer.* I don't know.
+   :::
+
+2. What is the answer to this harder question?
+   :::answers
+   *Answer.* I still don't know — why are you asking me?
+   :::
+
+3. Write your thoughts about this exam.
+::::
+:::::::
+
+The `my-quiz` and `answers` names render as custom elements (`<my-quiz>`,
+`<answers>`) — that is the generic behaviour of colon-delimited containers, and
+you supply the matching CSS. The point here is the visibility: the three
+`answers` regions are present in the source but suppressed in the output because
+the optional defaults to off.
+
+To produce the answer key, you do **not** edit the body at all. You change one
+line in the header so the optional defaults to shown:
+
+```
+Optionals: answers[true] directions
+```
+
+With that single edit, every `answers` region across the whole document is
+emitted, and the same source now renders the worked answers inline. (You can
+still override an individual region the other way with an explicit
+`{include=true}` or `{include=false}` on that one block.)
+
+### Project- and global-level optionals
+
+The metadata header is per file. If the same set of optionals applies across a
+whole project — every chapter of a book, say — set them once in a project or
+global `.jmarkdown/config.json` under the `Optionals` key rather than repeating
+the header line in every file. The header value, when present, takes precedence,
+following JMarkdown's usual configuration layering (see
+[Configuration files](configuration-files.html)).
+
+> [!TIP]
+> If you find yourself using an optional heavily — wrapping every answer in an
+> `answers` region and hand-typing "*Answer.*" each time — consider promoting it to a
+> custom directive instead of an `Optionals` entry. A directive of your own can
+> generate the "*Answer.*" lead-in automatically, so the body of each region is
+> just the answer text. See [Simple extensions](extensions-simple.html) and
+> [Complex extensions](extensions-complex.html) for how to write one.
+
+## Reference
+
+### Block comment syntax
+
+| Form | Effect |
+|---|---|
+| `:::comment … :::` | Hide the enclosed blocks (default). |
+| `:::comment{include=true} … :::` | Emit the enclosed blocks. |
+| `@begin(comment) … @end(comment)` | Named-block equivalent; hidden by default. |
+| `@begin(comment){include=true} … @end(comment)` | Named-block equivalent; emitted. |
+
+Colon-delimited containers nest by colon count: a `comment` placed inside
+another container must use *fewer* colons than its enclosing container (3 for the
+inner, 5 or more for the outer, and so on). The `@begin … @end` form nests by
+name and needs no counting.
+
+### Inline comment syntax
+
+| Metadata line | Marker | Comment text in output |
+|---|---|---|
+| *(none)* | `%` | replaced by `<!-- Markdown source commented out -->` |
+| `Inline comment: #` | `#` | replaced by the generic placeholder |
+| `Inline comment: % true` | `%` | preserved as `<!-- the actual text -->` |
+| `Inline comment: ;; false` | `;;` | replaced by the generic placeholder |
+
+The marker hides from its first occurrence on a line to the end of that line.
+Markers inside math spans are not treated as comments.
+
+### Optionals
+
+| Header form | Meaning |
+|---|---|
+| `Optionals: answers` | Declare `answers`; default hidden. |
+| `Optionals: answers[true]` | Declare `answers`; default shown. |
+| `Optionals: answers[false]` | Declare `answers`; default hidden (explicit). |
+| `Optionals: a b c` | Declare several at once, space-separated. |
+
+Each declared name is available in every form a comment is, substituting the
+name for `comment`:
+
+```
+:::name … :::            (container directive; 3 to 8 colons for nesting)
+@begin(name) … @end(name)   (named block environment)
+```
+
+Every region honours an explicit `{include=true}` or `{include=false}` that
+overrides the declared default for that one block.
+
+## See also
+
+- [Block environments](block-environments.html) — the `@begin … @end` syntax,
+  including how to define environments of your own.
+- [Directive syntax](directives-syntax.html) — the colon-delimited container,
+  block, and inline directive forms and their nesting rules.
+- [The metadata header](metadata-header.html) — where `Optionals` and
+  `Inline comment` are declared, and the full set of header keys.
+- [Configuration files](configuration-files.html) — setting `Optionals`
+  project- or system-wide.
+- [Simple extensions](extensions-simple.html) and
+  [Complex extensions](extensions-complex.html) — writing a custom directive
+  when an optional is not expressive enough.

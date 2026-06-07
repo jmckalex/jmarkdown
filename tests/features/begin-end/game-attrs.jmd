@@ -1,0 +1,5 @@
+@begin(game){math=all}
+       s_1    & s_2
+s_1    & (1,1) & (0,0)
+s_2    & (0,0) & (1,1)
+@end(game)

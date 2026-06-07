@@ -5,6 +5,8 @@
 	typesetting (and even footnotes!) to be included.
 */
 
+import { registerBlockEnvironment } from './begin-end-core.js';
+
 const strategicFormGame = {
 	level: 'container',
 	marker: ':::',
@@ -319,5 +321,32 @@ function get_row_strategies(matrix) {
 	row_strategies = row_strategies.map(str => str.split("&").shift().trim());
 	return row_strategies;
 }
+
+/*
+	Mirror :::game as @begin(game), reusing the directive's own tokenizer and
+	renderer verbatim (the strongest no-drift guarantee — same functions, not
+	copies). Two boundary adaptations are needed:
+
+	  • Shape the body like a container directive's content. @begin hands us the
+	    dedented body without the leading '\n' the tokenizer expects (it shifts
+	    that first empty line off), and with a trailing newline before @end that
+	    would otherwise read as a spurious info-section separator. Prepending '\n'
+	    and trimming trailing newlines makes the tokenizer input byte-identical to
+	    the :::game case.
+	  • The directive renderer keys off token.meta.name and reads this.parser, so
+	    we set meta.name and call it with the active parser as `this`. It already
+	    branches on global.isLatex, so one format-independent `render` covers both
+	    outputs (the LaTeX path stays here, in JMarkdown's layer, not the core).
+
+	mode 'custom' gives the tokenize hook this.lexer for tokenising labels.
+*/
+registerBlockEnvironment('game', {
+	mode: 'custom',
+	tokenize(body, token) {
+		token.meta = { name: 'game' };
+		strategicFormGame.tokenizer.call(this, '\n' + body.replace(/\n+$/, ''), token);
+	},
+	render: (ctx) => strategicFormGame.renderer.call({ parser: ctx.parser }, ctx.token)
+});
 
 export default strategicFormGame;

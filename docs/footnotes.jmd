@@ -1,0 +1,265 @@
+Title: Footnotes
+------------------------------------
+
+# Footnotes
+
+A *footnote* attaches a note to a point in your prose: a small superscript
+number at the reference, and the note itself collected elsewhere — at the foot of
+the page in print, in an endnotes section on the web. JMarkdown gives you two
+ways to write one, and the choice between them is the whole story of this page.
+
+The first is the familiar GitHub-flavoured-Markdown (GFM) form, in which the
+reference and the note body live apart: you drop a `[^label]` marker in the text
+and define its body in a separate block somewhere else. The second — the form
+JMarkdown adds and recommends — is the **inline footnote**, in which the body
+lives *right inside the marker*, at the exact spot in the sentence where the note
+belongs:
+
+```
+This claim needs qualification[^why: but only a little, as we shall see].
+```
+
+The inline form keeps the note next to the thing it annotates, so the source
+reads the way the argument runs, and — crucially — it is the only form that
+**produces correct LaTeX**. Throughout this page the live demos show the source
+on the left and the rendered result on the right; the collected notes appear in
+the page's own Endnotes section, at the very bottom.
+
+## The inline footnote
+
+An inline footnote is a bracketed span whose body follows a label and a colon.
+There are two shapes:
+
+```
+…text[^label: the note body goes here]…       — explicitly labelled
+…text[fn: the note body goes here]…           — anonymous (auto-numbered)
+```
+
+The reference renders as a superscript number; the body is rendered as Markdown
+and collected into the Endnotes section. The number is assigned in document
+order, not from the label — the label only names the anchor that links the
+reference to its note and back again.
+
+:::markdown-demo
+Most claims in this field rest on an
+idealisation[^ideal: agents are assumed perfectly
+rational, which is rarely true] that deserves scrutiny.
+:::
+
+### Labelled versus anonymous
+
+Use the labelled form, `[^label: …]`, when you want a stable, human-readable
+anchor — useful if you link to the note, or simply prefer that the generated
+`id` attributes (`fn-label`, `fnref-label`) be legible. The `label` may not
+contain whitespace, a closing bracket, or a colon; the first colon ends the
+label and begins the body.
+
+Use the anonymous form, `[fn: …]`, when the label would be busywork. JMarkdown
+assigns an internal label automatically, so you never have to invent or
+keep track of one:
+
+:::markdown-demo
+The proof has two gaps[fn: one in Lemma 3] that the
+author acknowledges[fn: see the footnote on page 40]
+but does not close.
+:::
+
+Both forms share one numbering sequence and one Endnotes section, so you can mix
+them freely — number the ones you reference, leave the rest anonymous.
+
+### Markdown inside the body
+
+A single-paragraph body is rendered as **inline** Markdown, so the usual
+inline syntax works: emphasis, links, code spans, and math all behave as they
+would in running text.
+
+:::markdown-demo
+Compare the two editions[^eds: the */revised/* text
+adds a chapter, available [online](https://example.com),
+and corrects the bound $\epsilon$ to $\delta$].
+:::
+
+Because the body is scanned with a bracket-aware reader, brackets that appear
+inside math (`$…$` and `$$…$$`), inside code spans, or after a backslash escape
+do **not** prematurely close the footnote. You can write an interval or an array
+index in a note without escaping anything:
+
+:::markdown-demo
+This bound[^bnd: holds on the closed interval
+$[a, b]$, and in code as `arr[i]` for every valid
+`i`] is tight.
+:::
+
+## Multi-paragraph footnotes
+
+When a note needs more than one paragraph, give it a body with blank lines and
+indent the continuation. JMarkdown detects the blank line, lifts the whole body
+out before parsing, dedents it, and renders it as **block-level** Markdown — so
+multiple paragraphs (and the inline syntax within them) come through intact:
+
+:::markdown-demo
+The standard account is incomplete[^acct:
+
+    The first objection is empirical: the data do not fit the model
+    in the tails.
+
+    The second is conceptual, and turns on what we mean by
+    */rational/* in the [usual sense](https://example.com).
+] in two distinct ways.
+:::
+
+Two rules make multi-paragraph footnotes predictable:
+
+- **A blank line is the trigger.** A body containing a blank line is treated as
+  multi-paragraph and parsed as blocks; a body with no blank line stays
+  single-paragraph and is parsed inline. Nothing else changes the mode.
+- **Indent the continuation consistently.** The indentation of the first
+  continuation line sets the base level, and that level is stripped from every
+  line so the body becomes valid top-level Markdown. Use the same indent (a tab,
+  or a fixed number of spaces) throughout the body. Multi-paragraph footnotes are
+  best suited to prose paragraphs; for richly structured note bodies, prefer the
+  GFM reference form described below, whose block parsing is less sensitive to
+  indentation.
+
+The closing `]` sits on its own line after the last paragraph, as in the demo
+above. Everything between the `:` and that `]` is the body.
+
+## The GFM reference form
+
+JMarkdown also accepts the standard GFM footnote, in which the marker and the
+definition are written separately. A `[^label]` with **no colon** is a
+reference; its body is a block elsewhere in the document that begins
+`[^label]:`. This is the syntax GitHub renders, and it is handy when the same
+note is referenced from more than one place, or when you want the note body to
+contain elaborate block content (lists, blockquotes, tables, code fences), which
+the GFM definition block parses robustly.
+
+```
+Here is a claim that needs support[^src].
+
+[^src]: The supporting reference. The definition block can be
+    anywhere in the document, and may contain several paragraphs,
+
+    - lists,
+    - blockquotes, and
+    - even fenced code, when indented under the definition.
+```
+
+The single character that chooses between the two systems is the **colon inside
+the brackets**: `[^x: body]` is an inline footnote (body in place), while `[^x]`
+plus a separate `[^x]: body` is a GFM reference. JMarkdown's inline extension is
+deliberately registered so that the colon form is recognised first; without a
+colon, the marker falls through to the GFM handler.
+
+## Choosing between the two forms
+
+The two systems are independent — they are different extensions with different
+renderers, and they do **not** share a counter or a section. That independence
+is the key practical fact, and it drives the recommendation.
+
+| | Inline footnote | GFM reference |
+|---|---|---|
+| Syntax | `[^label: body]` or `[fn: body]` | `[^label]` plus `[^label]: body` |
+| Body location | in place, at the reference | in a separate definition block |
+| Single-paragraph body | inline Markdown | inline Markdown |
+| Multi-paragraph body | paragraphs (prose) | full block content |
+| HTML output | Endnotes section | Footnotes section |
+| **LaTeX output** | **`\footnote{…}`** | **leaks raw HTML — avoid in LaTeX** |
+
+In a JMarkdown document the inline form is the right default. It keeps the note
+beside the text it annotates, and — decisively for a system whose point is one
+source for both web and print — it is the form that compiles to a real LaTeX
+`\footnote{…}`. The GFM form has no LaTeX renderer, so in LaTeX output its
+reference and definitions pass through as literal HTML. Reserve the GFM form for
+HTML-only documents, or for the occasional note whose body needs the full block
+grammar.
+
+A consequence of the independence worth knowing: if you mix both forms in one
+HTML document you will get **two** footnote sections with **separate**
+numbering — a GFM "Footnotes" section and JMarkdown's "Endnotes" section, each
+counting from one. For a single, consistent endnotes section, stick to the
+inline form throughout.
+
+## How the output is structured
+
+In HTML, each reference becomes a superscript anchor and each note becomes a
+list item in a collected section appended to the end of the document:
+
+```html
+<sup class="footnote-ref"><a href="#fn-label" id="fnref-label">1</a></sup>
+```
+
+```html
+<section class="footnotes">
+  <h1 class="endnotes-heading">Endnotes</h1>
+  <ol>
+    <li id="fn-label">
+      <p>The note body. <a href="#fnref-label" class="footnote-backref">↩</a></p>
+    </li>
+  </ol>
+</section>
+```
+
+The reference and the note point at each other: the reference's `href` targets
+the note's `id`, and the back-reference arrow (`↩`) at the end of the note links
+back to the reference. JMarkdown ships no default styling for these classes, so
+you supply the CSS — typically rules for `.footnote-ref`, `section.footnotes`,
+`.endnotes-heading`, and `.footnote-backref` — in your template or stylesheet.
+
+In LaTeX, an inline footnote renders directly as `\footnote{rendered body}` at
+the point of reference, and the engine handles placement and numbering. A
+multi-paragraph body is re-indented so the generated `.tex` stays readable in the
+AUCTeX style.
+
+## Footnotes in live demos
+
+Footnotes work inside a `markdown-demo` container, which is how every demo on
+this page is built. One detail follows from the collect-and-append design: the
+superscript **reference** appears in the demo's output panel, but the note
+**body** is gathered into the document's own Endnotes section at the foot of the
+page, not into the demo box. If you scroll to the bottom of this page you will
+find the bodies of every footnote shown in the demos above, numbered in the
+order they appear. That is the real, rendered behaviour — the demos are not
+mock-ups.
+
+## Reference
+
+### Syntax
+
+| Form | Meaning |
+|---|---|
+| `[^label: body]` | Inline footnote with an explicit label |
+| `[fn: body]` | Inline footnote with an auto-generated label |
+| `[^label]` … `[^label]: body` | GFM reference and its separate definition |
+
+### Body rules
+
+| Situation | Behaviour |
+|---|---|
+| Body with no blank line | Rendered as inline Markdown (single paragraph) |
+| Body with a blank line | Lifted out, dedented, rendered as block Markdown |
+| `$…$`, `$$…$$`, code spans, `\[` | Their brackets do not close the footnote |
+| Unmatched `[` | Left literal; the document is never swallowed |
+| Whitespace, `]`, or `:` in a label | Not allowed — the first colon ends the label |
+
+### HTML classes and ids
+
+| Selector | Where it appears |
+|---|---|
+| `sup.footnote-ref` | The superscript reference marker |
+| `a#fnref-LABEL` | The reference anchor (link target of the back-reference) |
+| `section.footnotes` | The collected notes section |
+| `h1.endnotes-heading` | The "Endnotes" heading of that section |
+| `li#fn-LABEL` | One note in the list |
+| `a.footnote-backref` | The `↩` link from a note back to its reference |
+
+## Related pages
+
+- [Markdown demo](markdown-demo.html) — the side-by-side directive used for every
+  example here.
+- [Description lists](description-lists.html) — another block construct you can
+  reach for when a note grows into structured content.
+- [Math support](math-support.html) — the `$…$` syntax that is safe inside a
+  footnote body.
+- [Block environments](block-environments.html) — defining your own named
+  containers, for notes that outgrow a footnote entirely.

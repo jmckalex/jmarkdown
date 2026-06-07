@@ -1,0 +1,646 @@
+Title: Inline Scripts
+------------------------------------
+
+# Inline scripts and function extensions
+
+JMarkdown lets you embed JavaScript directly in your document, run it *while the
+document is being processed*, and use the results to generate or transform your
+prose. A jmarkdown script block is an ordinary HTML script element whose
+`data-type` attribute is set to `jmarkdown`; instead of being copied through to
+the browser, its code is evaluated in a Node sandbox at compile time. Two things
+make this useful:
+
+- the block can set a variable (`output`) whose value is spliced into the
+  document in place of the script, and
+- it can *export* a function with `export_to_jmarkdown(...)`, after which calls
+  to that function written in your markdown — `myFunction(some text)` — are
+  evaluated and replaced by their return values, exactly as if you had embedded a
+  function call in the source.
+
+The result is a small but powerful macro facility: you write a function once and
+call it inline wherever you need it, with the function's return value flowing
+back into the markdown (or HTML) stream. Throughout this page the live demos show
+the source on the left and the rendered result on the right, so the examples can
+never drift from what JMarkdown actually does.
+
+For wrapping a *span* of the document in a named, reusable container — the
+block-level counterpart to this inline machinery — see
+[Block Environments](block-environments.html). For one-off raw HTML or LaTeX
+passthrough, see [Directives](directives.html).
+
+## The jmarkdown script block
+
+A script block that should run at compile time is written like any HTML script
+element, but with `data-type='jmarkdown'`:
+
+```html
+<script data-type='jmarkdown'>
+	function reverser(str) {
+		return str.split('').reverse().join('');
+	}
+
+	export_to_jmarkdown("reverser");
+</script>
+```
+
+The `data-type='jmarkdown'` attribute is the signal: it tells JMarkdown that the
+code should be *executed* rather than passed quietly through to the output file.
+Behind the scenes JMarkdown extracts the body of the block and evaluates it in a
+Node virtual machine. That VM context is **shared across every jmarkdown script
+block in the document**, so any variable or function you define in one block is
+visible in all the others — and, as we will see, in inline expressions too.
+
+By default the script block itself produces no output: once its code has run, the
+block is removed from the document. (Below we show how to put arbitrary HTML in
+its place with the `output` variable.)
+
+A regular script element — one *without* `data-type='jmarkdown'` — is left
+untouched and copied verbatim into the HTML output, so you can still ship
+client-side JavaScript in the normal way.
+
+> Two caveats worth stating up front. First, this code runs on *your* machine
+> with full Node privileges (it can read files, import packages, and so on), so
+> treat a jmarkdown document the way you would treat a build script: only process
+> sources you trust. Second, jmarkdown script blocks are an HTML-only feature —
+> they are not emitted in LaTeX output, so reach for them when you are generating
+> for the web.
+
+## Exporting a function: the simplest case
+
+`export_to_jmarkdown(name)` registers `name` as an inline extension. After it has
+run, JMarkdown scans your markdown for text of the form
+
+```
+name(...text not containing a right parenthesis...)
+```
+
+and, when it finds a match, calls your function with the parenthesised text
+passed as a single string. Whatever the function returns replaces the call in the
+output. You can think of it as embedding a JavaScript function call in markdown
+source, where the return value stands in for the call.
+
+In the default ("simple") mode you do **not** quote the argument — everything
+between the parentheses is handed to your function as one string. So
+`reverser(Text to reverse)` is evaluated as `reverser("Text to reverse")`:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	function reverser(str) {
+		return str.split('').reverse().join('');
+	}
+
+	export_to_jmarkdown("reverser");
+</script>
+
+And here is how it is used: reverser(Text to reverse).
+:::
+
+Because matching stops at the first right parenthesis, simple mode is ideal for
+short, flat arguments and awkward for anything containing a `)`. We lift that
+restriction in [Complex arguments](#complex-arguments-balanced-parentheses)
+below.
+
+### Plain text in, plain text out
+
+What happens if the argument contains markdown? By default, nothing special: the
+text is passed through to your function and inserted verbatim, *without* being
+interpreted as markdown.
+
+:::markdown-demo
+reverser(Text /containing/ *markdown* code.)
+:::
+
+Notice that the emphasis markers survive untouched (and, of course, reversed).
+If you want the argument — or the return value — to be processed as markdown, you
+have to ask for it. There are two ways to do so.
+
+## Returning markdown for further processing
+
+A function may return either a **string** or an **object**:
+
+- Return a **string**, and it is inserted into the output exactly as given (raw
+  HTML, or text). This is what every example so far has done.
+- Return an **object** with a single key — `inline` or `block` — and the value of
+  that key is taken to be *markdown source*, which JMarkdown then tokenises and
+  renders. `{ inline: '…' }` runs the string through the inline lexer (emphasis,
+  links, math, and so on, but no paragraphs); `{ block: '…' }` runs it through
+  the block lexer (lists, headings, blockquotes, paragraphs).
+
+This object convention is the general mechanism for emitting markdown from a
+function, and it works in every export mode:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	function shout(str) {
+		return { inline: `**${str.toUpperCase()}!**` };
+	}
+	export_to_jmarkdown("shout");
+
+	function steps(str) {
+		const items = str.split(',').map(s => s.trim());
+		return {
+			block: items
+				.map((s, i) => `${i + 1}. ${s}`)
+				.join('\n')
+		};
+	}
+	export_to_jmarkdown("steps");
+</script>
+
+Inline markdown: shout(this is strong)
+
+A generated list:
+
+steps(preheat the oven, mix the batter, bake for forty minutes)
+:::
+
+The `inline` form is the right choice inside a sentence; the `block` form is for
+output that should stand on its own, like the list above. (Note the blank line
+before `steps(...)`: a block-producing call still has to sit on its own line for
+the block lexer to treat its output as block content.)
+
+### The `tokenize` shortcut
+
+If you simply want the *whole* argument string treated as markdown — rather than
+constructing an object yourself — pass the `tokenize` option when you export. It
+accepts `"inline"` or `"block"` and applies that lexer to the function's return
+value:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	function reverser2(str) {
+		return str.split('').reverse().join('');
+	}
+
+	export_to_jmarkdown("reverser2", {tokenize: "inline"});
+</script>
+
+reverser2(Text /containing/ *markdown* code.).
+:::
+
+Compare this with the plain `reverser` above: here the reversed string is fed
+back through the inline lexer, so the (reversed) emphasis markers are now
+interpreted.
+
+## Designing your own argument syntax
+
+Because everything between the parentheses arrives as one string, you are free to
+invent whatever mini-syntax suits the function. A common pattern is to split the
+string on a separator and treat the pieces as separate arguments. Here a
+`repeater` reads `text, n` and repeats the text *n* times:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	function repeater(str) {
+		let [text, n] = str.split(",");
+		text = text.trim();
+		n = parseInt(n);
+		return text.repeat(n);
+	}
+
+	export_to_jmarkdown("repeater", {tokenize: "inline"});
+</script>
+
+repeater(I :heart: /JMarkdown/ <br>, 3)
+:::
+
+Or use any separator you like. This `button` function reads `label => handler`,
+echoing JavaScript's arrow notation, and returns a button wired to a client-side
+function defined in an ordinary (non-jmarkdown) script:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	function button(str) {
+		let [label, f] = str.split("=>");
+		return `<button onclick='${f.trim()}()'>` +
+			`${label.trim()}</button>`;
+	}
+
+	export_to_jmarkdown("button");
+</script>
+
+<script>
+	function hello() {
+		alert("Hello there!");
+	}
+</script>
+
+Press here for a secret message: button(Click me => hello)
+:::
+
+## Complex arguments (balanced parentheses)
+
+Simple mode stops at the first `)`, so it cannot handle a function call whose
+argument *contains* parentheses — nested calls, object literals, and the like. To
+allow those, export with `{simple: false}`. In this mode JMarkdown uses the
+[acorn](https://github.com/acornjs/acorn) JavaScript parser to read a complete,
+balanced expression starting at the function name, so parentheses inside strings
+and inside nested calls are handled correctly.
+
+The trade-off is that you are now writing a genuine JavaScript expression: string
+arguments **must be quoted**, just as in real code. With that in hand, nesting
+works:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	// Perform ROT13 encoding on a string.
+	function rot13(str) {
+		return str.replace(/[a-zA-Z]/g, function(char) {
+			const code = char.charCodeAt(0);
+			// 97 for lowercase, 65 for uppercase.
+			const base = code >= 97 ? 97 : 65;
+			return String.fromCharCode(
+				base + (code - base + 13) % 26
+			);
+		});
+	}
+	export_to_jmarkdown("rot13", {simple: false});
+</script>
+
+Original string: Hello world!
+
+ROT-13 encoded: rot13("Hello world!").
+
+Applied twice (it is its own inverse):
+rot13(rot13("Hello world!")).
+:::
+
+The parser is also forgiving of ordinary prose around the call. A trailing
+sentence-ending period, or a member access followed by surrounding text, is
+recognised as punctuation rather than part of the expression, so you can write
+`rot13("…").` at the end of a sentence — as above — without confusing it.
+
+One thing to watch: in `simple: false` mode the call is parsed as a JavaScript
+expression, so a `<` or `>` character immediately *after* the closing
+parenthesis (an HTML `<br>`, say) is read as a comparison operator and the call
+is left unevaluated. Separate such a call from any following angle bracket with
+ordinary text or a line break, as we have done here.
+
+> As a rule of thumb, a `{simple: false}` function should return *HTML* (a
+> string) rather than ask for further markdown processing. Returning markdown
+> objects from a complex call works, but combining intricate balanced-parenthesis
+> parsing with a re-lexing pass can produce surprising tokenisation. If you do
+> need full markdown rendering from such a function, render it yourself with
+> `marked.parse(...)`, described next.
+
+## Rendering markdown from inside a function
+
+The sandbox exposes a `marked` object: a fully configured markdown processor,
+set up identically to the one parsing your document. You can call
+`marked.parse(text)` to turn a markdown string into HTML and weave the result
+into whatever you are building:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	function colorize(color) {
+		let text = `Text before the list.
+1. A list item
+2. Another list item
+3. A third list item
+
+Text after the list`;
+		let html = marked.parse(text);
+		return `<div style='background-color: ${color}; ` +
+			`padding: 0.5em;'>${html}</div>`;
+	}
+
+	export_to_jmarkdown("colorize", {simple: false});
+</script>
+
+colorize("lightblue")
+:::
+
+One important caveat: the `marked` object in scripts is a *separate* processor
+instance from the one rendering your file. It shares your configuration but not
+your document's state. So stateful features — footnote numbering, heading
+counters, cross-reference labels — will not line up with the surrounding
+document, because they are tracked by a different processor. Use `marked.parse`
+for self-contained fragments, not for content that must participate in the
+document's numbering.
+
+## Replacing the script block with HTML: the `output` variable
+
+So far our script blocks have defined functions and produced nothing themselves.
+Sometimes you want the *block* to emit content directly — to compute a value once
+and drop it into the document at that spot. The sandbox provides a global
+variable, `output`: whatever you assign to it is inserted into the document in
+place of the script block. `output` is reset to the empty string before each
+jmarkdown block runs, so blocks do not leak content into one another.
+
+This example also demonstrates the shared context: the first block defines
+variables and a function (and emits only an invisible HTML comment), and the
+second block reads them when building its `output`:
+
+:::markdown-demo{type=html}
+<script data-type='jmarkdown'>
+	let cheer = "Hip, hip, hooray!";
+	let boo = "Hiss...";
+	function doSomething(str) {
+		return "Here is a string: " + str;
+	}
+	output =
+		"<!-- This comment is inserted but not visible -->";
+</script>
+
+<script data-type='jmarkdown'>
+	output = `Let's have a cheer: '${cheer}'!<br>`;
+	output += `And let's have a boo: '${boo}'<br>`;
+	output += "And here's something else... " +
+		doSomething('text');
+</script>
+:::
+
+Like a function's return value, `output` may also be an object with an `inline`
+or `block` key, in which case its string value is processed as markdown rather
+than inserted as raw HTML.
+
+## The execution sandbox
+
+Everything in a jmarkdown script runs in a Node virtual machine via
+`runInThisContext`, which has two practical consequences.
+
+**Full Node, including `require`.** You can `require` Node's built-in modules and
+installed packages. The following reads an image off disk, base64-encodes it, and
+returns an `img` tag with the data embedded inline — so the finished HTML carries
+the picture with no separate file to ship:
+
+```html
+<script data-type='jmarkdown'>
+	const fs = require('fs');
+	const path = require('path');
+
+	function imageToBase64(imagePath) {
+		const imageBuffer = fs.readFileSync(imagePath);
+		const base64String = imageBuffer.toString('base64');
+		const mimeType = getMimeType(imagePath);
+		return `data:${mimeType};base64,${base64String}`;
+	}
+
+	function getMimeType(filePath) {
+		const ext = path.extname(filePath).toLowerCase();
+		const mimeTypes = {
+			'.png': 'image/png',  '.jpg':  'image/jpeg',
+			'.jpeg': 'image/jpeg', '.gif':  'image/gif',
+			'.webp': 'image/webp', '.svg':  'image/svg+xml',
+			'.bmp': 'image/bmp'
+		};
+		return mimeTypes[ext] || 'application/octet-stream';
+	}
+
+	function embedImage(file, style) {
+		let img = imageToBase64(file);
+		return `<img style='${style}' src='${img}'>`;
+	}
+
+	export_to_jmarkdown("embedImage", {simple: false});
+</script>
+```
+
+<script data-type='jmarkdown'>
+	const fs = require('fs');
+	const path = require('path');
+
+	function imageToBase64(imagePath) {
+		const imageBuffer = fs.readFileSync(imagePath);
+		const base64String = imageBuffer.toString('base64');
+		const mimeType = getMimeType(imagePath);
+		return `data:${mimeType};base64,${base64String}`;
+	}
+
+	function getMimeType(filePath) {
+		const ext = path.extname(filePath).toLowerCase();
+		const mimeTypes = {
+			'.png': 'image/png',  '.jpg':  'image/jpeg',
+			'.jpeg': 'image/jpeg', '.gif':  'image/gif',
+			'.webp': 'image/webp', '.svg':  'image/svg+xml',
+			'.bmp': 'image/bmp'
+		};
+		return mimeTypes[ext] || 'application/octet-stream';
+	}
+
+	function embedImage(file, style) {
+		let img = imageToBase64(file);
+		return `<img style='${style}' src='${img}'>`;
+	}
+
+	export_to_jmarkdown("embedImage", {simple: false});
+</script>
+
+:::markdown-demo
+Here is a paragraph containing some
+math $\alpha+\beta$ and an embedded
+image: embedImage('./nature.jpg', "width: 100px;")
+More text after it.
+:::
+
+Note the path. Relative paths in a script are resolved against the **current
+working directory** — the directory from which you invoke `jmarkdown` — not
+against the document's own directory. (The demo above reads `./nature.jpg`, which
+sits at the repository root next to where the docs are built.) Build from a
+consistent location, or use absolute paths, if this matters to you.
+
+**A shared, persistent context.** Because the VM context is shared, a script
+block defined early in the document leaves its functions and variables available
+to every later block *and* to every inline call. This is what lets you keep all
+your definitions in one place near the top of a file and call them freely
+throughout the body.
+
+## A larger example: animated rainbow text
+
+Pulling the pieces together, here is a self-contained function that wraps each
+character of a string in a span, generates a unique block of CSS keyframes for
+the run (so different calls can use different colours without colliding), and
+returns the lot as a single HTML string. It is exported with `{simple: false}`
+so that the options object — with its nested arrays — parses correctly:
+
+```html
+<script data-type='jmarkdown'>
+function rainbow(text, options = {}) {
+	// A unique id so each call's CSS is independent.
+	const uniqueId = 'rainbow-' + Math.random().toString(36).substring(2, 9);
+
+	const {
+		duration = 2,
+		delay = 0.1,
+		className = '',
+		colors = ['#ff0000', '#ff8000', '#ffff00', '#00ff00',
+		          '#0080ff', '#8000ff', '#ff0000']
+	} = options;
+
+	if (!text) return '';
+
+	const colorKeyframes = colors.map((color, index) => {
+		const pct = index === colors.length - 1
+			? 100
+			: Math.round((index / (colors.length - 1)) * 100);
+		return `    ${pct}% { color: ${color}; }`;
+	}).join('\n');
+
+	const css = `
+	<style>
+		.${uniqueId}-container { display: inline-block; }
+		.${uniqueId}-char {
+			display: inline-block;
+			animation-name: ${uniqueId}-rainbow;
+			animation-duration: ${duration}s;
+			animation-iteration-count: infinite;
+			animation-timing-function: linear;
+		}
+		@keyframes ${uniqueId}-rainbow {
+${colorKeyframes}
+		}
+	</style>`;
+
+	const chars = text.split('').map((char, index) => {
+		const charDelay = (delay * index) % duration;
+		if (char === ' ') return ' ';
+		return `<span class="${uniqueId}-char" style="animation-delay: -${charDelay}s">${char}</span>`;
+	}).join('');
+
+	return `${css}<span class="${uniqueId}-container ${className}">${chars}</span>`;
+}
+export_to_jmarkdown("rainbow", {simple: false});
+</script>
+```
+
+<script data-type='jmarkdown'>
+function rainbow(text, options = {}) {
+	const uniqueId = 'rainbow-' + Math.random().toString(36).substring(2, 9);
+
+	const {
+		duration = 2,
+		delay = 0.1,
+		className = '',
+		colors = ['#ff0000', '#ff8000', '#ffff00', '#00ff00',
+		          '#0080ff', '#8000ff', '#ff0000']
+	} = options;
+
+	if (!text) return '';
+
+	const colorKeyframes = colors.map((color, index) => {
+		const pct = index === colors.length - 1
+			? 100
+			: Math.round((index / (colors.length - 1)) * 100);
+		return `    ${pct}% { color: ${color}; }`;
+	}).join('\n');
+
+	const css = `
+	<style>
+		.${uniqueId}-container { display: inline-block; }
+		.${uniqueId}-char {
+			display: inline-block;
+			animation-name: ${uniqueId}-rainbow;
+			animation-duration: ${duration}s;
+			animation-iteration-count: infinite;
+			animation-timing-function: linear;
+		}
+		@keyframes ${uniqueId}-rainbow {
+${colorKeyframes}
+		}
+	</style>`;
+
+	const chars = text.split('').map((char, index) => {
+		const charDelay = (delay * index) % duration;
+		if (char === ' ') return ' ';
+		return `<span class="${uniqueId}-char" style="animation-delay: -${charDelay}s">${char}</span>`;
+	}).join('');
+
+	return `${css}<span class="${uniqueId}-container ${className}">${chars}</span>`;
+}
+export_to_jmarkdown("rainbow", {simple: false});
+</script>
+
+And then a couple of calls, each with its own options object, drive independent
+animations:
+
+:::markdown-demo
+rainbow("And away we go!", {
+  duration: 3,
+  delay: 0.08,
+  colors: ['#FF0000', '#00FF00', '#0000FF', '#FF0000']
+})
+
+rainbow("Here's a very slow version...", {
+  duration: 20,
+  colors: [
+    '#000000', '#666666', '#ffffff',
+    '#666666', '#000000'
+  ]
+})
+:::
+
+## Built-in objects and functions
+
+A handful of JavaScript objects are pre-exported, so you can call them inline
+without writing any script block at all. Because they are registered in
+*object* mode, member access works (`Object.method(...)`), and calls may nest.
+
+:::markdown-demo
+The square root of 144 is Math.sqrt(144), and the
+largest of three numbers is Math.max(3, 7, 2).
+Composed: Math.round(Math.PI * 100).
+
+A computed-algebra result: calc("2 + 3 * 4"), and a
+factorial from math.js: MathJS.factorial(5).
+:::
+
+| name | mode | what it is |
+|---|---|---|
+| `Math` | object | the standard JavaScript `Math` object — `Math.sqrt`, `Math.max`, `Math.PI`, … |
+| `Date` | object | the standard `Date` object — e.g. `Date.now()` |
+| `MathJS` | object | a [math.js](https://mathjs.org) instance — `MathJS.factorial`, `MathJS.evaluate`, … |
+| `Algebra` | object | the [algebra.js](http://algebra.js.org) module, for symbolic algebra |
+| `calc` | function | shorthand for `MathJS.evaluate` — evaluates an expression **string**, e.g. `calc("2 + 3 * 4")` |
+| `String` | function | the `String` constructor (note: a bare `String(...)` call, not `String.fromCharCode`, since member access is not enabled for this one) |
+
+Because `calc` forwards to math.js's `evaluate`, its argument must be a string —
+write `calc("2 + 3 * 4")`, not `calc(2 + 3 * 4)`. (math.js's `evaluate` rejects a
+bare number, which would surface as an inline evaluation error.)
+
+## Error reporting
+
+JMarkdown does not fail silently when your code does. If a jmarkdown script block
+contains a JavaScript *syntax* error, the block is replaced by a formatted parse
+error showing the offending line and column. If an inline call (in `simple:
+false` mode) cannot be parsed as an expression, you get an inline "Parse error"
+marker that highlights where parsing broke down. And if a call parses but
+*throws* at runtime, you get an inline "Evaluation error" with the message and a
+"Show Error Details" button that reveals the full stack trace. These markers
+appear in the rendered page itself, which makes problems easy to spot while you
+are writing.
+
+## Reference
+
+### `export_to_jmarkdown(name, options)`
+
+Registers `name` as an inline extension. After the call, occurrences of
+`name(...)` in your markdown are evaluated and replaced.
+
+| option | default | effect |
+|---|---|---|
+| `simple` | `true` | When `true`, the argument is the raw text up to the first `)` and is passed as a single unquoted string. When `false`, the call is parsed as a balanced JavaScript expression with acorn — arguments must be quoted, but nesting and embedded parentheses work. |
+| `tokenize` | `false` | `"inline"` or `"block"` runs the function's return value back through the corresponding markdown lexer. Only applies in simple mode. (Default: the return value is inserted verbatim.) |
+| `type` | `'Function'` | `'Function'` matches `name(` ; `'Object'` matches `name.` or `name[` as well, enabling member-access calls such as `Math.sqrt(...)`. Relevant only with `simple: false`. |
+
+### Function return values
+
+| return value | result |
+|---|---|
+| a string | inserted into the output verbatim (raw HTML or text) |
+| `{ inline: '…' }` | the string is tokenised with the **inline** lexer and rendered |
+| `{ block: '…' }` | the string is tokenised with the **block** lexer and rendered |
+
+### Sandbox globals
+
+| name | meaning |
+|---|---|
+| `output` | assign a string (or an `{inline}`/`{block}` object) to replace the current script block in the document; reset to `''` before each block |
+| `marked` | a configured markdown processor — `marked.parse(text)` returns HTML (separate state from the main document) |
+| `require` | Node's `require`, for built-in modules and installed packages |
+| `export_to_jmarkdown` | register an inline function extension (above) |
+
+## See also
+
+- [Block Environments](block-environments.html) — `@begin … @end`, the block-level counterpart, with the same script-block and metadata-loading machinery.
+- [Directives](directives.html) — container, block, and inline directives, including raw `:::HTML` and `:::TeX` passthrough.
+- [Metadata Header](metadata-header.html) — loading extensions, directives, and JavaScript from external files.

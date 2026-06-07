@@ -1,0 +1,7 @@
+@begin(abstract)
+The begin/end form and the directive render identically.
+@end(abstract)
+
+:::abstract
+The begin/end form and the directive render identically.
+:::

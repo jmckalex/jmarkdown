@@ -450,6 +450,7 @@ registerExtensions([ citations, bibliography ]);
 // This should happen before the metadata header is processed.
 await configManager.loadExtensions();
 await configManager.loadDirectives();
+await configManager.loadEnvironments();
 
 // No await is needed because this doesn't read from a file.
 configManager.loadOptionals();
@@ -457,10 +458,37 @@ configManager.loadOptionals();
 // For some reason, this has to be installed here or it doesn't work
 marked.use(createDirectives([titleBox]));
 
+// Named-scope block environments: @begin(name) … @end(name) (see begin-end.js).
+// `@` is an otherwise-unused sigil, so nothing else matches `@begin(...)` and the
+// registration position doesn't matter; it lives here, after the directive set.
+import { beginEnd } from './begin-end.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
+marked.use({ extensions: [beginEnd] });
+
+// Let users define their own @begin environments from a <script data-type="jmarkdown">
+// block, the same way export_to_jmarkdown is exposed for inline functions. The
+// callback receives the full ctx — including ctx.text ([label]) and ctx.attrs
+// ({attributes}). Define an environment before the @begin that uses it.
+global.defineEnvironment = registerBlockEnvironment;
+
 import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
 import { createTOC } from './utils.js';
 
-marked.use(gfmHeadingId({prefix: "toc-"}), {
+// gfm-heading-id supplies the heading renderer that (a) assigns each heading a
+// stable, slugged id (prefixed 'toc-') and (b) records the heading in the list
+// that getHeadingList() returns — the list createTOC() walks to build {{TOC}}.
+// We capture that renderer here because JMarkdown installs its OWN heading
+// renderer further down (for {-} unnumbered handling and data-source-line
+// stamping). A later renderer REPLACES an earlier one in marked, so if the
+// JMarkdown heading renderer simply called Renderer.prototype.heading it would
+// clobber gfm-heading-id: no ids would be emitted and the heading list would
+// stay empty, leaving {{TOC}} to expand to nothing. Instead, the JMarkdown
+// heading renderers delegate to this captured function so id assignment and
+// list population still happen.
+const gfmHeadingIdExtension = gfmHeadingId({ prefix: "toc-" });
+const gfmHeadingRenderer = gfmHeadingIdExtension.renderer.heading;
+
+marked.use(gfmHeadingIdExtension, {
 	hooks: {
 		postprocess(html) {
 			const headings = getHeadingList();
@@ -518,6 +546,26 @@ import { Renderer } from 'marked';
 import { header_length } from './metadata-header.js';
 import { sourcePositions } from './source-positions.js';
 
+// Strip the {-} "unnumbered" marker from a heading token's inline text BEFORE
+// gfm-heading-id slugs it, so the heading id and the {{TOC}} entry are clean
+// (without the {-} marker we would otherwise get an id like 'toc-methods--' and
+// a literal "Methods {-}" line in the table of contents). Returns true if the
+// marker was present, so the caller can flag the heading as unnumbered.
+function stripUnnumberedMarker(token) {
+	const marker = /\s*\{-\}\s*/;
+	if (typeof token.text === 'string' && marker.test(token.text)) {
+		token.text = token.text.replace(marker, '');
+		if (Array.isArray(token.tokens)) {
+			for (const child of token.tokens) {
+				if (typeof child.text === 'string') child.text = child.text.replace(marker, '');
+				if (typeof child.raw === 'string') child.raw = child.raw.replace(marker, '');
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
 const renderer = {
   paragraph(token) {
     return addSourceLineAttr(Renderer.prototype.paragraph.call(this, token), token);
@@ -528,11 +576,13 @@ const renderer = {
   },
 
   heading(token) {
-    let html = Renderer.prototype.heading.call(this, token);
-    // Strip {-} marker from the rendered heading text.
-    // If present, also add an 'unnumbered' class for the numeric headings post-processor.
-    if (/\s*\{-\}\s*/.test(html)) {
-      html = html.replace(/\s*\{-\}\s*/, '');
+    // Strip the {-} marker first so the id and {{TOC}} entry are clean, then
+    // delegate to gfm-heading-id's renderer so the heading still gets its
+    // 'toc-' id and is recorded for {{TOC}}.
+    const unnumbered = stripUnnumberedMarker(token);
+    let html = gfmHeadingRenderer.call(this, token);
+    // Flag unnumbered headings for the numeric-headings post-processor.
+    if (unnumbered) {
       html = html.replace(/^<h([1-6])/, '<h$1 class="unnumbered"');
     }
     return addSourceLineAttr(html, token);
@@ -561,9 +611,12 @@ if (!skipInverseSearch) {
 	marked.use({
 		renderer: {
 			heading(token) {
-				let html = Renderer.prototype.heading.call(this, token);
-				if (/\s*\{-\}\s*/.test(html)) {
-					html = html.replace(/\s*\{-\}\s*/, '');
+				// Strip {-} first (clean id / TOC entry), then delegate to
+				// gfm-heading-id (see note above) so headings keep their ids and
+				// feed {{TOC}} even in fragment mode.
+				const unnumbered = stripUnnumberedMarker(token);
+				let html = gfmHeadingRenderer.call(this, token);
+				if (unnumbered) {
 					html = html.replace(/^<h([1-6])/, '<h$1 class="unnumbered"');
 				}
 				return html;

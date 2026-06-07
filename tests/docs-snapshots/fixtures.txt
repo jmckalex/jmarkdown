@@ -12,6 +12,7 @@
 # inverse-search script, body classes) is excluded from the diff.
 
 anchors
+block-environments
 code-highlighting
 comments-and-optionals
 configuration-files

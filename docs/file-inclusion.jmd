@@ -1,0 +1,248 @@
+Title: File Inclusion
+------------------------------------
+
+# File inclusion (`[[file.md]]`)
+
+A long document is easier to maintain when it is broken into pieces. *File
+inclusion* lets you keep each chapter, section, or fragment of boilerplate in
+its own file and stitch them together from a short master document. Write the
+directive on a line by itself:
+
+```
+[[chapter-one.md]]
+```
+
+and `jmarkdown` replaces that line with the entire contents of
+`chapter-one.md` *before* parsing begins. The mechanism is deliberately
+literal: it is textual splicing, not a separate compilation step. Whatever
+JMarkdown syntax the included file contains — directives, footnotes, tables,
+math, block environments, even further `[[…]]` includes — is parsed exactly as
+if you had typed it inline at that point in the master document. Nothing in the
+included file is treated specially; it is merged into one stream of source and
+handed to the parser as a whole.
+
+This page documents the syntax, the rules that govern when a `[[…]]` token is
+recognised, how relative paths are resolved, how recursion and cycles are
+handled, and the small set of things inclusion deliberately does *not* do.
+
+## Why splice before parsing
+
+The single most important fact about file inclusion is its position in the
+[processing pipeline](metadata-header.html): inclusion runs after the master
+document's metadata header has been stripped, but **before** the parser, the
+footnote pass, source-position stamping, and rendering. Two consequences follow
+directly, and most surprises trace back to one of them.
+
+First, because the splice happens at the source-text level, an included file
+shares the parser's state with everything around it. A footnote defined in one
+included chapter can be referenced from another; a numbered figure continues its
+count across file boundaries; a block environment opened before an include can
+be closed after it. The files behave as one document because, by the time the
+parser runs, they *are* one document.
+
+Second, an included file is raw Markdown from its very first byte. It is **not**
+re-scanned for a metadata header. A `---`-fenced YAML block at the top of a file
+you intend to include is therefore not configuration — it is content, and the
+parser will render it as a thematic break followed by text. Keep metadata in the
+master document only, and keep included files header-free.
+
+## Syntax
+
+The directive is intentionally strict so that it never fires by accident inside
+ordinary prose.
+
+```
+[[name.md]]
+```
+
+A token is recognised only when **all** of the following hold:
+
+- It is alone on its own line. Leading and trailing spaces or tabs are allowed;
+  any other text on the line — including a wrapping paragraph — leaves the token
+  literal.
+- The name ends in `.md`, and the closing `]]` immediately follows the `.md`.
+- The name between the brackets contains no `[`, `]`, or newline characters.
+
+Because the directive is anchored to the start and end of a line, a `[[…]]`
+appearing mid-sentence is never expanded. This is by design: it keeps the syntax
+from colliding with prose that happens to mention a filename, and it means a
+reference such as "see `[[file.md]]` for the format" stays exactly as written.
+
+The following all stay literal — none of them is the directive alone on a line:
+
+```
+See [[file.md]] for details.       (mid-sentence; other text on the line)
+Trailing text after [[file.md]].   (text follows the token)
+[[notes.txt]]                      (name does not end in .md)
+[[a]b].md]]                        (name contains brackets)
+```
+
+## Path resolution
+
+Relative paths resolve against the directory of the file that **contains** the
+directive — never the directory `jmarkdown` was invoked from. This is what makes
+a project portable: the includes describe relationships between files, and those
+relationships hold no matter where you run the tool.
+
+Consider this layout:
+
+```
+book/
+  manuscript.md         ← contains [[chapters/intro.md]]
+  chapters/
+    intro.md            ← contains [[../appendix.md]]
+  appendix.md
+```
+
+Running `jmarkdown process book/manuscript.md` produces the same result whether
+you invoke it from the project root, from `/tmp`, or from anywhere else. The
+include in `manuscript.md` points down into `chapters/`, and the include in
+`intro.md` is resolved relative to `intro.md`'s own directory, so `../appendix.md`
+climbs back out to the manuscript's sibling. Each file's includes are read
+through that file's eyes.
+
+Absolute paths are accepted verbatim:
+
+```
+[[/Users/jane/shared/legal-boilerplate.md]]
+```
+
+An absolute path is convenient for content shared across many projects, but it
+ties the document to one machine's filesystem. Prefer relative paths for
+anything that should travel with the repository.
+
+## Nested and recursive inclusion
+
+Inclusion is recursive. An included file may contain its own `[[…]]` directives,
+and those are expanded in turn, each resolved against its own file's directory
+(see [Path resolution](#path-resolution) above). You can build a tree of files
+several levels deep — a master document that includes part files, each of which
+includes section files — and the whole tree is flattened into a single source
+stream before parsing.
+
+A safety net bounds runaway recursion: nesting deeper than **20 levels** stops,
+prints a warning to standard error, and leaves any remaining `[[…]]` tokens
+literal rather than looping forever. In normal use you will never approach this
+limit; it exists only to make a pathological structure fail safely.
+
+## Re-using a file at several sites
+
+The same file may be included at as many independent sites as you like. Each
+site receives its own copy of the contents — there is no "include once" rule:
+
+```
+[[boilerplate-header.md]]
+
+# Chapter one
+…
+
+[[boilerplate-footer.md]]
+```
+
+This is the natural way to repeat a standard header, a licence notice, or a set
+of shared definitions across the parts of a document.
+
+## Cycles
+
+What is *not* allowed is a **cycle within the active inclusion chain**. If
+`a.md` includes `b.md` and `b.md` tries to include `a.md`, the second reference
+to `a.md` would never terminate. JMarkdown detects this: it prints a warning to
+standard error naming the full trail (`a.md → b.md → a.md`), leaves the offending
+`[[…]]` token literal in the output, and continues processing the rest of the
+document. The build does not crash.
+
+Cycle detection compares **canonical** paths. Each file is resolved through the
+filesystem (symbolic links are followed to their real target) before being
+checked against the active chain, so two different paths that point at the same
+underlying file — for instance a file and a symlink to it — are recognised as
+the same file and the cycle is caught.
+
+Note the precise scope: only cycles *inside the current expansion chain* are
+rejected. Including the same file at two unrelated sites (the previous section)
+is not a cycle and is always allowed — the chain unwinds between the two sites,
+so neither is active when the other begins.
+
+## What stays literal: protected regions
+
+Before scanning for include directives, JMarkdown masks the regions of the
+document where a `[[…]]` should be taken at face value, so a token there is never
+expanded:
+
+- **Fenced code blocks** — anything between matching ` ``` ` or `~~~` fences (with
+  up to three spaces of leading indentation, and a closing fence at least as long
+  as the opener). This is what lets *this very page* show the inclusion syntax in
+  fenced examples without any escape trick.
+- **Display-math blocks** — anything inside `$$ … $$`, whether the pair sits on
+  one line or spans several lines.
+
+Two corollaries are worth stating explicitly because they catch people out:
+
+- **Indented code does not protect a token.** JMarkdown disables marked's
+  4-space-indent code-block tokenizer (see [Disabled syntax](disabled-syntax.html)),
+  so a line such as `    [[file.md]]`, indented four spaces, is ordinary text as
+  far as the rest of the system is concerned — and the include **will** expand.
+  Use a fenced block, not indentation, when you want to display a directive
+  literally.
+- **Inline code and inline math do not need protection.** A token wrapped in a
+  single backtick or in `$…$` is on a line with other characters, so the
+  line-anchored directive cannot match it in the first place.
+
+## Missing files
+
+If a referenced file cannot be read — it is misnamed, moved, or unreadable —
+`jmarkdown` does not abort. It writes an error to standard error naming both the
+resolved path and the file the directive came from, and it leaves the original
+`[[…]]` token in the rendered output. The literal token is intentional: it is a
+visible telltale in the finished page that makes a broken include impossible to
+miss, while still letting the rest of the document build.
+
+## What is not supported
+
+File inclusion is deliberately minimal. The following are out of scope, with the
+recommended alternative for each:
+
+| Not supported | Use instead |
+|---|---|
+| Metadata headers in included files | Keep all metadata in the master document; included files are raw content (see [Why splice before parsing](#why-splice-before-parsing)) |
+| Line ranges or partial-file inclusion | Split the source so each includable unit is its own file — the whole file is always included |
+| Conditional include (e.g. "only when building LaTeX") | Put the format-specific content in a `:::TeX` or `:::HTML` container *inside* the included file (see [Directive syntax](directives-syntax.html)) |
+| File types other than `.md` | The name must end in `.md`; rename or wrap other content |
+
+## Reference
+
+### Directive form
+
+| Form | Meaning |
+|---|---|
+| `[[relative/path.md]]` | Resolve relative to the including file's directory, splice contents |
+| `[[/absolute/path.md]]` | Resolve as an absolute filesystem path, splice contents |
+
+A directive is recognised only as the sole content of its line (leading and
+trailing spaces or tabs aside), and only when the name ends in `.md`.
+
+### Behaviour summary
+
+| Situation | Result |
+|---|---|
+| Token alone on a line, file readable | Replaced by the file's contents (recursively expanded) |
+| Token mid-line or wrapped in prose | Left literal, not expanded |
+| Token inside a fenced code block or `$$…$$` math | Left literal, not expanded |
+| Token on a 4-space-indented line | **Expanded** (indented code is disabled) |
+| Same file included at independent sites | Each site expands; no warning |
+| Cycle in the active chain (A→B→A) | Warning to stderr; offending token left literal; build continues |
+| Nesting deeper than 20 levels | Warning to stderr; remaining tokens left literal |
+| Referenced file unreadable | Error to stderr naming path and parent; token left literal in output |
+
+## See also
+
+- [Metadata header](metadata-header.html) — where the inclusion step sits in the
+  pipeline, and why included files are not re-scanned for metadata.
+- [Directive syntax](directives-syntax.html) — the `:::TeX` and `:::HTML`
+  conditional containers that give you format-specific content inside an included
+  file.
+- [Block environments](block-environments.html) — the `@begin … @end`
+  environments you can reuse across included files.
+- [Disabled syntax](disabled-syntax.html) — why 4-space-indented code blocks do
+  not protect a directive from expansion.
+- [Configuration files](configuration-files.html) — project- and machine-wide
+  settings that travel alongside your documents.

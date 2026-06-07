@@ -1,0 +1,223 @@
+Title: Enhanced Lists
+------------------------------------
+
+# Enhanced lists
+
+Standard Markdown gives you exactly two kinds of list: unordered lists
+(introduced by `-`, `+`, or `*`) and ordered lists numbered with Arabic digits
+(`1.`, `2.`, …). That is enough for a shopping list, but it is not enough for the
+kind of structured prose that JMarkdown is built for. Legal and academic writing
+routinely labels items with letters (`(a)`, `(b)`) or roman numerals (`i`, `ii`,
+`iii`); outlines mix all three across nesting levels; and sometimes you need a
+list to *start* at a value other than one, or to *skip* a value.
+
+JMarkdown supplies all of this through the **`marked-more-lists`** extension,
+which is registered automatically — there is nothing to load or configure. It
+teaches the parser to recognise four extra families of list marker and to emit
+the corresponding HTML `<ol>` `type` and `<li value="…">` attributes. Ordinary
+unordered lists and Arabic ordered lists keep working exactly as before; this
+page is about everything beyond them. (For `term : definition` lists, which are a
+separate feature, see [Description Lists](description-lists.html).)
+
+## The list markers
+
+An ordered-list item begins with a *counter* — a digit, a letter, or a roman
+numeral — followed by a delimiter, either a full stop or a closing parenthesis.
+Both delimiters are accepted everywhere a counter is, so `a.` and `a)` are
+equivalent ways to start an alphabetic list.
+
+| Marker family | Example | Rendered as | HTML `type` |
+|---|---|---|---|
+| Arabic numerals | `1.` `2.` | 1, 2, 3 … | (none — the default) |
+| Lower-case letters | `a.` `b.` | a, b, c … | `type="a"` |
+| Upper-case letters | `A.` `B.` | A, B, C … | `type="A"` |
+| Lower-case roman | `i.` `ii.` | i, ii, iii … | `type="i"` |
+| Upper-case roman | `I.` `II.` | I, II, III … | `type="I"` |
+
+The counter style is decided by the **first item** of the list. Every following
+item is matched against that same style, so a list that opens with `a.` continues
+as an alphabetic list and a stray `1.` further down would begin a new list rather
+than join the alphabetic one.
+
+### Alphabetic lists
+
+:::markdown-demo
+a. First, gather your ingredients.
+b. Then prepare the workspace.
+c. Finally, begin.
+:::
+
+Upper-case letters work the same way and render with `type="A"`:
+
+:::markdown-demo
+A. Major premise.
+B. Minor premise.
+C. Conclusion.
+:::
+
+### Roman-numeral lists
+
+Lower-case and upper-case roman numerals are both recognised, and the extension
+understands roman arithmetic — `iv` is four, `ix` is nine — so a list may even
+begin partway through the sequence (see *Starting value*, below).
+
+:::markdown-demo
+i. Introduction
+ii. Method
+iii. Results
+iv. Discussion
+:::
+
+### Either delimiter
+
+A closing parenthesis is interchangeable with a full stop, which is handy when
+you prefer the `a)` outline convention:
+
+:::markdown-demo
+a) one
+b) two
+c) three
+:::
+
+## Nesting and mixing styles
+
+The real power of enhanced lists shows up when you build an outline. Each nesting
+level chooses its own counter style, and JMarkdown emits a properly nested set of
+`<ol>` elements with the right `type` on each. Indent a sublist beneath its
+parent item — the indentation, not the marker, is what creates the nesting.
+
+:::markdown-demo
+1. Top-level item
+2. Another top-level item
+    a. A lettered sub-item
+        I. A roman sub-sub-item
+        II. Another roman sub-sub-item
+    b. Back to letters
+3. And back to the top
+:::
+
+There is no fixed limit on depth, and no requirement that sibling levels share a
+style: the classic legal-outline pattern — numbers, then letters, then lower
+roman — is just three indented levels with three different markers.
+
+## Starting value and skipped values
+
+Because the extension reads the *value* of each marker, an ordered list need not
+start at one. Begin with whatever counter you like and JMarkdown records the
+start by emitting a `value` attribute on the first item:
+
+:::markdown-demo
+5. Item five
+6. Item six
+7. Item seven
+:::
+
+The same mechanism lets you **skip** values deliberately. If a marker jumps ahead
+of where the automatic count expects, the item carries an explicit `value` so the
+visible label matches what you wrote:
+
+:::markdown-demo
+1. First
+2. Second
+9. Jumps to nine
+10. and continues from there
+:::
+
+This works for letters and roman numerals too — `e.` after `a.` produces an item
+with `value="5"`, displayed as *e*.
+
+## Task (checkbox) lists
+
+Enhanced lists also include GitHub-style task lists. Mark an item with `[ ]` for
+unchecked or `[x]` (or `[X]`) for checked, immediately after the bullet:
+
+```markdown
+- [x] Draft the chapter
+- [ ] Revise the chapter
+- [ ] Submit the chapter
+```
+
+Each item renders as a real, disabled checkbox input. By default the checkbox
+sits *after* the list's bullet, which looks doubled-up. The usual remedy is a
+small stylesheet that hides the native marker on any list item whose first child
+is a checkbox and pulls the row back into alignment:
+
+:::markdown-demo{type=html}
+<style>
+li:has(input[type="checkbox"]:first-child) {
+    list-style: none;
+    margin-left: -18pt;
+}
+</style>
+
+- [x] Draft the chapter
+- [ ] Revise the chapter
+- [ ] Submit the chapter
+:::
+
+The `{type=html}` on the demo above is needed because its source contains a raw
+style element; see [Markdown Demo](markdown-demo.html) for that distinction. In a
+real document you would normally put the rule once in your stylesheet or
+[output template](output-templates.html) rather than inline.
+
+## Gotchas
+
+### Letters that are also roman digits
+
+Seven letters double as roman numerals: **i, v, x, l, c, d, m**. When a list
+*starts* with one of these, JMarkdown reads it as a roman numeral, not as an
+alphabetic counter, because roman numerals are the more specific interpretation.
+So a list opening with `i.` is roman (i, ii, iii …), and a list opening with `c.`
+is read as roman *one hundred* — almost certainly not what you meant if you were
+trying to label items c, d, e.
+
+If you genuinely want an alphabetic list that happens to begin at one of those
+letters, the cleanest fix is to start it earlier (at `a.`) and let it count up,
+or to label the items by hand with the `value` you want and the surrounding
+prose. Letters with no roman meaning — such as `a`, `b`, `e`, `g` — are
+unambiguous and always read as alphabetic.
+
+### Markers do not change `<li>` content
+
+These markers control the list's *numbering*, nothing else. The body of each item
+is ordinary markdown: emphasis, links, math, nested blocks, and even further
+lists all work inside an item exactly as they do anywhere else.
+
+### LaTeX output is plain `enumerate`
+
+The `marked-more-lists` styling is an HTML feature. In LaTeX mode (`--to latex`)
+every ordered list — Arabic, lettered, or roman — is emitted as a standard
+`enumerate` environment with plain `\item`s; the `type` and `value` markers are
+**not** carried across. If you need lettered or roman enumeration in the print
+build, set it in your LaTeX preamble (for example with the `enumitem` package's
+`[label=\alph*.]` or `[label=\roman*.]`) so the look is controlled there rather
+than in the source.
+
+## Reference
+
+### Markers
+
+| Source marker | List style | HTML attribute on `<ol>` |
+|---|---|---|
+| `1.` / `1)` | Arabic | none (default) |
+| `a.` / `a)` | lower-case letters | `type="a"` |
+| `A.` / `A)` | upper-case letters | `type="A"` |
+| `i.` / `i)` | lower-case roman | `type="i"` |
+| `I.` / `I)` | upper-case roman | `type="I"` |
+| `- ` / `+ ` / `* ` | unordered | `<ul>` (no `type`) |
+
+### Item attributes
+
+| Situation | Effect on the item |
+|---|---|
+| First marker is not the natural start (e.g. `5.`) | `<li value="5">` |
+| A marker skips ahead of the running count | `<li value="N">` with the new value |
+| `[ ]` after the bullet | disabled, unchecked checkbox |
+| `[x]` or `[X]` after the bullet | disabled, checked checkbox |
+
+## Related pages
+
+- [Description Lists](description-lists.html) — `term : definition` lists.
+- [Markdown Demo](markdown-demo.html) — the side-by-side demo directive used on this page, and the `{type=html}` variant.
+- [Output Templates](output-templates.html) — where to put the task-list stylesheet for a whole document.
+- [Syntax Adjustments](syntax-adjustments.html) — JMarkdown's other deviations from plain Markdown.

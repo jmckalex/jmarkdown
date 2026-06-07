@@ -1,0 +1,326 @@
+Title: Post-processing
+------------------------------------
+
+# Post-processing scripts
+
+Most of JMarkdown's work happens *while* a document is being read: directives
+fire, extensions match, math is typeset, footnotes are gathered. By the time the
+last token is rendered, JMarkdown holds a complete HTML document as a string. A
+**post-processing script** is JavaScript that runs on that finished document, one
+last pass over the whole thing before it is written to disk.
+
+The reason to reach for it is simple: some transformations only make sense once
+the *entire* document exists. Renumbering every heading, harvesting every
+citation, walking the whole DOM to build an index, splitting one master file into
+several output files — none of these can be done by an inline extension that sees
+the source one token at a time. A post-processing script sees the assembled
+result and can rewrite it freely, with a jQuery-like API for the DOM and full
+access to the filesystem.
+
+Post-processing is a Node-side feature. The scripts run inside JMarkdown's
+processing pipeline, not in a browser, so they can read and write files and
+permanently change the HTML that gets exported. That is the key difference from
+an ordinary browser script, and the rest of this page draws it out. If you have
+not yet met JMarkdown's *compile-time* scripts — the ones that generate content
+*during* the read — see [Inline scripts](inline-scripts.html) first; this page is
+their counterpart at the other end of the pipeline.
+
+## Where post-processing sits in the pipeline
+
+JMarkdown builds an HTML document in stages. Knowing the order tells you exactly
+what your script will and will not see:
+
+1. The source is parsed and rendered — directives, extensions, math, and
+   compile-time script blocks all run here, and the table of contents is built.
+2. The result is wrapped in the output template (unless you passed `--fragment`).
+3. JMarkdown's built-in cheerio pass runs: it resolves cross-references, hoists
+   stray `<style>` tags into the head, and applies numeric heading labels if you
+   asked for them.
+4. **Your post-processing scripts run, in the order they appear in the source.**
+5. The inverse-search click handler is injected (full-document HTML only).
+6. The HTML is beautified and written to disk.
+
+So by the time your script runs, the document is whole and JMarkdown's own
+clean-up has already happened. Two consequences follow, and both are worth
+keeping in mind. First, the **table of contents is already built** — it was
+assembled back in step 1 from the headings as they then stood. If your script
+rewrites headings, the TOC will not follow along unless you update it yourself.
+Second, post-processing is **HTML-only**: in LaTeX mode JMarkdown writes the
+`.tex` file directly with no cheerio stage, so post-processing scripts simply do
+not run. Author your print-side transformations another way.
+
+## Declaring a post-processing script
+
+A post-processing script is written as a script element whose `data-type`
+attribute is `jmarkdown-postprocess`. JMarkdown recognises that attribute,
+collects the body of every such element, removes it from the output, and runs the
+collected code after the document is assembled:
+
+```html
+<script data-type='jmarkdown-postprocess'>
+	// ...code that runs on the finished document...
+</script>
+```
+
+The body is ordinary JavaScript. It is validated up front (a syntax error is
+reported in place rather than silently swallowed) and then evaluated in
+JMarkdown's shared script context — the same context used by compile-time
+`data-type='jmarkdown'` script blocks. That sharing is deliberate and useful:
+anything a compile-time script attaches to the global scope is visible to your
+post-processing script, so you can stash data while the document is being read
+and act on it after.
+
+You may include **more than one** post-processing script in a single document.
+JMarkdown concatenates them in source order and evaluates them one after another,
+so you can break a long job into stages, or keep a small fix near the content it
+fixes.
+
+## The environment your script runs in
+
+When a post-processing script runs, JMarkdown has already loaded the finished
+HTML into [cheerio](https://cheerio.js.org/), a lightweight, server-side library
+that gives you jQuery-style DOM traversal and manipulation. Several names are
+waiting for you:
+
+| Name | What it is |
+|---|---|
+| `$` | the cheerio object, pre-loaded with the finished document — your handle on the DOM |
+| `html` | the finished HTML as a raw string (see the reassignment rule below) |
+| `fs` | Node's `fs` module, for reading and writing files |
+| `cheerio` | the cheerio module itself, if you need to `cheerio.load()` a second fragment |
+| `console` | the Node console, for logging during a build |
+| `require` | Node's `require`, so you can pull in any other module — e.g. `const path = require('path')` |
+
+Because the context is shared with the compile-time scripts, any function or
+variable they defined is also in scope. Cheerio implements a *subset* of jQuery,
+not the whole of it — selection, traversal, attribute and text manipulation, and
+insertion all work as you would expect, but do not assume every jQuery plugin or
+effect is present. The [cheerio documentation](https://cheerio.js.org/) is the
+authority on what is supported.
+
+## A first example
+
+The script below walks every `<h1>` in the finished document, upper-cases its
+text in place, and — separately — writes each upper-cased heading to a plain-text
+file in the same directory as the source:
+
+```html
+<script data-type='jmarkdown-postprocess'>
+	const writeStream = fs.createWriteStream('headings.txt');
+	$('h1').each((index, element) => {
+		let t = $(element).text().toUpperCase();
+		writeStream.write(t + '\n');
+		$(element).text(t);
+	});
+	html = $.html();
+	writeStream.end();
+</script>
+```
+
+Two things in that snippet are the whole point of post-processing. The DOM walk
+(`$('h1').each(...)`) is something an inline extension could never do, because it
+needs every heading at once. And the call to `fs.createWriteStream` produces an
+auxiliary file *derived from the document* — structured output that lives beside
+the HTML. Hold on to those two ideas; they are why the feature exists.
+
+Notice the last meaningful line, `html = $.html()`. That is not decoration. It is
+the single most important rule on this page.
+
+## The reassignment rule: `html = $.html()`
+
+Your edits to the cheerio tree are **not** written out automatically. What
+JMarkdown exports at the end is the value of the `html` variable, and `$` is a
+*separate* in-memory representation that was loaded *from* `html` when your script
+started. Mutating `$` changes the tree; it does not, by itself, change the string
+that gets saved. To make your DOM changes stick, you must copy the modified tree
+back into `html`:
+
+```js
+html = $.html();
+```
+
+Forget this line and your script will appear to do nothing — the headings stay as
+they were, the file is written, but the visible document is unchanged. As a habit,
+end any post-processing script that touched the DOM with `html = $.html()`.
+
+A small but reassuring detail when you split work across several scripts: the `$`
+object is shared across all of them, so DOM changes made in an earlier script are
+visible to a later one through the same `$`. You only strictly need the final
+`html = $.html()` once everything is done, but writing it at the end of each
+script that edits the DOM is the clearer habit and never wrong. (If a script
+instead builds a *fresh* cheerio object with `cheerio.load(...)`, remember that
+the shared `$` will not see those changes — reconcile through `html` yourself.)
+
+## Working live: editing the DOM
+
+Here is a complete, runnable demonstration. The document has a couple of
+ordinary headings; a post-processing script then tags every heading with a
+`data-level` attribute recording its depth, and stamps a footer onto the body.
+Because this manual is itself built by JMarkdown, the demo below really executes
+the script while this page is compiled:
+
+:::markdown-demo{type=html}
+# Chapter heading
+
+## A subsection
+
+Some prose under the subsection.
+
+<script data-type='jmarkdown-postprocess'>
+	$(':header').each((i, el) => {
+		const level = $(el).prop('tagName').toLowerCase();
+		$(el).attr('data-level', level);
+	});
+	$('body').append(
+		"<footer><em>Post-processed.</em></footer>"
+	);
+	html = $.html();
+</script>
+:::
+
+In the rendered panel on the right, inspect a heading and you will find the
+`data-level` attribute that did not exist in the source, plus a footer that no
+markup put there. Every part of that came from the post-processing script, after
+the document was otherwise complete.
+
+## Writing auxiliary files
+
+The other half of post-processing is the filesystem. Because your script has the
+finished, structured document in hand *and* a real `fs`, it can distil the
+document into companion files: a CSV of extracted data, a JSON index, a sidecar
+of metadata, or even a set of split HTML files. The pattern is always the same —
+select the elements you care about with cheerio, pull out their text or
+attributes, and write the result with `fs`.
+
+The sketch below collects the text of every `<h2>` into a JSON outline written
+beside the source file. It does not modify the DOM, so there is no need to set
+`html`; it only emits a derived artefact:
+
+```html
+<script data-type='jmarkdown-postprocess'>
+	const outline = [];
+	$('h2').each((i, el) => {
+		outline.push({ index: i, title: $(el).text() });
+	});
+	fs.writeFileSync('outline.json', JSON.stringify(outline, null, 2));
+</script>
+```
+
+File paths are relative to wherever JMarkdown was invoked. If you need the
+directory of the source document, the shared context gives you `require`, so you
+can pull in `path` and work it out explicitly.
+
+## Sharing state with compile-time scripts
+
+The most powerful use of post-processing combines it with compile-time scripts.
+A `data-type='jmarkdown'` block runs *during* the read and can accumulate
+information as content goes by; a `data-type='jmarkdown-postprocess'` block runs
+*after* and can act on the total. Because both share one VM context, a value set
+in the first is simply there in the second:
+
+```html
+<script data-type='jmarkdown'>
+	// Runs during the read; accumulates a running total.
+	globalThis.wordCount = 0;
+	function tally(text) {
+		wordCount += text.trim().split(/\s+/).length;
+		return text;
+	}
+	export_to_jmarkdown('tally');
+</script>
+
+<script data-type='jmarkdown-postprocess'>
+	// Runs after the read; uses what the compile-time pass accumulated.
+	$('body').append(`<p class='wc'>Word count: ${wordCount}</p>`);
+	html = $.html();
+</script>
+```
+
+This is the same shared-context discipline that makes
+[inline scripts](inline-scripts.html) able to talk to one another; post-processing
+simply extends it across the boundary between reading and finishing.
+
+## Why not just use a browser script?
+
+Anything a post-processing script does could, in principle, be coded as a script
+that runs in the reader's browser. Post-processing wins on two counts that a
+browser script can never match:
+
+1. **It changes the exported source permanently.** The HTML written to disk
+   already reflects your edits. A browser script, by contrast, leaves the original
+   markup in the page for anyone who views source — and it re-runs its work on
+   every page load. Post-processing does the work once, at build time, and bakes
+   in the result.
+
+2. **It has the filesystem.** A post-processing script can read other files and
+   write new ones, so it can mine the document for structured content and produce
+   companion artefacts — an index, a data export, per-section files. A browser
+   script is sandboxed away from the disk and cannot.
+
+For a substantial, real-world walk-through that leans on both of these — moving
+footnotes, generating bibliographies, computing exam grades, and splitting one
+master document into per-student files and a CSV — see
+[the detailed scripting example](scripting-example.html).
+
+## Reference
+
+### Declaring a script
+
+```html
+<script data-type='jmarkdown-postprocess'>
+	// JavaScript run on the finished document
+	html = $.html();   // required if you edited the DOM
+</script>
+```
+
+| Aspect | Behaviour |
+|---|---|
+| Recognition | A script element whose `data-type` is `jmarkdown-postprocess` |
+| Removal | The element is stripped from the output; only its effects remain |
+| Multiple scripts | Allowed; run in source order, sharing one context |
+| Timing | After the full parse, template wrapping, and JMarkdown's own cheerio pass |
+| Output mode | HTML only; ignored entirely in LaTeX mode |
+| Validation | The body is syntax-checked; an error is reported in place |
+
+### Available names
+
+| Name | What it is |
+|---|---|
+| `$` | cheerio object, pre-loaded with the finished document |
+| `html` | the finished HTML string; **set it to persist DOM edits** |
+| `fs` | Node `fs` module (read/write files) |
+| `cheerio` | the cheerio module, for `cheerio.load()` |
+| `console` | the Node console |
+| `require` | Node `require` (e.g. `require('path')`) |
+| *(shared)* | anything a compile-time `jmarkdown` script defined globally |
+
+### Gotchas
+
+- **Persist your edits.** Mutating `$` is not enough; assign `html = $.html()` or
+  nothing is written. This is the most common mistake.
+- **The TOC is already built.** Headings you rewrite during post-processing are
+  not reflected in the table of contents, which was assembled during the main
+  parse. Update the TOC nodes yourself if you need them in sync.
+- **HTML only.** Post-processing scripts do not run in LaTeX mode, because there
+  is no cheerio stage on that path.
+- **cheerio is a subset of jQuery.** Selection, traversal, attributes, text, and
+  insertion work; exotic jQuery effects and plugins do not. Consult the cheerio
+  docs when in doubt.
+- **A fresh `cheerio.load()` is detached.** If a script loads its own cheerio
+  object instead of using the shared `$`, the shared `$` will not see those edits;
+  reconcile through `html`.
+- **Paths are relative to the invocation directory.** Use `require('path')` if you
+  need to anchor file writes to the source document's directory.
+
+## Related pages
+
+- [Inline scripts](inline-scripts.html) — compile-time script blocks
+  (`data-type='jmarkdown'`) that generate and transform content *during* the read,
+  and the shared context post-processing draws on.
+- [The detailed scripting example](scripting-example.html) — a full project that
+  combines extensions, directives, and post-processing to grade exams and split
+  output into many files.
+- [Markdown demo](markdown-demo.html) — the live-demo directive used throughout
+  this page.
+- [Block environments](block-environments.html) — defining reusable named
+  environments, another feature built on the shared script context.

@@ -1,0 +1,186 @@
+Title: Block Environments
+------------------------------------
+
+# Block environments (`@begin … @end`)
+
+A *block environment* wraps a span of your document in a named container, in the
+spirit of a LaTeX environment:
+
+```
+@begin(name)
+  …content…
+@end(name)
+```
+
+Because the closing tag *names* what it closes, environments nest by name — you
+can wrap a block in another, or drop one into the middle of another, without the
+colon-counting that JMarkdown's colon-delimited container directives require. The
+`@` sigil is borrowed from texinfo's `@example … @end example` and is otherwise
+unused, so it never collides with your prose.
+
+The real point of this page is that **you can define your own environments** —
+either inline in a script block or in a reusable file — and a single
+definition produces both polished HTML and LaTeX. (Throughout, the live demos
+below show the source on the left and its rendered result on the right.) We start
+with the syntax, then spend most of our time on defining environments.
+
+## The syntax
+
+An opener takes a name and two optional arguments, one bracket type per job:
+
+```
+@begin(name)[label]{key="value" …}
+       ^^^^  ^^^^^  ^^^^^^^^^^^^^^^
+       name  label  attributes
+```
+
+The closer is always the bare `@end(name)`. Both the `[label]` and the
+`{attributes}` are handed to your environment's renderer (as `ctx.text` and
+`ctx.attrs` — see below), so you decide what they mean.
+
+## What an undefined name does
+
+If you use a name you have *not* defined, JMarkdown still does something sensible
+so the environment is useful out of the box:
+
+:::markdown-demo
+@begin(warning)
+A plain name becomes a `<div>` whose class is the name.
+@end(warning)
+
+@begin(pull-quote)
+A *hyphenated* name becomes a custom element instead,
+because the HTML spec requires a hyphen in a valid
+custom-element name.
+@end(pull-quote)
+:::
+
+You can force either form with a sigil — `@begin(.name)` is always a `<div>`,
+`@begin(<name>)` is always an element — or set the document-wide policy with the
+`Block elements` metadata key (`hyphenated` (default) · `all` · `none`). In
+LaTeX, every environment renders as `\begin{name}[label]…\end{name}` regardless,
+so you supply the matching CSS for the web and the matching `\newenvironment` for
+print. JMarkdown invents no meaning for the name — that is your job, which brings
+us to:
+
+# Defining your own environments
+
+A definition is a **name** plus a **handler** — an object that says how the
+environment renders. The one required key is `html`; everything else is optional:
+
+| key | meaning |
+|---|---|
+| `html` | `(ctx) => string` — the HTML renderer (required) |
+| `latex` | `(ctx) => string` — the LaTeX renderer (optional; if omitted, the `html` output is reused in LaTeX mode) |
+| `render` | `(ctx) => string` — a single renderer used for *every* output format, when HTML and LaTeX would be identical |
+| `mode` | how the body is read: `'markdown'` (default), `'verbatim'` (kept raw — for code or TeX), or `'custom'` |
+| `tokenize` | `(body, token) => …` — only for `mode: 'custom'`, for environments that parse their own body |
+
+The renderer receives a single **context** object, `ctx`:
+
+| `ctx` field | what it holds |
+|---|---|
+| `ctx.inner` | the body, already rendered (HTML or LaTeX, to match the output) |
+| `ctx.text` | the `[label]` string, or `undefined` |
+| `ctx.attrs` | the `{attributes}` as an object — `ctx.attrs.kind`, `ctx.attrs.id`, … (numbers are coerced) |
+| `ctx.rawText` | the body as raw, unrendered source |
+| `ctx.name` | the environment name |
+| `ctx.format` | `'html'` or `'latex'` |
+| `ctx.parser` | the active marked parser, if you need to render sub-content yourself |
+
+## Defining an environment in a script block
+
+The most direct way — and the most LaTeX-like — is to define an environment in a
+jmarkdown script block (one with `data-type="jmarkdown"`) with
+`defineEnvironment(name, handler)`.
+The definition runs while the document is being read, so **define an environment
+before the first `@begin` that uses it** (just as you would `\newenvironment`
+before the environment in LaTeX).
+
+Here a `callout` environment uses both the `[label]` and a `{kind}` attribute:
+
+:::markdown-demo{type=html}
+<script data-type="jmarkdown">
+defineEnvironment('callout', {
+	html: (ctx) =>
+		`<aside class="callout ${ctx.attrs?.kind ?? 'note'}">
+			<strong>${ctx.text ?? ''}</strong> ${ctx.inner}
+		</aside>`,
+});
+</script>
+
+@begin(callout)[Tip]{kind="info"}
+Define it once, then use it like */any/* other
+environment — the body is processed as markdown, so
+*emphasis* and $math$ work inside it.
+@end(callout)
+:::
+
+Because the same `ctx` is available whatever the output, you give the environment
+a LaTeX form simply by adding a `latex` key — one source, two outputs:
+
+```html
+<script data-type="jmarkdown">
+defineEnvironment('callout', {
+	html:  (ctx) => `<aside class="callout ${ctx.attrs?.kind ?? 'note'}"><strong>${ctx.text ?? ''}</strong> ${ctx.inner}</aside>`,
+	latex: (ctx) => `\\begin{callout}{${ctx.attrs?.kind ?? 'note'}}[${ctx.text ?? ''}]\n${ctx.inner}\n\\end{callout}\n\n`,
+});
+</script>
+```
+
+With that definition, `@begin(callout)[Tip]{kind="info"}` produces a
+`<aside class="callout info">…` for the web and
+`\begin{callout}{info}[Tip]…\end{callout}` for print, from the same source.
+
+## Loading environments from a file
+
+When you have a set of environments you want across many documents, keep them in
+a `.js` file and pull them in from the metadata header with `Load environments:`
+— exactly parallel to `Load directives` and `Load extensions`. Each export is a
+handler:
+
+```js
+// my-environments.js
+export const warning = {
+	html:  (ctx) => `<aside class="warning"><strong>${ctx.text ?? ''}</strong>${ctx.inner}</aside>`,
+	latex: (ctx) => `\\begin{warning}[${ctx.text ?? ''}]\n${ctx.inner}\n\\end{warning}\n\n`,
+};
+
+export const theorem = {
+	html:  (ctx) => `<div class="theorem">${ctx.inner}</div>`,
+	latex: (ctx) => `\\begin{theorem}\n${ctx.inner}\n\\end{theorem}\n\n`,
+};
+```
+
+Then, in the document's metadata header, either name the exports you want…
+
+```
+Load environments: warning, theorem from my-environments.js
+```
+
+…or, if the file's default export is a `{ name: handler }` map, load them all at
+once:
+
+```
+Load environments: my-environments.js
+```
+
+Paths are resolved relative to the document, so the file travels with your
+project. (For environments you want available to *every* project, list the file
+under the `Environments` key in a global or project `.jmarkdown/config.json`,
+using an absolute path.)
+
+## Built-in environments
+
+A handful of names are predefined so that `@begin(x)` matches its corresponding
+container directive exactly:
+
+- `abstract` and `feedback` — styled containers for the web;
+- `TeX` — raw LaTeX, passed through verbatim and emitted only in LaTeX output;
+- `HTML` — markdown prose emitted only in HTML output;
+- `comment` (and any names you declare under `Optionals`) — hidden by default,
+  shown with `@begin(comment){include=true}`;
+- `game` — a strategic-form game (see [Strategic-Form Games](strategic-form-games.html)).
+
+You can use these immediately, and you can define your own alongside them with
+either method above.

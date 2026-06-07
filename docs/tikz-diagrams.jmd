@@ -1,0 +1,407 @@
+Title: TiKZ Diagrams
+------------------------------------
+
+# TiKZ diagrams (the `TiKZ` directive)
+
+[TiKZ](https://tikz.dev/) is the most powerful drawing language in the LaTeX
+world: a complete, programmable system for typeset graphics — graphs, automata,
+commutative diagrams, plots, circuit diagrams, decorated paths, anything you can
+describe geometrically. JMarkdown's `TiKZ` container directive lets you write
+that drawing code directly in your document. When the file is processed,
+JMarkdown compiles the diagram with a real LaTeX engine and converts the result
+to a clean, resolution-independent **SVG** that it drops into the page where the
+directive stood.
+
+The key distinction from [Mermaid](mermaid-diagrams.html) is *when* and *where*
+the drawing happens. Mermaid ships diagram text to the reader's browser and draws
+it client-side, so it never reaches print. TiKZ is compiled by JMarkdown at
+authoring time into a finished graphic. That makes it the right tool for the
+flagship JMarkdown use case — one source producing both polished web pages and a
+typeset book — because the very same TiKZ code that becomes an SVG on the web is
+genuine LaTeX in the print pipeline.
+
+This page covers the directive, the toolchain it drives, the caching that keeps
+re-processing cheap, the optional attributes that control sizing and embedding,
+the configuration keys you may need to set once, and how errors surface. It does
+**not** teach TiKZ itself — that is a large language, documented exhaustively at
+[tikz.dev](https://tikz.dev/). Everything inside the directive is TiKZ's;
+everything around it is JMarkdown's.
+
+## Prerequisites
+
+Unlike most JMarkdown features, the `TiKZ` directive shells out to external
+programs, so it works only on a machine that has them installed:
+
+- **A LuaLaTeX engine** (`lualatex`), which ships with TeX Live and MacTeX. This
+  is what compiles your diagram.
+- **`dvisvgm`**, the DVI-to-SVG converter (also part of TeX Live / MacTeX), which
+  turns the compiled diagram into an SVG.
+- **Ghostscript**, which `dvisvgm` uses internally; JMarkdown points `dvisvgm` at
+  Ghostscript's shared library through a configuration key (see
+  [Configuration](#configuration)).
+
+If those programs are not on the machine doing the processing, the directive will
+report an error in place of the diagram rather than failing the whole build (see
+[When compilation fails](#when-compilation-fails)). On a machine that has them,
+nothing more is needed — you do not run LaTeX yourself.
+
+## The basics
+
+A TiKZ diagram is a container directive: open it with a fence line of three
+colons immediately followed by the name `TiKZ`, write the drawing code as the
+body, then close it with a bare three-colon fence line. The name is spelled with
+JMarkdown's proper-noun capitalisation — `TiKZ`, not `tikz`.
+
+```
+:::TiKZ
+\draw (0,0) node[draw, circle] {A};
+\draw (3,0) node[draw, circle] {B};
+\draw[->] (A) -- (B);
+:::
+```
+
+The live demo below shows that same source on the left and the compiled diagram
+on the right, so the two can never drift apart:
+
+::::markdown-demo
+:::TiKZ{width='100%' embed=true}
+\draw (0,0) node[name=a, fill=green!20!white, draw=green]
+	{$\alpha_{10} + \beta_{12}$};
+\draw (4,0) node[name=b, fill=green!20!white, draw=green]
+	{$\gamma_{10} + \delta_{12}$};
+\draw[->] (a) -- node[pos=0.5,anchor=south] {Hello}
+	node[pos=0.5,anchor=north] {there!} (b);
+:::
+::::
+
+Note what you did *not* write. You did not open a `tikzpicture` environment, load
+any packages, or set up a document. The directive supplies all of that scaffolding
+(see [What gets compiled](#what-gets-compiled)); you write only the drawing
+commands.
+
+### Demoing a diagram needs a deeper nest
+
+Every example on this page shows a `TiKZ` block *inside* a `markdown-demo`
+container so you can see source and output together. For one container directive
+to wrap another, the outer one must open with **more** colons than the inner one
+— four colons for the `markdown-demo` opener around the three-colon `TiKZ`
+opener. This is the ordinary colon-counting rule for nested container directives,
+explained in [Directive Syntax](directives-syntax.html). In your own documents
+you will normally write a plain three-colon `TiKZ` block on its own, with no
+surrounding demo.
+
+## What gets compiled
+
+The body of a `TiKZ` block is raw LaTeX, handed through verbatim — the Markdown
+lexer never touches it, so `$`, `\`, `_`, `{`, `#`, and every other character TiKZ
+needs survive intact. Around that body, the directive wraps a small, fixed
+`standalone` document before sending it to LuaLaTeX:
+
+```latex
+\documentclass[tikz,border=3mm,12pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows,arrows.meta,positioning,shapes,backgrounds,calc,fit,
+    decorations,decorations.pathreplacing,decorations.markings,patterns,matrix,
+    calligraphy,trees,graphs,intersections,through,shapes.geometric,
+    datavisualization}
+%  ← your "LaTeX preamble" config value is inserted here
+\begin{document}
+%  ← your TiKZ body goes here
+\end{document}
+```
+
+Two things follow from this template:
+
+- **A long list of TiKZ libraries is pre-loaded for you** — arrows, positioning,
+  shapes, decorations, calc, fit, matrix, trees, graphs, and more (the full list
+  is in the template above). Most diagrams need nothing beyond them. If you need a
+  library that is *not* in the list, add a `\usetikzlibrary{…}` line to the
+  `LaTeX preamble` configuration key (see [Configuration](#configuration)); it is
+  injected right after the built-in libraries.
+
+- **The body is auto-wrapped in a `tikzpicture` when needed.** If your body does
+  not already contain `\begin{tikzpicture}`, the directive wraps it in
+  `\begin{tikzpicture}[>=latex]…\end{tikzpicture}` for you — which is why the
+  examples above could start straight in with `\draw`. If you *do* write your own
+  `\begin{tikzpicture}[…]`, that wrapper is skipped and your options are honoured,
+  so you keep full control when you need it:
+
+::::markdown-demo
+:::TiKZ{embed=true}
+\begin{tikzpicture}[scale=1.4, every node/.style={font=\small}]
+  \draw[step=0.5, gray!40, very thin] (0,0) grid (3,2);
+  \draw[->, thick] (0,0) -- (3.2,0) node[right] {$x$};
+  \draw[->, thick] (0,0) -- (0,2.2) node[above] {$y$};
+  \draw[blue, very thick, domain=0:3, samples=80] plot (\x, {0.2*\x*\x});
+\end{tikzpicture}
+:::
+::::
+
+## How the diagram becomes an SVG
+
+When JMarkdown meets a `TiKZ` block, it runs a small, deterministic pipeline. The
+working directory for all of it is a folder named `TiKZ/`, created automatically
+**beside the Markdown file being processed** (not the directory you ran the
+command from). The steps are:
+
+1. **Build the standalone document** shown above and compute an MD5 **hash** of
+   its complete contents. That hash is the diagram's identity — change a single
+   character of the body or the preamble and the hash changes; leave it alone and
+   the hash is stable across runs.
+
+2. **Check the cache.** The compiled SVG is stored as `TiKZ/{hash}.svg`. If that
+   file already exists, the diagram is unchanged since last time, so JMarkdown
+   skips compilation entirely and reuses it. This is what makes re-processing a
+   document with many diagrams fast: only diagrams you have edited are
+   re-compiled.
+
+3. **Compile, if needed.** On a cache miss, JMarkdown writes `TiKZ/{hash}.tex` and
+   runs, in the `TiKZ/` directory:
+
+   ```
+   lualatex --output-format=dvi {hash}.tex
+   dvisvgm --bbox=min --libgs=… --no-fonts=1 --optimize=… {hash}.dvi
+   ```
+
+   The first command produces a DVI; the second converts it to a tight,
+   font-outlined, optimised SVG (`--bbox=min` crops to the drawing's bounding box,
+   `--no-fonts=1` converts text to outlines so the figure needs no web fonts).
+
+4. **Clean up.** The intermediate `.tex`, `.aux`, `.dvi`, and `.log` files are
+   deleted, leaving just `TiKZ/{hash}.svg` in the cache.
+
+5. **Emit the image.** The directive renders an `<img>` pointing at (or embedding)
+   that SVG (see [Sizing and embedding](#sizing-and-embedding)).
+
+The upshot: the `TiKZ/` folder is a build cache. You can safely delete it — the
+diagrams will simply be re-compiled on the next run — and you can commit it to keep
+diagrams reproducible without requiring every collaborator to have a LaTeX
+installation. To force a clean rebuild of *every* diagram in a document, see the
+`empty-cache` attribute under [Attributes](#attributes).
+
+## Sizing and embedding
+
+A `TiKZ` block takes its options as a directive attribute block, `{…}`, on the
+opening fence — the same `key="value"` attribute syntax used by every JMarkdown
+directive. There are three that affect output, plus a cache-control attribute.
+
+### `scale` — visually scale the rendered SVG
+
+`scale` takes a number and scales the *displayed* image with a CSS transform
+(`transform: scale(N)`, anchored at the top-left). It does not re-typeset the
+diagram; it stretches or shrinks the finished SVG in the browser.
+
+```
+:::TiKZ{scale=1.5}
+\draw (0,0) circle (1);
+:::
+```
+
+For sharper results at a fixed size, prefer scaling *inside* TiKZ — a
+`\begin{tikzpicture}[scale=1.5]` re-typesets at the new size — and reserve the
+`scale` attribute for quick visual nudges.
+
+### `width` — set a CSS width
+
+`width` takes any CSS length and is applied as `style="width: …"`. Use a normal
+unit such as `3cm`, or a percentage to make the figure responsive to its
+container:
+
+```
+:::TiKZ{width='100%'}
+\draw (0,0) -- (4,0) -- (2,3) -- cycle;
+:::
+```
+
+A percentage width is the usual choice for a diagram that should fill the column
+it sits in. Note that `scale` and `width` are mutually exclusive: if you supply
+both, `scale` takes effect and `width` is ignored.
+
+### `embed` — inline the SVG as a data URI
+
+By default the `<img>` *links* to the SVG file: `<img src='TiKZ/{hash}.svg'>`.
+That keeps the HTML small but means the page needs the `TiKZ/` folder alongside it
+to display. Set `embed=true` (or simply `embed`) and the directive instead reads
+the SVG and inlines it as a base64 `data:` URI:
+
+```
+:::TiKZ{embed=true}
+\draw (0,0) node {self-contained};
+:::
+```
+
+Use `embed` when you want a single, self-contained HTML file with no external
+image dependencies — handy for emailing a page, or for the side-by-side demos on
+this very page, which embed so the doc renders without shipping a `TiKZ/` folder.
+The trade-off is a larger HTML file, since the image travels inside it.
+
+### `empty-cache` — force a full rebuild
+
+`empty-cache=true` (or bare `empty-cache`) deletes **every** file in the `TiKZ/`
+folder before processing, forcing all diagrams in the run to re-compile from
+scratch. Reach for it when something in the shared environment has changed
+out-of-band — a new LaTeX version, an edited global `LaTeX preamble`, a corrupted
+cache — that the per-diagram hash cannot detect. It is a deliberately blunt
+instrument; for everyday editing the content hash already rebuilds exactly the
+diagrams you changed, so you will rarely need it.
+
+## LaTeX output
+
+In the LaTeX pipeline (`--to latex`) the `TiKZ` directive emits **nothing**. This
+is deliberate, and the reasoning is worth stating because it is the opposite of
+what you might first expect.
+
+The directive's job is to turn TiKZ into an *SVG image* for the web. In LaTeX
+output an `<img>` tag would be meaningless, so emitting one would only leak stray
+HTML into your `.tex` file. Suppressing it keeps the LaTeX clean. The TiKZ code
+itself is, of course, already valid LaTeX — so the intended workflow for figures
+that must appear in *both* web and print is to keep the drawing code in a form
+both pipelines can use. If you want a figure to render in the LaTeX build as a
+genuine typeset `tikzpicture` (rather than as a suppressed SVG), author it with a
+[block environment](block-environments.html) or a `:::TeX` block carrying the same
+`tikzpicture` code, which passes through to LaTeX verbatim; use the `TiKZ`
+directive for the web SVG. The `TiKZ` directive guarantees only that it will never
+corrupt your LaTeX with HTML — it produces graphics for the web.
+
+By contrast, [Mermaid](mermaid-diagrams.html) is web-only by nature (it renders in
+the browser), so it too emits nothing in LaTeX. The pair is complementary: Mermaid
+for quick web-only diagrams, TiKZ when the figure is typeset and may need to reach
+print as well.
+
+## Configuration
+
+Three configuration keys influence TiKZ. All can be set globally
+(`~/.jmarkdown/config.json`), per project (`./.jmarkdown/config.json`), or for a
+single document in its [metadata header](metadata-header.html), in increasing
+order of priority.
+
+| Key | Default | Purpose |
+|---|---|---|
+| `TiKZ libgs` | `/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib` | Absolute path to Ghostscript's shared library, passed to `dvisvgm` as `--libgs=…`. |
+| `TiKZ optimise` | `group-attributes,collapse-groups` | The `--optimize=…` value handed to `dvisvgm`, controlling SVG optimisation. |
+| `LaTeX preamble` | *(empty)* | Extra preamble lines injected into the standalone document, right after the built-in TiKZ libraries. A list of strings. |
+
+### `TiKZ libgs` is the one to check first
+
+The default `TiKZ libgs` path points at a specific Homebrew Ghostscript build, so
+it is almost certainly wrong for your machine — the version number, and the whole
+path on Linux or Windows, will differ. If `dvisvgm` fails complaining that it
+cannot load Ghostscript, this is why. Find your library and set the key:
+
+```
+# macOS / Homebrew — note the version will differ:
+find /opt/homebrew/Cellar/ghostscript -name 'libgs.*.dylib'
+# Debian / Ubuntu, for example:
+#   /usr/lib/x86_64-linux-gnu/libgs.so
+```
+
+Then, in a document's metadata header or a config file:
+
+```
+Title: My document
+TiKZ libgs: /opt/homebrew/Cellar/ghostscript/10.07.0/lib/libgs.10.07.dylib
+------------------------------------
+```
+
+(Setting it once in your global `~/.jmarkdown/config.json` is usually the right
+move, since the correct path is a property of the machine, not the document.)
+
+### `LaTeX preamble` adds packages and libraries
+
+Use `LaTeX preamble` to extend the standalone document the directive compiles —
+to load a TiKZ library that is not pre-loaded, pull in a package, or define a
+style or macro your diagrams share. Because it is a *list*, give one entry per
+line. In a metadata header, a multi-line list is written with each item indented
+under the key:
+
+```
+Title: My document
+LaTeX preamble:
+    \usetikzlibrary{automata, petri}
+    \usepackage{xcolor}
+    \tikzset{mystyle/.style={thick, blue}}
+------------------------------------
+```
+
+Because the preamble is part of every diagram's hashed contents, changing it
+invalidates the cache for every diagram that depends on it — exactly what you
+want, since a preamble change can alter how diagrams look.
+
+## When compilation fails
+
+If LuaLaTeX or `dvisvgm` exits with an error — a TiKZ syntax mistake, a missing
+library, a wrong `TiKZ libgs` path, or no LaTeX installed at all — JMarkdown does
+**not** abort the whole build. Instead, in place of the diagram it emits a small
+error box reading *"Error processing TikZ diagram"* with a **Show Error Log**
+button. Clicking it opens the captured LuaLaTeX log (the `.log` file, or the
+process error message if no log was produced) in a new window, so you can read the
+actual LaTeX error and fix the source. The half-written intermediate files for the
+failed diagram are cleaned up, so a later corrected run starts clean.
+
+This fail-soft behaviour means one broken diagram never costs you the rest of the
+document, and the diagnostic is always one click away rather than buried in your
+terminal scrollback.
+
+## Edge cases and gotchas
+
+- **The `TiKZ/` folder follows the source file.** The cache is created next to the
+  `.md` file being processed, regardless of the directory you invoke `jmarkdown`
+  from. Move or rename the source and the cache stays with its old location;
+  diagrams simply re-compile beside the new one.
+
+- **Embed for portable HTML, link for small HTML.** Without `embed`, the finished
+  page references `TiKZ/{hash}.svg`, so the folder must travel with the HTML. With
+  `embed`, the page is self-contained but larger. Pick per the situation.
+
+- **Pre-loaded libraries cover most diagrams; add the rest via the preamble.** If
+  TiKZ reports an unknown key or shape, the library that defines it is probably not
+  in the built-in list — add a `\usetikzlibrary{…}` line through `LaTeX preamble`.
+
+- **The directive does not validate your TiKZ.** It forwards the body to LuaLaTeX
+  and trusts the engine to report problems, which it does through the error box
+  above. There is no JMarkdown-level syntax check.
+
+- **`scale` beats `width`.** Supplying both applies `scale` and ignores `width`;
+  they are not combined.
+
+## Reference
+
+### Directive
+
+| | |
+|---|---|
+| Syntax | three-colon `TiKZ` opener … LaTeX/TiKZ body … bare three-colon closer |
+| Level | Container directive (three colons) |
+| Body processing | Verbatim — the body is **not** run through the Markdown lexer |
+| Auto-wrapping | Body lacking `\begin{tikzpicture}` is wrapped in `\begin{tikzpicture}[>=latex]…\end{tikzpicture}` |
+| HTML output | `<img>` referencing or embedding the compiled SVG |
+| LaTeX output | *(nothing — emitted only in HTML mode)* |
+| Toolchain | `lualatex` → `dvisvgm` (needs LuaLaTeX, dvisvgm, Ghostscript) |
+| Cache | `TiKZ/{md5-hash}.svg`, beside the source file; reused on an exact-content hit |
+
+### Attributes
+
+| Attribute | Value | Effect |
+|---|---|---|
+| `scale` | number | Scales the displayed SVG via `transform: scale(N)` (origin top-left). Overrides `width`. |
+| `width` | CSS length | Sets `style="width: …"` (e.g. `3cm`, `100%`). Ignored if `scale` is also given. |
+| `embed` | `true` / bare | Inlines the SVG as a base64 `data:` URI for a self-contained page; otherwise the `<img>` links to `TiKZ/{hash}.svg`. |
+| `empty-cache` | `true` / bare | Deletes the entire `TiKZ/` cache before processing, forcing every diagram to re-compile. |
+
+### Configuration keys
+
+| Key | Default | Purpose |
+|---|---|---|
+| `TiKZ libgs` | Homebrew Ghostscript dylib path | `--libgs=…` for `dvisvgm`; **set this to your machine's Ghostscript library**. |
+| `TiKZ optimise` | `group-attributes,collapse-groups` | `--optimize=…` value for `dvisvgm`. |
+| `LaTeX preamble` | *(empty list)* | Preamble lines injected after the built-in TiKZ libraries; part of the cache hash. |
+
+## See also
+
+- [Mermaid Diagrams](mermaid-diagrams.html) — quick, browser-rendered diagrams for web-only output.
+- [Math Support](math-support.html) — typeset mathematics in prose, alongside TiKZ figures.
+- [Block Environments](block-environments.html) — `@begin … @end` environments, useful for figures that must reach LaTeX as real `tikzpicture` code.
+- [Directive Syntax](directives-syntax.html) — the container-directive mechanism and colon-counting for nesting.
+- [Markdown Demo](markdown-demo.html) — the side-by-side demo container used throughout this page.
+- [Metadata Header](metadata-header.html) — where to set `TiKZ libgs`, `LaTeX preamble`, and friends for a single document.
+- [Configuration Files](configuration-files.html) — global and per-project configuration.

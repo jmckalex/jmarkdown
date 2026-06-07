@@ -1,0 +1,231 @@
+Title: Motivation
+homepage: <a href='https://jmckalex.org/home/'>https://jmckalex.org/home/</a>
+------------------------------------
+
+# Motivation
+
+This page answers two questions: *why does JMarkdown exist*, and *what does it give
+you that plain Markdown does not*. It is a guided tour rather than a reference — each
+feature is introduced with the problem it solves and a pointer to the page that
+documents it in full. If you are new here, read this first; if you already know what
+you want, the navigation tree on the left goes straight to it.
+
+## Where this started
+
+JMarkdown began small and grew in ambition. The seed was an irritation with
+Markdown's default emphasis syntax. Why are italics `*like this*` rather than
+`/like this/`? Boldface reads more naturally as `*like this*` than as the
+double-starred `**like this**`. And surely underlining ought to be `__like this__`.
+These are matters of taste, but taste is exactly the kind of thing a personal
+authoring tool should be allowed to indulge.
+
+From that narrow goal — a Markdown processor tuned to one author's preferred
+syntax — the project grew into something broader: a Markdown system in which **you
+can define your own syntax extensions, in the document itself**, and in which a
+single source file can produce both polished HTML for the web and LaTeX for print.
+The emphasis-syntax tweaks are still there, but they are now the least of it.
+
+JMarkdown is built on [marked.js](https://marked.js.org/). It adjusts marked's
+syntax, preloads a curated set of community extensions so the dialect behaves like a
+capable MultiMarkdown, and adds a layer of its own — directives, block environments,
+in-document scripting, and a two-target rendering pipeline — on top.
+
+## The two big ideas
+
+Most of what follows is conveniences and quality-of-life features. But two ideas are
+the reason JMarkdown is more than a Markdown variant, and both deserve to be stated
+plainly up front.
+
+**One source, two targets.** A single `.md` file renders to HTML for the web or to
+LaTeX for print. Many constructs — tables, math, strategic-form games, block
+environments — carry renderers for *both* formats, so you write once and choose the
+target at the command line. The original use case is the book *The Rise of
+Computational Philosophy*, authored Knuth-style from one source of truth. See
+[Sources & targets](sources-and-targets.html) for the format-aware constructs and
+the `--to latex` flag.
+
+**Extensibility from inside the document.** You do not have to fork the processor to
+teach it new tricks. New inline syntax can be declared in the metadata header; new
+behaviour can be written in JavaScript in a script block and called from your prose;
+new structural wrappers can be defined as block environments. The document carries
+its own extensions, so it stays portable and self-describing. This is the thread
+that runs through the [Extensions](extensions-simple.html),
+[Scripting](inline-scripts.html), and [Block environments](block-environments.html)
+pages.
+
+## Syntax adjustments
+
+The emphasis tweaks that started it all, plus a few more inline conveniences:
+
+:::markdown-demo
+Writing /italics/, *boldface*, and __underline__ —
+and nesting them, as in /*bold italic*/ or
+__underlined with *bold* inside__.
+
+Inline subscripts and superscripts: H_2O and E=mc^2.
+
+A ==highlight== for marking text.
+:::
+
+The full set, including the flush-right and centred-text blocks, is on
+[Syntax adjustments](syntax-adjustments.html). A handful of standard Markdown
+constructs are deliberately turned *off* in JMarkdown — most notably four-space
+indented code blocks — so that other features can use that space; see
+[Disabled syntax](disabled-syntax.html) for the list and the rationale.
+
+## Inline conveniences: emoji, icons, and dates
+
+Emoji and FontAwesome icons share one colon-delimited syntax. Any of the
+[octocat-supported emoji](https://gist.github.com/rxaviers/7360908) goes between
+colons, and a FontAwesome class name does too:
+
+:::markdown-demo
+I :heart: Markdown! :tada: :beers:
+
+A thumbs-up icon: :fa-thumbs-up: — with extra styling:
+:fa-thumbs-up lg:
+:::
+
+FontAwesome requires linking its kit in the page head (see
+[Syntax adjustments](syntax-adjustments.html)); octocat emoji work with no setup.
+The `:today` inline directive inserts the current date, one of several anchors and
+references documented on [Anchors](anchors.html).
+
+## Structural authoring: directives and block environments
+
+Plain Markdown gives you no way to attach a class or an `id` to an element, or to
+wrap a region in a `<section>` or a custom web element. JMarkdown solves this two
+ways, and the choice between them is worth understanding.
+
+**Directives** are a compact `{#id .class key=value}` grammar that works at three
+scales — an inline `span`, a single block element, and a container that wraps a
+whole region of Markdown. They are the workhorse for styling and semantic markup.
+The same attribute syntax lets you add a class to a list item:
+
+:::markdown-demo
+1. This is a list item {.red}
+2. This is another item {.lightgreen #foo}
+3. This is yet another.
+:::
+
+See [Directives syntax](directives-syntax.html) for the full grammar.
+
+**Block environments** solve the same "wrap a region" problem, but with a named
+opener and closer in the spirit of a LaTeX environment, written `@begin(name)` …
+`@end(name)`. Because the closer *names* what it closes, environments nest by name
+with no colon-counting, and — crucially — a single environment definition can render
+to both HTML and LaTeX. See [Block environments](block-environments.html).
+
+## Comments and conditional content
+
+JMarkdown gives you a real comment facility, something Markdown lacks. There is an
+inline comment character — `%` by default, in the spirit of TeX, and reconfigurable
+through the metadata header — and a container directive that comments out a whole
+region, providing the multi-line equivalent of C's slash-star blocks.
+
+The same machinery powers *optionals*: named regions that can be switched on or off
+at processing time. The motivating case is a document that doubles as a quiz and an
+answer key — the answers live in an optional region that is excluded by default and
+included on demand. Both are covered on
+[Comments & optionals](comments-and-optionals.html).
+
+## Content features inherited and extended
+
+JMarkdown preloads a curated set of marked.js extensions so the dialect behaves like
+a capable MultiMarkdown, then adds features of its own:
+
+| Feature | What it gives you | See |
+|---|---|---|
+| Tables and alerts | GFM tables (with spans and per-column widths) and GFM alert callouts | [Tables & alerts](tables-and-alerts.html) |
+| Math | LaTeX math via MathJax, inline and display | [Math support](math-support.html) |
+| Enhanced lists | Alphabetical and Roman-numeral list markers | [Enhanced lists](enhanced-lists.html) |
+| Description lists | A term-and-definition list syntax | [Description lists](description-lists.html) |
+| Footnotes | Reference footnotes, plus JMarkdown's own inline `[^label: body]` form | [Footnotes](footnotes.html) |
+| Code highlighting | Syntax highlighting via highlight.js | [Code highlighting](code-highlighting.html) |
+| Bibliographies | In-browser bibliographies via Biblify — no `pandoc` step | [Bibliographic support](bibliographic-support.html) |
+| Table of contents | An auto-generated, linkable contents list | [Table of contents](table-of-contents.html) |
+
+Here is JMarkdown's inline footnote in action — body and reference in one place,
+unlike standard Markdown which separates them[^demo]:
+
+:::markdown-demo
+A claim that needs a citation.[^src: The footnote body
+lives right here, inline.]
+:::
+
+[^demo]: Reference footnotes like this one still work too.
+
+## Diagrams and games
+
+Three directives turn declarative source into rendered figures:
+
+- **Mermaid** diagrams — flowcharts, sequence diagrams, and the rest — from a
+  fenced description; see [Mermaid diagrams](mermaid-diagrams.html).
+- **TiKZ** diagrams, rendered to SVG through a LaTeX toolchain for publication-grade
+  output; see [TiKZ diagrams](tikz-diagrams.html).
+- **Strategic-form games** — payoff matrices for game theory — typeset for the web
+  and emitted as the `sgame` LaTeX environment for print; see
+  [Strategic-form games](strategic-form-games.html).
+
+The `markdown-demo` directive used throughout *this* page is itself one of these
+content directives: it shows Markdown source and its rendered output side by side,
+so a demonstration can never drift out of sync with what it demonstrates. See
+[Demonstrating markdown](markdown-demo.html).
+
+## The metadata header
+
+Every JMarkdown document may open with a metadata header. It does two jobs. First,
+it configures the processor — title, theme, which extensions to load, and much more.
+Second, it defines *variables* that a preprocessor substitutes into the body. This
+very file declares a `homepage` value in its header, so writing the moustache form
+`{{homepage}}` in the prose yields: {{homepage}}.
+
+The header is also where you declare new inline syntax extensions without writing
+any JavaScript. See [Metadata header](metadata-header.html) for the full set of
+keys, and [Extensions (simple)](extensions-simple.html) and
+[Extensions (complex)](extensions-complex.html) for declaring your own syntax.
+
+## Defining your own syntax
+
+The defining feature of JMarkdown: you can teach it new syntax from inside the
+document. There are two routes, in increasing order of power.
+
+**Declarative extensions** are defined in the metadata header. A *simple* extension
+specifies just a start- and end-delimiter; a *complex* one supplies a regular
+expression, possibly with capture groups, and a template for the output. Because the
+delimiters may be any Unicode characters, you can invent intuitive markup —
+small-caps via matched arrows, say, or TeXbook-style strings via matched corner
+brackets. See [Extensions (simple)](extensions-simple.html) and
+[Extensions (complex)](extensions-complex.html).
+
+**Scripting** is the full-power route. A jmarkdown script block — a script element
+whose `data-type` is `jmarkdown` — lets you write JavaScript that runs *while the
+document is being processed*. You can define functions that generate HTML and call
+them from your prose with arguments; define new syntax extensions
+programmatically; define block environments with `defineEnvironment`; or, with
+Cheerio made available, manipulate the output DOM as a post-processing step. See
+[Inline scripts](inline-scripts.html), [Post-processing](post-processing.html), and
+the worked [Detailed example](scripting-example.html).
+
+## Pipeline, packaging, and reuse
+
+A few features exist to make documents and projects manageable rather than to add
+expressive power:
+
+- **File inclusion** splices one source file into another with a `[[name.md]]` line,
+  so a book can be assembled from per-chapter files; see
+  [File inclusion](file-inclusion.html).
+- **Output templates** wrap your rendered body in a surrounding HTML document of your
+  choosing; see [Output templates](output-templates.html).
+- **Configuration files** let you set defaults globally (per machine) and per
+  project, with the document's own header taking final precedence; see
+  [Configuration files](configuration-files.html).
+
+## Where to go next
+
+If you want the conceptual overview and a feel for the in-document extension
+mechanism, read the [Introduction](introduction.html). Otherwise, pick the feature
+you need from the list above — each link lands on a page that documents it in full,
+with live demos throughout.
+
+You can also [download the source from GitHub](https://github.com/jmckalex/jmarkdown).

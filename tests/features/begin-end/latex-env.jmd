@@ -1,0 +1,10 @@
+@begin(theorem)[Pythagoras]
+A right triangle, and a nested proof:
+@begin(proof)
+Left as an exercise.
+@end(proof)
+@end(theorem)
+
+@begin(TeX)
+\custom{verbatim $math$ and _underscores_ survive}
+@end(TeX)

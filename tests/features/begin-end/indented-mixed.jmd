@@ -1,0 +1,9 @@
+@begin(outer)
+Prose sits at the left margin, with an indented nested block for readability:
+
+  @begin(inner)
+  The indentation is cosmetic and is stripped before processing.
+  @end(inner)
+
+Back in the outer block.
+@end(outer)

@@ -1,0 +1,217 @@
+Title: Mermaid Diagrams
+------------------------------------
+
+# Mermaid diagrams (the `mermaid` directive)
+
+[Mermaid](https://mermaid.js.org/) lets you describe a diagram — a flowchart, a
+sequence diagram, a pie chart, a Gantt chart, and more — in a compact text
+syntax, and have it drawn for you in the browser. JMarkdown's `mermaid`
+container directive lets you drop that text straight into your document. You
+write the diagram once, in plain words, and JMarkdown hands it to Mermaid for
+rendering when the page loads. There is no image to export, keep in sync, or
+re-render by hand: the diagram *is* the source, and it lives in your `.md` file
+alongside the prose it illustrates.
+
+This page covers the directive, how the diagram is delivered to the browser, the
+one configuration key you may want to touch, and the handful of edge cases worth
+knowing about. It does **not** teach Mermaid's own diagram syntax — that is a
+large language in its own right, documented thoroughly at
+[mermaid.js.org](https://mermaid.js.org/). Everything inside the directive is
+Mermaid's; everything around it is JMarkdown's.
+
+## The basics
+
+A Mermaid diagram is a container directive: open it with a fence line of three
+colons immediately followed by the name `mermaid`, write the diagram body, then
+close it with a bare three-colon fence line. The live demos throughout this page
+show the directive source on the left — opening fence, body, and closing fence —
+and the rendered diagram on the right, so the two can never drift apart:
+
+::::markdown-demo
+:::mermaid
+graph LR
+    A[Square Rect] -- Link text --> B((Circle))
+    A --> C(Round Rect)
+    B --> D{Rhombus}
+    C --> D
+:::
+::::
+
+The body is passed to Mermaid verbatim, so any diagram type Mermaid understands
+works without further effort. A pie chart, for instance:
+
+::::markdown-demo
+:::mermaid
+pie title Pets adopted by volunteers
+    "Dogs" : 386
+    "Cats" : 85
+    "Rats" : 15
+:::
+::::
+
+A sequence diagram, to show that this is not limited to flowcharts:
+
+::::markdown-demo
+:::mermaid
+sequenceDiagram
+    Author->>JMarkdown: write a mermaid block
+    JMarkdown->>Browser: emit div.mermaid
+    Browser->>Mermaid: run on page load
+    Mermaid-->>Browser: rendered SVG
+:::
+::::
+
+## How it works
+
+The directive's job is deliberately small. When JMarkdown sees a `mermaid`
+block it does exactly one thing: it wraps the diagram body in a single element,
+
+```html
+<div class="mermaid">…your diagram text…</div>
+```
+
+and emits it where the directive stood. It does **not** draw the diagram. That is
+the Mermaid library's job, and it happens in the reader's browser.
+
+For the drawing to happen, two things must be present in the finished page, and
+JMarkdown arranges both automatically when you produce a full HTML document:
+
+1. **The diagram markup** — the `div.mermaid` the directive just emitted.
+2. **The Mermaid library** — a script tag pulling in Mermaid from a CDN. The
+   default-template inserts it for you, sourced from the URL in the `Mermaid`
+   configuration key (see below).
+
+Mermaid's library, loaded this way, runs automatically on page load: it scans the
+document for every element with class `mermaid`, reads the text inside, and
+replaces it with the rendered SVG. You do not call Mermaid yourself, and you do
+not need an initialisation script — finding and rendering `div.mermaid` is its
+default behaviour. Put a `mermaid` block in your source, process the file to
+HTML, open the result, and the diagram appears.
+
+This division of labour explains the directive's two most important properties,
+covered next: it produces nothing in LaTeX output, and it leaves the diagram body
+untouched.
+
+### Nothing is emitted in LaTeX mode
+
+Mermaid renders client-side, in a browser, using JavaScript. A `.tex` file has no
+browser and no JavaScript, so there is no sensible LaTeX translation of a Mermaid
+diagram. Rather than leak a stray `div.mermaid` into your `.tex` (where it would
+be meaningless, or worse, printed as literal text), the directive emits **nothing
+at all** in LaTeX mode.
+
+The practical consequence: a document that relies on Mermaid for an illustration
+will have a *gap* where the diagram was when you build it with `--to latex`. If
+you are authoring for both web and print from one source and the figure matters
+in print, draw it with [TiKZ](tikz-diagrams.html) instead — TiKZ produces real,
+typeset graphics in the LaTeX pipeline (and an SVG for the web), whereas Mermaid
+is a web-only convenience. The two are complementary: reach for Mermaid when the
+output is HTML and you want a diagram written in seconds; reach for TiKZ when the
+figure must also survive into print.
+
+### The body is delivered verbatim
+
+Mermaid's syntax is line-based and uses characters that ordinary Markdown would
+love to mangle — `-->`, `{`, `(`, `|`, `#`, and so on. The directive therefore
+treats the body as opaque: it does **not** run the lines through the Markdown
+lexer. What you type is what Mermaid receives.
+
+The single piece of housekeeping the tokenizer performs is to strip one leading
+newline — the blank line between the `mermaid` opener and your first diagram
+line — so that Mermaid does not see a spurious empty first line. Every newline
+*inside* the diagram is preserved, because Mermaid is line-oriented and depends on
+them. Indentation inside the body is likewise preserved and handed straight
+through; Mermaid ignores leading whitespace in most diagram types, so indent for
+readability as you like.
+
+## Configuration
+
+There is one configuration key, `Mermaid`, and most authors never touch it. It
+holds the URL of the Mermaid library that the default-template loads into the
+page:
+
+| Key | Default | Purpose |
+|---|---|---|
+| `Mermaid` | `https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js` | URL of the Mermaid library injected into the HTML `head`. |
+
+Like every configuration key it can be set globally (in `~/.jmarkdown/config.json`),
+per project (in `./.jmarkdown/config.json`), or for a single document in its
+[metadata header](metadata-header.html). Two reasons you might:
+
+- **Pin a version.** The default URL tracks the latest Mermaid release. To freeze
+  a known-good version across a project — so a future Mermaid release cannot
+  change how your diagrams look — point the key at a versioned CDN URL, for
+  example `https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js`, or at a
+  copy you host yourself.
+
+- **Self-host or work offline.** Set the key to a local path or your own server's
+  URL if you cannot rely on the public CDN.
+
+A metadata-header override looks like any other key:
+
+```
+Title: My document
+Mermaid: https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
+------------------------------------
+```
+
+Because the library is only added by the template, the `Mermaid` key matters only
+for full HTML documents. In `--fragment` mode JMarkdown emits the bare
+`div.mermaid` with no surrounding template, so the host page is responsible for
+loading Mermaid itself — useful when you are embedding JMarkdown output inside a
+larger site that already pulls in the library.
+
+## Edge cases and gotchas
+
+- **A syntax error stays on screen.** If the diagram body is not valid Mermaid,
+  the library reports the error in place of the diagram when the page loads;
+  JMarkdown cannot catch it, because the parsing happens in the browser, long
+  after your file has been processed. Mermaid's own
+  [Live Editor](https://mermaid.live/) is the quickest way to check a diagram
+  before pasting it in.
+
+- **No diagram in print.** As covered above, `--to latex` produces no output for
+  a `mermaid` block. This is intentional, not a bug — use
+  [TiKZ](tikz-diagrams.html) for figures that must reach print.
+
+- **Demoing a diagram needs a deeper nest.** To show a `mermaid` block *inside* a
+  `markdown-demo` (as every example on this page does), the demo container must
+  open with *more* colons than the block it contains — four colons for the
+  `markdown-demo` opener wrapping the three-colon `mermaid` opener. This is the
+  ordinary colon-counting rule for nested container directives; see
+  [Directive Syntax](directives-syntax.html).
+
+- **The directive does not validate diagram type.** JMarkdown neither knows nor
+  cares whether your body is a flowchart, a pie chart, or something Mermaid added
+  last week. It wraps and forwards; Mermaid interprets. Any diagram type the
+  loaded version of the library supports will work.
+
+## Reference
+
+### Directive
+
+| | |
+|---|---|
+| Syntax | three-colon `mermaid` opener … diagram body … bare three-colon closer |
+| Level | Container directive (three colons) |
+| HTML output | `<div class="mermaid">…body…</div>` |
+| LaTeX output | *(nothing — emitted only in HTML mode)* |
+| Body processing | Verbatim; one leading newline stripped, all internal newlines preserved |
+| Markdown in body | No — the body is **not** run through the Markdown lexer |
+
+### Library delivery
+
+| | |
+|---|---|
+| Loaded by | The HTML template, from the `Mermaid` configuration key |
+| Default source | `https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js` |
+| Rendering trigger | Mermaid's own on-load scan for elements of class `mermaid` |
+| Fragment mode | Library **not** injected — the host page must load Mermaid |
+
+## See also
+
+- [TiKZ Diagrams](tikz-diagrams.html) — typeset diagrams that render in both the web and LaTeX pipelines.
+- [Directive Syntax](directives-syntax.html) — the container-directive mechanism and colon-counting for nesting.
+- [Markdown Demo](markdown-demo.html) — the side-by-side demo container used throughout this page.
+- [Metadata Header](metadata-header.html) — where to set the `Mermaid` key for a single document.
+- [Configuration Files](configuration-files.html) — global and per-project configuration.

@@ -1,0 +1,10 @@
+<script data-type="jmarkdown">
+defineEnvironment('callout', {
+	html:  (ctx) => `<aside class="callout ${ctx.attrs?.kind ?? 'note'}"><strong>${ctx.text ?? ''}</strong>${ctx.inner}</aside>`,
+	latex: (ctx) => `\\begin{callout}{${ctx.attrs?.kind ?? 'note'}}[${ctx.text ?? ''}]\n${ctx.inner}\n\\end{callout}\n\n`,
+});
+</script>
+
+@begin(callout)[Heads up]{kind="warning"}
+A user-defined environment, body with *emphasis*.
+@end(callout)

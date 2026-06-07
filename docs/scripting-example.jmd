@@ -1,0 +1,316 @@
+Title: Scripting Example
+Extension keycap: ⌜ ⌝ false 1
+	<kbd>${content1}</kbd>
+Extension Q1: /Q1\./   /(Q1\.)/   false 1
+	<p class='question'><em>This is the text of the first question.</em></p>
+Extension Q2: /Q2\./   /(Q2\.)/   false 1
+	<p class='question'><em>This is the text of the second question.</em></p>
+Extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
+	<span style='float: right; font-weight: bold; position: relative; top: 6pt'>Grade <span class='mark' style='padding: 3pt; border: 1pt solid black'>${content1}</span></span>
+Extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
+	<span>Candidate: <strong class='candidate'>${content1}</strong></span><br>
+------------------------------------
+
+# A scripting example: marking exams
+
+Most of JMarkdown's documentation introduces one feature at a time — a syntax
+extension here, a container directive there, a post-processing script somewhere
+else. This page is different. It is a **case study**: a single, real workflow,
+described end to end, that shows what those features are *for* when you put them
+together.
+
+The workflow is one the author actually uses: writing feedback on student exam
+scripts and recording the marks. The point of the example is not the marking — it
+is the *technique*. You will see how a few lines of metadata-header configuration
+let you write feedback in plain, natural prose, while JMarkdown quietly turns the
+patterns in that prose into structured, machine-readable HTML. A
+[post-processing](post-processing.html) script then walks that structure to
+compute grades, split the document into per-student files, and export a
+spreadsheet — none of which you had to mark up by hand.
+
+The recurring idea — and the one worth carrying away from this page — is this:
+
+> Recognise the patterns that occur *naturally* in how you already write, render
+> them attractively, and tag them with classes so that a later pass can compute
+> over them. Author-friendly notation on the way in; machine-friendly structure
+> on the way out.
+
+If you have not yet met the individual ingredients, the related pages cover them
+in isolation: [regular-expression extensions](extensions-complex.html),
+[simple extensions](extensions-simple.html), [directives](directives-syntax.html),
+[inline scripts](inline-scripts.html), and [post-processing](post-processing.html).
+Here we assume them and concentrate on the *combination*.
+
+## The source a marker actually writes
+
+The feedback for one student looks like this in the `.md` file (the metadata
+header is omitted). The marker types it almost as a note to a colleague:
+
+::::markdown-demo
+Candidate: 43786
+File: ⌜student exam file name.pdf⌝
+
+:::feedback
+Q1.
+
+...text containing feedback on question 1... [68]
+
+Q2.
+
+...text containing feedback on question 2... [75]
+:::
+::::
+
+Look at what came out on the right. The bare line `Candidate: 43786` became a
+bold, tagged candidate number. `Q1.` and `Q2.` became italicised question
+headings. The bracketed two-digit marks `[68]` and `[75]` floated to the right
+margin as bordered grade badges. And the whole block of feedback was wrapped in a
+styled `section.feedback` container with a heading. The marker wrote none of that
+markup — they wrote prose, and the patterns in the prose did the rest.
+
+Every transformation you just saw is produced live, on *this* page, by the
+extensions declared in this document's own metadata header. Nothing is faked.
+
+## How each piece is built
+
+The magic is shared between two kinds of declaration in the metadata header —
+**syntax extensions** that recognise patterns inline, and a **container
+directive** that wraps the feedback — plus, in the real workflow, a
+**post-processing script** that runs after rendering. We take them in turn.
+
+### The candidate number, with a regular-expression extension
+
+The line `Candidate: 43786` is recognised by a
+[complex (regular-expression) extension](extensions-complex.html). It matches the
+literal word `Candidate:`, optional whitespace, and a run of digits; it captures
+the digits and sets them in bold inside a tagged `<strong>`:
+
+```yaml
+Extension candidate: /Candidate:\s*[0-9]+/ 	/Candidate:\s*([0-9]+)/		false		1
+	<span>Candidate: <strong class='candidate'>${content1}</strong></span><br>
+```
+
+The first pattern, `/Candidate:\s*[0-9]+/`, is the cheap *start* scan; the second,
+`/Candidate:\s*([0-9]+)/`, is the anchored tokenizer whose one capture group fills
+`${content1}`. The `false` field means the captured digits are inserted verbatim,
+and `1` says there is a single capture. Try it:
+
+:::markdown-demo
+Candidate: 123456
+:::
+
+The payoff is twofold. The number is typeset consistently every time, and the
+`class='candidate'` makes it *addressable* later: a post-processing pass can find
+every `strong.candidate` in the document and read off the candidate numbers
+without parsing prose.
+
+### The question headings
+
+The two question markers are even simpler. Each is a regular-expression extension
+that matches the literal `Q1.` or `Q2.` and replaces it with an italic heading:
+
+```yaml
+Extension Q1: /Q1\./   /(Q1\.)/   false 1
+	<p class='question'><em>This is the text of the first question.</em></p>
+Extension Q2: /Q2\./   /(Q2\.)/   false 1
+	<p class='question'><em>This is the text of the second question.</em></p>
+```
+
+:::markdown-demo
+Q1.
+
+Q2.
+:::
+
+In a real header you would write out the actual question text in each template.
+The technique is the interesting part: a marker types the natural shorthand
+`Q1.`, and the full question prints. (Because these particular extensions ignore
+their captured text, they could equally well be written as
+[simple delimiter extensions](extensions-simple.html); the regular-expression
+form is shown here so that the whole header uses one consistent style.)
+
+### The floating mark
+
+The bracketed two-digit grades are the most useful pattern of the lot. This
+extension matches any two digits in square brackets, captures the number, and
+floats it to the right margin in a bordered badge:
+
+```yaml
+Extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
+	<span style='float: right; font-weight: bold; position: relative; top: 6pt'>Grade <span class='mark' style='padding: 3pt; border: 1pt solid black'>${content1}</span></span>
+```
+
+:::markdown-demo
+...text containing feedback on question 1... [68]
+:::
+
+Note the inner `class='mark'` on the badge. As with the candidate number, the
+class is doing double duty: it formats the grade attractively *and* leaves a
+hook. A later pass can sweep every `span.mark`, read the numbers, and compute a
+weighted total — which is exactly what the post-processing script below does.
+
+### The file-name keycap
+
+The `File:` line uses a [simple delimiter extension](extensions-simple.html) — a
+fixed pair of corner brackets that wraps its content in a `<kbd>` element, the
+kind of styling you would give a filename or a keyboard shortcut:
+
+```yaml
+Extension keycap: ⌜ ⌝ false 1
+	<kbd>${content1}</kbd>
+```
+
+:::markdown-demo
+File: ⌜student exam file name.pdf⌝
+:::
+
+The corner brackets `⌜` `⌝` are ordinary Unicode characters chosen because they
+*look* like what they do. JMarkdown is fully Unicode-aware, so you are not limited
+to overloading ASCII punctuation.
+
+### The feedback container
+
+Finally, the block of feedback is wrapped in the `feedback` container directive,
+which adds a heading and a styled `section`:
+
+```
+:::feedback
+…the feedback prose…
+:::
+```
+
+::::markdown-demo
+:::feedback
+This is the feedback for the student, written as ordinary prose with
+*emphasis*, [68], and everything else processed as usual.
+:::
+::::
+
+The directive emits `<p class='feedback'>Feedback</p>` followed by a
+`<section class="feedback">…</section>`. That `section.feedback` is the container
+the post-processing script treats as one student's record: footnotes, the
+bibliography, and the computed grade all get appended *inside* it. The `feedback`
+name is a [built-in](block-environments.html) — `:::feedback` and the block
+environment `@begin(feedback) … @end(feedback)` render identically.
+
+## The post-processing script
+
+So far everything has happened during the parse. The real leverage comes
+*afterwards*. Once JMarkdown has assembled the whole HTML document, a
+[post-processing](post-processing.html) script runs with the rendered document
+loaded into [cheerio](https://cheerio.js.org/) — a lightweight, jQuery-like DOM
+library. The script is written in a script element whose `data-type` is
+`jmarkdown-postprocess`, and inside it you have these variables:
+
+| variable | what it holds |
+|---|---|
+| `$` | the cheerio object — the whole rendered document, queryable like jQuery |
+| `html` | the raw HTML string; assign `html = $.html()` to persist DOM edits |
+| `fs` | Node's `fs` module, for reading and writing files |
+| `cheerio` | the cheerio module itself, e.g. to build fresh fragments |
+| `console` | the usual logging object |
+
+Because the parse pass already tagged everything — `strong.candidate`,
+`span.mark`, `section.feedback` — the script never has to parse prose. It just
+queries the structure. Here is the shape of the work it does, with the four tasks
+the workflow performs:
+
+1. **Relocate footnotes.** Move any footnotes used in a student's feedback from
+   the document-wide list that `marked-footnote` appends at the very end, into the
+   bottom of *that student's* `section.feedback`. The footnote markers in the text
+   are already in the right place, and each marker carries enough information to
+   tell cheerio what to move where.
+
+2. **Resolve citations.** Process any bibliographic citations in each student's
+   feedback and append an auto-generated bibliography to the end of that
+   `section.feedback`. This hands the heavy lifting to
+   [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html).
+
+3. **Compute each grade.** For every student, read the marks out of the
+   `span.mark` badges, compute the correctly weighted average for the whole exam,
+   and append a span holding the final grade to the end of that student's
+   `section.feedback`.
+
+4. **Export per-student files and a spreadsheet.** Walk the document one student
+   at a time and, for each:
+   a. Write that student's feedback to its own file named `Candidate NNNNN.html`,
+      where `NNNNN` is the candidate number. Cheerio copies the `<head>` of the
+      master output file to the top of each individual file so the feedback shows
+      with the right CSS.
+   b. Append a line to a CSV file holding the candidate number, the mark on each
+      question, and the aggregate — a file that imports straight into a
+      spreadsheet.
+
+Task 3 is the canonical example of computing over the structure. In outline it is
+just a cheerio walk:
+
+```html
+<script data-type='jmarkdown-postprocess'>
+	$('section.feedback').each((i, section) => {
+		// Read the question marks tagged by the `mark` extension.
+		const marks = $(section).find('span.mark')
+			.map((j, el) => parseInt($(el).text(), 10))
+			.get();
+
+		// Compute the weighted total (weights are the marker's business).
+		const total = computeWeightedAverage(marks);
+
+		// Append the result inside this student's container.
+		$(section).append(`<p class="grade">Total: ${total}</p>`);
+	});
+
+	// Persist the edits so JMarkdown writes them out.
+	html = $.html();
+</script>
+```
+
+The two lines that make this work are the query `$('span.mark')` — which only
+finds anything *because* the `mark` extension stamped that class on every badge —
+and the final `html = $.html()`, without which the DOM edits are discarded. More
+than one `jmarkdown-postprocess` block may appear in a document; JMarkdown
+collects them and runs them in order, sharing one context, so later blocks see
+the edits made by earlier ones.
+
+## Why structure the document this way
+
+A fair question is why the candidate number, the file line, and the feedback are
+*separate* tagged pieces rather than one big container wrapping everything about a
+student. The tasks above would be marginally easier with a single per-student
+wrapper — you could iterate over students directly. But that would force the
+marker to write an extra layer of markup around each entry, and it would make the
+source read less like natural notes. The whole spirit of the example is to keep
+what the *human* writes as close to plain prose as possible, and to recover the
+structure from the patterns instead.
+
+That trade — a little more cleverness in the post-processing script in exchange
+for a much more natural source document — is the one this example deliberately
+makes. It is worth making whenever a document has *naturally occurring textual
+patterns*: dates, identifiers, codes, labelled values, anything regular. Match
+them with [extensions](extensions-complex.html), render them attractively, tag
+them with classes, and let a [post-processing](post-processing.html) pass do the
+computation.
+
+## Reference: the moving parts
+
+| piece | mechanism | where documented |
+|---|---|---|
+| `Candidate: NNNNN` → tagged bold number | regular-expression extension | [Extensions (complex)](extensions-complex.html) |
+| `Q1.` / `Q2.` → question headings | regular-expression extension | [Extensions (complex)](extensions-complex.html) |
+| `[NN]` → floating grade badge | regular-expression extension | [Extensions (complex)](extensions-complex.html) |
+| `⌜name⌝` → `<kbd>` keycap | simple delimiter extension | [Extensions (simple)](extensions-simple.html) |
+| `:::feedback … :::` → styled section | container directive (built-in) | [Directives](directives-syntax.html) · [Block Environments](block-environments.html) |
+| grade computation, file/CSV export | post-processing script (cheerio + `fs`) | [Post-processing](post-processing.html) |
+
+## Where to go next
+
+- [Post-processing](post-processing.html) — the cheerio-based pass that runs after
+  rendering, with full details of `$`, `html`, and `fs`.
+- [Extensions (complex)](extensions-complex.html) — the regular-expression form
+  that recognised the candidate number, questions, and marks.
+- [Extensions (simple)](extensions-simple.html) — the fixed-delimiter form behind
+  the file-name keycap.
+- [Inline Scripts](inline-scripts.html) — when a pattern needs real computation
+  during the parse rather than a static template.
+- [Directives](directives-syntax.html) and
+  [Block Environments](block-environments.html) — the container constructs, of
+  which `feedback` is a built-in example.

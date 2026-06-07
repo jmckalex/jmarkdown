@@ -1,0 +1,292 @@
+Title: Math Support
+------------------------------------
+
+# Math support
+
+JMarkdown ships with [MathJax](https://www.mathjax.org/) wired in, so you can
+write mathematics the way you already do in LaTeX and have it typeset
+beautifully on the web — no configuration, no extra packages, no setup. Type
+`$e^{i\pi} + 1 = 0$` and you get a properly rendered equation; the same source,
+sent to the LaTeX backend, becomes the very same `$e^{i\pi} + 1 = 0$` in your
+`.tex` file. One source, both targets.
+
+The two jobs JMarkdown does for you are small but important. First, it
+recognises all four standard math delimiters and leaves everything between them
+**untouched by the Markdown interpreter**, so an expression like `$\alpha^*$`
+typesets as intended instead of being mistaken for emphasis or a strong span.
+Second, it loads and configures MathJax in the generated HTML so the page just
+works in a browser. This page explains both, the edge cases that catch people
+out, and how to change the defaults.
+
+(Throughout, the live demos show the source on the left and its rendered result
+on the right. The right-hand pane contains real math delimiters, so if you are
+reading the rendered manual in a browser, MathJax typesets them in place.)
+
+## Writing math
+
+There are two kinds of math — *inline*, which flows within a line of prose, and
+*display*, which is set off on its own centred line — and each has two
+interchangeable delimiter forms:
+
+| Kind | Delimiters | Example source |
+|---|---|---|
+| Inline | `$ … $` or `\( … \)` | `$a^2 + b^2 = c^2$` |
+| Display | `$$ … $$` or `\[ … \]` | `$$\int_0^1 x^2\,dx$$` |
+
+The dollar forms are the Markdown-flavoured convention; the parenthesis and
+bracket forms are the ones LaTeX authors reach for out of habit. JMarkdown
+accepts all four equally, so you can mix them or stick to whichever you prefer.
+
+### Inline math
+
+Inline math sits inside running text and lines up with the surrounding words:
+
+:::markdown-demo
+The Pythagorean theorem states that $a^2 + b^2 = c^2$ for a
+right triangle. The dollar form and the paren form \(x = y\)
+are equivalent.
+:::
+
+Notice that `\( … \)` produces exactly the same result as `$ … $`. Internally
+JMarkdown normalises the parenthesis form to dollars, so the two are
+interchangeable everywhere.
+
+### Display math
+
+Display math is set on its own line and centred. Put the delimiters on their
+own lines around the body:
+
+:::markdown-demo
+A definite integral:
+
+$$
+\int_{0}^{1} x^2 \, dx = \frac{1}{3}
+$$
+
+And, using the bracket form, Euler's identity:
+
+\[
+e^{i\pi} + 1 = 0
+\]
+:::
+
+As with inline math, `\[ … \]` is normalised to `$$ … $$`, so the two display
+forms are equivalent.
+
+### Multi-line and aligned math
+
+Anything MathJax understands works inside the delimiters, because JMarkdown
+hands the body to MathJax verbatim. That includes AMS-math environments such as
+`aligned`, `cases`, and matrices:
+
+:::markdown-demo
+$$
+\begin{aligned}
+  f(x) &= (x+1)^2 \\
+       &= x^2 + 2x + 1
+\end{aligned}
+$$
+
+$$
+A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}
+$$
+:::
+
+### Equation numbering and tags
+
+The default MathJax configuration turns on AMS-style automatic equation
+numbering (`tags: 'ams'`). Display equations that use a numbered environment are
+numbered, and you can override or supply a manual label with `\tag{…}`:
+
+:::markdown-demo
+A tagged equation:
+
+$$
+E = mc^2 \tag{$\star$}
+$$
+:::
+
+If you do not want automatic numbering, change the `tags` setting in the MathJax
+configuration — see [Changing the defaults](#changing-the-defaults) below.
+
+## How math is protected from Markdown
+
+The reason JMarkdown needs to know about math at all is that Markdown — and
+JMarkdown's own inline syntax — would otherwise misread it. JMarkdown adds
+several inline operators: `*strong*`, `/italics/`, `==highlight==`, `__underline__`,
+and `_subscript_` / `^superscript^`. Several of those characters are perfectly
+ordinary inside an equation. Without protection, `$a^*$` would be torn apart by
+the superscript rule, and `$a_i$` by the subscript rule.
+
+JMarkdown solves this by recognising the math delimiters *first* and treating
+their contents as opaque: the text between the delimiters is copied straight
+through to the output and never offered to the Markdown or JMarkdown inline
+parsers. So this works exactly as you would hope:
+
+:::markdown-demo
+Inside math, $\alpha^*$ and $a_i$ are safe.
+
+Outside math, a_subscript_b is interpreted by JMarkdown.
+:::
+
+The contrast in that demo is the whole point — and also a gotcha. **Protection
+applies only between the delimiters.** Prose *outside* the math is still subject
+to every JMarkdown rule, which is why `a_subscript_b` in the second line came
+out with subscripts. If you want literal underscores or asterisks in ordinary
+text, escape them or wrap them in a code span; that is a property of the inline
+syntax, not of math support (see [Syntax Adjustments](syntax-adjustments.html)).
+
+### Angle brackets become entities
+
+The one transformation JMarkdown applies inside math is to replace the
+characters `<` and `>` with the HTML entities `&lt;` and `&gt;`. This is
+necessary because a bare `<` in the page body can be misparsed as the start of
+an HTML tag. MathJax decodes the entities before typesetting, so `$a < b$`
+displays as the inequality you wrote:
+
+:::markdown-demo
+The inequality $a < b < c$ typesets correctly.
+:::
+
+When you have a choice, prefer the LaTeX relational macros `\lt`, `\gt`, `\le`,
+`\ge`: they sidestep the entity substitution entirely and read more clearly. The
+substitution also applies in LaTeX output mode — see
+[Math in LaTeX output](#math-in-latex-output) for the one place that matters.
+
+## The dollar-sign / currency gotcha
+
+The most common surprise has nothing to do with math you intended to write. A
+single dollar sign opens an inline-math span, so a sentence that mentions two
+amounts of money can be read as an equation, with everything between the dollars
+swallowed as math:
+
+:::markdown-demo
+It costs $5 for *this* and $10 for that.
+:::
+
+In that demo the `*this*` did **not** become bold, because `$5 for *this* and $`
+was captured as inline math and protected from the emphasis rule. The fix is to
+escape the literal dollar signs with a backslash:
+
+:::markdown-demo
+It costs \$5 for *this* and \$10 for that.
+:::
+
+Now the dollars are literal text, the math parser ignores them, and `*this*`
+renders as strong. As a rule of thumb: if a `$` in your prose means *money*,
+not *math*, write it as `\$`.
+
+## Math in LaTeX output
+
+Because math is passed through verbatim, the LaTeX backend needs to do almost
+nothing: `$ … $` and `$$ … $$` are already valid LaTeX, and the parenthesis and
+bracket forms have been normalised to them. The same source therefore produces
+identical math in both targets, which is exactly what you want from a
+single-source authoring system.
+
+```text
+Inline math $a^2 + b^2 = c^2$ and a paren form \(x = y\).
+```
+
+renders, in LaTeX output, as:
+
+```latex
+Inline math $a^2 + b^2 = c^2$ and a paren form $x = y$.
+```
+
+One caveat carries over from the web behaviour: the `<` → `&lt;` and
+`>` → `&gt;` substitution described above is applied in **both** output modes,
+including LaTeX. A literal `<` inside math therefore reaches your `.tex` file as
+`&lt;`, which LaTeX will not understand. In LaTeX-bound documents, write
+inequalities with the macros `\lt`, `\gt`, `\le`, `\ge` (or `<` outside math
+mode), and you will never hit this.
+
+## Changing the defaults
+
+JMarkdown configures MathJax through two keys, both nested under `MathJax`. You
+can set them in a [metadata header](metadata-header.html), a project
+`.jmarkdown/config.json`, or your global config (see
+[Configuration Files](configuration-files.html)); object-valued keys merge field
+by field, so you can override one without restating the other.
+
+| Key | What it controls | Default |
+|---|---|---|
+| `MathJax.src` | The URL of the MathJax script loaded into the page | MathJax 3, `tex-svg` build, from the jsDelivr CDN |
+| `MathJax.configuration` | The JavaScript assigned to the global `MathJax` object before the library loads | the configuration shown below |
+
+The default configuration is:
+
+```js
+MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'ams'
+    }
+}
+```
+
+This is what defines the four delimiter pairs and enables AMS equation
+numbering. The default `src` points at the `tex-svg` component, so math is
+rendered as **SVG** — crisp at any zoom and self-contained, which is ideal for
+print-style documents and for pages you intend to archive.
+
+### Choosing a different renderer
+
+MathJax 3 ships several output components. To render math as CHTML (which uses
+web fonts and can reflow more naturally in some layouts) instead of SVG, point
+`MathJax.src` at the corresponding build in your metadata header:
+
+```text
+MathJax:
+  src: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js
+```
+
+### Turning off equation numbering
+
+To disable automatic numbering, override the configuration with `tags: 'none'`:
+
+```text
+MathJax:
+  configuration: |
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        tags: 'none'
+      }
+    }
+```
+
+Any other MathJax option — custom macros, additional packages, accessibility
+settings — goes in the same `configuration` block; consult the
+[MathJax documentation](https://docs.mathjax.org/) for the full list.
+
+## Reference
+
+### Delimiters
+
+| Form | Kind | Normalised to | Notes |
+|---|---|---|---|
+| `$ … $` | inline | — | the canonical inline form |
+| `\( … \)` | inline | `$ … $` | LaTeX habit; equivalent to dollars |
+| `$$ … $$` | display | — | the canonical display form |
+| `\[ … \]` | display | `$$ … $$` | LaTeX habit; equivalent to double dollars |
+
+### Behaviour summary
+
+| Topic | Behaviour |
+|---|---|
+| Markdown protection | Text between delimiters is passed through verbatim; JMarkdown's inline syntax is not applied to it. |
+| `<` and `>` | Replaced with `&lt;` / `&gt;` in both HTML and LaTeX output. Prefer `\lt` / `\gt` in math. |
+| Literal `$` in prose | Escape as `\$` to prevent an accidental math span (the currency gotcha). |
+| HTML output | MathJax is loaded automatically; default rendering is SVG. |
+| LaTeX output | Delimiters are emitted as `$ … $` / `$$ … $$`; no MathJax involved. |
+| Equation numbering | AMS-style by default (`tags: 'ams'`); supply `\tag{…}` for manual labels. |
+
+## See also
+
+- [Configuration Files](configuration-files.html) — where the `MathJax` keys live and how object settings merge.
+- [Metadata Header](metadata-header.html) — setting `MathJax.src` or `MathJax.configuration` per document.
+- [Syntax Adjustments](syntax-adjustments.html) — the inline operators (`^`, `_`, `*`, `/`) that math protects you from, and how to escape them in prose.
+- [TiKZ Diagrams](tikz-diagrams.html) and [Mermaid Diagrams](mermaid-diagrams.html) — other ways to put figures and notation into a document.

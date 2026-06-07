@@ -1,0 +1,19 @@
+Before.
+
+@begin(comment)
+Hidden by default — this private note must not appear.
+@end(comment)
+
+@begin(comment){include=true}
+Shown because include=true.
+@end(comment)
+
+:::comment
+Directive form: also hidden by default.
+:::
+
+:::comment{include=true}
+Directive form: shown.
+:::
+
+After.
