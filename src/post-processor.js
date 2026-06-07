@@ -42,6 +42,7 @@ export function postProcessHTML(html, options = {}) {
 	}
 	number_figures($);
 	number_tables($);
+	number_theorems($);
 	process_crossrefs($);
 	replaceTargetsBySources($);
 
@@ -154,6 +155,46 @@ function number_tables($) {
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'table', anchor: id });
 		}
+	});
+}
+
+// Number theorem-like environments (@begin(theorem|lemma|…), see theorems.js)
+// with ONE shared sequential counter (Theorem 1, Lemma 2, Definition 3, …), in
+// document order, and record each for :ref/:cref. The reference WORD still comes
+// from the kind ("lemma 2"), matching the LaTeX thmtools+cleveref setup. The
+// label runs into the first paragraph ("Theorem 1 (name). …"), amsthm-style.
+// proof environments are labelled "Proof." (unnumbered) and get a QED mark.
+// HTML-only — LaTeX numbers theorems natively.
+function number_theorems($) {
+	const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+	const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+	let n = 0;
+	$('.theorem-env').each((i, elem) => {
+		const $env = $(elem);
+		n++;
+		const kind = $env.attr('data-kind') || 'theorem';
+		const name = $env.attr('data-name');
+		const id = $env.attr('id');
+		let text = `${cap(kind)} ${n}`;
+		if (name) text += ` (${esc(name)})`;
+		text += '.';
+		const labelHtml = `<span class="theorem-label">${text}</span> `;
+		const $firstP = $env.children('p').first();
+		if ($firstP.length) $firstP.prepend(labelHtml);
+		else $env.prepend(labelHtml);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: kind, anchor: id });
+		}
+	});
+
+	$('.proof-env').each((i, elem) => {
+		const $p = $(elem);
+		const labelHtml = `<span class="proof-label">Proof.</span> `;
+		const $firstP = $p.children('p').first();
+		if ($firstP.length) $firstP.prepend(labelHtml);
+		else $p.prepend(labelHtml);
+		$p.append('<span class="qed">&#8718;</span>');
 	});
 }
 

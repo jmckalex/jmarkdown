@@ -57,6 +57,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
 		crossref)          extra='\usepackage{cleveref}';                 needs='cleveref.sty' ;;
 		floats)            extra='\usepackage[draft]{graphicx}\usepackage{subcaption}\usepackage{cleveref}'; needs='subcaption.sty cleveref.sty' ;;
+		theorems)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[sibling=theorem]{lemma}\declaretheorem[sibling=theorem]{corollary}\declaretheorem[sibling=theorem]{proposition}\declaretheorem[style=definition,sibling=theorem]{definition}\declaretheorem[style=definition,sibling=theorem]{example}\declaretheorem[style=remark,sibling=theorem]{remark}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 

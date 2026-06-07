@@ -1,0 +1,13 @@
+@begin(theorem)[Pythagoras]{id=thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+@end(theorem)
+
+@begin(definition){id=def:rt}
+A *right triangle* has one ninety-degree angle.
+@end(definition)
+
+@begin(proof)
+By rearrangement of areas.
+@end(proof)
+
+By :cref[thm:pyth] and :cref[def:rt] we are done. See also :Cref[thm:pyth].

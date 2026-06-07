@@ -43,8 +43,11 @@ export function lookupLabel(key) {
 const TYPE_NAMES = {
 	part: 'part', chapter: 'chapter', section: 'section', subsection: 'subsection',
 	subsubsection: 'subsubsection', paragraph: 'paragraph', subparagraph: 'subparagraph',
-	figure: 'figure', table: 'table', theorem: 'theorem', equation: 'equation',
-	listing: 'listing', footnote: 'footnote'
+	figure: 'figure', table: 'table', equation: 'equation', listing: 'listing',
+	footnote: 'footnote',
+	theorem: 'theorem', lemma: 'lemma', corollary: 'corollary',
+	proposition: 'proposition', definition: 'definition', example: 'example',
+	remark: 'remark'
 };
 
 // Format a cleveref-style typed reference, e.g. ('section', '3') -> 'section 3',

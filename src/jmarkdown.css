@@ -281,3 +281,32 @@ figure.table-float table {
 .table-label {
 	font-weight: bold;
 }
+
+
+/* Theorem-like environments (@begin(theorem|lemma|definition|…)) and proofs.
+   amsthm-style: the run-in label is bold upright; "plain" kinds (theorem,
+   lemma, …) italicise the body, while definitions/remarks stay upright. */
+.theorem-env {
+	margin: 1em 0;
+}
+
+.theorem-plain {
+	font-style: italic;
+}
+
+.theorem-label {
+	font-style: normal;
+	font-weight: bold;
+}
+
+.proof-env {
+	margin: 1em 0;
+}
+
+.proof-label {
+	font-style: italic;
+}
+
+.qed {
+	float: right;
+}

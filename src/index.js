@@ -468,6 +468,8 @@ marked.use({ extensions: [beginEnd] });
 // Float environments (@begin(figure) …) register into the block-environment
 // registry at import time; the @begin extension consults it at render time.
 import './floats.js';
+// Theorem-like environments (@begin(theorem|lemma|proof|…)) — same pattern.
+import './theorems.js';
 
 // Let users define their own @begin environments from a <script data-type="jmarkdown">
 // block, the same way export_to_jmarkdown is exposed for inline functions. The
