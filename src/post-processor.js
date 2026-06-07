@@ -36,10 +36,11 @@ export function postProcessHTML(html, options = {}) {
 		$elem.remove();
 	});
 
+	resetCrossrefs();
 	if (configManager.get("Headings") && configManager.get("Headings")[0] == "numeric") {
 		add_labels_to_headers($);
 	}
-	resetCrossrefs();
+	number_figures($);
 	process_crossrefs($);
 	replaceTargetsBySources($);
 
@@ -101,6 +102,25 @@ function add_labels_to_headers($) {
 		html = `<a href='#toc'>${html}</a>`;
 		$elem.html(html);
 	})
+}
+
+// Number figure floats (@begin(figure), see floats.js) in document order: prefix
+// each caption with "Figure N:" and record the figure's id in the cross-ref
+// registry so :ref/:cref resolve. LaTeX numbers figures natively, so this is
+// HTML-only (the post-processor never runs for LaTeX). Always on — a float is
+// numbered by definition, independent of the Headings: numeric heading option.
+function number_figures($) {
+	let n = 0;
+	$('figure.figure').each((i, elem) => {
+		const $fig = $(elem);
+		n++;
+		const id = $fig.attr('id');
+		const $cap = $fig.find('figcaption').first();
+		$cap.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'figure', anchor: id });
+		}
+	});
 }
 
 function process_crossrefs($) {

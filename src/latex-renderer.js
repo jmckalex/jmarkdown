@@ -79,9 +79,12 @@ const latexRenderer = {
 	},
 
 	image(token) {
-		// A simple default; width and placement can be refined later.
+		// A bare image is just the graphic — NOT a floating, numbered figure.
+		// Use @begin(figure) (see floats.js) for a captioned, numbered,
+		// referenceable float; nesting \includegraphics there avoids a figure
+		// inside a figure.
 		requirePackage('graphicx');
-		return `\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=\\textwidth]{${escapeLatex(token.href)}}\n\\caption{${escapeLatex(token.text || '')}}\n\\end{figure}\n\n`;
+		return `\\includegraphics[width=\\textwidth]{${escapeLatex(token.href)}}`;
 	},
 
 	blockquote(token) {

@@ -1,0 +1,5 @@
+@begin(figure)[Inputs & outputs]{id=fig:demo}
+![a diagram](diagram.png)
+@end(figure)
+
+See :ref[fig:demo] for the diagram, or more precisely :cref[fig:demo].

@@ -465,6 +465,10 @@ import { beginEnd } from './begin-end.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 marked.use({ extensions: [beginEnd] });
 
+// Float environments (@begin(figure) …) register into the block-environment
+// registry at import time; the @begin extension consults it at render time.
+import './floats.js';
+
 // Let users define their own @begin environments from a <script data-type="jmarkdown">
 // block, the same way export_to_jmarkdown is exposed for inline functions. The
 // callback receives the full ctx — including ctx.text ([label]) and ctx.attrs
