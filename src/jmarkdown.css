@@ -21,20 +21,55 @@ pre code.hljs {
 .markdown-demo-container {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
+	grid-template-areas:
+		"codelabel outlabel"
+		"code      out";
 	column-gap: 12pt;
+	row-gap: 4px;
+	align-items: start;
+}
+
+.markdown-demo-code-label   { grid-area: codelabel; }
+.markdown-demo-output-label { grid-area: outlabel; }
+.markdown-demo-markdown     { grid-area: code; min-width: 0; }
+.markdown-demo-parsed       { grid-area: out;  min-width: 0; }
+
+/* A grid track's implicit min-width is `auto`, so a <pre> of long code lines
+   would expand its column and squeeze the other; min-width:0 (above) plus
+   overflow-x lets each column keep its 1fr share and scroll instead. */
+.markdown-demo-container pre {
+	height: auto;
+	width: 100%;
+	max-width: 100%;
+	margin: 0pt;
+	overflow-x: auto;
+	box-sizing: border-box;
+}
+
+/* The source (left) pane sits flush — no panel padding eating its width. */
+.markdown-demo-markdown pre {
+	padding: 0;
 }
 
 .markdown-demo-container code {
-	height: 100%;
-	width: 100%;
+	height: auto;
 	display: block;
 	box-sizing: border-box;
 }
 
-.markdown-demo-container pre {
-	height: 100%;
-	width: 100%;
-	margin: 0pt;
+/* Mobile: stack the source above the output, each under its own label. */
+@media (max-width: 720px) {
+	.markdown-demo-container {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			"codelabel"
+			"code"
+			"outlabel"
+			"out";
+	}
+	.markdown-demo-output-label {
+		margin-top: 12px;
+	}
 }
 
 table.game caption {
