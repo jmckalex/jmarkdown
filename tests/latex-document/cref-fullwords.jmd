@@ -1,0 +1,9 @@
+---
+Title: Cref Fullwords
+---
+
+@begin(figure)[A caption]{id=fig:x}
+![a](a.png)
+@end(figure)
+
+See :cref[fig:x] and :Cref[fig:x].

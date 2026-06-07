@@ -18,8 +18,16 @@
 */
 
 import { registerBlockEnvironment } from './begin-end-core.js';
-import { requirePackage } from './preamble.js';
+import { requirePackage, addLatePreamble } from './preamble.js';
 import { escapeLatexText } from './latex-escape.js';
+
+// Force cleveref to spell floats out in full ("figure 1", not the default
+// "fig. 1") so LaTeX matches JMarkdown's HTML cross-ref wording. Emitted only
+// when cleveref is loaded (see assemblePreamble), and harmless otherwise.
+function fullCrefName(type) {
+	addLatePreamble(`\\crefname{${type}}{figure}{figures}`);
+	addLatePreamble(`\\Crefname{${type}}{Figure}{Figures}`);
+}
 
 function htmlEscape(s) {
 	return String(s)
@@ -52,6 +60,7 @@ registerBlockEnvironment('figure', {
 	// the contents (and below a row of subfigures).
 	latex: (ctx) => {
 		requirePackage('graphicx');
+		fullCrefName('figure');
 		const caption = ctx.text ? `\\caption{${escapeLatexText(ctx.text)}}\n` : '';
 		const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}\n` : '';
 		return `\\begin{figure}[htbp]\n\\centering\n${ctx.inner}\n\n${caption}${label}\\end{figure}\n\n`;
@@ -79,6 +88,7 @@ registerBlockEnvironment('subfigure', {
 	// resolve to "1a". \hfill lets adjacent panels share a row.
 	latex: (ctx) => {
 		requirePackage('subcaption');
+		fullCrefName('subfigure');
 		const w = ctx.attrs?.width != null ? ctx.attrs.width : 0.45;
 		const caption = ctx.text ? `\\caption{${escapeLatexText(ctx.text)}}\n` : '';
 		const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}\n` : '';

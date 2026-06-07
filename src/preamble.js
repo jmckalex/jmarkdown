@@ -16,6 +16,10 @@
 const requiredPackages = new Map();
 // Arbitrary preamble snippets registered by features (e.g. \newenvironment).
 const rawPreambleLines = [];
+// Snippets that must follow the load-order-sensitive packages — specifically
+// cleveref configuration (\crefname overrides). Emitted only when cleveref is
+// actually loaded, right after it (and before the user preamble).
+const latePreambleLines = [];
 
 // A few packages are load-order sensitive and conventionally come near the end
 // of the preamble (hyperref especially; cleveref must follow hyperref). They are
@@ -37,11 +41,19 @@ export function addPreamble(line) {
 	if (!rawPreambleLines.includes(line)) rawPreambleLines.push(line);
 }
 
+// Register a preamble line that must come AFTER the late packages (cleveref).
+// Emitted only when cleveref is loaded — e.g. \crefname overrides, which are
+// cleveref commands. Deduplicated.
+export function addLatePreamble(line) {
+	if (!latePreambleLines.includes(line)) latePreambleLines.push(line);
+}
+
 // Clear all registrations. Not needed for a normal single-document CLI run, but
 // keeps tests and any future multi-document driver honest.
 export function resetPreamble() {
 	requiredPackages.clear();
 	rawPreambleLines.length = 0;
+	latePreambleLines.length = 0;
 }
 
 function usepackage(name, options) {
@@ -103,6 +115,12 @@ export function assemblePreamble({ engine = 'pdflatex', userPackages = [], userP
 		if (requiredPackages.has(name) || normaliseList(userPackages).includes(name)) {
 			emitPackage(name, requiredPackages.get(name) || '');
 		}
+	}
+
+	// cleveref configuration (\crefname overrides) — only meaningful, and only
+	// valid, once cleveref itself is loaded.
+	if (emitted.has('cleveref')) {
+		for (const line of latePreambleLines) lines.push(line);
 	}
 
 	// User verbatim preamble, last of all so it can override anything above.

@@ -91,6 +91,15 @@ if render frontmatter-escape; then
 	want "escape/author" "$TEX" '\author{A \& B}'
 fi
 
+# --- cref-fullwords.jmd: a figure + :cref pulls cleveref AND the \crefname
+#     overrides that make LaTeX spell floats out ("figure 1", not "fig. 1"),
+#     matching the HTML cross-ref wording. ---
+if render cref-fullwords; then
+	want "cref/cleveref"       "$TEX" '\usepackage{cleveref}'
+	want "cref/crefname fig"   "$TEX" '\crefname{figure}{figure}{figures}'
+	want "cref/Crefname fig"   "$TEX" '\Crefname{figure}{Figure}{Figures}'
+fi
+
 echo
 echo "latex-document: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
