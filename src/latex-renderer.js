@@ -11,6 +11,7 @@
 */
 
 import { configManager } from './config-manager.js';
+import { requirePackage } from './preamble.js';
 
 // LaTeX prose escaping. Only `&` and `#` need escaping at this layer:
 // `_` and `%` are JMarkdown source-level syntax (subscript / comment), so
@@ -22,17 +23,31 @@ function escapeLatex(text) {
 	return String(text).replace(/&/g, '\\&').replace(/#/g, '\\#');
 }
 
-// Default heading-depth → LaTeX command mapping.
-// depth 1 is \chapter by default (appropriate for book-class documents).
-// This can be shifted later via a heading-base metadata field.
-const headingCommands = {
-	1: 'chapter',
-	2: 'section',
-	3: 'subsection',
-	4: 'subsubsection',
-	5: 'paragraph',
-	6: 'subparagraph'
-};
+// The LaTeX sectioning ladder, deepest-up. Heading depth N maps to the command
+// `base + (N - 1)` rungs down this ladder, clamped at the bottom.
+const SECTIONING = ['part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph'];
+
+// Coerce a metadata/config value (string, or single-element array from the
+// metadata-header parser) to a trimmed lower-case string.
+function metaWord(key) {
+	const v = configManager.getMeta(key);
+	if (v == null) return '';
+	return (Array.isArray(v) ? v.join(' ') : String(v)).trim().toLowerCase();
+}
+
+// Which sectioning command a depth-1 heading (`#`) maps to. An explicit
+// `Heading base` wins; otherwise it is derived from the document class —
+// chapter-bearing classes (book/report/memoir…) start at \chapter, everything
+// else (article, the default) starts at \section. This keeps the DEFAULT output
+// (\documentclass{article}, which has no \chapter) compilable.
+function headingBaseIndex() {
+	const explicit = metaWord('Heading base');
+	if (explicit && SECTIONING.includes(explicit)) return SECTIONING.indexOf(explicit);
+
+	const cls = metaWord('Document class') || 'article';
+	const chapterClasses = ['book', 'report', 'memoir', 'scrbook', 'scrreprt', 'extbook', 'extreport'];
+	return SECTIONING.indexOf(chapterClasses.includes(cls) ? 'chapter' : 'section');
+}
 
 const latexRenderer = {
 
@@ -42,7 +57,8 @@ const latexRenderer = {
 
 	heading(token) {
 		let content = this.parser.parseInline(token.tokens);
-		const command = headingCommands[token.depth] || 'subparagraph';
+		const idx = Math.min(headingBaseIndex() + (token.depth - 1), SECTIONING.length - 1);
+		const command = SECTIONING[idx];
 
 		// Check for {-} suffix, which signals an unnumbered heading.
 		let starred = '';
@@ -63,6 +79,7 @@ const latexRenderer = {
 	},
 
 	codespan(token) {
+		requirePackage('minted');
 		const lang = configManager.get('Code language') || 'text';
 		return `\\mintinline{${lang}}{${token.text}}`;
 	},
@@ -70,18 +87,21 @@ const latexRenderer = {
 	code(token) {
 		// Prefer the fence's named language (```javascript) over the
 		// document-wide default. Requires \usepackage{minted} in the
-		// preamble and pdflatex -shell-escape at compile time.
+		// preamble (declared here) and pdflatex -shell-escape at compile time.
+		requirePackage('minted');
 		const lang = token.lang || configManager.get('Code language') || 'text';
 		return `\\begin{minted}{${lang}}\n${token.text}\n\\end{minted}\n\n`;
 	},
 
 	link(token) {
+		requirePackage('hyperref');
 		const text = this.parser.parseInline(token.tokens);
 		return `\\href{${escapeLatex(token.href)}}{${text}}`;
 	},
 
 	image(token) {
 		// A simple default; width and placement can be refined later.
+		requirePackage('graphicx');
 		return `\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=\\textwidth]{${escapeLatex(token.href)}}\n\\caption{${escapeLatex(token.text || '')}}\n\\end{figure}\n\n`;
 	},
 

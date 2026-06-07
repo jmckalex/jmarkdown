@@ -6,6 +6,7 @@
 */
 
 import { registerBlockEnvironment } from './begin-end-core.js';
+import { requirePackage } from './preamble.js';
 
 const strategicFormGame = {
 	level: 'container',
@@ -204,6 +205,7 @@ const strategicFormGame = {
 	any player label that was not supplied.
 */
 function renderGameLatex(parser, token) {
+	requirePackage('sgame');
 	const matrix = token['matrix'];
 	const number_of_columns = get_column_strategies(matrix).length;
 

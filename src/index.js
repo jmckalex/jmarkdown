@@ -502,6 +502,7 @@ marked.use(gfmHeadingIdExtension, {
 import { metadata, processYAMLheader } from './metadata-header.js';
 import processFileInclusions from './file-inclusion.js';
 import { processTemplate } from './html-template.js';
+import { processLatexTemplate } from './latex-template.js';
 
 async function readStdin() {
 	const chunks = [];
@@ -637,9 +638,13 @@ const content = marked.parse(text);
 import * as PostProcessor from './post-processor.js';
 
 if (isLatex) {
-	// LaTeX output: write the parsed content directly — no post-processing,
-	// no template wrapping, no inverse-search injection.
-	writeOutput(content);
+	// LaTeX output: no cheerio post-processing or inverse-search injection. In
+	// the default (non-fragment) mode the body is wrapped in a complete,
+	// compilable document (\documentclass + assembled preamble + frontmatter +
+	// body + \end{document}); --fragment emits the body alone, which is also
+	// what the feature/compile test harnesses consume.
+	const latex = options.fragment ? content : processLatexTemplate(content);
+	writeOutput(latex);
 } else {
 	// HTML output: full pipeline with post-processing, template, and inverse search.
 

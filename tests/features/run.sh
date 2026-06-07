@@ -3,7 +3,10 @@
 #
 # Each *.jmd somewhere under tests/features/ may have any of:
 #   <name>.expected.html  — golden for HTML --fragment output
-#   <name>.expected.tex   — golden for LaTeX (--to latex) output
+#   <name>.expected.tex   — golden for LaTeX --fragment output (body only;
+#                           the full-document wrapper is covered by the
+#                           latex-document suite, and these fragments are what
+#                           tests/latex-compile wraps and compiles)
 #   <name>.flags          — single line of extra CLI args to pass to jmarkdown
 #
 # A fixture without a corresponding *.expected.{html,tex} is treated as
@@ -85,7 +88,7 @@ find tests/features -mindepth 2 -name '*.jmd' -type f 2>/dev/null | sort | while
 		actual_tex="$SCRATCH/${base}.tex"
 		stderr_log="$SCRATCH/${base}.tex.stderr"
 		# shellcheck disable=SC2086
-		if ! node "$JMD" process "$src" --to latex $extra_flags -o "$actual_tex" >/dev/null 2>"$stderr_log"; then
+		if ! node "$JMD" process "$src" --to latex --fragment $extra_flags -o "$actual_tex" >/dev/null 2>"$stderr_log"; then
 			printf 'FAIL  features/%s [tex]   (jmarkdown exited non-zero)\n' "$base"
 			sed 's/^/    | /' "$stderr_log"
 			_counter_bump 2

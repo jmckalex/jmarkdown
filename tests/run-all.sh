@@ -35,7 +35,13 @@ sh "$REPO/tests/features/run.sh" $mode
 features_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ]; then
+# 4. latex-document — full-document LaTeX assembly (toolchain-free). Gates CI.
+echo "------ latex-document ------"
+sh "$REPO/tests/latex-document/run.sh"
+latex_document_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi

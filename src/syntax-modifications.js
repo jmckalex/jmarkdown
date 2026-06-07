@@ -1,3 +1,5 @@
+import { requirePackage } from './preamble.js';
+
 export const italics = {
 					name: 'italics',
 					level: 'inline',
@@ -69,7 +71,12 @@ export const highlight = {
 	},
 	renderer(token) {
 		const content = this.parser.parseInline(token.tokens);
-		if (global.isLatex) return `\\hl{${content}}`;
+		if (global.isLatex) {
+			// \hl is from soul; it needs a colour package loaded first.
+			requirePackage('xcolor');
+			requirePackage('soul');
+			return `\\hl{${content}}`;
+		}
 		return `<span class='highlight'>${content}</span>`;
 	}
 };

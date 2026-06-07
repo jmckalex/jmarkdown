@@ -1,0 +1,23 @@
+---
+Title: A Test Document
+Author: J. McKenzie Alexander
+Date: June 2026
+Document class: article
+Class options: 11pt
+LaTeX engine: pdflatex
+Packages: amsmath
+---
+
+# Introduction
+
+Some *strong* and /emphasised/ prose, with a [link](https://example.com)
+and inline `code`.
+
+- one
+- two
+
+```python
+print("hello")
+```
+
+A highlighted ==phrase== and some math $E = mc^2$.

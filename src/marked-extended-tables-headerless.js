@@ -49,6 +49,8 @@
  * LICENCE: MIT
  */
 
+import { requirePackage } from './preamble.js';
+
 // ---------------------------------------------------------------------------
 // Extension factory
 // ---------------------------------------------------------------------------
@@ -189,6 +191,7 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
   const formatLatexCell = (text, cell, align, width, col) => {
     let inner = text;
     if (cell.rowspan && cell.rowspan > 1) {
+      requirePackage('multirow');
       inner = `\\multirow{${cell.rowspan}}{*}{${inner}}`;
     }
     if (cell.colspan > 1) {
