@@ -500,12 +500,18 @@ marked.use(gfmHeadingIdExtension, {
 	hooks: {
 		postprocess(html) {
 			if (global.isLatex) {
-				// LaTeX has native contents lists; emit the commands and let the
-				// engine build them. (The post-processor, which builds the HTML
-				// lists, never runs for LaTeX.)
+				// LaTeX has native contents lists and matter/appendix divisions;
+				// emit the commands and let the engine do the work. (The
+				// post-processor, which handles the HTML side, never runs for LaTeX.)
 				html = html.replace(/\{\{TOC\}\}/g, '\\tableofcontents');
 				html = html.replace(/\{\{LOF\}\}/g, '\\listoffigures');
 				html = html.replace(/\{\{LOT\}\}/g, '\\listoftables');
+				// Matter divisions (book/report) and appendix. \frontmatter and
+				// friends require the book/report class; \appendix works anywhere.
+				html = html.replace(/\{\{frontmatter\}\}/g, '\\frontmatter');
+				html = html.replace(/\{\{mainmatter\}\}/g, '\\mainmatter');
+				html = html.replace(/\{\{backmatter\}\}/g, '\\backmatter');
+				html = html.replace(/\{\{appendix\}\}/g, '\\appendix');
 				return html;
 			}
 			// HTML: build the table of contents here from the heading list.

@@ -100,6 +100,16 @@ if render cref-fullwords; then
 	want "cref/Crefname fig"   "$TEX" '\Crefname{figure}{Figure}{Figures}'
 fi
 
+# --- matter.jmd: book-class matter divisions + appendix + contents commands ---
+if render matter; then
+	want "matter/class"           "$TEX" '\documentclass{book}'
+	want "matter/frontmatter"     "$TEX" '\frontmatter'
+	want "matter/tableofcontents" "$TEX" '\tableofcontents'
+	want "matter/mainmatter"      "$TEX" '\mainmatter'
+	want "matter/appendix"        "$TEX" '\appendix'
+	want "matter/backmatter"      "$TEX" '\backmatter'
+fi
+
 echo
 echo "latex-document: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

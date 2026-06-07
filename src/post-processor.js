@@ -49,6 +49,7 @@ export function postProcessHTML(html, options = {}) {
 	number_equations($);
 	process_crossrefs($);
 	replace_float_lists($);
+	strip_matter_markers($);
 	replaceTargetsBySources($);
 
 	// Resolve compile-time citations (\cite-family commands + ::Bibliography),
@@ -132,6 +133,17 @@ function replace_float_lists($) {
 		const t = $(el).text().trim();
 		if (t === '{{LOF}}') $(el).replaceWith(build(figureList, 'list-of-figures'));
 		else if (t === '{{LOT}}') $(el).replaceWith(build(tableList, 'list-of-tables'));
+	});
+}
+
+// Matter/appendix markers are LaTeX book-structure commands (handled in the parse
+// hook for LaTeX). HTML has no equivalent, so just drop the marker paragraphs.
+// (HTML appendix lettering — headings A, B… after {{appendix}} — is not yet
+// implemented; the marker simply vanishes.)
+function strip_matter_markers($) {
+	const markers = ['{{frontmatter}}', '{{mainmatter}}', '{{backmatter}}', '{{appendix}}'];
+	$('p').each((i, el) => {
+		if (markers.includes($(el).text().trim())) $(el).remove();
 	});
 }
 
