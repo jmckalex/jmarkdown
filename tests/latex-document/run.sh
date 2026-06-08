@@ -100,6 +100,17 @@ if render cref-fullwords; then
 	want "cref/Crefname fig"   "$TEX" '\Crefname{figure}{Figure}{Figures}'
 fi
 
+# --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
+if render page-setup; then
+	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'
+	want "page/setspace"   "$TEX" '\usepackage{setspace}'
+	want "page/double"     "$TEX" '\doublespacing'
+	want "page/fancyhdr"   "$TEX" '\usepackage{fancyhdr}'
+	want "page/header"     "$TEX" '\fancyhead[C]{My Header}'
+	want "page/hyperref"   "$TEX" '\usepackage{hyperref}'
+	want "page/pdf meta"   "$TEX" '\hypersetup{pdftitle={Styled}, pdfauthor={Someone}}'
+fi
+
 # --- matter.jmd: book-class matter divisions + appendix + contents commands ---
 if render matter; then
 	want "matter/class"           "$TEX" '\documentclass{book}'

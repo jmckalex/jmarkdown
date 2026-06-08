@@ -126,9 +126,11 @@ export function assemblePreamble({ engine = 'pdflatex', userPackages = [], userP
 		}
 	}
 
-	// cleveref configuration (\crefname overrides) — only meaningful, and only
-	// valid, once cleveref itself is loaded.
-	if (emitted.has('cleveref')) {
+	// Post-package configuration (\crefname for cleveref, \hypersetup for
+	// hyperref) — emitted after the load-order-sensitive packages, and only when
+	// one of them is actually present (each line is registered only alongside its
+	// package, so this gate just avoids a stray block when neither is loaded).
+	if (emitted.has('cleveref') || emitted.has('hyperref')) {
 		for (const line of latePreambleLines) lines.push(line);
 	}
 

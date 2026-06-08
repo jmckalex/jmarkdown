@@ -16,7 +16,7 @@ import Mustache from 'mustache';
 import fs from 'fs';
 import path from 'path';
 import { configManager } from './config-manager.js';
-import { assemblePreamble } from './preamble.js';
+import { assemblePreamble, requirePackage, addPreamble, addLatePreamble } from './preamble.js';
 import { escapeLatexText } from './latex-escape.js';
 
 // Metadata values arrive as single-element arrays (from the metadata-header
@@ -47,14 +47,47 @@ export function processLatexTemplate(content) {
 		? `\\documentclass[${classOptions}]{${docClass}}`
 		: `\\documentclass{${docClass}}`;
 
-	const preamble = assemblePreamble({ engine, userPackages, userPreamble });
-
-	// Frontmatter from Title / Author / Date metadata. No Title → no \maketitle.
-	// These are plain-text metadata values (not markdown-parsed), so escape the
-	// prose specials &/# before they hit \title{}/\author{}.
+	// Title / Author / Date — plain-text metadata (not markdown-parsed), so escape
+	// the prose specials &/# before they hit \title{} / \hypersetup{}.
 	const title = escapeLatexText(asString(meta('Title')));
 	const author = escapeLatexText(asString(meta('Author')));
 	const date = escapeLatexText(asString(meta('Date')));
+
+	// --- Page setup (metadata → preamble); registered before assembly ---
+	// Geometry (margins / paper): raw geometry options, e.g. "margin=1in".
+	const geometry = asString(meta('Geometry'));
+	if (geometry) requirePackage('geometry', geometry);
+
+	// Line spacing: single | onehalf | double, or a numeric stretch factor.
+	const lineSpacing = asString(meta('Line spacing')).toLowerCase();
+	if (lineSpacing) {
+		requirePackage('setspace');
+		const preset = { single: '\\singlespacing', onehalf: '\\onehalfspacing', double: '\\doublespacing' }[lineSpacing];
+		addPreamble(preset || `\\setstretch{${lineSpacing}}`);
+	}
+
+	// Running header / footer via fancyhdr (centre slot; author may use \thepage).
+	const header = asString(meta('Header'));
+	const footer = asString(meta('Footer'));
+	if (header || footer) {
+		requirePackage('fancyhdr');
+		addPreamble('\\pagestyle{fancy}');
+		addPreamble('\\fancyhf{}');
+		if (header) addPreamble(`\\fancyhead[C]{${header}}`);
+		addPreamble(`\\fancyfoot[C]{${footer || '\\thepage'}}`);
+	}
+
+	// hyperref for every full document: clickable refs/ToC + PDF bookmarks, plus
+	// PDF metadata from Title/Author. (cleveref, when used, still loads after it.)
+	requirePackage('hyperref');
+	const pdf = [];
+	if (title) pdf.push(`pdftitle={${title}}`);
+	if (author) pdf.push(`pdfauthor={${author}}`);
+	if (pdf.length) addLatePreamble(`\\hypersetup{${pdf.join(', ')}}`);
+
+	const preamble = assemblePreamble({ engine, userPackages, userPreamble });
+
+	// Frontmatter — no Title → no \maketitle.
 	let frontmatter = '';
 	if (title) {
 		frontmatter += `\\title{${title}}\n`;
