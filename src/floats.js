@@ -83,6 +83,16 @@ registerBlockEnvironment('table', {
 	// so it captures the table counter.
 	latex: (ctx) => {
 		crefName('table', 'table', 'tables');
+		// A long inner table renders as a page-breaking longtable, which can't
+		// live in a (page-locked) table float. Caption it with \captionof above
+		// the longtable instead — still numbered as a table and referenceable.
+		if (ctx.inner.includes('\\begin{longtable}')) {
+			requirePackage('caption');
+			const cap = ctx.text ? `\\captionof{table}{${escapeLatexText(ctx.text)}}` : '';
+			const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}` : '';
+			const head = (cap || label) ? `${cap}${label}\n` : '';
+			return `${head}${ctx.inner}`;
+		}
 		const caption = ctx.text ? `\\caption{${escapeLatexText(ctx.text)}}\n` : '';
 		const label = ctx.attrs?.id ? `\\label{${ctx.attrs.id}}\n` : '';
 		return `\\begin{table}[htbp]\n\\centering\n${caption}${label}${ctx.inner}\n\\end{table}\n\n`;

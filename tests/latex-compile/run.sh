@@ -51,7 +51,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 	needs=''
 	case "$category" in
 		games)             extra='\usepackage{sgame}';                   needs='sgame.sty' ;;
-		tables)            extra='\usepackage{multirow}';                 needs='multirow.sty' ;;
+		tables)            extra='\usepackage{multirow}\usepackage{longtable}\usepackage{caption}'; needs='multirow.sty longtable.sty' ;;
 		inline-syntax)     extra='\usepackage{color}\usepackage{soul}';   needs='soul.sty' ;;
 		code)              extra='\usepackage{minted}';                   needs='minted.sty' ;;
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
