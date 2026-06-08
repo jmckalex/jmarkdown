@@ -1,0 +1,495 @@
+<h1 id="toc-cross-references">Cross-references</h1>
+<p>A <strong>cross-reference</strong> names a thing once and points at it from anywhere else: "see
+  Section 3", "by equation (2)", "the proof of Theorem 1". The numbers are not
+  yours to maintain — when you insert a section, wrap a figure, or reorder two
+  theorems, every reference to them should follow automatically. JMarkdown gives
+  you four small inline commands for this, and they behave the same whether you are
+  producing the web edition or the print edition of a document.</p>
+<p>The design follows JMarkdown's <a href="dual-output.html">dual-output model</a>. In <span class="intense">LaTeX</span>
+  output the commands become native <code>\label</code>, <code>\ref</code>, <code>\cref</code>, and <code>\Cref</code>, and the
+  TeX engine numbers and resolves everything. In <span class="intense">HTML</span> output JMarkdown does the
+  same job itself in the post-processor: it numbers the targets, records each one,
+  and rewrites the references into hyperlinks. You write one source; both editions
+  get correctly-numbered, clickable references whose <strong>wording</strong> is identical.</p>
+<h2 id="toc-the-four-commands">The four commands</h2>
+<p>One command tags a target, one reads back its bare number, and two "typed"
+  commands also print the kind of thing being referenced.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Command</th>
+      <th>Produces</th>
+      <th>Example output</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:label[key]</code></td>
+      <td>tags a target with <code>key</code> (prints nothing)</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><code>:ref[key]</code></td>
+      <td>the target's number, hyperlinked</td>
+      <td><code>3</code></td>
+    </tr>
+    <tr>
+      <td><code>:cref[key]</code></td>
+      <td>the <strong>typed</strong> reference, lower-case</td>
+      <td><code>section 3</code></td>
+    </tr>
+    <tr>
+      <td><code>:Cref[key]</code></td>
+      <td>the typed reference, capitalised</td>
+      <td><code>Section 3</code></td>
+    </tr>
+  </tbody>
+</table>
+<p>The square brackets hold the <span class="intense">key</span> — an arbitrary string you choose, with no
+  meaning to JMarkdown beyond matching a label to its references. By convention
+  authors give it a type prefix (<code>sec:</code>, <code>fig:</code>, <code>eq:</code>, <code>thm:</code>, <code>tab:</code>, <code>lst:</code>) so
+  it reads well in the source, but <code>myKey</code> works just as well. Tag the target once
+  with <code>:label</code>, then use the same key in every reference that points at it.</p>
+<p>The distinction between <code>:ref</code> and <code>:cref</code> is whether the <strong>word</strong> is printed. Use
+  <code>:ref</code> when your prose already supplies the noun — <code>see Section :ref[sec:intro]</code>
+  prints "see Section 3". Use <code>:cref</code> when you want JMarkdown to supply the noun
+  for you — <code>:cref[sec:intro] covers this</code> prints "section 3 covers this". The
+  capitalised <code>:Cref</code> is for the start of a sentence, where the noun must be a
+  capital: <code>:Cref[sec:intro] covers this</code> prints "Section 3 covers this".
+</p>
+<h2 id="toc-what-you-can-reference">What you can reference</h2>
+<p>Cross-references work for every numbered construct in a JMarkdown document:</p>
+<ul>
+  <li><span class="intense">Headings</span> (sections), once the document opts into numbered headings with
+    <code>Headings: numeric</code> in its metadata header.
+  </li>
+  <li><span class="intense">Figures</span>, <span class="intense">tables</span>, and <span class="intense">listings</span> — the captioned floats created with
+    <code>@begin(figure)</code>, <code>@begin(table)</code>, and <code>@begin(listing)</code>.
+  </li>
+  <li><span class="intense">Theorems</span> and their kin — <code>@begin(theorem)</code>, <code>lemma</code>, <code>definition</code>, and so
+    on — which share one running counter.</li>
+  <li><span class="intense">Equations</span> — the numbered display math of <code>@begin(equation)</code>.</li>
+</ul>
+<p>Floats, theorems, and equations always carry a number, so they are referenceable
+  whether or not the document uses numbered headings. Only <span class="intense">heading</span> references
+  depend on <code>Headings: numeric</code>, since that is what numbers the sections.</p>
+<h2 id="toc-referencing-headings">Referencing headings</h2>
+<p>Tag a heading by appending <code>:label[key]</code> to its text, then reference it with the
+  bare number (<code>:ref</code>) or the typed form (<code>:cref</code>, <code>:Cref</code>), which prints "section",
+  "subsection", and so on according to the heading's depth.</p>
+<pre><code class="hljs language-markdown">Headings: numeric
+
+
+<span class="hljs-section"># Introduction :label[sec:intro]</span>
+
+See Section :ref[sec:intro] for setup, and Section :ref[sec:methods] below.
+
+<span class="hljs-section">## Background :label[sec:bg]</span>
+
+As covered in :cref[sec:bg] and :cref[sec:intro].
+:Cref[sec:intro] explains the idea.
+
+<span class="hljs-section"># Methods :label[sec:methods]</span>
+
+As described in :cref[sec:intro], we proceed.
+</code></pre>
+<p>In the <span class="intense">web</span> edition the post-processor numbers the headings, then rewrites
+  each reference into a link to the heading's anchor. Note in the rendered HTML
+  below that the typed references know the heading's depth: a reference to the
+  top-level <code># Introduction</code> prints "section 1", while a reference to the nested
+  <code>## Background</code> prints "subsection 1.1".
+</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>As covered in <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#xref-sec:bg"</span>&gt;</span>subsection<span class="hljs-symbol">&amp;nbsp;</span>1.1<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>
+and <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#xref-sec:intro"</span>&gt;</span>section<span class="hljs-symbol">&amp;nbsp;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>.
+<span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#xref-sec:intro"</span>&gt;</span>Section<span class="hljs-symbol">&amp;nbsp;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span> explains the idea.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>In the <span class="intense">print</span> edition the very same source becomes native LaTeX. <code>:label</code>
+  emits <code>\label</code>, <code>:ref</code> emits <code>\ref</code>, and the typed <code>:cref</code> and <code>:Cref</code> emit
+  cleveref's <code>\cref</code> and <code>\Cref</code>, which the engine resolves — including the
+  "section" and "subsection" wording, configured to match the HTML exactly:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\section</span>{Introduction <span class="hljs-keyword">\label</span>{sec:intro}}
+
+See Section <span class="hljs-keyword">\ref</span>{sec:intro} for setup, and Section <span class="hljs-keyword">\ref</span>{sec:methods} below.
+
+<span class="hljs-keyword">\subsection</span>{Background <span class="hljs-keyword">\label</span>{sec:bg}}
+
+As covered in <span class="hljs-keyword">\cref</span>{sec:bg} and <span class="hljs-keyword">\cref</span>{sec:intro}.
+<span class="hljs-keyword">\Cref</span>{sec:intro} explains the idea.
+
+<span class="hljs-keyword">\section</span>{Methods <span class="hljs-keyword">\label</span>{sec:methods}}
+
+As described in <span class="hljs-keyword">\cref</span>{sec:intro}, we proceed.
+</code></pre>
+<p>The depth-to-command mapping (<code>#</code> → <code>\section</code>, <code>##</code> → <code>\subsection</code>, …) follows
+  the document class and the optional <code>Heading base</code> metadata key; see
+  <a href="dual-output.html">dual output</a> for that assembly metadata.
+</p>
+<h2 id="toc-referencing-figures-tables-and-listings">Referencing figures, tables, and listings</h2>
+<p>Captioned floats carry their cross-reference key in the <code>{id=…}</code> attribute rather
+  than a trailing <code>:label</code> (<a href="floats.html">floats</a> explains why this is the
+  colon-safe form). Once a float has an <code>id</code>, reference it like anything else. The
+  demo below shows a figure with <code>id=fig:demo</code>, referenced two ways — the bare
+  number with <code>:ref</code> and the typed "figure 1" with <code>:cref</code>:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(figure)[Inputs and outputs]{id=fig:demo}
+![<span class="hljs-string">a diagram</span>](<span class="hljs-link">https://placehold.co/240x90?text=diagram</span>)
+@end(figure)
+
+See :ref[fig:demo] for the diagram, or more precisely :cref[fig:demo].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <figure class="figure" id="fig:demo">
+      <p><img src="https://placehold.co/240x90?text=diagram" alt="a diagram"></p>
+      <figcaption class="figure-caption"><span class="figure-label xref">Figure 1:</span> Inputs and outputs</figcaption>
+    </figure>
+    <p>See <a class="xref-ref" href="#fig:demo">1</a> for the diagram, or more precisely <a class="xref-cref" href="#fig:demo">figure&nbsp;1</a>.</p>
+
+  </div>
+</div>
+<p>Tables and listings work identically — <code>@begin(table)[caption]{id=tab:x}</code> and
+  <code>@begin(listing)[caption]{id=lst:x}</code> — with <code>:cref</code> printing "table" and
+  "listing" respectively. Each kind keeps its own counter, so figures, tables, and
+  listings number independently.
+</p>
+<p>In LaTeX the float becomes a real <code>figure</code>, <code>table</code>, or <code>listing</code> environment with
+  a <code>\caption</code> and a <code>\label</code>, and the references become <code>\ref</code> and <code>\cref</code> as usual.
+  The generated <code>.tex</code> for the demo above is:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{figure}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\includegraphics</span>[width=<span class="hljs-keyword">\textwidth</span>]{https://placehold.co/240x90?text=diagram}
+
+<span class="hljs-keyword">\caption</span>{Inputs and outputs}
+<span class="hljs-keyword">\label</span>{fig:demo}
+<span class="hljs-keyword">\end</span>{figure}
+
+See <span class="hljs-keyword">\ref</span>{fig:demo} for the diagram, or more precisely <span class="hljs-keyword">\cref</span>{fig:demo}.
+</code></pre>
+<p>(Captioned floats are documented in full on <a href="floats.html">floats</a>; this page is
+  only concerned with referencing them.)</p>
+<h2 id="toc-referencing-theorems">Referencing theorems</h2>
+<p>The <a href="theorems-and-equations.html">theorem family</a> shares one running counter, so a
+  theorem followed by a definition numbers as "Theorem 1" then "Definition 2". Each
+  still knows its own kind, so <code>:cref</code> prints the right word for each:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(theorem)[Pythagoras]{id=thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+@end(theorem)
+
+@begin(definition){id=def:rt}
+A <span class="hljs-emphasis">*right triangle*</span> has one ninety-degree angle.
+@end(definition)
+
+By :cref[thm:pyth] and :cref[def:rt] we are done.
+See also :Cref[thm:pyth].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth">
+      <p><span class="theorem-label">Theorem 1 (Pythagoras).</span> For a right triangle, $a^2 + b^2 = c^2$.</p>
+    </div>
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt">
+      <p><span class="theorem-label">Definition 2.</span> A <strong>right triangle</strong> has one ninety-degree angle.</p>
+    </div>
+    <p>By <a class="xref-cref" href="#thm:pyth">theorem&nbsp;1</a> and <a class="xref-cref" href="#def:rt">definition&nbsp;2</a> we are done.
+      See also <a class="xref-cref" href="#thm:pyth">Theorem&nbsp;1</a>.</p>
+
+  </div>
+</div>
+<p>Each <code>:cref</code> names the construct it points at, while the bare number stays
+  continuous across both kinds. In LaTeX this maps onto thmtools with one shared
+  counter, so the same source yields:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{theorem}[Pythagoras]<span class="hljs-keyword">\label</span>{thm:pyth}
+For a right triangle, <span class="hljs-built_in">$</span>a<span class="hljs-built_in">^</span>2 + b<span class="hljs-built_in">^</span>2 = c<span class="hljs-built_in">^</span>2<span class="hljs-built_in">$</span>.
+<span class="hljs-keyword">\end</span>{theorem}
+
+<span class="hljs-keyword">\begin</span>{definition}<span class="hljs-keyword">\label</span>{def:rt}
+A <span class="hljs-keyword">\textbf</span>{right triangle} has one ninety-degree angle.
+<span class="hljs-keyword">\end</span>{definition}
+
+By <span class="hljs-keyword">\cref</span>{thm:pyth} and <span class="hljs-keyword">\cref</span>{def:rt} we are done. See also <span class="hljs-keyword">\Cref</span>{thm:pyth}.
+</code></pre>
+<h2 id="toc-referencing-equations">Referencing equations</h2>
+<p>Numbered display equations are made with <code>@begin(equation){id=eq:x}</code>; the body is
+  math, written without the surrounding <code>$$</code>. JMarkdown numbers equations itself, in
+  document order, so <code>:ref</code> and <code>:cref</code> resolve at build time:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(equation){id=eq:mass}
+E = mc^2
+@end(equation)
+
+@begin(equation){id=eq:sum}
+\sum<span class="hljs-emphasis">_{i=1}^n i = \frac{n(n+1)}{2}
+@end(equation)
+
+By :ref[eq:mass] and :cref[eq:sum] we relate them.
+See also :Cref[eq:mass].</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="equation" id="eq:mass">
+      <span class="eqn-body">\[
+        E = mc^2
+        \]</span>
+      <span class="eqn-number">(1)</span>
+    </div>
+    <div class="equation" id="eq:sum">
+      <span class="eqn-body">\[
+        \sum_{i=1}^n i = \frac{n(n+1)}{2}
+        \]</span>
+      <span class="eqn-number">(2)</span>
+    </div>
+    <p>By <a class="xref-ref" href="#eq:mass">1</a> and <a class="xref-cref" href="#eq:sum">equation&nbsp;(2)</a> we relate them.
+      See also <a class="xref-cref" href="#eq:mass">Equation&nbsp;(1)</a>.</p>
+
+  </div>
+</div>
+<p>Equation references are the one construct whose number is <span class="intense">parenthesised</span> — the
+  universal convention in mathematical writing. The bare <code>:ref</code> prints just the
+  number, but <code>:cref</code> prints "equation (2)" and <code>:Cref</code> "Equation (2)". This
+  parenthesisation is part of the shared wording, so it holds in both editions. The
+  LaTeX for the demo above is:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{equation}
+<span class="hljs-keyword">\label</span>{eq:mass}
+E = mc<span class="hljs-built_in">^</span>2
+<span class="hljs-keyword">\end</span>{equation}
+
+<span class="hljs-keyword">\begin</span>{equation}
+<span class="hljs-keyword">\label</span>{eq:sum}
+<span class="hljs-keyword">\sum</span><span class="hljs-built_in">_</span>{i=1}<span class="hljs-built_in">^</span>n i = <span class="hljs-keyword">\frac</span>{n(n+1)}{2}
+<span class="hljs-keyword">\end</span>{equation}
+
+By <span class="hljs-keyword">\ref</span>{eq:mass} and <span class="hljs-keyword">\cref</span>{eq:sum} we relate them. See also <span class="hljs-keyword">\Cref</span>{eq:mass}.
+</code></pre>
+<p>In a full LaTeX document JMarkdown also writes the matching cleveref
+  configuration into the preamble — <code>\crefname{equation}{equation}{equations}</code> and
+  its capitalised counterpart — so the engine spells the word out and parenthesises
+  the number exactly as the HTML does.</p>
+<h2 id="toc-forward-references-resolve-in-one-pass">Forward references resolve in one pass</h2>
+<p>You may reference a target <strong>before</strong> it appears in the document. A forward
+  reference resolves correctly, and — unlike a LaTeX-only workflow, which needs two
+  compiler passes to settle its <code>.aux</code> file — JMarkdown's HTML resolves forward
+  references in a <span class="intense">single pass</span>. The post-processor sees the complete document at
+  once: it numbers every target first, then rewrites every reference, so the order
+  of definition and use does not matter.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">We will prove this in :cref[thm:later] below.
+
+@begin(theorem){id=thm:later}
+Every bounded monotone sequence converges.
+@end(theorem)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p>We will prove this in <a class="xref-cref" href="#thm:later">theorem&nbsp;3</a> below.</p>
+    <div class="theorem-env theorem-plain" data-kind="theorem" id="thm:later">
+      <p><span class="theorem-label">Theorem 3.</span> Every bounded monotone sequence converges.</p>
+    </div>
+
+  </div>
+</div>
+<p>The reference above is written before the theorem it points at, yet it resolves
+  to the theorem's number cleanly. In LaTeX the forward reference is just an
+  ordinary <code>\cref</code> that the engine resolves on its second pass — the visible result
+  is the same.</p>
+<h2 id="toc-identical-wording-in-html-and-latex">Identical wording in HTML and LaTeX</h2>
+<p>The typed wording is <span class="intense">the same string</span> in both editions. JMarkdown computes the
+  HTML wording from the target's kind and depth, and forces cleveref to spell its
+  types out in full (rather than terse defaults like "sec." or "thm.") so the LaTeX
+  matches. A document therefore reads the same way in print and on the web:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Reference</th>
+      <th>HTML and LaTeX both print</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:cref</code> to a top-level heading</td>
+      <td>section 3</td>
+    </tr>
+    <tr>
+      <td><code>:cref</code> to a nested heading</td>
+      <td>subsection 3.2</td>
+    </tr>
+    <tr>
+      <td><code>:cref</code> to a figure</td>
+      <td>figure 1</td>
+    </tr>
+    <tr>
+      <td><code>:cref</code> to a table</td>
+      <td>table 1</td>
+    </tr>
+    <tr>
+      <td><code>:cref</code> to a listing</td>
+      <td>listing 1</td>
+    </tr>
+    <tr>
+      <td><code>:cref</code> to a theorem</td>
+      <td>theorem 1</td>
+    </tr>
+    <tr>
+      <td><code>:cref</code> to a definition</td>
+      <td>definition 2</td>
+    </tr>
+    <tr>
+      <td><code>:cref</code> to an equation</td>
+      <td>equation (2)</td>
+    </tr>
+  </tbody>
+</table>
+<p>The capitalised <code>:Cref</code> produces the same word with an initial capital — "Section
+  3", "Figure 1", "Equation (2)" — for the start of a sentence.</p>
+<h2 id="toc-unresolved-references">Unresolved references</h2>
+<p>If a reference names a key that was never defined with a matching <code>:label</code> or
+  <code>{id=…}</code>, the HTML edition prints a visible <code>??</code> placeholder so the gap is
+  obvious during review:
+</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>A dangling reference: <span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-ref"</span> <span class="hljs-attr">data-key</span>=<span class="hljs-string">"no:such"</span>&gt;</span>??<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span> and
+<span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">data-key</span>=<span class="hljs-string">"no:such"</span> <span class="hljs-attr">data-cap</span>=<span class="hljs-string">"0"</span>&gt;</span>??<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span>.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>In LaTeX the reference passes through as <code>\ref{no:such}</code> or <code>\cref{no:such}</code>, and
+  the engine reports the undefined label at compile time (the familiar
+  "<code>LaTeX Warning: Reference 'no:such' undefined</code>"). Either way the build does not
+  fail — you get a clear signal to fix the key rather than a broken document.</p>
+<h2 id="toc-html-output-and-styling">HTML output and styling</h2>
+<p>JMarkdown ships no opinionated styling for cross-references; it gives you stable
+  classes to target. A <code>:label</code> leaves an empty anchor span where the target sits;
+  a reference becomes a link carrying a class that names its kind:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Selector</th>
+      <th>Where it appears</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>span.xref-label</code></td>
+      <td>the (empty) anchor left by <code>:label[key]</code>, with <code>id="xref-KEY"</code></td>
+    </tr>
+    <tr>
+      <td><code>a.xref-ref</code></td>
+      <td>a bare-number reference (<code>:ref</code>)</td>
+    </tr>
+    <tr>
+      <td><code>a.xref-cref</code></td>
+      <td>a typed reference (<code>:cref</code> or <code>:Cref</code>)</td>
+    </tr>
+    <tr>
+      <td><code>span.header-label.xref</code></td>
+      <td>the number prepended to a numbered heading</td>
+    </tr>
+    <tr>
+      <td><code>span.figure-label</code>, <code>span.listing-label</code></td>
+      <td>the "Figure N:" and "Listing N:" caption prefix</td>
+    </tr>
+  </tbody>
+</table>
+<p>The label anchor and the references point at each other by <code>id</code> and <code>href</code>, so the
+  links navigate within the page; style <code>.xref-ref</code> and <code>.xref-cref</code> (to suppress the
+  underline, say, or to colour resolved references) in your own stylesheet or
+  template.</p>
+<h2 id="toc-reference">Reference</h2>
+<h3 id="toc-commands">Commands</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Command</th>
+      <th>Role</th>
+      <th>LaTeX</th>
+      <th>HTML</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:label[key]</code></td>
+      <td>tag a target</td>
+      <td><code>\label{key}</code></td>
+      <td>empty <code>span#xref-key</code></td>
+    </tr>
+    <tr>
+      <td><code>:ref[key]</code></td>
+      <td>bare number</td>
+      <td><code>\ref{key}</code></td>
+      <td><code>a.xref-ref</code> → number</td>
+    </tr>
+    <tr>
+      <td><code>:cref[key]</code></td>
+      <td>typed, lower-case</td>
+      <td><code>\cref{key}</code></td>
+      <td><code>a.xref-cref</code> → "kind N"</td>
+    </tr>
+    <tr>
+      <td><code>:Cref[key]</code></td>
+      <td>typed, capitalised</td>
+      <td><code>\Cref{key}</code></td>
+      <td><code>a.xref-cref</code> → "Kind N"</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-where-the-key-lives">Where the key lives</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Target</th>
+      <th>How it is keyed</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>heading</td>
+      <td>trailing <code>:label[key]</code> on the heading line (needs <code>Headings: numeric</code>)</td>
+    </tr>
+    <tr>
+      <td>figure, table, listing</td>
+      <td><code>{id=key}</code> attribute on the <code>@begin(…)</code> opener</td>
+    </tr>
+    <tr>
+      <td>theorem family</td>
+      <td><code>{id=key}</code> attribute on the <code>@begin(…)</code> opener</td>
+    </tr>
+    <tr>
+      <td>equation</td>
+      <td><code>{id=key}</code> attribute on <code>@begin(equation)</code></td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-behaviour-at-a-glance">Behaviour at a glance</h3>
+<ul>
+  <li><span class="intense">One source, both editions.</span> LaTeX emits native <code>\label</code>, <code>\ref</code>, <code>\cref</code>, and
+    <code>\Cref</code>; HTML resolves the same references itself. The typed wording is
+    byte-for-byte identical between them.
+  </li>
+  <li><span class="intense">Forward references work in a single pass</span> in HTML; in LaTeX they settle on
+    the engine's usual second pass.</li>
+  <li><span class="intense">Equation references are parenthesised</span> — "equation (2)" — in both editions;
+    all other kinds are not.</li>
+  <li><span class="intense">Heading references require <code>Headings: numeric</code></span>; floats, theorems, and
+    equations are always numbered and need no opt-in.</li>
+  <li><span class="intense">An unresolved reference is visible</span> (<code>??</code> in HTML, an undefined-label warning
+    in LaTeX) and never aborts the build.</li>
+</ul>
+<h2 id="toc-related-pages">Related pages</h2>
+<ul>
+  <li><a href="floats.html">Floats</a> — the <code>@begin(figure|table|listing)</code> environments that
+    supply float targets, and why the key lives in <code>{id=…}</code>.</li>
+  <li><a href="theorems-and-equations.html">Theorems and equations</a> — the theorem family and
+    <code>@begin(equation)</code> targets, and their shared counter.
+  </li>
+  <li><a href="dual-output.html">Dual output</a> — the one-source HTML and LaTeX model these
+    references inherit.</li>
+  <li><a href="book-structure.html">Book structure</a> — where <code>Headings: numeric</code> and heading
+    depth fit into a numbered, multi-file book.</li>
+  <li><a href="anchors.html">Anchors</a> — the heading <code>id</code>s that cross-reference links navigate
+    to.</li>
+</ul>

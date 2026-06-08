@@ -1,0 +1,344 @@
+Title: Figures, tables, and listings
+------------------------------------
+
+# Figures, tables, and listings
+
+A *float* is a captioned, numbered, cross-referenceable block — a figure, a
+table, or a code listing — that a typesetter is free to move (to "float") to a
+convenient spot on the page. JMarkdown gives you one family of block environments
+for all three: wrap the content in a named `@begin … @end` block, give it a caption
+and an `id`, and the same source produces a styled, auto-numbered HTML `<figure>`
+for the web and a native LaTeX float for print. You never type the number "Figure
+3"; you reference the float by name and the number is filled in for you, in
+document order, in both outputs.
+
+This page covers the four float environments — `figure`, `subfigure`, `table`,
+and `listing`. They are built on the `@begin … @end` grammar of
+[block environments](block-environments.html), and they are referenced with the
+`:ref` and `:cref` directives that [cross-references](cross-references.html) covers
+in full; this page shows just enough of each to make the examples work.
+
+In the demos below, JMarkdown source is on the left, rendered HTML on the right,
+and a `latex` code block shows the **actual** LaTeX emitted for the same source
+(generated with `--to latex`, not hand-written).
+
+## Why a float and not a bare image
+
+A plain Markdown image is *not* a float. If you write
+
+```markdown
+![a diagram](diagram.png)
+```
+
+you get exactly a graphic — `<img>` on the web, `\includegraphics` in LaTeX — with
+no caption, no number, and nothing to reference. That is the right tool when an
+image is purely decorative or sits inline with the prose.
+
+Reach for a **figure** environment the moment you want any of the three things a
+float provides: a **caption**, an automatic **number** ("Figure 1"), and a stable
+**`id`** you can point a cross-reference at. The rest of this page is about those
+three.
+
+## The `figure` environment
+
+Wrap an image in a `figure` block. The caption goes in the square brackets after
+the name; the reference key goes in the attribute braces as `id=…`:
+
+:::markdown-demo
+@begin(figure)[Inputs and outputs of the model]{id=fig:demo}
+![a placeholder diagram](https://placehold.co/360x150?text=diagram)
+@end(figure)
+
+See :ref[fig:demo] for the diagram, or more precisely :cref[fig:demo].
+:::
+
+The caption is automatically prefixed with **Figure N:**, where *N* is assigned in
+document order — you did not type the "1". The `<figure>` carries `id="fig:demo"`,
+so both references link back to it: `:ref` resolves to the bare number, `:cref` to
+the spelled-out *figure 1*.
+
+The same source compiles to a native LaTeX `figure` float, where the engine assigns
+the number:
+
+```latex
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{diagram.png}
+
+\caption{Inputs \& outputs}
+\label{fig:demo}
+\end{figure}
+
+See \ref{fig:demo} for the diagram, or more precisely \cref{fig:demo}.
+```
+
+Note that `:ref` became `\ref`, `:cref` became `\cref` (resolved by `cleveref`),
+and the caption's ampersand was escaped to `\&`. The `graphicx` package is pulled
+into the preamble automatically because a figure was used — JMarkdown's preamble is
+usage-driven, so you only carry the packages you actually need.
+
+### The label key goes in `{id=…}`
+
+The reference key is an **attribute**, written `{id=fig:demo}` — not the `{#…}`
+anchor shorthand, which cannot carry a colon. Float keys are conventionally
+colon-prefixed (`fig:`, `tab:`, `lst:`), so the colon-safe `{id=…}` is the form to
+use. The prefix is only a convention for legibility; JMarkdown does not require it.
+
+## Subfigures
+
+A `subfigure` is a sub-panel **nested inside a `figure`**. Each panel gets its own
+caption and its own `id`, and is lettered (a), (b), (c), … under one parent
+number — so a reference to a panel reads "1a". Set each panel's width as a fraction
+of the row with `{width=0.45}`; panels with room to spare sit side by side.
+
+:::markdown-demo
+@begin(figure)[Two related plots]{id=fig:plots}
+@begin(subfigure)[The left-hand plot]{id=sub:left width=0.45}
+![left](https://placehold.co/220x140?text=left)
+@end(subfigure)
+@begin(subfigure)[The right-hand plot]{id=sub:right width=0.45}
+![right](https://placehold.co/220x140?text=right)
+@end(subfigure)
+@end(figure)
+
+Compare :ref[sub:left] with :ref[sub:right]; both are in :ref[fig:plots].
+See also :cref[sub:left] and :Cref[fig:plots].
+:::
+
+The parent caption is numbered as a whole ("Figure 1:"), each panel is lettered
+"(a)" and "(b)", and a reference to a panel composes the two: `:ref[sub:left]`
+resolves to **1a**, `:cref[sub:left]` to **figure 1a**. The parent figure is still
+referenceable on its own (`:ref[fig:plots]` → **1**).
+
+In LaTeX the parent becomes a `figure` containing two `subfigure` environments
+(from the `subcaption` package), separated by `\hfill` so they spread across the
+text width:
+
+```latex
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+\centering
+\includegraphics[width=\textwidth]{left.png}
+\caption{Left plot}
+\label{sub:left}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+\centering
+\includegraphics[width=\textwidth]{right.png}
+\caption{Right plot}
+\label{sub:right}
+\end{subfigure}
+\hfill
+
+\caption{Two related plots}
+\label{fig:plots}
+\end{figure}
+
+Compare \ref{sub:left} with \ref{sub:right}; both are in \ref{fig:plots}.
+See also \cref{sub:left} and \Cref{fig:plots}.
+```
+
+The `width=0.45` fraction becomes `0.45\textwidth` in LaTeX and `width:45%` in
+HTML. Two panels at `0.45` leave a comfortable gutter; three across would each take
+roughly `0.30`.
+
+## The `table` environment
+
+A `table` float wraps a Markdown table, captions it (**above** the table, per the
+universal typesetting convention for tables), numbers it on its own *Table N*
+counter, and makes it referenceable. The body is an ordinary JMarkdown table —
+nothing special about it except that it lives inside the block:
+
+:::markdown-demo
+@begin(table)[Summary of results]{id=tab:results}
+| Method | Score |
+|--------|-------|
+| A      | 0.9   |
+| B      | 0.7   |
+@end(table)
+
+See :ref[tab:results] for the numbers, or more precisely :cref[tab:results].
+:::
+
+The caption sits above the table and is prefixed *Table 1:*; the figure and table
+counters are independent, so a document can have both a "Figure 1" and a "Table 1".
+The LaTeX is a native `table` float, with `\caption` placed before the `tabular`
+(so it prints above) and `\label` after it:
+
+```latex
+\begin{table}[htbp]
+\centering
+\caption{Results summary}
+\label{tab:results}
+\begin{tabular}{ll}
+\hline
+Method & Score \\
+\hline
+A & 0.9 \\
+B & 0.7 \\
+\hline
+\end{tabular}
+\end{table}
+
+See \ref{tab:results} for numbers, or more precisely \cref{tab:results}.
+```
+
+### Long tables inside a `table` float
+
+A table body of more than roughly **20 rows** is emitted as a page-breaking
+`longtable` in print — automatically, on row count alone; see
+[print rendering](print-rendering.html) for the mechanism. When such a table sits
+inside a `table` float, JMarkdown does one float-specific thing: because a
+`longtable` cannot live inside a page-locked float, the caption is emitted with
+`\captionof{table}{…}` (from the `caption` package) above the `longtable` rather
+than `\caption` inside a `table` environment. The table is still numbered on the
+table counter and still referenceable — the float wrapper just steps aside so the
+table can break:
+
+```latex
+\captionof{table}{Twenty-two rows of data}\label{tab:big}
+\begin{longtable}{ll}
+\hline
+Item & Value \\
+\hline
+\endhead
+Row 1 & 1 \\
+Row 2 & 2 \\
+% … rows 3–21 …
+Row 22 & 22 \\
+\hline
+\end{longtable}
+```
+
+On the web there is no pagination, so a long table renders as one continuous HTML
+`<table>` inside the usual float.
+
+## The `listing` environment
+
+A `listing` float is to a code block what a `figure` is to an image: it captions
+and numbers a fenced code block on its own *Listing N* counter and makes it
+referenceable. Put a normal fenced code block (with its language tag) inside:
+
+:::markdown-demo
+@begin(listing)[A hello-world program]{id=lst:hello}
+```python
+print("hello, world")
+```
+@end(listing)
+
+See :ref[lst:hello], or more precisely :cref[lst:hello].
+:::
+
+The code is still syntax-highlighted exactly as a free-standing fenced block would
+be; the environment only adds the caption (*Listing 1:*) and the cross-ref anchor.
+In LaTeX the code becomes a `minted` block inside `minted`'s own `listing` float
+environment, so listings number and float like figures and tables:
+
+```latex
+\begin{listing}[htbp]
+\begin{minted}{python}
+print("hello, world")
+\end{minted}
+\caption{A hello-world program}
+\label{lst:hello}
+\end{listing}
+
+See \ref{lst:hello}, or more precisely \cref{lst:hello}.
+```
+
+The language on the fence (`python`) is carried straight through to `minted`. The
+`minted` package compiles code with Pygments, so a LaTeX build that includes a
+listing needs `pygmentize` installed and `--shell-escape` passed to your LaTeX
+engine.
+
+## Referencing a float
+
+Every float environment is referenced the same way, through the cross-reference
+directives, keyed by the `id` you gave it:
+
+| You write | HTML and LaTeX result | Use it for |
+|---|---|---|
+| `:ref[fig:demo]` | `1` | the bare number |
+| `:cref[fig:demo]` | `figure 1` | mid-sentence, type spelled out |
+| `:Cref[fig:demo]` | `Figure 1` | start of a sentence (capitalised) |
+
+The `:cref` wording reads identically in HTML and LaTeX, and forward references
+(to a float defined later) resolve cleanly — both as
+[cross-references](cross-references.html) explains. That page also covers
+referencing sections, equations, and theorems, plus `:label`.
+
+## Reference
+
+### Syntax
+
+```
+@begin(figure)[caption]{id=fig:key}
+…a single image…
+@end(figure)
+
+@begin(figure)[caption]{id=fig:key}
+  @begin(subfigure)[caption]{id=sub:a width=0.45}
+  …image…
+  @end(subfigure)
+  @begin(subfigure)[caption]{id=sub:b width=0.45}
+  …image…
+  @end(subfigure)
+@end(figure)
+
+@begin(table)[caption]{id=tab:key}
+…a Markdown table…
+@end(table)
+
+@begin(listing)[caption]{id=lst:key}
+…a fenced code block…
+@end(listing)
+```
+
+### Environments at a glance
+
+| Environment | Wraps | Caption position | Counter | LaTeX float |
+|---|---|---|---|---|
+| `figure` | one image | below | Figure *N* | `figure` (graphicx) |
+| `subfigure` | one image, inside a `figure` | below the panel | (a), (b), … | `subfigure` (subcaption) |
+| `table` | a Markdown table | above | Table *N* | `table` or `longtable` |
+| `listing` | a fenced code block | below | Listing *N* | `listing` (minted) |
+
+### Attributes
+
+| Attribute | Applies to | Effect |
+|---|---|---|
+| `id` | all | The reference key. Use the colon-safe `{id=fig:x}` form, not `{#…}`. Optional — omit it for an unreferenced float. |
+| `width` | `subfigure` | Panel width as a fraction of the row (`0.45` → `0.45\textwidth` in LaTeX, `width:45%` in HTML). |
+
+### Behaviour and gotchas
+
+- **Auto-numbered, document order.** Figures, tables, and listings each have their
+  own independent counter, and HTML prefixes the caption with *Figure N:*, *Table
+  N:*, or *Listing N:* automatically. You never type the number.
+- **Usage-driven preamble.** A figure pulls in `graphicx`; a subfigure adds
+  `subcaption`; a listing adds `minted`; a long captioned table adds `caption`.
+  Nothing is loaded that you do not use.
+- **Bare image is not a float.** `![](…)` is a plain graphic with no caption,
+  number, or reference.
+- **Subfigures must be inside a `figure`.** A bare `subfigure` has no parent number
+  to letter against.
+- **`longtable` needs `--shell-escape`?** No — it is a core LaTeX capability. But a
+  **listing** uses `minted`, which *does* need `pygmentize` and `--shell-escape` at
+  build time.
+- **Caption above for tables, below for figures.** This is set for you; do not try
+  to move it by reordering content.
+
+## Related pages
+
+- [Block environments](block-environments.html) — the `@begin … @end` grammar that
+  every float is built on, including nesting.
+- [Cross-references](cross-references.html) — `:ref`, `:cref`, `:Cref`, and
+  `:label` in full, across sections, equations, and theorems as well as floats.
+- [Tables and alerts](tables-and-alerts.html) — the Markdown table syntax that goes
+  inside a `table` float, including spans and column widths.
+- [Code highlighting](code-highlighting.html) — how the code inside a `listing` is
+  highlighted on the web and set with `minted` in print.
+- [Theorems and equations](theorems-and-equations.html) — the companion
+  `@begin(equation)` environment for numbered, referenceable display math.

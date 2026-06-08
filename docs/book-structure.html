@@ -1,0 +1,583 @@
+<h1 id="toc-book-structure-contents-matter-and-multi-file">Book structure: contents, matter, and multi-file</h1>
+<p>A book is more than a sequence of chapters. It has a <strong>table of contents</strong>, perhaps
+  a <strong>list of figures</strong> and a <strong>list of tables</strong>; it is divided into <strong>front matter</strong>,
+  <strong>main matter</strong>, <strong>appendices</strong>, and <strong>back matter</strong>; and — once it grows past a
+  handful of pages — it is split across many source files that a single master
+  document assembles into one work. JMarkdown gives you a small, declarative set of
+  markers for all of this, and, true to the system's purpose, each marker does the
+  right thing in <span class="intense">both</span> outputs: in LaTeX it becomes the native command the
+  document class already knows how to typeset, and in HTML it becomes a generated,
+  linked list (or, for the print-only divisions, nothing at all).
+</p>
+<p>This page covers three related topics:</p>
+<p></p>
+<div class="toc">
+  <p id="toc">Table of contents</p>
+  <ul>
+    <li><a data-id="toc-book-structure-contents-matter-and-multi-file" href="#toc-book-structure-contents-matter-and-multi-file">Book structure: contents, matter, and multi-file</a>
+      <ul>
+        <li><a data-id="toc-contents-lists" href="#toc-contents-lists">Contents lists</a>
+          <ul>
+            <li><a data-id="toc-what-the-lists-collect" href="#toc-what-the-lists-collect">What the lists collect</a></li>
+            <li><a data-id="toc-a-live-look-at-numbered-floats" href="#toc-a-live-look-at-numbered-floats">A live look at numbered floats</a></li>
+            <li><a data-id="toc-each-marker-on-its-own-line" href="#toc-each-marker-on-its-own-line">Each marker on its own line</a></li>
+          </ul>
+        </li>
+        <li><a data-id="toc-front-matter-main-matter-and-appendices" href="#toc-front-matter-main-matter-and-appendices">Front matter, main matter, and appendices</a></li>
+        <li><a data-id="toc-a-complete-book-skeleton" href="#toc-a-complete-book-skeleton">A complete book skeleton</a></li>
+        <li><a data-id="toc-multi-file-books" href="#toc-multi-file-books">Multi-file books</a>
+          <ul>
+            <li><a data-id="toc-why-inclusion-makes-one-document" href="#toc-why-inclusion-makes-one-document">Why inclusion makes one document</a></li>
+            <li><a data-id="toc-the-assembled-latex" href="#toc-the-assembled-latex">The assembled LaTeX</a></li>
+            <li><a data-id="toc-the-assembled-html" href="#toc-the-assembled-html">The assembled HTML</a></li>
+          </ul>
+        </li>
+        <li><a data-id="toc-choosing-a-document-class" href="#toc-choosing-a-document-class">Choosing a document class</a></li>
+        <li><a data-id="toc-reference" href="#toc-reference">Reference</a>
+          <ul>
+            <li><a data-id="toc-markers" href="#toc-markers">Markers</a></li>
+            <li><a data-id="toc-rules-at-a-glance" href="#toc-rules-at-a-glance">Rules at a glance</a></li>
+          </ul>
+        </li>
+        <li><a data-id="toc-related-pages" href="#toc-related-pages">Related pages</a></li>
+      </ul>
+    </li>
+  </ul>
+</div>
+<p></p>
+<p>The markers are all <strong>moustache tokens</strong> — <code>{{NAME}}</code> on a line of its own — except
+  file inclusion, which uses the double-bracket <code>[[file.md]]</code> form. None of them
+  require an extension or a named package; a parse hook recognises them on every
+  document. They build on the <a href="dual-output.html">dual-output model</a>, where one
+  source produces both web and print.</p>
+<h2 id="toc-contents-lists">Contents lists</h2>
+<p>Three markers build the standard front-of-book lists. Put each on a line by
+  itself, with a blank line above and below, at the point where the list should
+  appear:</p>
+<pre><code class="hljs">{{TOC}}     table of contents
+{{LOF}}     list of figures
+{{LOT}}     list of tables
+</code></pre>
+<p>In <span class="intense">LaTeX</span> these expand to <code>\tableofcontents</code>, <code>\listoffigures</code>, and
+  <code>\listoftables</code>, and the document class numbers and formats them. In <span class="intense">HTML</span>
+  JMarkdown builds the lists itself: <code>{{TOC}}</code> becomes a nested <code>&lt;div class="toc"&gt;</code>
+  of every heading (see the dedicated <a href="table-of-contents.html">Table of contents</a>
+  page for its full structure and styling), while <code>{{LOF}}</code> and <code>{{LOT}}</code> become a
+  <code>&lt;nav&gt;</code> listing every captioned <a href="floats.html">figure or table</a>, each entry linked
+  to the float it names.
+</p>
+<h3 id="toc-what-the-lists-collect">What the lists collect</h3>
+<p><code>{{LOF}}</code> and <code>{{LOT}}</code> are populated from <strong>captioned floats</strong> — the
+  <a href="floats.html"><code>@begin(figure)</code> and <code>@begin(table)</code></a> environments, which carry a
+  caption in <code>[brackets]</code> and an id in <code>{id=…}</code>. A bare image (<code>![](…)</code>) is not a
+  float and does not appear in the list. The numbering is automatic and shared with
+  the cross-reference system, so "Figure 1" in the list is the same "Figure 1" a
+  <code>:cref</code> points to.
+</p>
+<p>Here is a document with a contents list, a list of figures, a list of tables, and
+  two numbered floats. The source (with <code>Headings: numeric</code> in its metadata
+  header):</p>
+<pre><code class="hljs">Headings: numeric
+
+{{TOC}}
+
+{{LOF}}
+
+{{LOT}}
+
+# Introduction
+
+@begin(figure)[The first figure]{id=fig:a}
+![a](a.png)
+@end(figure)
+
+# Data
+
+@begin(table)[The first table]{id=tab:a}
+| A | B |
+|---|---|
+| 1 | 2 |
+@end(table)
+</code></pre>
+<p>In LaTeX, the three markers become the engine's own commands and the floats their
+  native environments — the document class handles all numbering and page
+  references:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\tableofcontents</span>
+
+<span class="hljs-keyword">\listoffigures</span>
+
+<span class="hljs-keyword">\listoftables</span>
+
+<span class="hljs-keyword">\section</span>{Introduction}
+
+<span class="hljs-keyword">\begin</span>{figure}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\includegraphics</span>[width=<span class="hljs-keyword">\textwidth</span>]{a.png}
+
+<span class="hljs-keyword">\caption</span>{The first figure}
+<span class="hljs-keyword">\label</span>{fig:a}
+<span class="hljs-keyword">\end</span>{figure}
+
+<span class="hljs-keyword">\section</span>{Data}
+
+<span class="hljs-keyword">\begin</span>{table}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\caption</span>{The first table}
+<span class="hljs-keyword">\label</span>{tab:a}
+<span class="hljs-keyword">\begin</span>{tabular}{ll}
+<span class="hljs-keyword">\hline</span>
+A <span class="hljs-built_in">&amp;</span> B <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+1 <span class="hljs-built_in">&amp;</span> 2 <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\end</span>{tabular}
+<span class="hljs-keyword">\end</span>{table}
+</code></pre>
+<p>In HTML the same source produces generated lists. The <code>{{LOF}}</code> and <code>{{LOT}}</code>
+  markers become <code>&lt;nav&gt;</code> lists whose entries link to each float:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">nav</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"list-of-figures"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">ul</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#fig:a"</span>&gt;</span>Figure 1: The first figure<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">ul</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">nav</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"list-of-tables"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">ul</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#tab:a"</span>&gt;</span>Table 1: The first table<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">ul</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span>
+</code></pre>
+<h3 id="toc-a-live-look-at-numbered-floats">A live look at numbered floats</h3>
+<p>The contents markers cannot appear in a live <code>markdown-demo</code> — their substitution
+  is document-wide and would clash with the surrounding page (this page uses a real
+  <code>{{TOC}}</code> above). The <strong>floats</strong> the lists collect, however, render fine in a demo,
+  showing the numbering and cross-referencing that feeds <code>{{LOF}}</code>:
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(figure)[A sample figure]{id=fig:sample}
+![<span class="hljs-string">sample</span>](<span class="hljs-link">sample.png</span>)
+@end(figure)
+
+As :cref[fig:sample] shows, the float is numbered automatically, and
+the reference resolves to it.</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <figure class="figure" id="fig:sample">
+      <p><img src="sample.png" alt="sample"></p>
+      <figcaption class="figure-caption"><span class="figure-label xref">Figure 1:</span> A sample figure</figcaption>
+    </figure>
+    <p>As <a class="xref-cref" href="#fig:sample">figure&nbsp;1</a> shows, the float is numbered automatically, and
+      the reference resolves to it.</p>
+
+  </div>
+</div>
+<p>The "Figure 1" label and the resolved "figure 1" link are exactly the text that
+  an entry in <code>{{LOF}}</code> would carry. (The image is a missing-file placeholder — the
+  point is the caption, numbering, and reference, not the picture.)</p>
+<h3 id="toc-each-marker-on-its-own-line">Each marker on its own line</h3>
+<p>The contents markers are matched as whole paragraphs: in HTML a marker is replaced
+  only when it is the <strong>entire</strong> text of a paragraph. If you stack two markers on
+  adjacent lines with no blank line between them —</p>
+<pre><code class="hljs">{{TOC}}
+{{LOF}}
+</code></pre>
+<p>— Markdown folds them into one paragraph, and only the first is replaced; the
+  second is left as the literal text <code>{{LOF}}</code> in the output. Always separate the
+  markers with a blank line:</p>
+<pre><code class="hljs">{{TOC}}
+
+{{LOF}}
+
+{{LOT}}
+</code></pre>
+<h2 id="toc-front-matter-main-matter-and-appendices">Front matter, main matter, and appendices</h2>
+<p>The LaTeX <code>book</code> and <code>report</code> classes divide a document into formal parts:
+  <strong>front matter</strong> (title page, contents, preface — numbered with roman folios and no
+  section numbers), <strong>main matter</strong> (the chapters proper, arabic folios), and <strong>back
+    matter</strong> (bibliography, index). An <strong>appendix</strong> switches chapter numbering from
+  numerals to letters. JMarkdown exposes each division as a marker:
+</p>
+<pre><code class="hljs">{{frontmatter}}    \frontmatter
+{{mainmatter}}     \mainmatter
+{{appendix}}       \appendix
+{{backmatter}}     \backmatter
+</code></pre>
+<p>In <span class="intense">LaTeX</span> these become the matching commands, and the class takes over from
+  there. In <span class="intense">HTML</span> there is no equivalent division, so the markers are simply
+  stripped — they leave nothing behind. (HTML appendix lettering — relabelling the
+  headings after <code>{{appendix}}</code> as A, B, … — is not yet implemented; for now the
+  marker just vanishes in HTML.)</p>
+<p><code>\frontmatter</code>, <code>\mainmatter</code>, and <code>\backmatter</code> are defined only by the <code>book</code>
+  and <code>report</code> classes, so set the document class accordingly in the metadata
+  header (the <code>Document class</code> and <code>Heading base</code> keys are documented under the
+  <a href="dual-output.html">dual-output model</a>):
+</p>
+<pre><code class="hljs">Title: My Treatise
+Document class: book
+</code></pre>
+<p>The default <code>article</code> has no chapters and no matter divisions; the comparison
+  under <a href="#choosing-a-document-class">Choosing a document class</a> below shows what each
+  class buys you.</p>
+<h2 id="toc-a-complete-book-skeleton">A complete book skeleton</h2>
+<p>Putting the contents and matter markers together with a metadata header gives a
+  short but complete book master file. The source (the metadata header is shown
+  here in its bare-key form; the YAML-fenced <code>---</code> form works identically):</p>
+<pre><code class="hljs">Title: My Treatise
+Author: A. Scholar
+Document class: book
+
+{{frontmatter}}
+
+{{TOC}}
+
+{{mainmatter}}
+
+# Introduction
+
+Body text of the first chapter.
+
+{{appendix}}
+
+# Supplementary Proofs
+
+More material here.
+
+{{backmatter}}
+</code></pre>
+<p>Run through <code>--to latex</code>, this assembles a full, compilable document — the
+  <a href="dual-output.html">dual-output model</a> builds the <code>\documentclass</code> wrapper and
+  preamble; here each marker simply drops into place:
+</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>{book}
+<span class="hljs-keyword">\usepackage</span>[utf8]{inputenc}
+<span class="hljs-keyword">\usepackage</span>[T1]{fontenc}
+<span class="hljs-keyword">\usepackage</span>{hyperref}
+<span class="hljs-keyword">\hypersetup</span>{pdftitle={My Treatise}, pdfauthor={A. Scholar}}
+
+<span class="hljs-keyword">\begin</span>{document}
+
+<span class="hljs-keyword">\title</span>{My Treatise}
+<span class="hljs-keyword">\author</span>{A. Scholar}
+<span class="hljs-keyword">\maketitle</span>
+
+<span class="hljs-keyword">\frontmatter</span>
+
+<span class="hljs-keyword">\tableofcontents</span>
+
+<span class="hljs-keyword">\mainmatter</span>
+
+<span class="hljs-keyword">\chapter</span>{Introduction}
+
+Body text of the first chapter.
+
+<span class="hljs-keyword">\appendix</span>
+
+<span class="hljs-keyword">\chapter</span>{Supplementary Proofs}
+
+More material here.
+
+<span class="hljs-keyword">\backmatter</span>
+
+
+<span class="hljs-keyword">\end</span>{document}
+</code></pre>
+<p>Notice that <code>#</code> became <code>\chapter</code> (because the class is <code>book</code>), <code>{{TOC}}</code> sits
+  inside the front matter as <code>\tableofcontents</code>, and the appendix chapter follows
+  <code>\appendix</code> so the class will letter it. That <code>.tex</code> compiles to a properly
+  structured PDF with no further hand-editing.
+</p>
+<p>The same source built for the web (<code>--fragment</code>, no class wrapper) produces the
+  generated contents list and silently drops the matter markers:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"toc"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc"</span>&gt;</span>Table of contents<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">ul</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">data-id</span>=<span class="hljs-string">"toc-introduction"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#toc-introduction"</span>&gt;</span>Introduction<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">li</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">data-id</span>=<span class="hljs-string">"toc-supplementary-proofs"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#toc-supplementary-proofs"</span>&gt;</span>Supplementary Proofs<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">ul</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-name">h1</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc-introduction"</span>&gt;</span>Introduction<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Body text of the first chapter.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-name">h1</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc-supplementary-proofs"</span>&gt;</span>Supplementary Proofs<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>More material here.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>One source, two structurally correct outputs.</p>
+<h2 id="toc-multi-file-books">Multi-file books</h2>
+<p>A real book lives in many files — one per chapter — assembled by a short <strong>master
+    file</strong>. JMarkdown's <a href="file-inclusion.html">file inclusion</a> does the assembly: a
+  line containing only <code>[[chapter.md]]</code> is replaced, before parsing, with the entire
+  contents of that file. The master holds the metadata header and the structure
+  markers; each chapter file holds only its prose.</p>
+<p>A master file for a two-chapter book:</p>
+<pre><code class="hljs">Title: A Short Book
+Author: A. Scholar
+Document class: book
+Headings: numeric
+
+{{frontmatter}}
+
+{{TOC}}
+
+{{LOF}}
+
+{{mainmatter}}
+
+[[intro.md]]
+
+[[methods.md]]
+
+{{backmatter}}
+</code></pre>
+<p>with <code>intro.md</code>:</p>
+<pre><code class="hljs"># Introduction
+
+We will rely on the diagram in :cref[fig:flow] throughout.
+
+@begin(figure)[The overall workflow]{id=fig:flow}
+![flow](flow.png)
+@end(figure)
+</code></pre>
+<p>and <code>methods.md</code>:</p>
+<pre><code class="hljs"># Methods
+
+As :cref[fig:flow] showed, the pipeline has three stages.
+
+@begin(figure)[A detailed view of stage two]{id=fig:stage2}
+![stage2](stage2.png)
+@end(figure)
+
+Compare :cref[fig:flow] with :cref[fig:stage2].
+</code></pre>
+<h3 id="toc-why-inclusion-makes-one-document">Why inclusion makes one document</h3>
+<p>Inclusion is <strong>textual splicing before parsing</strong>, not a separate compilation step.
+  By the time the parser runs, the master and its chapters are a single stream of
+  source. Three consequences matter for book structure:</p>
+<ul>
+  <li><span class="intense">Numbering is continuous.</span> The figure in <code>intro.md</code> is Figure 1; the figure
+    in <code>methods.md</code> is Figure 2 — they share one counter because they are, after
+    splicing, one document. No per-file resets, no manual offsets.</li>
+  <li><span class="intense">Cross-references span chapters.</span> A <code>:cref[fig:flow]</code> in <code>methods.md</code> resolves
+    to the figure defined back in <code>intro.md</code>, in either direction — the whole
+    document is in memory before any reference resolves. (How that single resolution
+    pass works is covered under <a href="cross-references.html">cross-references</a>.)</li>
+  <li><span class="intense">The structure markers belong in the master.</span> Keep <code>{{frontmatter}}</code>,
+    <code>{{TOC}}</code>, the matter divisions, and the metadata header in the master file
+    only. An included file is raw Markdown from its first byte — it is <strong>not</strong>
+    re-scanned for a metadata header — so a <code>---</code>-fenced block at the top of a
+    chapter would be rendered as content, not read as configuration.
+  </li>
+</ul>
+<h3 id="toc-the-assembled-latex">The assembled LaTeX</h3>
+<p>Built with <code>--to latex</code>, the master file above produces one complete document.
+  The preamble has grown <code>graphicx</code> (the figures) and <code>cleveref</code> (the typed
+  <a href="cross-references.html">cross-references</a>); the chapters are spliced in order, the
+  figures carry continuous <code>\label</code>s, and every <code>:cref</code> became a native <code>\cref</code>:
+</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>{book}
+<span class="hljs-keyword">\usepackage</span>[utf8]{inputenc}
+<span class="hljs-keyword">\usepackage</span>[T1]{fontenc}
+<span class="hljs-keyword">\usepackage</span>{graphicx}
+<span class="hljs-keyword">\usepackage</span>{hyperref}
+<span class="hljs-keyword">\usepackage</span>{cleveref}
+<span class="hljs-keyword">\crefname</span>{figure}{figure}{figures}
+<span class="hljs-keyword">\Crefname</span>{figure}{Figure}{Figures}
+<span class="hljs-keyword">\hypersetup</span>{pdftitle={A Short Book}, pdfauthor={A. Scholar}}
+
+<span class="hljs-keyword">\begin</span>{document}
+
+<span class="hljs-keyword">\title</span>{A Short Book}
+<span class="hljs-keyword">\author</span>{A. Scholar}
+<span class="hljs-keyword">\maketitle</span>
+
+<span class="hljs-keyword">\frontmatter</span>
+
+<span class="hljs-keyword">\tableofcontents</span>
+<span class="hljs-keyword">\listoffigures</span>
+
+<span class="hljs-keyword">\mainmatter</span>
+
+<span class="hljs-keyword">\chapter</span>{Introduction}
+
+We will rely on the diagram in <span class="hljs-keyword">\cref</span>{fig:flow} throughout.
+
+<span class="hljs-keyword">\begin</span>{figure}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\includegraphics</span>[width=<span class="hljs-keyword">\textwidth</span>]{flow.png}
+
+<span class="hljs-keyword">\caption</span>{The overall workflow}
+<span class="hljs-keyword">\label</span>{fig:flow}
+<span class="hljs-keyword">\end</span>{figure}
+
+<span class="hljs-keyword">\chapter</span>{Methods}
+
+As <span class="hljs-keyword">\cref</span>{fig:flow} showed, the pipeline has three stages.
+
+<span class="hljs-keyword">\begin</span>{figure}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\includegraphics</span>[width=<span class="hljs-keyword">\textwidth</span>]{stage2.png}
+
+<span class="hljs-keyword">\caption</span>{A detailed view of stage two}
+<span class="hljs-keyword">\label</span>{fig:stage2}
+<span class="hljs-keyword">\end</span>{figure}
+
+Compare <span class="hljs-keyword">\cref</span>{fig:flow} with <span class="hljs-keyword">\cref</span>{fig:stage2}.
+
+<span class="hljs-keyword">\backmatter</span>
+
+
+<span class="hljs-keyword">\end</span>{document}
+</code></pre>
+<h3 id="toc-the-assembled-html">The assembled HTML</h3>
+<p>The same master file, built for the web, resolves every cross-reference itself,
+  forward and backward across chapter boundaries. The backward reference in
+  <code>methods.md</code> to <code>fig:flow</code> and the forward references all point at the right
+  "figure 1" and "figure 2":
+</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">h1</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc-introduction"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"header-label h1-label xref"</span>&gt;</span>1.<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span> Introduction<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>We will rely on the diagram in <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#fig:flow"</span>&gt;</span>figure<span class="hljs-symbol">&amp;nbsp;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span> throughout.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">figure</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"figure"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"fig:flow"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"flow.png"</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">"flow"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">figcaption</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"figure-caption"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"figure-label xref"</span>&gt;</span>Figure 1:<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span> The overall workflow<span class="hljs-tag">&lt;/<span class="hljs-name">figcaption</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">figure</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">h1</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc-methods"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"header-label h1-label xref"</span>&gt;</span>2.<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span> Methods<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>As <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#fig:flow"</span>&gt;</span>figure<span class="hljs-symbol">&amp;nbsp;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span> showed, the pipeline has three stages.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">figure</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"figure"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"fig:stage2"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"stage2.png"</span> <span class="hljs-attr">alt</span>=<span class="hljs-string">"stage2"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">figcaption</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"figure-caption"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"figure-label xref"</span>&gt;</span>Figure 2:<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span> A detailed view of stage two<span class="hljs-tag">&lt;/<span class="hljs-name">figcaption</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">figure</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Compare <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#fig:flow"</span>&gt;</span>figure<span class="hljs-symbol">&amp;nbsp;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span> with <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"xref-cref"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#fig:stage2"</span>&gt;</span>figure<span class="hljs-symbol">&amp;nbsp;</span>2<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span>.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>The figures kept their continuous numbering (1, then 2) and every link found its
+  target — the whole point of assembling chapters from one master.</p>
+<h2 id="toc-choosing-a-document-class">Choosing a document class</h2>
+<p>Matter divisions and chapter sectioning depend entirely on the class:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Class</th>
+      <th>Use for</th>
+      <th><code>#</code> becomes</th>
+      <th>Matter divisions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>article</code> (default)</td>
+      <td>papers, short reports, the docs you are reading</td>
+      <td><code>\section</code></td>
+      <td>not available</td>
+    </tr>
+    <tr>
+      <td><code>report</code></td>
+      <td>long reports, theses, multi-chapter works without a half-title</td>
+      <td><code>\chapter</code></td>
+      <td>available</td>
+    </tr>
+    <tr>
+      <td><code>book</code></td>
+      <td>books, with half-title and front-and-back-matter conventions</td>
+      <td><code>\chapter</code></td>
+      <td>available</td>
+    </tr>
+  </tbody>
+</table>
+<p>Only <code>book</code> and <code>report</code> define <code>\frontmatter</code>, <code>\mainmatter</code>, and <code>\backmatter</code>; using
+  those markers under <code>article</code> emits commands the class does not define, which the
+  engine will reject. <code>\appendix</code>, by contrast, is defined everywhere, so
+  <code>{{appendix}}</code> is safe in any class — under <code>article</code> it switches <code>\section</code>
+  numbering to letters.
+</p>
+<h2 id="toc-reference">Reference</h2>
+<h3 id="toc-markers">Markers</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Marker</th>
+      <th>LaTeX</th>
+      <th>HTML</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>{{TOC}}</code></td>
+      <td><code>\tableofcontents</code></td>
+      <td>generated <code>&lt;div class="toc"&gt;</code> of headings</td>
+    </tr>
+    <tr>
+      <td><code>{{LOF}}</code></td>
+      <td><code>\listoffigures</code></td>
+      <td>generated <code>&lt;nav class="list-of-figures"&gt;</code></td>
+    </tr>
+    <tr>
+      <td><code>{{LOT}}</code></td>
+      <td><code>\listoftables</code></td>
+      <td>generated <code>&lt;nav class="list-of-tables"&gt;</code></td>
+    </tr>
+    <tr>
+      <td><code>{{frontmatter}}</code></td>
+      <td><code>\frontmatter</code></td>
+      <td>stripped (book and report only in LaTeX)</td>
+    </tr>
+    <tr>
+      <td><code>{{mainmatter}}</code></td>
+      <td><code>\mainmatter</code></td>
+      <td>stripped (book and report only in LaTeX)</td>
+    </tr>
+    <tr>
+      <td><code>{{appendix}}</code></td>
+      <td><code>\appendix</code></td>
+      <td>stripped (lettering TODO in HTML)</td>
+    </tr>
+    <tr>
+      <td><code>{{backmatter}}</code></td>
+      <td><code>\backmatter</code></td>
+      <td>stripped (book and report only in LaTeX)</td>
+    </tr>
+    <tr>
+      <td><code>[[file.md]]</code></td>
+      <td>spliced before parsing</td>
+      <td>spliced before parsing</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-rules-at-a-glance">Rules at a glance</h3>
+<ul>
+  <li><span class="intense">Each marker on its own line, blank lines around it.</span> A marker is matched as
+    a whole paragraph; two markers on adjacent lines fold into one paragraph and
+    only the first is replaced.</li>
+  <li><span class="intense"><code>{{LOF}}</code> and <code>{{LOT}}</code> collect captioned floats</span> — <code>@begin(figure)</code> and
+    <code>@begin(table)</code> with <code>[caption]</code> and <code>{id=…}</code>. Bare <code>![](…)</code> images do not
+    appear.
+  </li>
+  <li><span class="intense">Matter divisions need <code>Document class: book</code> or <code>report</code></span> for the front,
+    main, and back divisions; <code>{{appendix}}</code> works in any class.</li>
+  <li><span class="intense">Structure markers live in the master file</span>, not in included chapters.</li>
+  <li><span class="intense">Metadata only in the master.</span> Included files are not re-scanned for a header.</li>
+  <li><span class="intense">Cross-chapter refs and numbering work in one pass</span> — no rerun, no
+    intermediate file.</li>
+  <li><span class="intense">Do not put a contents/matter marker inside a <code>markdown-demo</code></span> — its
+    substitution is document-wide and would clash with the surrounding page. Floats
+    and cross-references, however, render fine inside a demo.</li>
+</ul>
+<h2 id="toc-related-pages">Related pages</h2>
+<ul>
+  <li><a href="table-of-contents.html">Table of contents</a> — the full structure, ids, and
+    styling of the HTML <code>{{TOC}}</code> list.</li>
+  <li><a href="file-inclusion.html">File inclusion</a> — the <code>[[file.md]]</code> mechanism in detail:
+    path resolution, recursion, and cycle handling.</li>
+  <li><a href="dual-output.html">Dual output</a> — the HTML/LaTeX model, the <code>Document class</code> and
+    <code>Heading base</code> keys, and how <code>--to latex</code> assembles a full document.
+  </li>
+  <li><a href="cross-references.html">Cross-references</a> — the <code>:label</code>, <code>:ref</code>, <code>:cref</code>, and
+    <code>:Cref</code> commands, and how forward references resolve.
+  </li>
+  <li><a href="floats.html">Floats</a> — the <code>@begin(figure|table|listing)</code> environments that
+    <code>{{LOF}}</code> and <code>{{LOT}}</code> collect.
+  </li>
+  <li><a href="metadata-header.html">Metadata header</a> — the header syntax, and keys like
+    <code>Author</code> and <code>Headings: numeric</code>.
+  </li>
+</ul>

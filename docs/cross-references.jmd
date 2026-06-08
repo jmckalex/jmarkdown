@@ -1,0 +1,363 @@
+Title: Cross-references
+------------------------------------
+
+# Cross-references
+
+A *cross-reference* names a thing once and points at it from anywhere else: "see
+Section 3", "by equation (2)", "the proof of Theorem 1". The numbers are not
+yours to maintain — when you insert a section, wrap a figure, or reorder two
+theorems, every reference to them should follow automatically. JMarkdown gives
+you four small inline commands for this, and they behave the same whether you are
+producing the web edition or the print edition of a document.
+
+The design follows JMarkdown's [dual-output model](dual-output.html). In **LaTeX**
+output the commands become native `\label`, `\ref`, `\cref`, and `\Cref`, and the
+TeX engine numbers and resolves everything. In **HTML** output JMarkdown does the
+same job itself in the post-processor: it numbers the targets, records each one,
+and rewrites the references into hyperlinks. You write one source; both editions
+get correctly-numbered, clickable references whose *wording* is identical.
+
+## The four commands
+
+One command tags a target, one reads back its bare number, and two "typed"
+commands also print the kind of thing being referenced.
+
+| Command | Produces | Example output |
+|---|---|---|
+| `:label[key]` | tags a target with `key` (prints nothing) | — |
+| `:ref[key]` | the target's number, hyperlinked | `3` |
+| `:cref[key]` | the *typed* reference, lower-case | `section 3` |
+| `:Cref[key]` | the typed reference, capitalised | `Section 3` |
+
+The square brackets hold the **key** — an arbitrary string you choose, with no
+meaning to JMarkdown beyond matching a label to its references. By convention
+authors give it a type prefix (`sec:`, `fig:`, `eq:`, `thm:`, `tab:`, `lst:`) so
+it reads well in the source, but `myKey` works just as well. Tag the target once
+with `:label`, then use the same key in every reference that points at it.
+
+The distinction between `:ref` and `:cref` is whether the *word* is printed. Use
+`:ref` when your prose already supplies the noun — `see Section :ref[sec:intro]`
+prints "see Section 3". Use `:cref` when you want JMarkdown to supply the noun
+for you — `:cref[sec:intro] covers this` prints "section 3 covers this". The
+capitalised `:Cref` is for the start of a sentence, where the noun must be a
+capital: `:Cref[sec:intro] covers this` prints "Section 3 covers this".
+
+## What you can reference
+
+Cross-references work for every numbered construct in a JMarkdown document:
+
+- **Headings** (sections), once the document opts into numbered headings with
+  `Headings: numeric` in its metadata header.
+- **Figures**, **tables**, and **listings** — the captioned floats created with
+  `@begin(figure)`, `@begin(table)`, and `@begin(listing)`.
+- **Theorems** and their kin — `@begin(theorem)`, `lemma`, `definition`, and so
+  on — which share one running counter.
+- **Equations** — the numbered display math of `@begin(equation)`.
+
+Floats, theorems, and equations always carry a number, so they are referenceable
+whether or not the document uses numbered headings. Only **heading** references
+depend on `Headings: numeric`, since that is what numbers the sections.
+
+## Referencing headings
+
+Tag a heading by appending `:label[key]` to its text, then reference it with the
+bare number (`:ref`) or the typed form (`:cref`, `:Cref`), which prints "section",
+"subsection", and so on according to the heading's depth.
+
+```markdown
+Headings: numeric
+------------------------------------
+
+# Introduction :label[sec:intro]
+
+See Section :ref[sec:intro] for setup, and Section :ref[sec:methods] below.
+
+## Background :label[sec:bg]
+
+As covered in :cref[sec:bg] and :cref[sec:intro].
+:Cref[sec:intro] explains the idea.
+
+# Methods :label[sec:methods]
+
+As described in :cref[sec:intro], we proceed.
+```
+
+In the **web** edition the post-processor numbers the headings, then rewrites
+each reference into a link to the heading's anchor. Note in the rendered HTML
+below that the typed references know the heading's depth: a reference to the
+top-level `# Introduction` prints "section 1", while a reference to the nested
+`## Background` prints "subsection 1.1".
+
+```html
+<p>As covered in <a class="xref-cref" href="#xref-sec:bg">subsection&nbsp;1.1</a>
+and <a class="xref-cref" href="#xref-sec:intro">section&nbsp;1</a>.
+<a class="xref-cref" href="#xref-sec:intro">Section&nbsp;1</a> explains the idea.</p>
+```
+
+In the **print** edition the very same source becomes native LaTeX. `:label`
+emits `\label`, `:ref` emits `\ref`, and the typed `:cref` and `:Cref` emit
+cleveref's `\cref` and `\Cref`, which the engine resolves — including the
+"section" and "subsection" wording, configured to match the HTML exactly:
+
+```latex
+\section{Introduction \label{sec:intro}}
+
+See Section \ref{sec:intro} for setup, and Section \ref{sec:methods} below.
+
+\subsection{Background \label{sec:bg}}
+
+As covered in \cref{sec:bg} and \cref{sec:intro}.
+\Cref{sec:intro} explains the idea.
+
+\section{Methods \label{sec:methods}}
+
+As described in \cref{sec:intro}, we proceed.
+```
+
+The depth-to-command mapping (`#` → `\section`, `##` → `\subsection`, …) follows
+the document class and the optional `Heading base` metadata key; see
+[dual output](dual-output.html) for that assembly metadata.
+
+## Referencing figures, tables, and listings
+
+Captioned floats carry their cross-reference key in the `{id=…}` attribute rather
+than a trailing `:label` ([floats](floats.html) explains why this is the
+colon-safe form). Once a float has an `id`, reference it like anything else. The
+demo below shows a figure with `id=fig:demo`, referenced two ways — the bare
+number with `:ref` and the typed "figure 1" with `:cref`:
+
+:::markdown-demo
+@begin(figure)[Inputs and outputs]{id=fig:demo}
+![a diagram](https://placehold.co/240x90?text=diagram)
+@end(figure)
+
+See :ref[fig:demo] for the diagram, or more precisely :cref[fig:demo].
+:::
+
+Tables and listings work identically — `@begin(table)[caption]{id=tab:x}` and
+`@begin(listing)[caption]{id=lst:x}` — with `:cref` printing "table" and
+"listing" respectively. Each kind keeps its own counter, so figures, tables, and
+listings number independently.
+
+In LaTeX the float becomes a real `figure`, `table`, or `listing` environment with
+a `\caption` and a `\label`, and the references become `\ref` and `\cref` as usual.
+The generated `.tex` for the demo above is:
+
+```latex
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{https://placehold.co/240x90?text=diagram}
+
+\caption{Inputs and outputs}
+\label{fig:demo}
+\end{figure}
+
+See \ref{fig:demo} for the diagram, or more precisely \cref{fig:demo}.
+```
+
+(Captioned floats are documented in full on [floats](floats.html); this page is
+only concerned with referencing them.)
+
+## Referencing theorems
+
+The [theorem family](theorems-and-equations.html) shares one running counter, so a
+theorem followed by a definition numbers as "Theorem 1" then "Definition 2". Each
+still knows its own kind, so `:cref` prints the right word for each:
+
+:::markdown-demo
+@begin(theorem)[Pythagoras]{id=thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+@end(theorem)
+
+@begin(definition){id=def:rt}
+A *right triangle* has one ninety-degree angle.
+@end(definition)
+
+By :cref[thm:pyth] and :cref[def:rt] we are done.
+See also :Cref[thm:pyth].
+:::
+
+Each `:cref` names the construct it points at, while the bare number stays
+continuous across both kinds. In LaTeX this maps onto thmtools with one shared
+counter, so the same source yields:
+
+```latex
+\begin{theorem}[Pythagoras]\label{thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+\end{theorem}
+
+\begin{definition}\label{def:rt}
+A \textbf{right triangle} has one ninety-degree angle.
+\end{definition}
+
+By \cref{thm:pyth} and \cref{def:rt} we are done. See also \Cref{thm:pyth}.
+```
+
+## Referencing equations
+
+Numbered display equations are made with `@begin(equation){id=eq:x}`; the body is
+math, written without the surrounding `$$`. JMarkdown numbers equations itself, in
+document order, so `:ref` and `:cref` resolve at build time:
+
+:::markdown-demo
+@begin(equation){id=eq:mass}
+E = mc^2
+@end(equation)
+
+@begin(equation){id=eq:sum}
+\sum_{i=1}^n i = \frac{n(n+1)}{2}
+@end(equation)
+
+By :ref[eq:mass] and :cref[eq:sum] we relate them.
+See also :Cref[eq:mass].
+:::
+
+Equation references are the one construct whose number is **parenthesised** — the
+universal convention in mathematical writing. The bare `:ref` prints just the
+number, but `:cref` prints "equation (2)" and `:Cref` "Equation (2)". This
+parenthesisation is part of the shared wording, so it holds in both editions. The
+LaTeX for the demo above is:
+
+```latex
+\begin{equation}
+\label{eq:mass}
+E = mc^2
+\end{equation}
+
+\begin{equation}
+\label{eq:sum}
+\sum_{i=1}^n i = \frac{n(n+1)}{2}
+\end{equation}
+
+By \ref{eq:mass} and \cref{eq:sum} we relate them. See also \Cref{eq:mass}.
+```
+
+In a full LaTeX document JMarkdown also writes the matching cleveref
+configuration into the preamble — `\crefname{equation}{equation}{equations}` and
+its capitalised counterpart — so the engine spells the word out and parenthesises
+the number exactly as the HTML does.
+
+## Forward references resolve in one pass
+
+You may reference a target *before* it appears in the document. A forward
+reference resolves correctly, and — unlike a LaTeX-only workflow, which needs two
+compiler passes to settle its `.aux` file — JMarkdown's HTML resolves forward
+references in a **single pass**. The post-processor sees the complete document at
+once: it numbers every target first, then rewrites every reference, so the order
+of definition and use does not matter.
+
+:::markdown-demo
+We will prove this in :cref[thm:later] below.
+
+@begin(theorem){id=thm:later}
+Every bounded monotone sequence converges.
+@end(theorem)
+:::
+
+The reference above is written before the theorem it points at, yet it resolves
+to the theorem's number cleanly. In LaTeX the forward reference is just an
+ordinary `\cref` that the engine resolves on its second pass — the visible result
+is the same.
+
+## Identical wording in HTML and LaTeX
+
+The typed wording is **the same string** in both editions. JMarkdown computes the
+HTML wording from the target's kind and depth, and forces cleveref to spell its
+types out in full (rather than terse defaults like "sec." or "thm.") so the LaTeX
+matches. A document therefore reads the same way in print and on the web:
+
+| Reference | HTML and LaTeX both print |
+|---|---|
+| `:cref` to a top-level heading | section 3 |
+| `:cref` to a nested heading | subsection 3.2 |
+| `:cref` to a figure | figure 1 |
+| `:cref` to a table | table 1 |
+| `:cref` to a listing | listing 1 |
+| `:cref` to a theorem | theorem 1 |
+| `:cref` to a definition | definition 2 |
+| `:cref` to an equation | equation (2) |
+
+The capitalised `:Cref` produces the same word with an initial capital — "Section
+3", "Figure 1", "Equation (2)" — for the start of a sentence.
+
+## Unresolved references
+
+If a reference names a key that was never defined with a matching `:label` or
+`{id=…}`, the HTML edition prints a visible `??` placeholder so the gap is
+obvious during review:
+
+```html
+<p>A dangling reference: <span class="xref-ref" data-key="no:such">??</span> and
+<span class="xref-cref" data-key="no:such" data-cap="0">??</span>.</p>
+```
+
+In LaTeX the reference passes through as `\ref{no:such}` or `\cref{no:such}`, and
+the engine reports the undefined label at compile time (the familiar
+"`LaTeX Warning: Reference 'no:such' undefined`"). Either way the build does not
+fail — you get a clear signal to fix the key rather than a broken document.
+
+## HTML output and styling
+
+JMarkdown ships no opinionated styling for cross-references; it gives you stable
+classes to target. A `:label` leaves an empty anchor span where the target sits;
+a reference becomes a link carrying a class that names its kind:
+
+| Selector | Where it appears |
+|---|---|
+| `span.xref-label` | the (empty) anchor left by `:label[key]`, with `id="xref-KEY"` |
+| `a.xref-ref` | a bare-number reference (`:ref`) |
+| `a.xref-cref` | a typed reference (`:cref` or `:Cref`) |
+| `span.header-label.xref` | the number prepended to a numbered heading |
+| `span.figure-label`, `span.listing-label` | the "Figure N:" and "Listing N:" caption prefix |
+
+The label anchor and the references point at each other by `id` and `href`, so the
+links navigate within the page; style `.xref-ref` and `.xref-cref` (to suppress the
+underline, say, or to colour resolved references) in your own stylesheet or
+template.
+
+## Reference
+
+### Commands
+
+| Command | Role | LaTeX | HTML |
+|---|---|---|---|
+| `:label[key]` | tag a target | `\label{key}` | empty `span#xref-key` |
+| `:ref[key]` | bare number | `\ref{key}` | `a.xref-ref` → number |
+| `:cref[key]` | typed, lower-case | `\cref{key}` | `a.xref-cref` → "kind N" |
+| `:Cref[key]` | typed, capitalised | `\Cref{key}` | `a.xref-cref` → "Kind N" |
+
+### Where the key lives
+
+| Target | How it is keyed |
+|---|---|
+| heading | trailing `:label[key]` on the heading line (needs `Headings: numeric`) |
+| figure, table, listing | `{id=key}` attribute on the `@begin(…)` opener |
+| theorem family | `{id=key}` attribute on the `@begin(…)` opener |
+| equation | `{id=key}` attribute on `@begin(equation)` |
+
+### Behaviour at a glance
+
+- **One source, both editions.** LaTeX emits native `\label`, `\ref`, `\cref`, and
+  `\Cref`; HTML resolves the same references itself. The typed wording is
+  byte-for-byte identical between them.
+- **Forward references work in a single pass** in HTML; in LaTeX they settle on
+  the engine's usual second pass.
+- **Equation references are parenthesised** — "equation (2)" — in both editions;
+  all other kinds are not.
+- **Heading references require `Headings: numeric`**; floats, theorems, and
+  equations are always numbered and need no opt-in.
+- **An unresolved reference is visible** (`??` in HTML, an undefined-label warning
+  in LaTeX) and never aborts the build.
+
+## Related pages
+
+- [Floats](floats.html) — the `@begin(figure|table|listing)` environments that
+  supply float targets, and why the key lives in `{id=…}`.
+- [Theorems and equations](theorems-and-equations.html) — the theorem family and
+  `@begin(equation)` targets, and their shared counter.
+- [Dual output](dual-output.html) — the one-source HTML and LaTeX model these
+  references inherit.
+- [Book structure](book-structure.html) — where `Headings: numeric` and heading
+  depth fit into a numbered, multi-file book.
+- [Anchors](anchors.html) — the heading `id`s that cross-reference links navigate
+  to.
