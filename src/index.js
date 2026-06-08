@@ -368,8 +368,18 @@ const alert_options = {
     }
   ]
 };
-marked.use(markedAlert(alert_options));
-marked_copy.use(markedAlert(alert_options));
+// Capture marked-alert's HTML renderer and wrap it so LaTeX output renders the
+// callout as a tcolorbox (see alerts.js) instead of leaking its HTML. One
+// extension object, shared by marked and marked_copy.
+import { renderAlertLatex } from './alerts.js';
+const alertExtension = markedAlert(alert_options);
+const alertRenderer = alertExtension.extensions.find(e => e.name === 'alert');
+const htmlAlertRenderer = alertRenderer.renderer;
+alertRenderer.renderer = function(token) {
+	return global.isLatex ? renderAlertLatex(this.parser, token) : htmlAlertRenderer.call(this, token);
+};
+marked.use(alertExtension);
+marked_copy.use(alertExtension);
 
 
 import createMarkdownDemo from './markdown-demo.js';
