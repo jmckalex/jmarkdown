@@ -29,11 +29,21 @@ All source lives in `src/`. Key files:
 | `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown` |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |
 | `post-processor.js` | Cheerio DOM manipulation, cross-reference resolution, beautification |
-| `latex-renderer.js` | LaTeX renderer for marked's built-in tokens (active development) |
+| `latex-renderer.js` | LaTeX renderer for marked's built-in tokens (paragraphs, headings → class-aware sectioning, lists, code → minted, links, images → plain `\includegraphics`, …) |
+| `latex-template.js` | Full-document assembly: `\documentclass` + preamble + frontmatter + body. Page setup (geometry/setspace/fancyhdr) + hyperref/PDF metadata from metadata keys. Peer of `html-template.js` |
+| `default-template.tex.mustache` | The `.tex` document skeleton (triple-brace; peer of `default-template.html.mustache`) |
+| `preamble.js` | Usage-driven package manager: `requirePackage` / `addPreamble` / `addLatePreamble` / `crefName`; `assemblePreamble()` |
+| `latex-escape.js` | Shared `&`/`#` prose escaping (`escapeLatexText`) |
+| `sectioning.js` | Sectioning ladder + `Heading base`/`Document class` resolution (shared by the LaTeX heading renderer and the HTML cref word) |
+| `crossref.js` | HTML cross-reference registry: per-run label table + `typedRefText` (the `:cref` wording) |
+| `floats.js` | `@begin(figure|table|subfigure|listing)` — captioned, numbered, referenceable floats |
+| `theorems.js` | `@begin(theorem|lemma|…|proof)` — thmtools, one shared sequential counter |
+| `equations.js` | `@begin(equation)` — numbered, referenceable display math |
+| `alerts.js` | LaTeX rendering of GFM alerts (`> [!NOTE]`) as `tcolorbox` |
 | `inline-footnotes.js` | `[^label: body]` syntax with multi-paragraph support |
-| `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives |
+| `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc) |
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
-| `marked-extended-tables-headerless.js` | Custom table tokenizer (also the seed for the future `:::grid` directive) |
+| `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
 
 ## Processing pipeline (in order)
 
@@ -124,21 +134,99 @@ Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path), `Bib
 
 ## Known bugs (deferred, but don't reintroduce or rely on)
 
-- `crossrefs` module-level state never resets between runs.
 - Dead code after returns in the Mathematica renderer.
 
-## Active LaTeX-pipeline work
+(The old `crossrefs`-never-resets bug is **fixed**: the cross-ref table lives in
+`crossref.js`, reset per run via `resetCrossrefs()` at the top of
+`postProcessHTML`. The codespan-breaks-on-`}` bug is **fixed**: `codespan` picks
+a `\mintinline` delimiter the code doesn't contain.)
 
-- `:::print` / `:::web` conditional content — **done** (also `:print[...]`/`:web[...]`
-  inline and `@begin(print)`/`@begin(web)`); markdown content emitted in one
-  output only. See `additional-directives.js` / `begin-end.js`.
-- Raw HTML suppression in LaTeX mode.
-- Math passthrough in LaTeX mode.
-- Tables now emit LaTeX `tabular` via `marked-extended-tables-headerless`'s renderers (both `spanTable` and `headerlessTable` branch on `global.isLatex`). Supports alignment, percentage widths (mapped to `p{X\textwidth}`), `\multicolumn` for colspan and `\multirow` for rowspan. Requires `\usepackage{multirow}` in the preamble. The `table()` method on `latex-renderer.js` is a real fallback path — marked's built-in GFM table tokenizer accepts some malformed tables (e.g. rows without trailing pipes) that the extensions reject.
-- Long tables **done**: `renderTableLatex` (`marked-extended-tables-headerless.js`) silently emits a `longtable` (with `\endhead`) instead of `tabular` once a table exceeds `LONGTABLE_ROW_THRESHOLD` (20) body rows — no author syntax. A long table inside `@begin(table)` can't sit in a `table` float, so the handler captions it with `\captionof{table}` above the longtable (still numbered/referenceable). Requires `\usepackage{longtable}` (auto) and `caption` (auto, for the captioned case). The GFM-fallback `table()` in `latex-renderer.js` is unchanged (still `tabular`) — a rare path for malformed tables.
-- The `:::game` directive (`strategic-form-games.js`) emits the `sgame` package's `game` environment in LaTeX mode (`renderGameLatex` branches on `global.isLatex`). The jmarkdown game syntax was designed to mirror sgame, so translation is mechanical. Requires `\usepackage{sgame}` in the preamble. sgame's optional arguments are positional: a lone `[...]` is the game label/caption, a `[...][...]` pair is the two player labels, and all three are `[row][column][caption]` — so a caption alongside player labels fills all three slots with an empty `[]` for any missing player label. Payoffs are wrapped in `$…$` (sgame's default is `\gamemathfalse`). Note `sgame` is incompatible with the `memoir` class, `tabularx`, `array.sty` (and anything loading it, e.g. `colortbl`, `jurabib`); use `sgamevar` for `beamer`.
-- Consider disabling marked's built-in GFM table tokenizer so the `marked-extended-tables-headerless` extensions are the sole table path. This would enforce one canonical jmarkdown table syntax (rows must have leading and trailing `|`) instead of also accepting GFM's looser leading-pipe-only form, and would let us delete the `table()` fallback in `latex-renderer.js` entirely. Pre-flight check before flipping: grep the book and `docs/` for tables that use the looser form (rows without trailing pipes) so existing authors aren't broken.
-- Multi-file cross-refs: two-pass with `crossrefs.json` and `chapter-slug:key` syntax; `heading-base` metadata to map `#` → `\chapter` / `\section` / etc.
+## LaTeX document-preparation system
+
+`--to latex` emits a **complete, compilable document** (`--fragment` = body only,
+which is also what the feature/compile test harnesses consume). The architecture:
+**LaTeX emits native commands and lets the engine number/resolve; HTML resolves
+everything itself in the post-processor** (which never runs for LaTeX). The
+post-processor (`post-processor.js`) numbers floats/theorems/equations and
+records them in `crossref.js`; the parse hook in `index.js` handles the
+`{{…}}` document markers.
+
+- **Assembly** (`latex-template.js` + `default-template.tex.mustache`): wraps the
+  body in `\documentclass` + assembled preamble + frontmatter + `\end{document}`.
+  All user-overridable, nothing baked in. Metadata keys (`Capitalised Words`):
+  `Document class` (default `article`), `Class options`, `LaTeX engine` (default
+  `pdflatex` — tunes `inputenc`/`fontenc` vs `fontspec`), `Packages`,
+  `LaTeX preamble`, `Geometry`, `Line spacing` (single/onehalf/double/n),
+  `Header`, `Footer` (fancyhdr), `Heading base`. `hyperref` is auto-loaded for
+  every full document (clickable refs/ToC + PDF bookmarks) with
+  `\hypersetup{pdftitle,pdfauthor}` from `Title`/`Author`; `\maketitle` from
+  `Title`/`Author`/`Date`.
+- **Preamble manager** (`preamble.js`): usage-driven. Features call
+  `requirePackage(name, opts)` as they render, so the preamble contains only
+  what's used. `addPreamble` (raw lines, e.g. `\newtheorem`/`\usetikzlibrary`),
+  `addLatePreamble` (after the load-order-sensitive hyperref/cleveref, e.g.
+  `\crefname`/`\hypersetup`), `crefName(type,sing,plur)` (force cleveref to spell
+  types out in full to match HTML). Order: engine defaults → feature/user
+  packages (hyperref/cleveref forced last) → raw lines → late lines → user
+  preamble.
+- **Cross-references** (`additional-directives.js` + `crossref.js` + `post-processor.js`):
+  `:label[k]`/`:ref[k]` (bare number) and `:cref[k]`/`:Cref[k]` (typed, e.g.
+  "section 3"/"Section 3"). LaTeX → native `\label`/`\ref`/`\cref`/`\Cref`; HTML →
+  anchored marker + hyperlink, resolved over the complete DOM (forward refs work
+  **single-pass**). Wording is identical in both outputs (full words via
+  `crefName`; equations parenthesised, "(2)"). Counters: sections (native /
+  heading numbering), figures, tables, listings (own counters), theorems (one
+  shared sequential counter), equations.
+- **Sectioning** (`sectioning.js`): heading depth → command from a base derived
+  from the class (`article`→`\section`, `book`/`report`→`\chapter`) or explicit
+  `Heading base`. The default `article` is why `#`→`\section` (article has no
+  `\chapter`).
+- **Floats** (`floats.js`): `@begin(figure)[caption]{id=fig:x}`, `@begin(subfigure)
+  [caption]{id=… width=0.45}` (subcaption, "(a)" → ref "1a"), `@begin(table)`
+  (caption above), `@begin(listing)` (minted `listing` float). Captioned,
+  numbered, referenceable. A **bare** `![](…)` is now plain `\includegraphics`,
+  not a float. Label keys go in `{id=…}` (the `{#…}` shorthand can't carry a
+  colon).
+- **Theorems** (`theorems.js`): `@begin(theorem|lemma|corollary|proposition|
+  definition|example|remark)` + `@begin(proof)`. thmtools `\declaretheorem[sibling=
+  theorem]` → ONE shared sequential counter (Theorem 1, Lemma 2, …) while
+  cleveref still names each kind correctly (a plain shared `\newtheorem` counter
+  would wrongly print "theorem 2" for a lemma). proof is unnumbered + QED.
+- **Equations** (`equations.js`): `@begin(equation){id=eq:x}` (verbatim math body,
+  no `$$`). JMarkdown numbers them itself (document order), so `:ref`/`:cref`
+  resolve at build time. `:cref` → "equation (2)".
+- **Conditional content**: `:::print`/`:::web` (+ inline `:print[…]`/`:web[…]` and
+  `@begin(print)`/`@begin(web)`) — markdown emitted in one output only.
+- **Contents & matter** (parse hook in `index.js`): `{{TOC}}`/`{{LOF}}`/`{{LOT}}`
+  (LaTeX `\tableofcontents`/`\listoffigures`/`\listoftables`; HTML generated
+  lists) and `{{frontmatter}}`/`{{mainmatter}}`/`{{backmatter}}`/`{{appendix}}`
+  (LaTeX commands; HTML strips them — HTML appendix lettering not yet done).
+- **Other**: GFM alerts → `tcolorbox` (`alerts.js`); description lists →
+  `description` env; long tables auto-flip `tabular`→`longtable` past 20 rows;
+  TikZ emits native `tikzpicture` (preamble auto-loads tikz + libraries); Mermaid
+  rasterises to a cached PDF via `mmdc` (optional — skipped with a hint if absent).
+- **Math passthrough**: inline/display `$…$`/`$$…$$` pass through verbatim; escaping
+  touches only `&`/`#` (see `latex-escape.js` + the reserved-chars memory).
+- **`:::game`** (`strategic-form-games.js`) → `sgame`'s `game` environment.
+  Positional optional args: lone `[...]` = caption; `[...][...]` = player labels;
+  `[row][col][caption]` = all three (empty `[]` fills a missing player label).
+  Payoffs wrapped in `$…$`. `sgame` is incompatible with `memoir`, `tabularx`,
+  `array.sty` (and `colortbl`/`jurabib`); use `sgamevar` for `beamer`.
+
+### Remaining LaTeX-pipeline work
+
+- **Multi-file books**: master-file `[[…]]` inclusion already yields one PDF /
+  one HTML page with cross-file refs + continuous numbering (verified). The only
+  gap is **multi-PAGE HTML** (separate `chapterN.html`), which JMarkdown can do
+  in a **single pass** — parse all chapters into memory, number across them,
+  resolve, emit pages (no `crossrefs.json`, no rerun; the in-memory model
+  sidesteps TeX's streaming two-pass). HTML appendix lettering (A, B…) also TODO.
+- Raw-HTML suppression in LaTeX — remaining edge cases.
+- Consider disabling marked's built-in GFM table tokenizer so the
+  `marked-extended-tables-headerless` extensions are the sole table path (one
+  canonical syntax; lets us delete the `table()` fallback in `latex-renderer.js`).
+  Pre-flight: grep the book + `docs/` for looser tables (rows without trailing
+  pipes) first.
 
 ## Future feature: `:::grid`
 
