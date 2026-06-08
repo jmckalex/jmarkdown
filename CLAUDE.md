@@ -129,7 +129,9 @@ Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path), `Bib
 
 ## Active LaTeX-pipeline work
 
-- `:::print` / `:::web` conditional directives.
+- `:::print` / `:::web` conditional content — **done** (also `:print[...]`/`:web[...]`
+  inline and `@begin(print)`/`@begin(web)`); markdown content emitted in one
+  output only. See `additional-directives.js` / `begin-end.js`.
 - Raw HTML suppression in LaTeX mode.
 - Math passthrough in LaTeX mode.
 - Tables now emit LaTeX `tabular` via `marked-extended-tables-headerless`'s renderers (both `spanTable` and `headerlessTable` branch on `global.isLatex`). Supports alignment, percentage widths (mapped to `p{X\textwidth}`), `\multicolumn` for colspan and `\multirow` for rowspan. Requires `\usepackage{multirow}` in the preamble. The `table()` method on `latex-renderer.js` is a real fallback path — marked's built-in GFM table tokenizer accepts some malformed tables (e.g. rows without trailing pipes) that the extensions reject.

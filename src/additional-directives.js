@@ -274,6 +274,62 @@ const additionalDirectives = [
 			return false;
 		}
 	},
+	/*
+		:print[...] / :web[...] — inline conditional content (markdown inline
+		processed). :print appears only in LaTeX output, :web only in HTML.
+		Where :TeX/:HTML are about raw LaTeX/HTML *markup*, print/web are about
+		which output a piece of ordinary prose belongs to in one source.
+	*/
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "print",
+		renderer(token) {
+			if (token.meta.name === "print") {
+				return global.isLatex ? this.parser.parseInline(token.tokens) : '';
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "web",
+		renderer(token) {
+			if (token.meta.name === "web") {
+				return global.isLatex ? '' : this.parser.parseInline(token.tokens);
+			}
+			return false;
+		}
+	},
+	/*
+		:::print ... ::: / :::web ... ::: — block conditional content (markdown
+		processed). :::print appears only in LaTeX output, :::web only in HTML —
+		e.g. a static figure for print vs. an interactive widget for the web,
+		from a single source.
+	*/
+	{
+		'level': 'container',
+		'marker': ":::",
+		label: "print",
+		renderer(token) {
+			if (token.meta.name === "print") {
+				return global.isLatex ? marked.parser(token.tokens) : '';
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'container',
+		'marker': ":::",
+		label: "web",
+		renderer(token) {
+			if (token.meta.name === "web") {
+				return global.isLatex ? '' : marked.parser(token.tokens);
+			}
+			return false;
+		}
+	},
 	{
 		'level': 'container',
 		'marker': ":::",

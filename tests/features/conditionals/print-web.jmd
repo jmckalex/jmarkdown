@@ -1,0 +1,17 @@
+:::print
+Block print-only via directive.
+:::
+
+:::web
+Block web-only via directive.
+:::
+
+Inline: :print[print-bit] and :web[web-bit].
+
+@begin(print)
+Block print-only via begin.
+@end(print)
+
+@begin(web)
+Block web-only via begin.
+@end(web)

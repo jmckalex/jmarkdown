@@ -52,6 +52,19 @@ registerBlockEnvironment('HTML', {
 	html: (ctx) => ctx.inner,
 	latex: () => ''
 });
+// Conditional content (the @begin parity of :::print / :::web): markdown prose
+// emitted in one output only — e.g. a static figure for print vs. an interactive
+// widget for the web, from a single source.
+registerBlockEnvironment('print', {
+	mode: 'markdown',
+	html: () => '',
+	latex: (ctx) => ctx.inner
+});
+registerBlockEnvironment('web', {
+	mode: 'markdown',
+	html: (ctx) => ctx.inner,
+	latex: () => ''
+});
 
 export const beginEnd = createBeginEnd({
 	getFormat: format,
