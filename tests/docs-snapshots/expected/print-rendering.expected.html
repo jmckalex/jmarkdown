@@ -1,0 +1,318 @@
+<h1 id="toc-how-constructs-render-in-print">How constructs render in print</h1>
+<p>JMarkdown produces <a href="dual-output.html">two outputs from one source</a>: polished HTML
+  for the web and a compilable LaTeX document for the PDF. Most constructs have an
+  obvious home in both — a heading is a heading, a list is a list — but several that
+  feel native to the web have no direct counterpart in print. This page is a
+  reference for those crossings: construct by construct, what JMarkdown emits for the
+  PDF and how it relates to the HTML you see in the browser.</p>
+<p>One principle explains every choice below: <span class="intense">the LaTeX output emits native commands
+    and lets the engine do the work.</span> Rather than draw a box or number a figure
+  itself, it hands the job to a real LaTeX package — <code>tcolorbox</code> for callouts, the
+  <code>description</code> environment for term lists, <code>longtable</code> for tables that outrun a page,
+  native <code>tikzpicture</code> for TikZ — so the print output reads as idiomatic LaTeX. Each
+  such package is pulled into the preamble only when the construct is actually used.
+</p>
+<p>The live demos below show JMarkdown source on the left and rendered HTML on the
+  right; the fenced <code>latex</code> blocks beneath them show the <span class="intense">real</span> LaTeX that
+  <code>jmarkdown process … --to latex</code> generates for the same source.
+</p>
+<h2 id="toc-gfm-alerts-become-coloured-callouts">GFM alerts become coloured callouts</h2>
+<p>A GitHub-flavoured-Markdown <strong>alert</strong> is a blockquote whose first line is a marker
+  of the form <code>[!NOTE]</code>, <code>[!TIP]</code>, <code>[!IMPORTANT]</code>, <code>[!WARNING]</code>, or <code>[!CAUTION]</code>.
+  On the web JMarkdown renders the familiar GitHub callout: a coloured left border,
+  an icon, and a title. In print, each alert becomes a
+  <a href="https://ctan.org/pkg/tcolorbox"><code>tcolorbox</code></a> — a coloured, titled box — its frame
+  and background tinted to match the alert kind:
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="hljs-quote">&gt; [!NOTE]</span>
+<span class="hljs-quote">&gt; Useful information that users should know, even when skimming.</span>
+
+<span class="hljs-quote">&gt; [!WARNING]</span>
+<span class="hljs-quote">&gt; Urgent information that needs immediate attention to avoid a problem.</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="markdown-alert markdown-alert-note">
+      <p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
+        </svg>Note</p>
+      <p>Useful information that users should know, even when skimming.</p>
+    </div>
+    <div class="markdown-alert markdown-alert-warning">
+      <p class="markdown-alert-title"><svg class="octicon octicon-alert mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
+        </svg>Warning</p>
+      <p>Urgent information that needs immediate attention to avoid a problem.</p>
+    </div>
+
+  </div>
+</div>
+<p>All five kinds map to a <code>tcolorbox</code> whose <code>colframe</code> and <code>colback</code> encode the
+  alert's colour. The body is rendered as Markdown first, so emphasis, links, and
+  inline math inside an alert come through as normal LaTeX:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=blue,colback=blue!8,title=Note]
+Useful information that users should know, even when skimming.
+<span class="hljs-keyword">\end</span>{tcolorbox}
+
+<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=teal,colback=teal!8,title=Tip]
+Helpful advice for doing things better or more easily.
+<span class="hljs-keyword">\end</span>{tcolorbox}
+
+<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=violet,colback=violet!8,title=Important]
+Key information users need to know to achieve their goal.
+<span class="hljs-keyword">\end</span>{tcolorbox}
+
+<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=orange,colback=orange!8,title=Warning]
+Urgent info that needs immediate user attention to avoid problems.
+<span class="hljs-keyword">\end</span>{tcolorbox}
+
+<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=red,colback=red!8,title=Caution]
+Advises about risks or negative outcomes of certain actions.
+<span class="hljs-keyword">\end</span>{tcolorbox}
+</code></pre>
+<p>The colour for each kind is fixed:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Alert</th>
+      <th>Frame and background</th>
+      <th>Title</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>[!NOTE]</code></td>
+      <td>blue</td>
+      <td>Note</td>
+    </tr>
+    <tr>
+      <td><code>[!TIP]</code></td>
+      <td>teal</td>
+      <td>Tip</td>
+    </tr>
+    <tr>
+      <td><code>[!IMPORTANT]</code></td>
+      <td>violet</td>
+      <td>Important</td>
+    </tr>
+    <tr>
+      <td><code>[!WARNING]</code></td>
+      <td>orange</td>
+      <td>Warning</td>
+    </tr>
+    <tr>
+      <td><code>[!CAUTION]</code></td>
+      <td>red</td>
+      <td>Caution</td>
+    </tr>
+  </tbody>
+</table>
+<p>The <code>!8</code> suffix on the background colour is a <code>tcolorbox</code>/<code>xcolor</code> tint: an 8<!-- Markdown source commented out -->of the frame colour, light enough to keep body text readable.</p>
+<h2 id="toc-description-lists-become-a-description-environment">Description lists become a <code>description</code> environment</h2>
+<p>A <strong>description list</strong> pairs a term with its definition. JMarkdown's syntax is one
+  line per entry: the term, a double-colon separator, then the definition (as in the
+  demo below). On the web this renders as an HTML <code>dl</code> with <code>dt</code>/<code>dd</code> pairs; in print
+  it becomes LaTeX's built-in <code>description</code> environment, with each term as the
+  bracketed argument of an <code>\item</code>.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">Common web acronyms.
+
+HTTP:: HyperText <span class="hljs-emphasis">*Transfer*</span> Protocol.
+
+CSS:: Cascading Style Sheets.
+
+API:: Application Programming Interface.
+
+That is the list.</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p>Common web acronyms.</p>
+    <dl>
+      <dt>HTTP</dt>
+      <dd>
+        <p> HyperText <strong>Transfer</strong> Protocol.</p>
+      </dd>
+      <dt>CSS</dt>
+      <dd>
+        <p> Cascading Style Sheets.</p>
+      </dd>
+      <dt>API</dt>
+      <dd>
+        <p> Application Programming Interface.</p>
+      </dd>
+    </dl>
+    <p>That is the list.</p>
+
+  </div>
+</div>
+<p>The definition is rendered as Markdown, so the <code>*Transfer*</code> emphasis above
+  survives into both outputs. Consecutive entries are gathered into a single list,
+  and ordinary paragraphs before and after are left untouched:</p>
+<pre><code class="hljs language-latex">Common web acronyms.
+
+<span class="hljs-keyword">\begin</span>{description}
+<span class="hljs-keyword">\item</span>[HTTP] HyperText <span class="hljs-keyword">\textbf</span>{Transfer} Protocol.
+<span class="hljs-keyword">\item</span>[CSS] Cascading Style Sheets.
+<span class="hljs-keyword">\item</span>[API] Application Programming Interface.
+<span class="hljs-keyword">\end</span>{description}
+
+That is the list.
+</code></pre>
+<p>The <code>description</code> environment ships with every standard LaTeX class, so no extra
+  package is required, and it typesets the bracketed term in bold — the print
+  analogue of the web's default bold <code>dt</code>.</p>
+<h2 id="toc-tall-tables-auto-switch-to-longtable">Tall tables auto-switch to <code>longtable</code></h2>
+<p>A LaTeX <code>tabular</code> is a single unbreakable box: a table taller than the page would
+  overflow rather than continue onto the next. So a table with more than roughly 20
+  body rows is emitted as a <a href="https://ctan.org/pkg/longtable"><code>longtable</code></a> instead,
+  flowing across page breaks automatically. The source never changes — you write an
+  ordinary pipe table, and the switch is purely a print concern (in HTML the table is
+  always a plain <code>table</code>, however long). A 22-row table produces:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{longtable}{ll}
+<span class="hljs-keyword">\hline</span>
+Year <span class="hljs-built_in">&amp;</span> Event <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\endhead</span>
+2001 <span class="hljs-built_in">&amp;</span> Milestone number 1 <span class="hljs-keyword">\\</span>
+2002 <span class="hljs-built_in">&amp;</span> Milestone number 2 <span class="hljs-keyword">\\</span>
+2003 <span class="hljs-built_in">&amp;</span> Milestone number 3 <span class="hljs-keyword">\\</span>
+<span class="hljs-comment">% … rows 4 through 21 elided …</span>
+2022 <span class="hljs-built_in">&amp;</span> Milestone number 22 <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\end</span>{longtable}
+</code></pre>
+<p>The <code>\endhead</code> wrapper on the header row is what makes the column headings <span class="intense">repeat
+    at the top of every page</span> the table spans. A <code>longtable</code> is a page-breakable run,
+  not a floating box, so it is not itself a numbered, captioned float; how a captioned
+  long table sits inside a <code>table</code> float is covered in
+  <a href="floats.html">Figures, tables, and listings</a>.
+</p>
+<h2 id="toc-tikz-becomes-a-native-tikzpicture">TikZ becomes a native <code>tikzpicture</code></h2>
+<p>A <code>TiKZ</code> block holds raw TikZ drawing commands, and the two outputs treat it very
+  differently. For the <span class="intense">web</span>, JMarkdown compiles the TikZ to a standalone diagram
+  and embeds the result as a cached image. For <span class="intense">print</span> there is no rasterisation at
+  all: the TikZ is emitted as a native <code>tikzpicture</code>, drawn by the LaTeX engine
+  itself, so the diagram is a true vector graphic set in the document's own fonts —
+  crisp at any size, with no intermediate bitmap.</p>
+<p>Because a live <code>TiKZ</code> block needs an external LaTeX toolchain, this page shows the
+  <span class="intense">source</span> only. A block like this:
+</p>
+<pre><code class="hljs language-markdown">:::TiKZ
+\draw[thick] (0,0) -- (2,1) -- (0,2) -- cycle;
+\node at (0.7,1.0) {T};
+:::
+</code></pre>
+<p>produces, in LaTeX output, the diagram wrapped and centred with TikZ's default
+  arrow style:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{center}
+<span class="hljs-keyword">\begin</span>{tikzpicture}[&gt;=latex]
+
+<span class="hljs-keyword">\draw</span>[thick] (0,0) -- (2,1) -- (0,2) -- cycle;
+<span class="hljs-keyword">\node</span> at (0.7,1.0) {T};
+<span class="hljs-keyword">\end</span>{tikzpicture}
+<span class="hljs-keyword">\end</span>{center}
+</code></pre>
+<p>The body is passed through verbatim — no Markdown processing, no escaping — so the
+  full TikZ language is available exactly as in a <code>.tex</code> file. If your drawing already
+  wraps itself in <code>\begin{tikzpicture}…\end{tikzpicture}</code>, JMarkdown leaves that
+  alone; otherwise it adds the wrapper for you, and pulls <code>tikz</code> and its libraries
+  into the preamble.</p>
+<h2 id="toc-mermaid-renders-client-side-and-is-rasterised-for-print">Mermaid renders client-side, and is rasterised for print</h2>
+<p>A <code>mermaid</code> block holds a <a href="https://mermaid.js.org/">Mermaid</a> diagram — a flowchart,
+  sequence diagram, or the like — written in Mermaid's text syntax. On the <span class="intense">web</span> the
+  diagram is handed to mermaid.js, which draws it <span class="intense">client-side in the browser</span>;
+  nothing is pre-rendered.</p>
+<p>LaTeX has no native Mermaid support, so for <span class="intense">print</span> JMarkdown rasterises each
+  diagram to a PDF with the Mermaid command-line tool,
+  <a href="https://github.com/mermaid-js/mermaid-cli"><code>mmdc</code></a>, and embeds that PDF via
+  <code>\includegraphics</code>. The PDF is <span class="intense">cached</span> by a hash of the diagram source, so it is
+  only re-rendered when the text changes.
+</p>
+<p>As with TikZ, this page shows the <span class="intense">source</span> only, since a live block needs the
+  external <code>mmdc</code> tool. A Mermaid block looks like this:</p>
+<pre><code class="hljs language-markdown">:::mermaid
+graph TD
+  A[Start] --&gt; B{Is it working?}
+  B --&gt;|Yes| C[Ship it]
+  B --&gt;|No| D[Debug]
+  D --&gt; B
+:::
+</code></pre>
+<p>In HTML this becomes a <code>div.mermaid</code> that the browser draws on load. In LaTeX, if
+  <code>mmdc</code> is available, JMarkdown produces a cached PDF and embeds it centred at a
+  sensible maximum width:
+</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{center}
+<span class="hljs-keyword">\includegraphics</span>[max width=<span class="hljs-keyword">\linewidth</span>]{mermaid/&lt;hash&gt;.pdf}
+<span class="hljs-keyword">\end</span>{center}
+</code></pre>
+<p>The catch is the dependency. <code>mmdc</code> is a heavy tool — it drives a headless browser —
+  and it is <span class="intense">optional</span>. If it is not installed, a LaTeX build does not fail: it
+  <span class="intense">skips</span> the diagram, prints a one-line hint to standard error suggesting you
+  install <code>@mermaid-js/mermaid-cli</code>, and compiles to PDF without it. Any other render
+  failure skips just as gracefully. JMarkdown finds <code>mmdc</code> in a local
+  <code>node_modules/.bin</code> or on your <code>PATH</code>, so a project-local install suffices.
+</p>
+<p>For diagrams you want as crisp, font-matched vector art in the PDF, prefer TikZ;
+  reach for Mermaid when its concise flowchart/sequence syntax is the point and a
+  cached raster image in print is an acceptable trade.</p>
+<h2 id="toc-the-crossings-at-a-glance">The crossings at a glance</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Construct</th>
+      <th>HTML</th>
+      <th>LaTeX</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>GFM alert (<code>[!NOTE]</code> …)</td>
+      <td>GitHub-style callout <code>div</code></td>
+      <td><code>tcolorbox</code>, colour by kind</td>
+    </tr>
+    <tr>
+      <td>Description list</td>
+      <td><code>dl</code> with <code>dt</code> and <code>dd</code></td>
+      <td><code>description</code> environment</td>
+    </tr>
+    <tr>
+      <td>Table over 20 rows</td>
+      <td>plain <code>table</code></td>
+      <td><code>longtable</code> (header repeats, breaks across pages)</td>
+    </tr>
+    <tr>
+      <td>TikZ block</td>
+      <td>cached compiled image</td>
+      <td>native <code>tikzpicture</code> (vector, document fonts)</td>
+    </tr>
+    <tr>
+      <td>Mermaid block</td>
+      <td>client-side mermaid.js</td>
+      <td>cached PDF via <code>mmdc</code>, or skipped with a hint</td>
+    </tr>
+  </tbody>
+</table>
+<p>In every row the print form is a genuine LaTeX construct whose package is loaded
+  only when the construct is actually used: you write one source, and JMarkdown picks
+  the right tool for each medium.</p>
+<h2 id="toc-related-pages">Related pages</h2>
+<ul>
+  <li><a href="dual-output.html">Dual output</a> — the HTML/LaTeX model, the usage-driven
+    preamble, document-assembly metadata, and conditional content.</li>
+  <li><a href="floats.html">Figures, tables, and listings</a> — captioned, numbered floats,
+    including how a long table sits inside a <code>table</code> float.</li>
+  <li><a href="theorems-and-equations.html">Theorems, proofs, and equations</a> — more
+    environments with dedicated print forms.</li>
+  <li><a href="cross-references.html">Cross-references</a> — how the numbered constructs above are
+    labelled and referenced.</li>
+  <li><a href="strategic-form-games.html">Strategic-form games</a> — another construct with a
+    dedicated print form (the <code>sgame</code> <code>game</code> environment).</li>
+  <li><a href="math-support.html">Math support</a> — how <code>$…$</code> and <code>$$…$$</code> pass through to LaTeX.</li>
+</ul>

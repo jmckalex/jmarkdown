@@ -1,0 +1,441 @@
+<h1 id="toc-figures-tables-and-listings">Figures, tables, and listings</h1>
+<p>A <strong>float</strong> is a captioned, numbered, cross-referenceable block — a figure, a
+  table, or a code listing — that a typesetter is free to move (to "float") to a
+  convenient spot on the page. JMarkdown gives you one family of block environments
+  for all three: wrap the content in a named <code>@begin … @end</code> block, give it a caption
+  and an <code>id</code>, and the same source produces a styled, auto-numbered HTML <code>&lt;figure&gt;</code>
+  for the web and a native LaTeX float for print. You never type the number "Figure
+  3"; you reference the float by name and the number is filled in for you, in
+  document order, in both outputs.</p>
+<p>This page covers the four float environments — <code>figure</code>, <code>subfigure</code>, <code>table</code>,
+  and <code>listing</code>. They are built on the <code>@begin … @end</code> grammar of
+  <a href="block-environments.html">block environments</a>, and they are referenced with the
+  <code>:ref</code> and <code>:cref</code> directives that <a href="cross-references.html">cross-references</a> covers
+  in full; this page shows just enough of each to make the examples work.
+</p>
+<p>In the demos below, JMarkdown source is on the left, rendered HTML on the right,
+  and a <code>latex</code> code block shows the <span class="intense">actual</span> LaTeX emitted for the same source
+  (generated with <code>--to latex</code>, not hand-written).</p>
+<h2 id="toc-why-a-float-and-not-a-bare-image">Why a float and not a bare image</h2>
+<p>A plain Markdown image is <strong>not</strong> a float. If you write</p>
+<pre><code class="hljs language-markdown">![<span class="hljs-string">a diagram</span>](<span class="hljs-link">diagram.png</span>)
+</code></pre>
+<p>you get exactly a graphic — <code>&lt;img&gt;</code> on the web, <code>\includegraphics</code> in LaTeX — with
+  no caption, no number, and nothing to reference. That is the right tool when an
+  image is purely decorative or sits inline with the prose.</p>
+<p>Reach for a <span class="intense">figure</span> environment the moment you want any of the three things a
+  float provides: a <span class="intense">caption</span>, an automatic <span class="intense">number</span> ("Figure 1"), and a stable
+  <span class="intense"><code>id</code></span> you can point a cross-reference at. The rest of this page is about those
+  three.
+</p>
+<h2 id="toc-the-figure-environment">The <code>figure</code> environment</h2>
+<p>Wrap an image in a <code>figure</code> block. The caption goes in the square brackets after
+  the name; the reference key goes in the attribute braces as <code>id=…</code>:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(figure)[Inputs and outputs of the model]{id=fig:demo}
+![<span class="hljs-string">a placeholder diagram</span>](<span class="hljs-link">https://placehold.co/360x150?text=diagram</span>)
+@end(figure)
+
+See :ref[fig:demo] for the diagram, or more precisely :cref[fig:demo].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <figure class="figure" id="fig:demo">
+      <p><img src="https://placehold.co/360x150?text=diagram" alt="a placeholder diagram"></p>
+      <figcaption class="figure-caption"><span class="figure-label xref">Figure 1:</span> Inputs and outputs of the model</figcaption>
+    </figure>
+    <p>See <a class="xref-ref" href="#fig:demo">1</a> for the diagram, or more precisely <a class="xref-cref" href="#fig:demo">figure&nbsp;1</a>.</p>
+
+  </div>
+</div>
+<p>The caption is automatically prefixed with <span class="intense">Figure N:</span>, where <strong>N</strong> is assigned in
+  document order — you did not type the "1". The <code>&lt;figure&gt;</code> carries <code>id="fig:demo"</code>,
+  so both references link back to it: <code>:ref</code> resolves to the bare number, <code>:cref</code> to
+  the spelled-out <strong>figure 1</strong>.</p>
+<p>The same source compiles to a native LaTeX <code>figure</code> float, where the engine assigns
+  the number:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{figure}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\includegraphics</span>[width=<span class="hljs-keyword">\textwidth</span>]{diagram.png}
+
+<span class="hljs-keyword">\caption</span>{Inputs <span class="hljs-keyword">\&amp;</span> outputs}
+<span class="hljs-keyword">\label</span>{fig:demo}
+<span class="hljs-keyword">\end</span>{figure}
+
+See <span class="hljs-keyword">\ref</span>{fig:demo} for the diagram, or more precisely <span class="hljs-keyword">\cref</span>{fig:demo}.
+</code></pre>
+<p>Note that <code>:ref</code> became <code>\ref</code>, <code>:cref</code> became <code>\cref</code> (resolved by <code>cleveref</code>),
+  and the caption's ampersand was escaped to <code>\&amp;</code>. The <code>graphicx</code> package is pulled
+  into the preamble automatically because a figure was used — JMarkdown's preamble is
+  usage-driven, so you only carry the packages you actually need.</p>
+<h3 id="toc-the-label-key-goes-in-id">The label key goes in <code>{id=…}</code></h3>
+<p>The reference key is an <span class="intense">attribute</span>, written <code>{id=fig:demo}</code> — not the <code>{#…}</code>
+  anchor shorthand, which cannot carry a colon. Float keys are conventionally
+  colon-prefixed (<code>fig:</code>, <code>tab:</code>, <code>lst:</code>), so the colon-safe <code>{id=…}</code> is the form to
+  use. The prefix is only a convention for legibility; JMarkdown does not require it.</p>
+<h2 id="toc-subfigures">Subfigures</h2>
+<p>A <code>subfigure</code> is a sub-panel <span class="intense">nested inside a <code>figure</code></span>. Each panel gets its own
+  caption and its own <code>id</code>, and is lettered (a), (b), (c), … under one parent
+  number — so a reference to a panel reads "1a". Set each panel's width as a fraction
+  of the row with <code>{width=0.45}</code>; panels with room to spare sit side by side.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(figure)[Two related plots]{id=fig:plots}
+@begin(subfigure)[The left-hand plot]{id=sub:left width=0.45}
+![<span class="hljs-string">left</span>](<span class="hljs-link">https://placehold.co/220x140?text=left</span>)
+@end(subfigure)
+@begin(subfigure)[The right-hand plot]{id=sub:right width=0.45}
+![<span class="hljs-string">right</span>](<span class="hljs-link">https://placehold.co/220x140?text=right</span>)
+@end(subfigure)
+@end(figure)
+
+Compare :ref[sub:left] with :ref[sub:right]; both are in :ref[fig:plots].
+See also :cref[sub:left] and :Cref[fig:plots].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <figure class="figure" id="fig:plots">
+      <figure class="subfigure" id="sub:left" style="width:45%">
+        <p><img src="https://placehold.co/220x140?text=left" alt="left"></p>
+        <figcaption class="subfigure-caption"><span class="subfigure-label">(a)</span> The left-hand plot</figcaption>
+      </figure>
+      <figure class="subfigure" id="sub:right" style="width:45%">
+        <p><img src="https://placehold.co/220x140?text=right" alt="right"></p>
+        <figcaption class="subfigure-caption"><span class="subfigure-label">(b)</span> The right-hand plot</figcaption>
+      </figure>
+      <figcaption class="figure-caption"><span class="figure-label xref">Figure 2:</span> Two related plots</figcaption>
+    </figure>
+    <p>Compare <a class="xref-ref" href="#sub:left">2a</a> with <a class="xref-ref" href="#sub:right">2b</a>; both are in <a class="xref-ref" href="#fig:plots">2</a>.
+      See also <a class="xref-cref" href="#sub:left">figure&nbsp;2a</a> and <a class="xref-cref" href="#fig:plots">Figure&nbsp;2</a>.</p>
+
+  </div>
+</div>
+<p>The parent caption is numbered as a whole ("Figure 1:"), each panel is lettered
+  "(a)" and "(b)", and a reference to a panel composes the two: <code>:ref[sub:left]</code>
+  resolves to <span class="intense">1a</span>, <code>:cref[sub:left]</code> to <span class="intense">figure 1a</span>. The parent figure is still
+  referenceable on its own (<code>:ref[fig:plots]</code> → <span class="intense">1</span>).</p>
+<p>In LaTeX the parent becomes a <code>figure</code> containing two <code>subfigure</code> environments
+  (from the <code>subcaption</code> package), separated by <code>\hfill</code> so they spread across the
+  text width:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{figure}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\begin</span>{subfigure}[b]{0.45<span class="hljs-keyword">\textwidth</span>}
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\includegraphics</span>[width=<span class="hljs-keyword">\textwidth</span>]{left.png}
+<span class="hljs-keyword">\caption</span>{Left plot}
+<span class="hljs-keyword">\label</span>{sub:left}
+<span class="hljs-keyword">\end</span>{subfigure}
+<span class="hljs-keyword">\hfill</span>
+<span class="hljs-keyword">\begin</span>{subfigure}[b]{0.45<span class="hljs-keyword">\textwidth</span>}
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\includegraphics</span>[width=<span class="hljs-keyword">\textwidth</span>]{right.png}
+<span class="hljs-keyword">\caption</span>{Right plot}
+<span class="hljs-keyword">\label</span>{sub:right}
+<span class="hljs-keyword">\end</span>{subfigure}
+<span class="hljs-keyword">\hfill</span>
+
+<span class="hljs-keyword">\caption</span>{Two related plots}
+<span class="hljs-keyword">\label</span>{fig:plots}
+<span class="hljs-keyword">\end</span>{figure}
+
+Compare <span class="hljs-keyword">\ref</span>{sub:left} with <span class="hljs-keyword">\ref</span>{sub:right}; both are in <span class="hljs-keyword">\ref</span>{fig:plots}.
+See also <span class="hljs-keyword">\cref</span>{sub:left} and <span class="hljs-keyword">\Cref</span>{fig:plots}.
+</code></pre>
+<p>The <code>width=0.45</code> fraction becomes <code>0.45\textwidth</code> in LaTeX and <code>width:45%</code> in
+  HTML. Two panels at <code>0.45</code> leave a comfortable gutter; three across would each take
+  roughly <code>0.30</code>.</p>
+<h2 id="toc-the-table-environment">The <code>table</code> environment</h2>
+<p>A <code>table</code> float wraps a Markdown table, captions it (<span class="intense">above</span> the table, per the
+  universal typesetting convention for tables), numbers it on its own <strong>Table N</strong>
+  counter, and makes it referenceable. The body is an ordinary JMarkdown table —
+  nothing special about it except that it lives inside the block:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(table)[Summary of results]{id=tab:results}
+| Method | Score |
+|--------|-------|
+| A      | 0.9   |
+| B      | 0.7   |
+@end(table)
+
+See :ref[tab:results] for the numbers, or more precisely :cref[tab:results].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <figure class="table-float" id="tab:results">
+      <figcaption class="table-caption"><span class="table-label xref">Table 1:</span> Summary of results</figcaption>
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td>0.9</td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td>0.7</td>
+          </tr>
+        </tbody>
+      </table>
+    </figure>
+    <p>See <a class="xref-ref" href="#tab:results">1</a> for the numbers, or more precisely <a class="xref-cref" href="#tab:results">table&nbsp;1</a>.</p>
+
+  </div>
+</div>
+<p>The caption sits above the table and is prefixed <strong>Table 1:</strong>; the figure and table
+  counters are independent, so a document can have both a "Figure 1" and a "Table 1".
+  The LaTeX is a native <code>table</code> float, with <code>\caption</code> placed before the <code>tabular</code>
+  (so it prints above) and <code>\label</code> after it:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{table}[htbp]
+<span class="hljs-keyword">\centering</span>
+<span class="hljs-keyword">\caption</span>{Results summary}
+<span class="hljs-keyword">\label</span>{tab:results}
+<span class="hljs-keyword">\begin</span>{tabular}{ll}
+<span class="hljs-keyword">\hline</span>
+Method <span class="hljs-built_in">&amp;</span> Score <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+A <span class="hljs-built_in">&amp;</span> 0.9 <span class="hljs-keyword">\\</span>
+B <span class="hljs-built_in">&amp;</span> 0.7 <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\end</span>{tabular}
+<span class="hljs-keyword">\end</span>{table}
+
+See <span class="hljs-keyword">\ref</span>{tab:results} for numbers, or more precisely <span class="hljs-keyword">\cref</span>{tab:results}.
+</code></pre>
+<h3 id="toc-long-tables-inside-a-table-float">Long tables inside a <code>table</code> float</h3>
+<p>A table body of more than roughly <span class="intense">20 rows</span> is emitted as a page-breaking
+  <code>longtable</code> in print — automatically, on row count alone; see
+  <a href="print-rendering.html">print rendering</a> for the mechanism. When such a table sits
+  inside a <code>table</code> float, JMarkdown does one float-specific thing: because a
+  <code>longtable</code> cannot live inside a page-locked float, the caption is emitted with
+  <code>\captionof{table}{…}</code> (from the <code>caption</code> package) above the <code>longtable</code> rather
+  than <code>\caption</code> inside a <code>table</code> environment. The table is still numbered on the
+  table counter and still referenceable — the float wrapper just steps aside so the
+  table can break:
+</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\captionof</span>{table}{Twenty-two rows of data}<span class="hljs-keyword">\label</span>{tab:big}
+<span class="hljs-keyword">\begin</span>{longtable}{ll}
+<span class="hljs-keyword">\hline</span>
+Item <span class="hljs-built_in">&amp;</span> Value <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\endhead</span>
+Row 1 <span class="hljs-built_in">&amp;</span> 1 <span class="hljs-keyword">\\</span>
+Row 2 <span class="hljs-built_in">&amp;</span> 2 <span class="hljs-keyword">\\</span>
+<span class="hljs-comment">% … rows 3–21 …</span>
+Row 22 <span class="hljs-built_in">&amp;</span> 22 <span class="hljs-keyword">\\</span>
+<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\end</span>{longtable}
+</code></pre>
+<p>On the web there is no pagination, so a long table renders as one continuous HTML
+  <code>&lt;table&gt;</code> inside the usual float.
+</p>
+<h2 id="toc-the-listing-environment">The <code>listing</code> environment</h2>
+<p>A <code>listing</code> float is to a code block what a <code>figure</code> is to an image: it captions
+  and numbers a fenced code block on its own <strong>Listing N</strong> counter and makes it
+  referenceable. Put a normal fenced code block (with its language tag) inside:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(listing)[A hello-world program]{id=lst:hello}
+<span class="hljs-code">```python
+print("hello, world")
+```</span>
+@end(listing)
+
+See :ref[lst:hello], or more precisely :cref[lst:hello].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <figure class="listing" id="lst:hello">
+      <pre><code class="hljs language-python"><span class="hljs-built_in">print</span>(<span class="hljs-string">"hello, world"</span>)
+</code></pre>
+      <figcaption class="listing-caption"><span class="listing-label xref">Listing 1:</span> A hello-world program</figcaption>
+    </figure>
+    <p>See <a class="xref-ref" href="#lst:hello">1</a>, or more precisely <a class="xref-cref" href="#lst:hello">listing&nbsp;1</a>.</p>
+
+  </div>
+</div>
+<p>The code is still syntax-highlighted exactly as a free-standing fenced block would
+  be; the environment only adds the caption (<strong>Listing 1:</strong>) and the cross-ref anchor.
+  In LaTeX the code becomes a <code>minted</code> block inside <code>minted</code>'s own <code>listing</code> float
+  environment, so listings number and float like figures and tables:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{listing}[htbp]
+<span class="hljs-keyword">\begin</span>{minted}{python}<span class="hljs-string">
+print("hello, world")
+</span><span class="hljs-keyword">\end</span>{minted}
+<span class="hljs-keyword">\caption</span>{A hello-world program}
+<span class="hljs-keyword">\label</span>{lst:hello}
+<span class="hljs-keyword">\end</span>{listing}
+
+See <span class="hljs-keyword">\ref</span>{lst:hello}, or more precisely <span class="hljs-keyword">\cref</span>{lst:hello}.
+</code></pre>
+<p>The language on the fence (<code>python</code>) is carried straight through to <code>minted</code>. The
+  <code>minted</code> package compiles code with Pygments, so a LaTeX build that includes a
+  listing needs <code>pygmentize</code> installed and <code>--shell-escape</code> passed to your LaTeX
+  engine.
+</p>
+<h2 id="toc-referencing-a-float">Referencing a float</h2>
+<p>Every float environment is referenced the same way, through the cross-reference
+  directives, keyed by the <code>id</code> you gave it:</p>
+<table>
+  <thead>
+    <tr>
+      <th>You write</th>
+      <th>HTML and LaTeX result</th>
+      <th>Use it for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:ref[fig:demo]</code></td>
+      <td><code>1</code></td>
+      <td>the bare number</td>
+    </tr>
+    <tr>
+      <td><code>:cref[fig:demo]</code></td>
+      <td><code>figure 1</code></td>
+      <td>mid-sentence, type spelled out</td>
+    </tr>
+    <tr>
+      <td><code>:Cref[fig:demo]</code></td>
+      <td><code>Figure 1</code></td>
+      <td>start of a sentence (capitalised)</td>
+    </tr>
+  </tbody>
+</table>
+<p>The <code>:cref</code> wording reads identically in HTML and LaTeX, and forward references
+  (to a float defined later) resolve cleanly — both as
+  <a href="cross-references.html">cross-references</a> explains. That page also covers
+  referencing sections, equations, and theorems, plus <code>:label</code>.
+</p>
+<h2 id="toc-reference">Reference</h2>
+<h3 id="toc-syntax">Syntax</h3>
+<pre><code class="hljs">@begin(figure)[caption]{id=fig:key}
+…a single image…
+@end(figure)
+
+@begin(figure)[caption]{id=fig:key}
+  @begin(subfigure)[caption]{id=sub:a width=0.45}
+  …image…
+  @end(subfigure)
+  @begin(subfigure)[caption]{id=sub:b width=0.45}
+  …image…
+  @end(subfigure)
+@end(figure)
+
+@begin(table)[caption]{id=tab:key}
+…a Markdown table…
+@end(table)
+
+@begin(listing)[caption]{id=lst:key}
+…a fenced code block…
+@end(listing)
+</code></pre>
+<h3 id="toc-environments-at-a-glance">Environments at a glance</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Environment</th>
+      <th>Wraps</th>
+      <th>Caption position</th>
+      <th>Counter</th>
+      <th>LaTeX float</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>figure</code></td>
+      <td>one image</td>
+      <td>below</td>
+      <td>Figure <strong>N</strong></td>
+      <td><code>figure</code> (graphicx)</td>
+    </tr>
+    <tr>
+      <td><code>subfigure</code></td>
+      <td>one image, inside a <code>figure</code></td>
+      <td>below the panel</td>
+      <td>(a), (b), …</td>
+      <td><code>subfigure</code> (subcaption)</td>
+    </tr>
+    <tr>
+      <td><code>table</code></td>
+      <td>a Markdown table</td>
+      <td>above</td>
+      <td>Table <strong>N</strong></td>
+      <td><code>table</code> or <code>longtable</code></td>
+    </tr>
+    <tr>
+      <td><code>listing</code></td>
+      <td>a fenced code block</td>
+      <td>below</td>
+      <td>Listing <strong>N</strong></td>
+      <td><code>listing</code> (minted)</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-attributes">Attributes</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Applies to</th>
+      <th>Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>id</code></td>
+      <td>all</td>
+      <td>The reference key. Use the colon-safe <code>{id=fig:x}</code> form, not <code>{#…}</code>. Optional — omit it for an unreferenced float.</td>
+    </tr>
+    <tr>
+      <td><code>width</code></td>
+      <td><code>subfigure</code></td>
+      <td>Panel width as a fraction of the row (<code>0.45</code> → <code>0.45\textwidth</code> in LaTeX, <code>width:45%</code> in HTML).</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-behaviour-and-gotchas">Behaviour and gotchas</h3>
+<ul>
+  <li><span class="intense">Auto-numbered, document order.</span> Figures, tables, and listings each have their
+    own independent counter, and HTML prefixes the caption with <strong>Figure N:</strong>, <strong>Table
+      N:</strong>, or <strong>Listing N:</strong> automatically. You never type the number.</li>
+  <li><span class="intense">Usage-driven preamble.</span> A figure pulls in <code>graphicx</code>; a subfigure adds
+    <code>subcaption</code>; a listing adds <code>minted</code>; a long captioned table adds <code>caption</code>.
+    Nothing is loaded that you do not use.
+  </li>
+  <li><span class="intense">Bare image is not a float.</span> <code>![](…)</code> is a plain graphic with no caption,
+    number, or reference.</li>
+  <li><span class="intense">Subfigures must be inside a <code>figure</code>.</span> A bare <code>subfigure</code> has no parent number
+    to letter against.</li>
+  <li><span class="intense"><code>longtable</code> needs <code>--shell-escape</code>?</span> No — it is a core LaTeX capability. But a
+    <span class="intense">listing</span> uses <code>minted</code>, which <strong>does</strong> need <code>pygmentize</code> and <code>--shell-escape</code> at
+    build time.
+  </li>
+  <li><span class="intense">Caption above for tables, below for figures.</span> This is set for you; do not try
+    to move it by reordering content.</li>
+</ul>
+<h2 id="toc-related-pages">Related pages</h2>
+<ul>
+  <li><a href="block-environments.html">Block environments</a> — the <code>@begin … @end</code> grammar that
+    every float is built on, including nesting.</li>
+  <li><a href="cross-references.html">Cross-references</a> — <code>:ref</code>, <code>:cref</code>, <code>:Cref</code>, and
+    <code>:label</code> in full, across sections, equations, and theorems as well as floats.
+  </li>
+  <li><a href="tables-and-alerts.html">Tables and alerts</a> — the Markdown table syntax that goes
+    inside a <code>table</code> float, including spans and column widths.</li>
+  <li><a href="code-highlighting.html">Code highlighting</a> — how the code inside a <code>listing</code> is
+    highlighted on the web and set with <code>minted</code> in print.</li>
+  <li><a href="theorems-and-equations.html">Theorems and equations</a> — the companion
+    <code>@begin(equation)</code> environment for numbered, referenceable display math.
+  </li>
+</ul>

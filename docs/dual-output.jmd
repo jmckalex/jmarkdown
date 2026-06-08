@@ -1,0 +1,455 @@
+Title: Dual output: one source, HTML and LaTeX
+------------------------------------
+
+# Dual output: one source, HTML and LaTeX
+
+JMarkdown is built around a single promise: you write your document **once**, and
+the same source produces both a polished web page and a compilable LaTeX document.
+There is no second copy to keep in sync and no drift between what a reader sees
+online and what goes to print. The two outputs differ only where they *must* —
+prose, headings, lists, math, footnotes, cross-references, figures, theorems, and
+tables all come from one source and render correctly in both targets.
+
+This page covers how to ask for each format, how a complete `.tex` document is
+assembled for you, and how to write the occasional passage meant for *one* output
+only — a note that makes sense only in print, a navigation aid that makes sense
+only on the web.
+
+## Producing each format
+
+JMarkdown has one command, `process`, and a flag that chooses the target. HTML is
+the default; `--to latex` switches to LaTeX:
+
+```
+jmarkdown process book.jmd                 # → book.html  (the default)
+jmarkdown process book.jmd --to latex      # → book.tex
+```
+
+The output filename is derived from the input by swapping the extension, so
+`book.jmd` becomes `book.html` or `book.tex`. Pass `-o` to choose a different name:
+
+```
+jmarkdown process book.jmd --to latex -o chapter1.tex
+```
+
+### Whole documents versus fragments
+
+By default each target produces a *complete* document. For HTML that means a full
+page — `<!doctype html>`, a `<head>` with your stylesheets and scripts, and a
+`<body>`. For LaTeX it means a complete, compilable file: a `\documentclass`
+line, an assembled preamble, the frontmatter, your body, and `\end{document}`. You
+can hand the `.tex` straight to `pdflatex` and get a PDF.
+
+The `--fragment` flag strips the wrapper and emits the **body only** — the HTML
+that would sit inside `<body>`, or the LaTeX that would sit between
+`\begin{document}` and `\end{document}`:
+
+```
+jmarkdown process snippet.jmd --fragment              # body-only HTML
+jmarkdown process snippet.jmd --to latex --fragment   # body-only LaTeX
+```
+
+Fragments are what you want when JMarkdown's output will be embedded in a larger
+document you assemble yourself — a chapter included into a master file, a snippet
+dropped into an existing web template, or the input to an automated test. The rest
+of this page covers the full-document case, where the assembly machinery lives;
+conditional content works identically in fragments.
+
+## The assembled LaTeX document
+
+The headline feature of the LaTeX target is that you do not write any LaTeX
+boilerplate. From a document whose metadata header is nothing more than a title
+and an author, JMarkdown assembles a complete, ready-to-compile file. Take this
+source:
+
+```
+---
+Title: A Short Note
+Author: Ada Lovelace
+---
+
+# Beginnings
+
+A single paragraph of prose.
+```
+
+Running `jmarkdown process note.jmd --to latex` produces the whole document — class
+declaration, preamble, frontmatter, body, and closer — with nothing for you to add:
+
+```latex
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\hypersetup{pdftitle={A Short Note}, pdfauthor={Ada Lovelace}}
+
+\begin{document}
+
+\title{A Short Note}
+\author{Ada Lovelace}
+\maketitle
+
+\section{Beginnings}
+
+A single paragraph of prose.
+
+
+\end{document}
+```
+
+Three things in that output are worth pointing out, because they happen for every
+document without your asking:
+
+- The preamble is **assembled, not fixed.** The engine defaults (`inputenc`,
+  `fontenc`) are there because the default engine is `pdflatex`; nothing else is
+  loaded, because nothing else is used. (More on this under
+  [The preamble is built from what you use](#the-preamble-is-built-from-what-you-use).)
+- `hyperref` is **always loaded** for a full document, giving you clickable
+  cross-references and a table of contents, plus PDF bookmarks. Its
+  `\hypersetup{pdftitle=…, pdfauthor=…}` is filled in from your `Title` and
+  `Author`, so the compiled PDF carries proper document metadata.
+- The **frontmatter** — `\title`, `\author`, `\maketitle`, and the heading turned
+  into `\section{Beginnings}` — is generated from your metadata and your Markdown
+  headings. You write `# Beginnings`; JMarkdown decides it is a `\section` because
+  the default class is `article` (which has no `\chapter`).
+
+## Document-assembly metadata
+
+Everything about the assembled document is steered by metadata keys in the header.
+All of them are optional — the short example above used only two — and all follow
+JMarkdown's convention of **Capitalised Words With Spaces**. They group naturally
+into the class, the preamble, and the page setup.
+
+| Key | Default | Controls |
+|---|---|---|
+| `Document class` | `article` | the `\documentclass{…}` |
+| `Class options` | *(none)* | the bracketed options, e.g. `11pt, a4paper` |
+| `LaTeX engine` | `pdflatex` | font and encoding setup (`inputenc` plus `fontenc`, versus `fontspec`) |
+| `Packages` | *(none)* | extra `\usepackage` lines, comma-separated |
+| `LaTeX preamble` | *(none)* | verbatim preamble lines (macros, environments) |
+| `Geometry` | *(none)* | margins and paper via the `geometry` package |
+| `Line spacing` | `single` | `single`, `onehalf`, `double`, or a number |
+| `Header` | *(none)* | a running header via `fancyhdr` |
+| `Footer` | *(none)* | a running footer via `fancyhdr` |
+| `Heading base` | *(from class)* | the top sectioning level for `#` |
+
+`Title`, `Author`, and `Date` are not LaTeX-specific — they feed `\maketitle` in
+print and the document header on the web — but they belong in the same header and
+are what populate the PDF metadata.
+
+### A worked metadata header
+
+Here is a header that exercises most of the keys at once:
+
+```
+---
+Title: On Coordination
+Author: J. McKenzie Alexander
+Date: June 2026
+Document class: article
+Class options: 11pt, a4paper
+LaTeX engine: pdflatex
+Packages: amsmath, amssymb
+Geometry: margin=1in
+Line spacing: onehalf
+Header: The Rise of Computational Philosophy
+Footer: Draft
+---
+
+# Introduction
+
+The argument begins with a coordination problem and some math $E = mc^2$.
+```
+
+JMarkdown turns that header into the top of the document — the class line, every
+package the keys call for, the page setup, and the `hyperref` block — entirely
+automatically:
+
+```latex
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{amsmath, amssymb}
+\onehalfspacing
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[C]{The Rise of Computational Philosophy}
+\fancyfoot[C]{Draft}
+\usepackage{hyperref}
+\hypersetup{pdftitle={On Coordination}, pdfauthor={J. McKenzie Alexander}}
+
+\begin{document}
+
+\title{On Coordination}
+\author{J. McKenzie Alexander}
+\date{June 2026}
+\maketitle
+
+\section{Introduction}
+
+The argument begins with a coordination problem and some math $E = mc^2$.
+
+
+\end{document}
+```
+
+Notice how `Geometry: margin=1in` became `\usepackage[margin=1in]{geometry}`, how
+`Line spacing: onehalf` pulled in `setspace` and emitted `\onehalfspacing`, and how
+`Header` and `Footer` pulled in `fancyhdr`. You never named `setspace` or
+`fancyhdr`; using the feature loaded the package.
+
+### The preamble is built from what you use
+
+That is the general rule: the preamble is *usage-driven*. JMarkdown's renderers
+ask for a package only when they actually emit something that needs it. Write a
+theorem and `thmtools` appears; draw a TikZ diagram and `tikz` plus its libraries
+appear; the package list grows to fit the document and no further.
+
+That leaves two keys for the cases the automatic machinery cannot guess:
+
+- **`Packages`** — a comma-separated list of package names you want loaded
+  regardless, for packages JMarkdown does not request on your behalf. In the worked
+  example, `Packages: amsmath, amssymb` became a single
+  `\usepackage{amsmath, amssymb}`.
+- **`LaTeX preamble`** — verbatim lines inserted into the preamble, for macros and
+  environment definitions. Give it one line after the key, or several on their own
+  lines beneath it; each line is copied through unchanged:
+
+```
+---
+Title: A Book
+Document class: book
+Packages: amsmath, amssymb
+LaTeX preamble:
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+---
+```
+
+That header produces a preamble whose tail carries your two macros verbatim,
+ready to use in the body (`$x \in \R$` and so on):
+
+```latex
+\documentclass{book}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\hypersetup{pdftitle={A Book}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+```
+
+### Engines, classes, and sectioning
+
+Two keys change the shape of the document more deeply than the others.
+
+`LaTeX engine` selects the typesetting engine and, with it, the font machinery. The
+default `pdflatex` loads `inputenc` and `fontenc`, as you have seen. A Unicode
+engine instead loads `fontspec` and omits the legacy encoding packages — so
+`LaTeX engine: lualatex` (or `xelatex`) produces a different top of preamble:
+
+```latex
+\documentclass{article}
+\usepackage{fontspec}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Unicode Doc}}
+```
+
+`Document class` and `Heading base` together decide what a `#` heading becomes. The
+default class, `article`, has no `\chapter`, which is exactly why a level-one
+heading defaults to `\section`. Switch to `book` or `report` and the base shifts so
+that `#` becomes `\chapter`. You can also set the base explicitly with
+`Heading base: chapter` (or `section`, `subsection`, …) when you want a different
+top level than the class would pick. The sectioning ladder then descends from
+there: under a `chapter` base, `#` is `\chapter`, `##` is `\section`, and so on.
+
+The same heading levels drive the HTML output too — they become `<h1>`, `<h2>`,
+and friends — so a single set of `#` headings gives a correctly nested document in
+both targets.
+
+## Conditional content
+
+Most of your document belongs in both outputs. Occasionally a passage does not: a
+sentence that says "see the figure on the facing page" makes sense only in print,
+and a line that says "click the link below" makes sense only on the web. JMarkdown
+gives you three matched shapes for content that should be emitted in **one output
+only**, at every granularity from a whole block down to a few words mid-sentence.
+
+The two audiences are **print** (the LaTeX/PDF output) and **web** (the HTML
+output). Content marked `print` is dropped from HTML; content marked `web` is
+dropped from LaTeX. The marked content is *removed entirely* from the other target
+— not hidden with CSS, not commented out, simply absent.
+
+### Block, inline, and named-block forms
+
+The container directive form wraps one or more block-level elements. The inline
+form wraps a run of text inside a paragraph. And because every container directive
+has a named-block twin, you can also write `@begin(print)` … `@end(print)` (see
+[Block environments](block-environments.html)). All three are shown together here:
+
+::::markdown-demo
+:::print
+This sentence appears only in the printed PDF.
+:::
+
+:::web
+This sentence appears only on the web page.
+:::
+
+The build is available both as a PDF :print[(this very document)] and
+:web[online at the project site].
+::::
+
+Read the right-hand panel above — that is the **HTML** rendering, so the
+print-only block is gone, the web-only block is present, the inline `:print[…]`
+vanished, and the inline `:web[…]` survived. The exact same source produces the
+mirror image in LaTeX. Run it through `--to latex --fragment` and you get only the
+print material:
+
+```latex
+This sentence appears only in the printed PDF.
+
+The build is available both as a PDF (this very document) and
+.
+```
+
+The web-only block and the inline `:web[…]` are simply not there. (The stray full
+stop is the punctuation that surrounded the dropped inline span — conditional
+content removes exactly its own text and nothing else, so you keep authorial
+control of the surrounding sentence.)
+
+The HTML fragment is the inverse:
+
+```html
+<p>This sentence appears only on the web page.</p>
+<p>The build is available both as a PDF and
+  online at the project site.</p>
+```
+
+### When to reach for which form
+
+- Use the **block form** (`:::print` and `:::web`, or `@begin(print)` and
+  `@begin(web)`) for whole paragraphs, lists, figures, or several blocks at once —
+  a print-only preface, a web-only interactive demo.
+- Use the **inline form** (`:print[…]` and `:web[…]`) for a phrase inside running
+  prose — a cross-reference worded for the page it lands on, a parenthetical that
+  only one medium needs.
+
+The named-block twin behaves identically to the container directive; choose it when
+you are already using `@begin`/`@end` blocks elsewhere and prefer their named
+closers, or when nesting makes colon-counting awkward.
+
+### Conditional content versus raw markup
+
+Conditional content is about **which output gets your Markdown**. It is easy to
+confuse with a different, older pair of constructs — `:TeX` and `:HTML`, and their
+container forms — which are about **raw, unprocessed markup**. The two solve
+different problems:
+
+- `:print[…]` and `:web[…]` take **Markdown** and route it to one output. The
+  content is parsed and rendered normally; it just appears in only one target.
+- `:TeX[…]` and `:HTML[…]` take **raw markup** and pass it through verbatim. `:TeX`
+  injects literal LaTeX into the LaTeX output and emits nothing in HTML; `:HTML`
+  injects literal HTML into the HTML output and emits nothing in LaTeX. A `:TeX`
+  body gets no Markdown processing at all; a `:HTML` body, by contrast, *is*
+  processed as Markdown — an intentional asymmetry covered in
+  [Directives](directives-syntax.html).
+
+Concretely, this source mixes both block forms:
+
+```
+Intro paragraph.
+
+:::TeX
+\fbox{Raw LaTeX box, PDF only.}
+:::
+
+Middle paragraph.
+
+:::HTML
+<aside>Raw HTML aside, web only.</aside>
+:::
+
+Final paragraph.
+```
+
+In LaTeX output the raw `\fbox{…}` passes straight through and the HTML aside is
+gone:
+
+```latex
+Intro paragraph.
+
+
+\fbox{Raw LaTeX box, PDF only.}Middle paragraph.
+
+Final paragraph.
+```
+
+In HTML output the raw `<aside>` passes straight through and the LaTeX box is gone:
+
+```html
+<p>Intro paragraph.</p>
+<p>Middle paragraph.</p>
+<aside>Raw HTML aside, web only.</aside>
+<p>Final paragraph.</p>
+```
+
+In short: `:print` and `:web` are about **audience** — Markdown routed to one
+target; `:TeX` and `:HTML` are about **escape-hatching** raw target-language markup
+that has no Markdown equivalent.
+
+## Reference
+
+### CLI
+
+| Invocation | Output |
+|---|---|
+| `jmarkdown process FILE` | complete HTML page |
+| `jmarkdown process FILE --to latex` | complete, compilable `.tex` |
+| `jmarkdown process FILE --fragment` | body-only HTML |
+| `jmarkdown process FILE --to latex --fragment` | body-only LaTeX |
+| `jmarkdown process FILE -o NAME` | write to `NAME` instead of the derived name |
+
+### Document-assembly metadata keys
+
+See the table under [Document-assembly metadata](#document-assembly-metadata)
+above. All are optional and all use `Capitalised Words With Spaces`.
+
+### Conditional content
+
+| Form | Appears only in |
+|---|---|
+| `:::print … :::` or `@begin(print) … @end(print)` | LaTeX (PDF) |
+| `:::web … :::` or `@begin(web) … @end(web)` | HTML (web) |
+| `:print[…]` | LaTeX (PDF) |
+| `:web[…]` | HTML (web) |
+
+### Raw-markup escape hatches (for contrast)
+
+| Form | Emits | In the other output |
+|---|---|---|
+| `:TeX[…]` and `:::TeX … :::` | raw LaTeX, verbatim | nothing |
+| `:HTML[…]` and `:::HTML … :::` | raw HTML (body parsed as Markdown) | nothing |
+
+## Related pages
+
+- [Metadata header](metadata-header.html) — the full grammar of the header these
+  keys live in.
+- [Configuration files](configuration-files.html) — setting the same keys globally
+  or per project, and how the layers merge.
+- [Sources and targets](sources-and-targets.html) — more on choosing HTML versus
+  LaTeX and the shape of each.
+- [Output templates](output-templates.html) — customising the full-document wrapper
+  beyond what the metadata keys reach.
+- [Directives](directives-syntax.html) — the container and inline grammar that
+  the `print`, `web`, `TeX`, and `HTML` directives are built on.
+- [Block environments](block-environments.html) — the `@begin` and `@end` twins of
+  the conditional directives, and named blocks in general.
+- [Cross-references](cross-references.html) — `:label`, `:ref`, `:cref`, and the
+  reference wording that stays correct in both targets.
+- [Print rendering](print-rendering.html) — how alerts, description lists, long
+  tables, and diagrams render once the document reaches LaTeX.

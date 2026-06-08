@@ -1,0 +1,525 @@
+<h1 id="toc-theorems-proofs-and-equations">Theorems, proofs, and equations</h1>
+<p>Mathematical writing leans on a small, stable vocabulary of labelled,
+  numbered objects: a <strong>theorem</strong> states a result, a <strong>proof</strong> discharges it, a
+  <strong>definition</strong> fixes a term, and a numbered <strong>equation</strong> gets pointed at from the
+  prose around it. JMarkdown gives you all of these as named block
+  environments, written once and rendered correctly into <span class="intense">both</span> outputs — a
+  styled HTML block on the web and a real amsthm and amsmath environment in
+  LaTeX.
+</p>
+<p>These all use the <code>@begin(name) … @end(name)</code> form from
+  <a href="block-environments.html">Block environments</a>; this page assumes you have met
+  it and covers the seven theorem-like kinds, the <code>proof</code> environment, and
+  numbered equations. Each section pairs a live demo with the <span class="intense">generated
+    LaTeX</span> — produced by running the tool, never hand-written — so you can see
+  exactly what compiles.
+</p>
+<h2 id="toc-the-theorem-like-environments">The theorem-like environments</h2>
+<p>The theorem-like kinds all share one grammar:</p>
+<pre><code class="hljs">@begin(theorem)[optional name]{id=thm:key}
+The body of the result, written as ordinary Markdown
+with inline math like $a^2 + b^2 = c^2$.
+@end(theorem)
+</code></pre>
+<p>The three argument slots follow the usual block-environment convention. The
+  parentheses name the kind (<code>theorem</code>). The square brackets hold an <span class="intense">optional
+    name</span> — a parenthetical note such as the person the result is named after.
+  The braces hold attributes; the one that matters here is <code>id</code>, which sets the
+  cross-reference key. (Keys like <code>thm:pyth</code> carry a colon, so they go in
+  <code>{id=…}</code> rather than the <code>{#…}</code> shorthand — see
+  <a href="cross-references.html">cross-references</a>.)
+</p>
+<p>The seven kinds are <span class="intense">theorem, lemma, corollary, proposition, definition,
+    example,</span> and <span class="intense">remark.</span> They differ only in their display name and, in
+  LaTeX, in their typographic style: <code>theorem</code>, <code>lemma</code>, <code>corollary</code>, and
+  <code>proposition</code> are <strong>plain</strong> (the body is italicised in LaTeX), while
+  <code>definition</code> and <code>example</code> use the upright <strong>definition</strong> style and <code>remark</code>
+  the <strong>remark</strong> style. In HTML the kind appears as a class on the block, and you
+  style it however you like.
+</p>
+<p>Here is one theorem with a name, and one definition without:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(theorem)[Pythagoras]{id=thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+@end(theorem)
+
+@begin(definition){id=def:rt}
+A <span class="hljs-emphasis">*right triangle*</span> has one ninety-degree angle.
+@end(definition)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth">
+      <p><span class="theorem-label">Theorem 1 (Pythagoras).</span> For a right triangle, $a^2 + b^2 = c^2$.</p>
+    </div>
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt">
+      <p><span class="theorem-label">Definition 2.</span> A <strong>right triangle</strong> has one ninety-degree angle.</p>
+    </div>
+
+  </div>
+</div>
+<p>Notice how the optional <code>[Pythagoras]</code> becomes the parenthetical
+  "Theorem 1 (Pythagoras)." in the rendered label, while the definition, which
+  gave no name, reads simply "Definition 2."</p>
+<p>The same source compiles to native thmtools environments in LaTeX. The
+  optional name becomes amsthm's bracketed note, and the <code>id</code> becomes a
+  <code>\label</code> placed right after <code>\begin</code> so the engine captures the number:
+</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{theorem}[Pythagoras]<span class="hljs-keyword">\label</span>{thm:pyth}
+For a right triangle, <span class="hljs-built_in">$</span>a<span class="hljs-built_in">^</span>2 + b<span class="hljs-built_in">^</span>2 = c<span class="hljs-built_in">^</span>2<span class="hljs-built_in">$</span>.
+<span class="hljs-keyword">\end</span>{theorem}
+
+<span class="hljs-keyword">\begin</span>{definition}<span class="hljs-keyword">\label</span>{def:rt}
+A <span class="hljs-keyword">\textbf</span>{right triangle} has one ninety-degree angle.
+<span class="hljs-keyword">\end</span>{definition}
+</code></pre>
+<p>You write no preamble for this. JMarkdown's preamble is usage-driven: the
+  first theorem-like block pulls in <code>amsthm</code> and <code>thmtools</code> and emits the
+  <code>\declaretheorem</code> declarations automatically, so a document that uses these
+  environments compiles with nothing further from you:
+</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\usepackage</span>{amsthm}
+<span class="hljs-keyword">\usepackage</span>{thmtools}
+<span class="hljs-keyword">\declaretheorem</span>{theorem}
+<span class="hljs-keyword">\declaretheorem</span>[style=definition, sibling=theorem]{definition}
+</code></pre>
+<h2 id="toc-one-shared-counter">One shared counter</h2>
+<p>This is the most important thing to understand about the theorem-like kinds,
+  and it is a deliberate design choice: <span class="intense">all seven share a single sequential
+    counter.</span> You do not get a theorem counter, a separate lemma counter, and a
+  separate definition counter each climbing independently. You get one stream —
+  Theorem 1, Lemma 2, Definition 3, Theorem 4 — in document order, whatever the
+  kinds.</p>
+<p>The reason is the reader. With per-kind counters, a cross-reference to
+  "Lemma 1" tells you nothing about <strong>where</strong> it sits relative to "Theorem 2" — is
+  the lemma before the theorem or after it? The reader has to hunt. With one
+  shared counter the numbers themselves encode reading order: Lemma 2 plainly
+  comes before Theorem 4 and after Theorem 1, no hunting required.</p>
+<p>Watch the single counter advance across four different kinds, each one
+  adding one to the same running number:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(theorem)[Cantor]{id=thm:cantor}
+There is no surjection from a set onto its power set.
+@end(theorem)
+
+@begin(lemma){id=lem:diag}
+The diagonal set differs from every row.
+@end(lemma)
+
+@begin(definition){id=def:power}
+The <span class="hljs-emphasis">*power set*</span> of $S$ is the set of all subsets of $S$.
+@end(definition)
+
+@begin(corollary)
+The reals are uncountable.
+@end(corollary)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Cantor" id="thm:cantor">
+      <p><span class="theorem-label">Theorem 3 (Cantor).</span> There is no surjection from a set onto its power set.</p>
+    </div>
+    <div class="theorem-env theorem-plain" data-kind="lemma" id="lem:diag">
+      <p><span class="theorem-label">Lemma 4.</span> The diagonal set differs from every row.</p>
+    </div>
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:power">
+      <p><span class="theorem-label">Definition 5.</span> The <strong>power set</strong> of $S$ is the set of all subsets of $S$.</p>
+    </div>
+    <div class="theorem-env theorem-plain" data-kind="corollary">
+      <p><span class="theorem-label">Corollary 6.</span> The reals are uncountable.</p>
+    </div>
+
+  </div>
+</div>
+<p>The counter is <span class="intense">document-wide</span>, so on this page the demo numbers continue
+  from the theorems shown earlier rather than starting again at one; were these
+  the first such blocks in your document, they would read Theorem 1, Lemma 2,
+  Definition 3, Corollary 4.</p>
+<p>In LaTeX the shared counter comes from thmtools' <code>sibling</code> option: the primary
+  <code>theorem</code> counter is declared first, and every other kind with
+  <code>sibling=theorem</code>, so they all advance the same count. A subtle benefit comes
+  for free — <span class="intense">cleveref still names each kind correctly.</span> A naive shared
+  <code>\newtheorem</code> counter would make a reference to a lemma print "theorem 2"; the
+  <code>sibling</code> mechanism keeps the count shared but the <strong>name</strong> per-kind, so a lemma
+  references as "lemma 2".
+</p>
+<h2 id="toc-cross-referencing-a-result">Cross-referencing a result</h2>
+<p>Give a block an <code>id</code> and you can point at it from anywhere with the
+  cross-reference directives — <code>:cref[key]</code> for "theorem 1" mid-sentence,
+  <code>:Cref[key]</code> for "Theorem 1" at a sentence start, or bare <code>:ref[key]</code> for just
+  the number. The directives, and how their wording stays identical in HTML and
+  LaTeX, are documented in <a href="cross-references.html">cross-references</a>; here is how
+  they look pointed at the blocks above:
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(theorem)[Pythagoras]{id=thm:pyth2}
+For a right triangle, $a^2 + b^2 = c^2$.
+@end(theorem)
+
+@begin(definition){id=def:rt2}
+A <span class="hljs-emphasis">*right triangle*</span> has one ninety-degree angle.
+@end(definition)
+
+By :cref[thm:pyth2] and :cref[def:rt2] we are done. See also :Cref[thm:pyth2].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth2">
+      <p><span class="theorem-label">Theorem 7 (Pythagoras).</span> For a right triangle, $a^2 + b^2 = c^2$.</p>
+    </div>
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt2">
+      <p><span class="theorem-label">Definition 8.</span> A <strong>right triangle</strong> has one ninety-degree angle.</p>
+    </div>
+    <p>By <a class="xref-cref" href="#thm:pyth2">theorem&nbsp;7</a> and <a class="xref-cref" href="#def:rt2">definition&nbsp;8</a> we are done. See also <a class="xref-cref" href="#thm:pyth2">Theorem&nbsp;7</a>.</p>
+
+  </div>
+</div>
+<p>The same source compiles to native cleveref commands, which the engine
+  resolves:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{theorem}[Pythagoras]<span class="hljs-keyword">\label</span>{thm:pyth}
+For a right triangle, <span class="hljs-built_in">$</span>a<span class="hljs-built_in">^</span>2 + b<span class="hljs-built_in">^</span>2 = c<span class="hljs-built_in">^</span>2<span class="hljs-built_in">$</span>.
+<span class="hljs-keyword">\end</span>{theorem}
+
+<span class="hljs-keyword">\begin</span>{definition}<span class="hljs-keyword">\label</span>{def:rt}
+A <span class="hljs-keyword">\textbf</span>{right triangle} has one ninety-degree angle.
+<span class="hljs-keyword">\end</span>{definition}
+
+By <span class="hljs-keyword">\cref</span>{thm:pyth} and <span class="hljs-keyword">\cref</span>{def:rt} we are done. See also <span class="hljs-keyword">\Cref</span>{thm:pyth}.
+</code></pre>
+<h2 id="toc-proofs">Proofs</h2>
+<p>A proof is written with its own environment, <code>@begin(proof) … @end(proof)</code>. It
+  differs from the theorem-like kinds in two ways that match mathematical
+  convention: it is <span class="intense">not numbered</span> — it carries no counter and never takes an
+  <code>id</code> — and it ends with a <span class="intense">QED mark</span> (∎).
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(theorem){id=thm:irr}
+$\sqrt{2}$ is irrational.
+@end(theorem)
+
+@begin(proof)
+Suppose $\sqrt{2} = p/q$ in lowest terms. Then $p^2 = 2q^2$,
+so $p$ is even, whence $q$ is even — contradicting lowest terms.
+@end(proof)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="theorem-env theorem-plain" data-kind="theorem" id="thm:irr">
+      <p><span class="theorem-label">Theorem 9.</span> $\sqrt{2}$ is irrational.</p>
+    </div>
+    <div class="proof-env">
+      <p><span class="proof-label">Proof.</span> Suppose $\sqrt{2} = p/q$ in lowest terms. Then $p^2 = 2q^2$,
+        so $p$ is even, whence $q$ is even — contradicting lowest terms.</p>
+      <span class="qed">∎</span>
+    </div>
+
+  </div>
+</div>
+<p>A proof commonly refers back to the result it proves, and to lemmas it leans
+  on, using the same cross-reference directives:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(lemma){id=lem:even}
+If $p^2$ is even then $p$ is even.
+@end(lemma)
+
+@begin(proof)
+The claim is the contrapositive of "$p$ odd implies $p^2$ odd",
+which follows by squaring. This is exactly :cref[lem:even].
+@end(proof)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="theorem-env theorem-plain" data-kind="lemma" id="lem:even">
+      <p><span class="theorem-label">Lemma 10.</span> If $p^2$ is even then $p$ is even.</p>
+    </div>
+    <div class="proof-env">
+      <p><span class="proof-label">Proof.</span> The claim is the contrapositive of "$p$ odd implies $p^2$ odd",
+        which follows by squaring. This is exactly <a class="xref-cref" href="#lem:even">lemma&nbsp;10</a>.</p>
+      <span class="qed">∎</span>
+    </div>
+
+  </div>
+</div>
+<p>In LaTeX the proof becomes amsthm's <code>proof</code> environment, which supplies the
+  QED mark itself:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{proof}
+By rearrangement of areas.
+<span class="hljs-keyword">\end</span>{proof}
+</code></pre>
+<h2 id="toc-numbered-equations">Numbered equations</h2>
+<p>A numbered, cross-referenceable display equation is its own environment,
+  <code>@begin(equation){id=eq:key}</code>. The body is <span class="intense">raw math</span> — you write it without
+  the <code>$$ … $$</code> delimiters, because the environment supplies the display math
+  for you. Everything between the fences is taken verbatim, so <code>_</code>, <code>^</code>, and <code>\</code>
+  survive untouched:
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(equation){id=eq:mass}
+E = mc^2
+@end(equation)
+
+@begin(equation){id=eq:sum}
+\sum<span class="hljs-emphasis">_{i=1}^n i = \frac{n(n+1)}{2}
+@end(equation)</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="equation" id="eq:mass">
+      <span class="eqn-body">\[
+        E = mc^2
+        \]</span>
+      <span class="eqn-number">(1)</span>
+    </div>
+    <div class="equation" id="eq:sum">
+      <span class="eqn-body">\[
+        \sum_{i=1}^n i = \frac{n(n+1)}{2}
+        \]</span>
+      <span class="eqn-number">(2)</span>
+    </div>
+
+  </div>
+</div>
+<p>Each equation is numbered in document order — (1), (2), (3) — and the number
+  sits at the right, parenthesised, in the familiar mathematical convention.
+  JMarkdown assigns these numbers at build time rather than leaning on the
+  client-side math renderer, so a cross-reference resolves to a concrete number.</p>
+<p>You reference an equation exactly as you reference a theorem, but the wording
+  follows the parenthesised convention: a typed <code>:cref</code> reads "equation (2)",
+  and the bare <code>:ref</code> gives just the parenthesised number.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(equation){id=eq:euler}
+e^{i\pi} + 1 = 0
+@end(equation)
+
+@begin(equation){id=eq:gauss}
+\int<span class="hljs-emphasis">_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+@end(equation)
+
+By :ref[eq:euler] and :cref[eq:gauss] we relate them. See also :Cref[eq:euler].</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="equation" id="eq:euler">
+      <span class="eqn-body">\[
+        e^{i\pi} + 1 = 0
+        \]</span>
+      <span class="eqn-number">(3)</span>
+    </div>
+    <div class="equation" id="eq:gauss">
+      <span class="eqn-body">\[
+        \int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+        \]</span>
+      <span class="eqn-number">(4)</span>
+    </div>
+    <p>By <a class="xref-ref" href="#eq:euler">3</a> and <a class="xref-cref" href="#eq:gauss">equation&nbsp;(4)</a> we relate them. See also <a class="xref-cref" href="#eq:euler">Equation&nbsp;(3)</a>.</p>
+
+  </div>
+</div>
+<p>In LaTeX the environment compiles to amsmath's <code>equation</code>, with the <code>\label</code>
+  placed right after <code>\begin</code> so the equation counter is captured:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{equation}
+<span class="hljs-keyword">\label</span>{eq:mass}
+E = mc<span class="hljs-built_in">^</span>2
+<span class="hljs-keyword">\end</span>{equation}
+
+<span class="hljs-keyword">\begin</span>{equation}
+<span class="hljs-keyword">\label</span>{eq:sum}
+<span class="hljs-keyword">\sum</span><span class="hljs-built_in">_</span>{i=1}<span class="hljs-built_in">^</span>n i = <span class="hljs-keyword">\frac</span>{n(n+1)}{2}
+<span class="hljs-keyword">\end</span>{equation}
+
+By <span class="hljs-keyword">\ref</span>{eq:mass} and <span class="hljs-keyword">\cref</span>{eq:sum} we relate them. See also <span class="hljs-keyword">\Cref</span>{eq:mass}.
+</code></pre>
+<p>As with theorems, the <code>amsmath</code> package is pulled into the preamble
+  automatically the first time you use an equation block.</p>
+<p>For <strong>unnumbered</strong> display math, use the ordinary <code>$$ … $$</code> form described in
+  <a href="math-support.html">Math support</a>; reach for the equation environment only
+  when you want a number you can point at.
+</p>
+<h2 id="toc-reference">Reference</h2>
+<h3 id="toc-the-environments">The environments</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Environment</th>
+      <th>Numbered?</th>
+      <th>Optional <code>[name]</code>?</th>
+      <th>LaTeX target</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>@begin(theorem)</code></td>
+      <td>yes (shared counter)</td>
+      <td>yes</td>
+      <td><code>theorem</code> (plain)</td>
+    </tr>
+    <tr>
+      <td><code>@begin(lemma)</code></td>
+      <td>yes (shared counter)</td>
+      <td>yes</td>
+      <td><code>lemma</code> (plain)</td>
+    </tr>
+    <tr>
+      <td><code>@begin(corollary)</code></td>
+      <td>yes (shared counter)</td>
+      <td>yes</td>
+      <td><code>corollary</code> (plain)</td>
+    </tr>
+    <tr>
+      <td><code>@begin(proposition)</code></td>
+      <td>yes (shared counter)</td>
+      <td>yes</td>
+      <td><code>proposition</code> (plain)</td>
+    </tr>
+    <tr>
+      <td><code>@begin(definition)</code></td>
+      <td>yes (shared counter)</td>
+      <td>yes</td>
+      <td><code>definition</code> style</td>
+    </tr>
+    <tr>
+      <td><code>@begin(example)</code></td>
+      <td>yes (shared counter)</td>
+      <td>yes</td>
+      <td><code>definition</code> style</td>
+    </tr>
+    <tr>
+      <td><code>@begin(remark)</code></td>
+      <td>yes (shared counter)</td>
+      <td>yes</td>
+      <td><code>remark</code> style</td>
+    </tr>
+    <tr>
+      <td><code>@begin(proof)</code></td>
+      <td>no</td>
+      <td>no</td>
+      <td><code>proof</code> (QED mark)</td>
+    </tr>
+    <tr>
+      <td><code>@begin(equation)</code></td>
+      <td>yes (own counter)</td>
+      <td>no</td>
+      <td><code>equation</code> (amsmath)</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-arguments">Arguments</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Slot</th>
+      <th>Holds</th>
+      <th>Example</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>( … )</code></td>
+      <td>the environment name</td>
+      <td><code>theorem</code></td>
+    </tr>
+    <tr>
+      <td><code>[ … ]</code></td>
+      <td>optional parenthetical name (theorem-like only)</td>
+      <td><code>[Pythagoras]</code></td>
+    </tr>
+    <tr>
+      <td><code>{ … }</code></td>
+      <td>attributes; <code>id</code> sets the cross-reference key</td>
+      <td><code>{id=thm:pyth}</code></td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-cross-reference-directives">Cross-reference directives</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Directive</th>
+      <th>HTML and LaTeX wording</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:ref[key]</code></td>
+      <td>"1", or "(1)" for equations</td>
+      <td>bare number</td>
+    </tr>
+    <tr>
+      <td><code>:cref[key]</code></td>
+      <td>"theorem 1", "equation (2)"</td>
+      <td>typed, lower-case</td>
+    </tr>
+    <tr>
+      <td><code>:Cref[key]</code></td>
+      <td>"Theorem 1", "Equation (2)"</td>
+      <td>typed, sentence-start</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-html-structure">HTML structure</h3>
+<p>A theorem-like block renders as a <code>div</code> carrying its kind and an injected
+  label span:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"theorem-env theorem-plain"</span> <span class="hljs-attr">data-kind</span>=<span class="hljs-string">"theorem"</span>
+     <span class="hljs-attr">data-name</span>=<span class="hljs-string">"Pythagoras"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"thm:pyth"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"theorem-label"</span>&gt;</span>Theorem 1 (Pythagoras).<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span> … <span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+</code></pre>
+<p>A proof carries the <code>proof-env</code> class and a trailing QED span; an equation
+  carries the <code>equation</code> class with its math body and a parenthesised number:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"proof-env"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"proof-label"</span>&gt;</span>Proof.<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span> … <span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"qed"</span>&gt;</span>∎<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"equation"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"eq:mass"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"eqn-body"</span>&gt;</span>\[ E = mc^2 \]<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"eqn-number"</span>&gt;</span>(1)<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+</code></pre>
+<p>JMarkdown ships default styling for <code>theorem-env</code>, <code>theorem-label</code>,
+  <code>proof-env</code>, <code>proof-label</code>, <code>qed</code>, <code>equation</code>, <code>eqn-body</code>, and <code>eqn-number</code>,
+  so blocks look reasonable out of the box; override any of it in your own
+  stylesheet.
+</p>
+<h3 id="toc-behaviour-at-a-glance">Behaviour at a glance</h3>
+<ul>
+  <li><span class="intense">One shared counter</span> for all seven theorem-like kinds, advancing in
+    document order; equations have their own separate counter.</li>
+  <li><span class="intense">proof is unnumbered</span> and never takes an <code>id</code>; it ends with a QED mark.</li>
+  <li><span class="intense">The optional <code>[name]</code></span> becomes the parenthetical in the label,
+    "Theorem 1 (Name).", and amsthm's bracketed note in LaTeX.</li>
+  <li><span class="intense">Equation bodies are raw math</span> with no <code>$$</code> delimiters, taken verbatim.</li>
+  <li><span class="intense">Preamble is automatic</span> — <code>amsthm</code>, <code>thmtools</code>, and <code>\declaretheorem</code> for
+    theorems, <code>amsmath</code> for equations — pulled in only when used.</li>
+  <li><span class="intense">Cross-references</span> with <code>:cref</code>, <code>:Cref</code>, and <code>:ref</code> work in both outputs;
+    see <a href="cross-references.html">cross-references</a>.</li>
+</ul>
+<h2 id="toc-related-pages">Related pages</h2>
+<ul>
+  <li><a href="block-environments.html">Block environments</a> — the <code>@begin … @end</code> grammar
+    these environments are built on, and how to define your own.</li>
+  <li><a href="math-support.html">Math support</a> — inline <code>$…$</code> and unnumbered display
+    <code>$$…$$</code> math, the body language of every theorem and equation here.
+  </li>
+  <li><a href="cross-references.html">cross-references</a> — the full cross-reference family,
+    the colon-safe <code>{id=…}</code> key, and the HTML/LaTeX wording parity.</li>
+  <li><a href="dual-output.html">dual-output</a> — how one source produces both the HTML and
+    the LaTeX you have seen side by side on this page.</li>
+  <li><a href="markdown-demo.html">Markdown demo</a> — the side-by-side directive used for
+    every live example above.</li>
+</ul>

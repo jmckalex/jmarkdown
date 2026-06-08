@@ -29,11 +29,21 @@ All source lives in `src/`. Key files:
 | `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown` |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |
 | `post-processor.js` | Cheerio DOM manipulation, cross-reference resolution, beautification |
-| `latex-renderer.js` | LaTeX renderer for marked's built-in tokens (active development) |
+| `latex-renderer.js` | LaTeX renderer for marked's built-in tokens (paragraphs, headings → class-aware sectioning, lists, code → minted, links, images → plain `\includegraphics`, …) |
+| `latex-template.js` | Full-document assembly: `\documentclass` + preamble + frontmatter + body. Page setup (geometry/setspace/fancyhdr) + hyperref/PDF metadata from metadata keys. Peer of `html-template.js` |
+| `default-template.tex.mustache` | The `.tex` document skeleton (triple-brace; peer of `default-template.html.mustache`) |
+| `preamble.js` | Usage-driven package manager: `requirePackage` / `addPreamble` / `addLatePreamble` / `crefName`; `assemblePreamble()` |
+| `latex-escape.js` | Shared `&`/`#` prose escaping (`escapeLatexText`) |
+| `sectioning.js` | Sectioning ladder + `Heading base`/`Document class` resolution (shared by the LaTeX heading renderer and the HTML cref word) |
+| `crossref.js` | HTML cross-reference registry: per-run label table + `typedRefText` (the `:cref` wording) |
+| `floats.js` | `@begin(figure|table|subfigure|listing)` — captioned, numbered, referenceable floats |
+| `theorems.js` | `@begin(theorem|lemma|…|proof)` — thmtools, one shared sequential counter |
+| `equations.js` | `@begin(equation)` — numbered, referenceable display math |
+| `alerts.js` | LaTeX rendering of GFM alerts (`> [!NOTE]`) as `tcolorbox` |
 | `inline-footnotes.js` | `[^label: body]` syntax with multi-paragraph support |
-| `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives |
+| `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc) |
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
-| `marked-extended-tables-headerless.js` | Custom table tokenizer (also the seed for the future `:::grid` directive) |
+| `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
 
 ## Processing pipeline (in order)
 
@@ -72,8 +82,8 @@ An alternative to the colon-counted container directives. Because the closer *na
 
 - **Syntax:** `@begin(name)[label]{attrs}` — `()` = name, `[]` = optional text/label, `{}` = attributes (parsed with `attributes-parser`, same as directives). Closer is bare `@end(name)` (name required, no args).
 - **Generic rendering, any name:** LaTeX is always `\begin{name}[label]…\end{name}`. HTML renders the name as either `<div class="name">` or a custom element `<name>`: a name **without** a hyphen → `div.class`, **with** a hyphen → custom element (matching the HTML spec, where a valid custom-element name must contain a hyphen). Override per block — `@begin(.name)` forces a class, `@begin(<name>)` forces an element — or document-wide via the `Block elements` metadata/config key (`hyphenated` default · `all` · `none`; per-block sigils win). In div mode the name merges into any author `class`. The author supplies the matching CSS / `\newenvironment`; JMarkdown invents no meaning for the name.
-- **Registry:** `registerBlockEnvironment(name, handler)` (from `begin-end-core.js`) maps a name to a handler the renderer consults before the generic fallback. A handler is `{ mode?, tokenize?, html, latex?, render? }` — `mode` is `'markdown'` (default) · `'verbatim'` · `'custom'` (gets a `tokenize(body, token)` hook with lexer access); `html` is the one required renderer, `latex` (or any other format key) is optional and additive, `render` is a format-independent alternative. Output dispatch is one latex-free line: `handler[format] || handler.html || handler.render`, with `format` from the injected `getFormat()` (default `'html'`). A handler with only `html` therefore renders its HTML in LaTeX mode too — which is exactly the legacy abstract/feedback behaviour. The handler-level `mode` answers the old "content modes" question; `ctx.attrs` is an `attributes-parser` result in both routes, so `attrs?.include` works identically. The registry is module-level, so any module registers independently of where the extension is built.
-- **Parity:** four names mirror existing directives exactly, so `@begin(x)` ≡ `:::x`: `abstract`, `feedback`, `TeX` (verbatim, LaTeX-only), `HTML` (markdown, HTML-only). They are **registered from `begin-end.js`** (the JMarkdown layer); `abstract`/`feedback` reuse the render bodies exported from `additional-directives.js` (no drift) and have no `latex` (so they emit HTML in both formats, as before); `TeX`/`HTML` are expressed as split `html`/`latex` renderers.
+- **Registry:** `registerBlockEnvironment(name, handler)` (from `begin-end-core.js`) maps a name to a handler the renderer consults before the generic fallback. A handler is `{ mode?, tokenize?, html, latex?, render? }` — `mode` is `'markdown'` (default) · `'verbatim'` · `'custom'` (gets a `tokenize(body, token)` hook with lexer access); `html` is the one required renderer, `latex` (or any other format key) is optional and additive, `render` is a format-independent alternative. Output dispatch is one latex-free line: `handler[format] || handler.html || handler.render`, with `format` from the injected `getFormat()` (default `'html'`). A handler with only `html` therefore renders its HTML in LaTeX mode too — which is exactly the legacy feedback behaviour (the `abstract` body now branches internally; see Parity). The handler-level `mode` answers the old "content modes" question; `ctx.attrs` is an `attributes-parser` result in both routes, so `attrs?.include` works identically. The registry is module-level, so any module registers independently of where the extension is built.
+- **Parity:** four names mirror existing directives exactly, so `@begin(x)` ≡ `:::x`: `abstract`, `feedback`, `TeX` (verbatim, LaTeX-only), `HTML` (markdown, HTML-only). They are **registered from `begin-end.js`** (the JMarkdown layer); `abstract`/`feedback` reuse the render bodies exported from `additional-directives.js` (no drift). `renderAbstract` branches to LaTeX's standard `abstract` environment (HTML keeps the labelled div); `renderFeedback` still emits HTML in both formats (no standard LaTeX env — deferred). `TeX`/`HTML` are expressed as split `html`/`latex` renderers.
 - **comment / optionals parity:** `createMultilevelOptionals` (`metadata-header.js`) registers each optional name (including `comment`) into the registry alongside its `:::` directive, so `@begin(comment)` honours the same include/exclude rule and **hides by default** — closing the footgun where it would otherwise fall through to the generic renderer and *show* a private note. HTML is a bare passthrough of the parsed body; LaTeX restores a trailing block separator (the core trims `ctx.inner`, fine for wrapped envs but not for this passthrough).
 - **game parity:** `strategic-form-games.js` registers `@begin(game)` as a `mode:'custom'` handler that **reuses the `:::game` directive's own tokenizer and renderer verbatim** (same functions, the strongest no-drift form). The `tokenize` hook normalises the body to container shape (`'\n' + body.replace(/\n+$/, '')`) so the tokenizer sees byte-identical input to `:::game`, and sets `token.meta.name`; the renderer is called with the active parser as `this` and already branches on `global.isLatex`, so one format-independent `render` covers both outputs. `@begin(game)` output is byte-identical to `:::game` (verified for labels and `{math=all}`).
 - **User-defined environments (script blocks):** `global.defineEnvironment` (= the core's `registerBlockEnvironment`, exposed in `index.js` like `export_to_jmarkdown`) lets an author define an environment from a `<script data-type="jmarkdown">` block: `defineEnvironment('callout', { html: (ctx) => …, latex: (ctx) => … })`. The callback receives the full `ctx`, so `ctx.text` (the `[label]`) and `ctx.attrs` (the `{attributes}`, an ergonomic `attributes-parser` object — `ctx.attrs?.kind`, numbers coerced) are available alongside `ctx.inner`. **Define before use** (script above the `@begin`), since the tokenizer reads `mode` while lexing. Fixture: `script-env.jmd`.
@@ -124,19 +134,99 @@ Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path), `Bib
 
 ## Known bugs (deferred, but don't reintroduce or rely on)
 
-- `crossrefs` module-level state never resets between runs.
 - Dead code after returns in the Mathematica renderer.
 
-## Active LaTeX-pipeline work
+(The old `crossrefs`-never-resets bug is **fixed**: the cross-ref table lives in
+`crossref.js`, reset per run via `resetCrossrefs()` at the top of
+`postProcessHTML`. The codespan-breaks-on-`}` bug is **fixed**: `codespan` picks
+a `\mintinline` delimiter the code doesn't contain.)
 
-- `:::print` / `:::web` conditional directives.
-- Raw HTML suppression in LaTeX mode.
-- Math passthrough in LaTeX mode.
-- Tables now emit LaTeX `tabular` via `marked-extended-tables-headerless`'s renderers (both `spanTable` and `headerlessTable` branch on `global.isLatex`). Supports alignment, percentage widths (mapped to `p{X\textwidth}`), `\multicolumn` for colspan and `\multirow` for rowspan. Requires `\usepackage{multirow}` in the preamble. The `table()` method on `latex-renderer.js` is a real fallback path — marked's built-in GFM table tokenizer accepts some malformed tables (e.g. rows without trailing pipes) that the extensions reject.
-- Tables don't break across pages: `tabular` is fixed-height in LaTeX. Long tables in book chapters will need `longtable` or `tabularx`; defer until a real chapter forces the requirement.
-- The `:::game` directive (`strategic-form-games.js`) emits the `sgame` package's `game` environment in LaTeX mode (`renderGameLatex` branches on `global.isLatex`). The jmarkdown game syntax was designed to mirror sgame, so translation is mechanical. Requires `\usepackage{sgame}` in the preamble. sgame's optional arguments are positional: a lone `[...]` is the game label/caption, a `[...][...]` pair is the two player labels, and all three are `[row][column][caption]` — so a caption alongside player labels fills all three slots with an empty `[]` for any missing player label. Payoffs are wrapped in `$…$` (sgame's default is `\gamemathfalse`). Note `sgame` is incompatible with the `memoir` class, `tabularx`, `array.sty` (and anything loading it, e.g. `colortbl`, `jurabib`); use `sgamevar` for `beamer`.
-- Consider disabling marked's built-in GFM table tokenizer so the `marked-extended-tables-headerless` extensions are the sole table path. This would enforce one canonical jmarkdown table syntax (rows must have leading and trailing `|`) instead of also accepting GFM's looser leading-pipe-only form, and would let us delete the `table()` fallback in `latex-renderer.js` entirely. Pre-flight check before flipping: grep the book and `docs/` for tables that use the looser form (rows without trailing pipes) so existing authors aren't broken.
-- Multi-file cross-refs: two-pass with `crossrefs.json` and `chapter-slug:key` syntax; `heading-base` metadata to map `#` → `\chapter` / `\section` / etc.
+## LaTeX document-preparation system
+
+`--to latex` emits a **complete, compilable document** (`--fragment` = body only,
+which is also what the feature/compile test harnesses consume). The architecture:
+**LaTeX emits native commands and lets the engine number/resolve; HTML resolves
+everything itself in the post-processor** (which never runs for LaTeX). The
+post-processor (`post-processor.js`) numbers floats/theorems/equations and
+records them in `crossref.js`; the parse hook in `index.js` handles the
+`{{…}}` document markers.
+
+- **Assembly** (`latex-template.js` + `default-template.tex.mustache`): wraps the
+  body in `\documentclass` + assembled preamble + frontmatter + `\end{document}`.
+  All user-overridable, nothing baked in. Metadata keys (`Capitalised Words`):
+  `Document class` (default `article`), `Class options`, `LaTeX engine` (default
+  `pdflatex` — tunes `inputenc`/`fontenc` vs `fontspec`), `Packages`,
+  `LaTeX preamble`, `Geometry`, `Line spacing` (single/onehalf/double/n),
+  `Header`, `Footer` (fancyhdr), `Heading base`. `hyperref` is auto-loaded for
+  every full document (clickable refs/ToC + PDF bookmarks) with
+  `\hypersetup{pdftitle,pdfauthor}` from `Title`/`Author`; `\maketitle` from
+  `Title`/`Author`/`Date`.
+- **Preamble manager** (`preamble.js`): usage-driven. Features call
+  `requirePackage(name, opts)` as they render, so the preamble contains only
+  what's used. `addPreamble` (raw lines, e.g. `\newtheorem`/`\usetikzlibrary`),
+  `addLatePreamble` (after the load-order-sensitive hyperref/cleveref, e.g.
+  `\crefname`/`\hypersetup`), `crefName(type,sing,plur)` (force cleveref to spell
+  types out in full to match HTML). Order: engine defaults → feature/user
+  packages (hyperref/cleveref forced last) → raw lines → late lines → user
+  preamble.
+- **Cross-references** (`additional-directives.js` + `crossref.js` + `post-processor.js`):
+  `:label[k]`/`:ref[k]` (bare number) and `:cref[k]`/`:Cref[k]` (typed, e.g.
+  "section 3"/"Section 3"). LaTeX → native `\label`/`\ref`/`\cref`/`\Cref`; HTML →
+  anchored marker + hyperlink, resolved over the complete DOM (forward refs work
+  **single-pass**). Wording is identical in both outputs (full words via
+  `crefName`; equations parenthesised, "(2)"). Counters: sections (native /
+  heading numbering), figures, tables, listings (own counters), theorems (one
+  shared sequential counter), equations.
+- **Sectioning** (`sectioning.js`): heading depth → command from a base derived
+  from the class (`article`→`\section`, `book`/`report`→`\chapter`) or explicit
+  `Heading base`. The default `article` is why `#`→`\section` (article has no
+  `\chapter`).
+- **Floats** (`floats.js`): `@begin(figure)[caption]{id=fig:x}`, `@begin(subfigure)
+  [caption]{id=… width=0.45}` (subcaption, "(a)" → ref "1a"), `@begin(table)`
+  (caption above), `@begin(listing)` (minted `listing` float). Captioned,
+  numbered, referenceable. A **bare** `![](…)` is now plain `\includegraphics`,
+  not a float. Label keys go in `{id=…}` (the `{#…}` shorthand can't carry a
+  colon).
+- **Theorems** (`theorems.js`): `@begin(theorem|lemma|corollary|proposition|
+  definition|example|remark)` + `@begin(proof)`. thmtools `\declaretheorem[sibling=
+  theorem]` → ONE shared sequential counter (Theorem 1, Lemma 2, …) while
+  cleveref still names each kind correctly (a plain shared `\newtheorem` counter
+  would wrongly print "theorem 2" for a lemma). proof is unnumbered + QED.
+- **Equations** (`equations.js`): `@begin(equation){id=eq:x}` (verbatim math body,
+  no `$$`). JMarkdown numbers them itself (document order), so `:ref`/`:cref`
+  resolve at build time. `:cref` → "equation (2)".
+- **Conditional content**: `:::print`/`:::web` (+ inline `:print[…]`/`:web[…]` and
+  `@begin(print)`/`@begin(web)`) — markdown emitted in one output only.
+- **Contents & matter** (parse hook in `index.js`): `{{TOC}}`/`{{LOF}}`/`{{LOT}}`
+  (LaTeX `\tableofcontents`/`\listoffigures`/`\listoftables`; HTML generated
+  lists) and `{{frontmatter}}`/`{{mainmatter}}`/`{{backmatter}}`/`{{appendix}}`
+  (LaTeX commands; HTML strips them — HTML appendix lettering not yet done).
+- **Other**: GFM alerts → `tcolorbox` (`alerts.js`); description lists →
+  `description` env; long tables auto-flip `tabular`→`longtable` past 20 rows;
+  TikZ emits native `tikzpicture` (preamble auto-loads tikz + libraries); Mermaid
+  rasterises to a cached PDF via `mmdc` (optional — skipped with a hint if absent).
+- **Math passthrough**: inline/display `$…$`/`$$…$$` pass through verbatim; escaping
+  touches only `&`/`#` (see `latex-escape.js` + the reserved-chars memory).
+- **`:::game`** (`strategic-form-games.js`) → `sgame`'s `game` environment.
+  Positional optional args: lone `[...]` = caption; `[...][...]` = player labels;
+  `[row][col][caption]` = all three (empty `[]` fills a missing player label).
+  Payoffs wrapped in `$…$`. `sgame` is incompatible with `memoir`, `tabularx`,
+  `array.sty` (and `colortbl`/`jurabib`); use `sgamevar` for `beamer`.
+
+### Remaining LaTeX-pipeline work
+
+- **Multi-file books**: master-file `[[…]]` inclusion already yields one PDF /
+  one HTML page with cross-file refs + continuous numbering (verified). The only
+  gap is **multi-PAGE HTML** (separate `chapterN.html`), which JMarkdown can do
+  in a **single pass** — parse all chapters into memory, number across them,
+  resolve, emit pages (no `crossrefs.json`, no rerun; the in-memory model
+  sidesteps TeX's streaming two-pass). HTML appendix lettering (A, B…) also TODO.
+- Raw-HTML suppression in LaTeX — remaining edge cases.
+- Consider disabling marked's built-in GFM table tokenizer so the
+  `marked-extended-tables-headerless` extensions are the sole table path (one
+  canonical syntax; lets us delete the `table()` fallback in `latex-renderer.js`).
+  Pre-flight: grep the book + `docs/` for looser tables (rows without trailing
+  pipes) first.
 
 ## Future feature: `:::grid`
 

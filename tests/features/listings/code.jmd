@@ -1,0 +1,7 @@
+@begin(listing)[A greeting in Python]{id=lst:hello}
+```python
+print("hello, world")
+```
+@end(listing)
+
+See :ref[lst:hello] for the snippet, or more precisely :cref[lst:hello].

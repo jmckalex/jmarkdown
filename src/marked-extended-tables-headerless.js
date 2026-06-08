@@ -49,6 +49,14 @@
  * LICENCE: MIT
  */
 
+import { requirePackage } from './preamble.js';
+
+// A table with more body rows than this is emitted as a `longtable` (which breaks
+// across pages) instead of a fixed-height `tabular`. longtable accepts the same
+// column spec, so the switch is silent — no author syntax, and harmless for
+// shorter tables. Tuned to roughly "taller than one page".
+const LONGTABLE_ROW_THRESHOLD = 20;
+
 // ---------------------------------------------------------------------------
 // Extension factory
 // ---------------------------------------------------------------------------
@@ -189,6 +197,7 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
   const formatLatexCell = (text, cell, align, width, col) => {
     let inner = text;
     if (cell.rowspan && cell.rowspan > 1) {
+      requirePackage('multirow');
       inner = `\\multirow{${cell.rowspan}}{*}{${inner}}`;
     }
     if (cell.colspan > 1) {
@@ -221,8 +230,12 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
 
   const renderTableLatex = (parser, token, hasHeader) => {
     const colspec = token.align.map((a, i) => buildColSpec(a, token.width[i])).join('');
+    const bodyRows = token.rows.filter(r => !r[0].emptyRow);
+    const long = bodyRows.length > LONGTABLE_ROW_THRESHOLD;
+    const env = long ? 'longtable' : 'tabular';
+    if (long) requirePackage('longtable');
 
-    let tex = `\\begin{tabular}{${colspec}}\n\\hline\n`;
+    let tex = `\\begin{${env}}{${colspec}}\n\\hline\n`;
 
     if (hasHeader) {
       for (const hrow of token.header) {
@@ -230,13 +243,14 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
       }
       tex += '\\hline\n';
     }
+    // longtable: repeat the head (rule + any header row) at the top of each page.
+    if (long) tex += '\\endhead\n';
 
-    for (const brow of token.rows) {
-      if (brow[0].emptyRow) continue;
+    for (const brow of bodyRows) {
       tex += renderLatexRow(parser, brow, token.align, token.width) + ' \\\\\n';
     }
 
-    tex += '\\hline\n\\end{tabular}\n\n';
+    tex += `\\hline\n\\end{${env}}\n\n`;
     return tex;
   };
 

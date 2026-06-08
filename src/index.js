@@ -368,8 +368,18 @@ const alert_options = {
     }
   ]
 };
-marked.use(markedAlert(alert_options));
-marked_copy.use(markedAlert(alert_options));
+// Capture marked-alert's HTML renderer and wrap it so LaTeX output renders the
+// callout as a tcolorbox (see alerts.js) instead of leaking its HTML. One
+// extension object, shared by marked and marked_copy.
+import { renderAlertLatex } from './alerts.js';
+const alertExtension = markedAlert(alert_options);
+const alertRenderer = alertExtension.extensions.find(e => e.name === 'alert');
+const htmlAlertRenderer = alertRenderer.renderer;
+alertRenderer.renderer = function(token) {
+	return global.isLatex ? renderAlertLatex(this.parser, token) : htmlAlertRenderer.call(this, token);
+};
+marked.use(alertExtension);
+marked_copy.use(alertExtension);
 
 
 import createMarkdownDemo from './markdown-demo.js';
@@ -465,6 +475,14 @@ import { beginEnd } from './begin-end.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 marked.use({ extensions: [beginEnd] });
 
+// Float environments (@begin(figure) …) register into the block-environment
+// registry at import time; the @begin extension consults it at render time.
+import './floats.js';
+// Theorem-like environments (@begin(theorem|lemma|proof|…)) — same pattern.
+import './theorems.js';
+// Numbered display equations (@begin(equation)).
+import './equations.js';
+
 // Let users define their own @begin environments from a <script data-type="jmarkdown">
 // block, the same way export_to_jmarkdown is exposed for inline functions. The
 // callback receives the full ctx — including ctx.text ([label]) and ctx.attrs
@@ -491,6 +509,24 @@ const gfmHeadingRenderer = gfmHeadingIdExtension.renderer.heading;
 marked.use(gfmHeadingIdExtension, {
 	hooks: {
 		postprocess(html) {
+			if (global.isLatex) {
+				// LaTeX has native contents lists and matter/appendix divisions;
+				// emit the commands and let the engine do the work. (The
+				// post-processor, which handles the HTML side, never runs for LaTeX.)
+				html = html.replace(/\{\{TOC\}\}/g, '\\tableofcontents');
+				html = html.replace(/\{\{LOF\}\}/g, '\\listoffigures');
+				html = html.replace(/\{\{LOT\}\}/g, '\\listoftables');
+				// Matter divisions (book/report) and appendix. \frontmatter and
+				// friends require the book/report class; \appendix works anywhere.
+				html = html.replace(/\{\{frontmatter\}\}/g, '\\frontmatter');
+				html = html.replace(/\{\{mainmatter\}\}/g, '\\mainmatter');
+				html = html.replace(/\{\{backmatter\}\}/g, '\\backmatter');
+				html = html.replace(/\{\{appendix\}\}/g, '\\appendix');
+				return html;
+			}
+			// HTML: build the table of contents here from the heading list.
+			// {{LOF}}/{{LOT}} are built later in the post-processor, once figures
+			// and tables have been numbered.
 			const headings = getHeadingList();
 			const toc = createTOC(headings);
 			html = html.replace("{{TOC}}", toc);
@@ -502,6 +538,7 @@ marked.use(gfmHeadingIdExtension, {
 import { metadata, processYAMLheader } from './metadata-header.js';
 import processFileInclusions from './file-inclusion.js';
 import { processTemplate } from './html-template.js';
+import { processLatexTemplate } from './latex-template.js';
 
 async function readStdin() {
 	const chunks = [];
@@ -637,9 +674,13 @@ const content = marked.parse(text);
 import * as PostProcessor from './post-processor.js';
 
 if (isLatex) {
-	// LaTeX output: write the parsed content directly — no post-processing,
-	// no template wrapping, no inverse-search injection.
-	writeOutput(content);
+	// LaTeX output: no cheerio post-processing or inverse-search injection. In
+	// the default (non-fragment) mode the body is wrapped in a complete,
+	// compilable document (\documentclass + assembled preamble + frontmatter +
+	// body + \end{document}); --fragment emits the body alone, which is also
+	// what the feature/compile test harnesses consume.
+	const latex = options.fragment ? content : processLatexTemplate(content);
+	writeOutput(latex);
 } else {
 	// HTML output: full pipeline with post-processing, template, and inverse search.
 

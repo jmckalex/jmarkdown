@@ -231,3 +231,108 @@ span.underline {
 span.highlight {
 	background: yellow;
 }
+
+
+/* Figure floats (@begin(figure)) and subfigures (@begin(subfigure)).
+   A figure centres its contents and caption; subfigures sit side by side,
+   each sized by its {width=…} inline style, wrapping when the row is full. */
+figure.figure {
+	margin: 1.25em 0;
+	text-align: center;
+}
+
+figure.figure > figcaption {
+	margin-top: 0.5em;
+	font-size: 0.95em;
+}
+
+figure.subfigure {
+	display: inline-block;
+	vertical-align: top;
+	margin: 0 1% 0.5em;
+}
+
+figure.subfigure img {
+	max-width: 100%;
+	height: auto;
+}
+
+figure.subfigure > figcaption {
+	margin-top: 0.3em;
+	font-size: 0.9em;
+}
+
+figure.table-float {
+	margin: 1.25em 0;
+	text-align: center;
+}
+
+figure.table-float > figcaption {
+	margin-bottom: 0.5em;
+	font-size: 0.95em;
+}
+
+figure.table-float table {
+	margin: 0 auto;
+}
+
+figure.listing {
+	margin: 1.25em 0;
+}
+
+figure.listing > figcaption {
+	margin-top: 0.5em;
+	font-size: 0.95em;
+}
+
+.figure-label,
+.subfigure-label,
+.table-label,
+.listing-label {
+	font-weight: bold;
+}
+
+
+/* Theorem-like environments (@begin(theorem|lemma|definition|…)) and proofs.
+   amsthm-style: the run-in label is bold upright; "plain" kinds (theorem,
+   lemma, …) italicise the body, while definitions/remarks stay upright. */
+.theorem-env {
+	margin: 1em 0;
+}
+
+.theorem-plain {
+	font-style: italic;
+}
+
+.theorem-label {
+	font-style: normal;
+	font-weight: bold;
+}
+
+.proof-env {
+	margin: 1em 0;
+}
+
+.proof-label {
+	font-style: italic;
+}
+
+.qed {
+	float: right;
+}
+
+
+/* Numbered display equations (@begin(equation)): centred math with the number
+   (N) flush right, vertically centred against the equation. */
+.equation {
+	position: relative;
+	margin: 1em 0;
+	text-align: center;
+}
+
+.equation .eqn-number {
+	position: absolute;
+	right: 0.5em;
+	top: 50%;
+	transform: translateY(-50%);
+}

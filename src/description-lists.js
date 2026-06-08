@@ -67,6 +67,17 @@ const descriptionList = {
 		}
 	},
 	renderer(token) {
+		if (global.isLatex) {
+			// LaTeX's description environment: \item[term] definition.
+			let tex = '\\begin{description}\n';
+			for (let t of token.pairs) {
+				const dt = this.parser.parseInline(t['dt']);
+				const dd = marked.parser(t['dd']).trim();
+				tex += `\\item[${dt}] ${dd}\n`;
+			}
+			tex += '\\end{description}\n\n';
+			return tex;
+		}
 		let html = '<dl>';
 		for (let t of token.pairs ) {
 			let dt_html = this.parser.parseInline(t['dt']);

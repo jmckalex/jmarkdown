@@ -1,0 +1,20 @@
+---
+Title: Matter Test
+Document class: book
+---
+
+{{frontmatter}}
+{{TOC}}
+{{mainmatter}}
+
+# Introduction
+
+Body.
+
+{{appendix}}
+
+# Appendix Material
+
+More.
+
+{{backmatter}}

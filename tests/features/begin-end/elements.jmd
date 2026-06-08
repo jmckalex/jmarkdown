@@ -1,6 +1,6 @@
-@begin(theorem)
+@begin(note)
 A plain name renders as a div with that class.
-@end(theorem)
+@end(note)
 
 @begin(pull-quote)
 A hyphenated name renders as a custom element.

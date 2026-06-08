@@ -8,6 +8,8 @@ export { cheerio };
 import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
+import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
+import { commandForDepth } from './sectioning.js';
 
 // Post-process HTML output using cheerio
 export function postProcessHTML(html, options = {}) {
@@ -34,10 +36,20 @@ export function postProcessHTML(html, options = {}) {
 		$elem.remove();
 	});
 
+	resetCrossrefs();
+	figureList = [];
+	tableList = [];
 	if (configManager.get("Headings") && configManager.get("Headings")[0] == "numeric") {
 		add_labels_to_headers($);
 	}
+	number_figures($);
+	number_tables($);
+	number_listings($);
+	number_theorems($);
+	number_equations($);
 	process_crossrefs($);
+	replace_float_lists($);
+	strip_matter_markers($);
 	replaceTargetsBySources($);
 
 	// Resolve compile-time citations (\cite-family commands + ::Bibliography),
@@ -100,32 +112,235 @@ function add_labels_to_headers($) {
 	})
 }
 
-let crossrefs = {};
+// Ordered caption text + anchor for each figure / table, collected during
+// numbering and consumed by replace_float_lists to build {{LOF}} / {{LOT}}.
+// Reset per run in postProcessHTML.
+let figureList = [];
+let tableList = [];
+
+// Replace {{LOF}} / {{LOT}} paragraphs with a list of figures / tables, each
+// entry linking to its float. LaTeX uses \listoffigures/\listoftables instead
+// (handled in the parse hook), so this is HTML-only.
+function replace_float_lists($) {
+	const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+	const build = (items, cls) => {
+		const lis = items.map(it => it.anchor
+			? `<li><a href="#${it.anchor}">${esc(it.text)}</a></li>`
+			: `<li>${esc(it.text)}</li>`).join('\n');
+		return `<nav class="${cls}"><ul>\n${lis}\n</ul></nav>`;
+	};
+	$('p').each((i, el) => {
+		const t = $(el).text().trim();
+		if (t === '{{LOF}}') $(el).replaceWith(build(figureList, 'list-of-figures'));
+		else if (t === '{{LOT}}') $(el).replaceWith(build(tableList, 'list-of-tables'));
+	});
+}
+
+// Matter/appendix markers are LaTeX book-structure commands (handled in the parse
+// hook for LaTeX). HTML has no equivalent, so just drop the marker paragraphs.
+// (HTML appendix lettering — headings A, B… after {{appendix}} — is not yet
+// implemented; the marker simply vanishes.)
+function strip_matter_markers($) {
+	const markers = ['{{frontmatter}}', '{{mainmatter}}', '{{backmatter}}', '{{appendix}}'];
+	$('p').each((i, el) => {
+		if (markers.includes($(el).text().trim())) $(el).remove();
+	});
+}
+
+// Number figure floats (@begin(figure), see floats.js) in document order: prefix
+// each caption with "Figure N:" and record the figure's id in the cross-ref
+// registry so :ref/:cref resolve. LaTeX numbers figures natively, so this is
+// HTML-only (the post-processor never runs for LaTeX). Always on — a float is
+// numbered by definition, independent of the Headings: numeric heading option.
+function number_figures($) {
+	let n = 0;
+	$('figure.figure').each((i, elem) => {
+		const $fig = $(elem);
+		n++;
+		const id = $fig.attr('id');
+
+		// Sub-number any subfigures: (a), (b), … with combined refs like "1a".
+		let sub = 0;
+		$fig.children('figure.subfigure').each((j, subelem) => {
+			const $sub = $(subelem);
+			const letter = String.fromCharCode(97 + sub);
+			sub++;
+			const subId = $sub.attr('id');
+			$sub.children('figcaption').first()
+				.prepend(`<span class="subfigure-label">(${letter})</span> `);
+			if (subId) {
+				recordLabel(subId, { number: `${n}${letter}`, type: 'figure', anchor: subId });
+			}
+		});
+
+		// Number the parent figure (its own direct figcaption) + collect for LOF.
+		const $cap = $fig.children('figcaption').first();
+		$cap.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
+		figureList.push({ text: $cap.text(), anchor: id });
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'figure', anchor: id });
+		}
+	});
+}
+
+// Number table floats (@begin(table), see floats.js) in document order, with a
+// counter independent of figures: prefix each caption with "Table N:" and record
+// the id for :ref/:cref. HTML-only (LaTeX numbers tables natively).
+function number_tables($) {
+	let n = 0;
+	$('figure.table-float').each((i, elem) => {
+		const $tab = $(elem);
+		n++;
+		const id = $tab.attr('id');
+		const $cap = $tab.children('figcaption').first();
+		$cap.prepend(`<span class="table-label xref">Table ${n}:</span> `);
+		tableList.push({ text: $cap.text(), anchor: id });
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'table', anchor: id });
+		}
+	});
+}
+
+// Number code-listing floats (@begin(listing), see floats.js) in document order
+// with their own counter: prefix each caption with "Listing N:" and record the
+// id for :ref/:cref. HTML-only (LaTeX numbers listings natively via minted).
+function number_listings($) {
+	let n = 0;
+	$('figure.listing').each((i, elem) => {
+		const $lst = $(elem);
+		n++;
+		const id = $lst.attr('id');
+		$lst.children('figcaption').first()
+			.prepend(`<span class="listing-label xref">Listing ${n}:</span> `);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'listing', anchor: id });
+		}
+	});
+}
+
+// Number theorem-like environments (@begin(theorem|lemma|…), see theorems.js)
+// with ONE shared sequential counter (Theorem 1, Lemma 2, Definition 3, …), in
+// document order, and record each for :ref/:cref. The reference WORD still comes
+// from the kind ("lemma 2"), matching the LaTeX thmtools+cleveref setup. The
+// label runs into the first paragraph ("Theorem 1 (name). …"), amsthm-style.
+// proof environments are labelled "Proof." (unnumbered) and get a QED mark.
+// HTML-only — LaTeX numbers theorems natively.
+function number_theorems($) {
+	const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+	const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+	let n = 0;
+	$('.theorem-env').each((i, elem) => {
+		const $env = $(elem);
+		n++;
+		const kind = $env.attr('data-kind') || 'theorem';
+		const name = $env.attr('data-name');
+		const id = $env.attr('id');
+		let text = `${cap(kind)} ${n}`;
+		if (name) text += ` (${esc(name)})`;
+		text += '.';
+		const labelHtml = `<span class="theorem-label">${text}</span> `;
+		const $firstP = $env.children('p').first();
+		if ($firstP.length) $firstP.prepend(labelHtml);
+		else $env.prepend(labelHtml);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: kind, anchor: id });
+		}
+	});
+
+	$('.proof-env').each((i, elem) => {
+		const $p = $(elem);
+		const labelHtml = `<span class="proof-label">Proof.</span> `;
+		const $firstP = $p.children('p').first();
+		if ($firstP.length) $firstP.prepend(labelHtml);
+		else $p.prepend(labelHtml);
+		$p.append('<span class="qed">&#8718;</span>');
+	});
+}
+
+// Number display equations (@begin(equation), see equations.js) in document
+// order with their own counter: append "(N)" and record the id for :ref/:cref.
+// HTML-only — LaTeX numbers equations natively. Numbers stay in step with LaTeX
+// because both count the equations in order.
+function number_equations($) {
+	let n = 0;
+	$('div.equation').each((i, elem) => {
+		const $eq = $(elem);
+		n++;
+		const id = $eq.attr('id');
+		$eq.append(`<span class="eqn-number">(${n})</span>`);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: 'equation', anchor: id });
+		}
+	});
+}
+
 function process_crossrefs($) {
+	// First pass: record every :label's number + anchor in the registry.
 	$(".xref-label").each((i, elem) => {
 		let $elem = $(elem);
 		let key = $elem.attr('data-key');
+		let anchor = $elem.attr('id');
+		let number;
 		let in_footnote = $elem.closest('[id^="footnote-"]').length > 0 ? true : false;
 		if (in_footnote) {
 			let $footnote = $elem.closest('[id^="footnote-"]');
 			const $ol = $footnote.closest("ol");
 			const $allItems = $ol.children('li');
 			const currentIndex = $allItems.index($footnote);
-			crossrefs[key] = `${currentIndex+1}`;
+			number = `${currentIndex+1}`;
 		}
 		else {
-			let $xref =  $elem.prevAll(".xref").first();
-			crossrefs[key] = $xref.text();
+			// The nearest preceding .xref is the number span a numbered heading
+			// prepends (see add_labels_to_headers). Needs Headings: numeric.
+			let $xref = $elem.prevAll(".xref").first();
+			number = $xref.text();
+		}
+		if (number != undefined && number.endsWith('.')) {
+			number = number.slice(0, -1);
+		}
+		// Type word for the typed :cref/:Cref form: footnotes are 'footnote';
+		// a heading-anchored label takes the sectioning word for its depth
+		// (section/subsection/chapter…), honouring Heading base / Document class.
+		let type;
+		if (in_footnote) {
+			type = 'footnote';
+		} else {
+			const $heading = $elem.closest(':header');
+			if ($heading.length) {
+				const level = parseInt($heading.prop('tagName').slice(1), 10);
+				type = commandForDepth(level);
+			}
+		}
+		recordLabel(key, { number, anchor, type });
+	});
+
+	// Second pass: turn each :ref into a hyperlink carrying the number. An
+	// unknown key renders as '??', mirroring LaTeX's own undefined-reference mark.
+	$(".xref-ref").each((i, elem) => {
+		let $elem = $(elem);
+		let key = $elem.attr('data-key');
+		let info = lookupLabel(key);
+		if (info && info.number !== undefined && info.number !== '') {
+			$elem.replaceWith(`<a class="xref-ref" href="#${info.anchor}">${info.number}</a>`);
+		}
+		else {
+			$elem.text('??');
 		}
 	});
 
-	$(".xref-ref").each((i, elem) => {
-		let key = $(elem).attr('data-key');
-		let str = crossrefs[key];
-		if (str != undefined && str.endsWith('.')) {
-		    str = str.slice(0, -1);
+	// Typed (cleveref-style) references: :cref -> "section 3", :Cref -> "Section 3".
+	$(".xref-cref").each((i, elem) => {
+		let $elem = $(elem);
+		let key = $elem.attr('data-key');
+		let cap = $elem.attr('data-cap') === '1';
+		let info = lookupLabel(key);
+		if (info && info.number !== undefined && info.number !== '') {
+			$elem.replaceWith(`<a class="xref-cref" href="#${info.anchor}">${typedRefText(info.type, info.number, cap)}</a>`);
 		}
-		$(elem).text(str);
+		else {
+			$elem.text('??');
+		}
 	});
 }
 

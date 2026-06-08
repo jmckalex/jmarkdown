@@ -1,0 +1,261 @@
+Title: How constructs render in print
+------------------------------------
+
+# How constructs render in print
+
+JMarkdown produces [two outputs from one source](dual-output.html): polished HTML
+for the web and a compilable LaTeX document for the PDF. Most constructs have an
+obvious home in both — a heading is a heading, a list is a list — but several that
+feel native to the web have no direct counterpart in print. This page is a
+reference for those crossings: construct by construct, what JMarkdown emits for the
+PDF and how it relates to the HTML you see in the browser.
+
+One principle explains every choice below: **the LaTeX output emits native commands
+and lets the engine do the work.** Rather than draw a box or number a figure
+itself, it hands the job to a real LaTeX package — `tcolorbox` for callouts, the
+`description` environment for term lists, `longtable` for tables that outrun a page,
+native `tikzpicture` for TikZ — so the print output reads as idiomatic LaTeX. Each
+such package is pulled into the preamble only when the construct is actually used.
+
+The live demos below show JMarkdown source on the left and rendered HTML on the
+right; the fenced ```latex``` blocks beneath them show the **real** LaTeX that
+`jmarkdown process … --to latex` generates for the same source.
+
+## GFM alerts become coloured callouts
+
+A GitHub-flavoured-Markdown *alert* is a blockquote whose first line is a marker
+of the form `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, or `[!CAUTION]`.
+On the web JMarkdown renders the familiar GitHub callout: a coloured left border,
+an icon, and a title. In print, each alert becomes a
+[`tcolorbox`](https://ctan.org/pkg/tcolorbox) — a coloured, titled box — its frame
+and background tinted to match the alert kind:
+
+:::markdown-demo
+> [!NOTE]
+> Useful information that users should know, even when skimming.
+
+> [!WARNING]
+> Urgent information that needs immediate attention to avoid a problem.
+:::
+
+All five kinds map to a `tcolorbox` whose `colframe` and `colback` encode the
+alert's colour. The body is rendered as Markdown first, so emphasis, links, and
+inline math inside an alert come through as normal LaTeX:
+
+```latex
+\begin{tcolorbox}[colframe=blue,colback=blue!8,title=Note]
+Useful information that users should know, even when skimming.
+\end{tcolorbox}
+
+\begin{tcolorbox}[colframe=teal,colback=teal!8,title=Tip]
+Helpful advice for doing things better or more easily.
+\end{tcolorbox}
+
+\begin{tcolorbox}[colframe=violet,colback=violet!8,title=Important]
+Key information users need to know to achieve their goal.
+\end{tcolorbox}
+
+\begin{tcolorbox}[colframe=orange,colback=orange!8,title=Warning]
+Urgent info that needs immediate user attention to avoid problems.
+\end{tcolorbox}
+
+\begin{tcolorbox}[colframe=red,colback=red!8,title=Caution]
+Advises about risks or negative outcomes of certain actions.
+\end{tcolorbox}
+```
+
+The colour for each kind is fixed:
+
+| Alert | Frame and background | Title |
+|---|---|---|
+| `[!NOTE]` | blue | Note |
+| `[!TIP]` | teal | Tip |
+| `[!IMPORTANT]` | violet | Important |
+| `[!WARNING]` | orange | Warning |
+| `[!CAUTION]` | red | Caution |
+
+The `!8` suffix on the background colour is a `tcolorbox`/`xcolor` tint: an 8% wash
+of the frame colour, light enough to keep body text readable.
+
+## Description lists become a `description` environment
+
+A *description list* pairs a term with its definition. JMarkdown's syntax is one
+line per entry: the term, a double-colon separator, then the definition (as in the
+demo below). On the web this renders as an HTML `dl` with `dt`/`dd` pairs; in print
+it becomes LaTeX's built-in `description` environment, with each term as the
+bracketed argument of an `\item`.
+
+:::markdown-demo
+Common web acronyms.
+
+HTTP:: HyperText *Transfer* Protocol.
+
+CSS:: Cascading Style Sheets.
+
+API:: Application Programming Interface.
+
+That is the list.
+:::
+
+The definition is rendered as Markdown, so the `*Transfer*` emphasis above
+survives into both outputs. Consecutive entries are gathered into a single list,
+and ordinary paragraphs before and after are left untouched:
+
+```latex
+Common web acronyms.
+
+\begin{description}
+\item[HTTP] HyperText \textbf{Transfer} Protocol.
+\item[CSS] Cascading Style Sheets.
+\item[API] Application Programming Interface.
+\end{description}
+
+That is the list.
+```
+
+The `description` environment ships with every standard LaTeX class, so no extra
+package is required, and it typesets the bracketed term in bold — the print
+analogue of the web's default bold `dt`.
+
+## Tall tables auto-switch to `longtable`
+
+A LaTeX `tabular` is a single unbreakable box: a table taller than the page would
+overflow rather than continue onto the next. So a table with more than roughly 20
+body rows is emitted as a [`longtable`](https://ctan.org/pkg/longtable) instead,
+flowing across page breaks automatically. The source never changes — you write an
+ordinary pipe table, and the switch is purely a print concern (in HTML the table is
+always a plain `table`, however long). A 22-row table produces:
+
+```latex
+\begin{longtable}{ll}
+\hline
+Year & Event \\
+\hline
+\endhead
+2001 & Milestone number 1 \\
+2002 & Milestone number 2 \\
+2003 & Milestone number 3 \\
+% … rows 4 through 21 elided …
+2022 & Milestone number 22 \\
+\hline
+\end{longtable}
+```
+
+The `\endhead` wrapper on the header row is what makes the column headings **repeat
+at the top of every page** the table spans. A `longtable` is a page-breakable run,
+not a floating box, so it is not itself a numbered, captioned float; how a captioned
+long table sits inside a `table` float is covered in
+[Figures, tables, and listings](floats.html).
+
+## TikZ becomes a native `tikzpicture`
+
+A `TiKZ` block holds raw TikZ drawing commands, and the two outputs treat it very
+differently. For the **web**, JMarkdown compiles the TikZ to a standalone diagram
+and embeds the result as a cached image. For **print** there is no rasterisation at
+all: the TikZ is emitted as a native `tikzpicture`, drawn by the LaTeX engine
+itself, so the diagram is a true vector graphic set in the document's own fonts —
+crisp at any size, with no intermediate bitmap.
+
+Because a live `TiKZ` block needs an external LaTeX toolchain, this page shows the
+**source** only. A block like this:
+
+```markdown
+:::TiKZ
+\draw[thick] (0,0) -- (2,1) -- (0,2) -- cycle;
+\node at (0.7,1.0) {T};
+:::
+```
+
+produces, in LaTeX output, the diagram wrapped and centred with TikZ's default
+arrow style:
+
+```latex
+\begin{center}
+\begin{tikzpicture}[>=latex]
+
+\draw[thick] (0,0) -- (2,1) -- (0,2) -- cycle;
+\node at (0.7,1.0) {T};
+\end{tikzpicture}
+\end{center}
+```
+
+The body is passed through verbatim — no Markdown processing, no escaping — so the
+full TikZ language is available exactly as in a `.tex` file. If your drawing already
+wraps itself in `\begin{tikzpicture}…\end{tikzpicture}`, JMarkdown leaves that
+alone; otherwise it adds the wrapper for you, and pulls `tikz` and its libraries
+into the preamble.
+
+## Mermaid renders client-side, and is rasterised for print
+
+A `mermaid` block holds a [Mermaid](https://mermaid.js.org/) diagram — a flowchart,
+sequence diagram, or the like — written in Mermaid's text syntax. On the **web** the
+diagram is handed to mermaid.js, which draws it **client-side in the browser**;
+nothing is pre-rendered.
+
+LaTeX has no native Mermaid support, so for **print** JMarkdown rasterises each
+diagram to a PDF with the Mermaid command-line tool,
+[`mmdc`](https://github.com/mermaid-js/mermaid-cli), and embeds that PDF via
+`\includegraphics`. The PDF is **cached** by a hash of the diagram source, so it is
+only re-rendered when the text changes.
+
+As with TikZ, this page shows the **source** only, since a live block needs the
+external `mmdc` tool. A Mermaid block looks like this:
+
+```markdown
+:::mermaid
+graph TD
+  A[Start] --> B{Is it working?}
+  B -->|Yes| C[Ship it]
+  B -->|No| D[Debug]
+  D --> B
+:::
+```
+
+In HTML this becomes a `div.mermaid` that the browser draws on load. In LaTeX, if
+`mmdc` is available, JMarkdown produces a cached PDF and embeds it centred at a
+sensible maximum width:
+
+```latex
+\begin{center}
+\includegraphics[max width=\linewidth]{mermaid/<hash>.pdf}
+\end{center}
+```
+
+The catch is the dependency. `mmdc` is a heavy tool — it drives a headless browser —
+and it is **optional**. If it is not installed, a LaTeX build does not fail: it
+**skips** the diagram, prints a one-line hint to standard error suggesting you
+install `@mermaid-js/mermaid-cli`, and compiles to PDF without it. Any other render
+failure skips just as gracefully. JMarkdown finds `mmdc` in a local
+`node_modules/.bin` or on your `PATH`, so a project-local install suffices.
+
+For diagrams you want as crisp, font-matched vector art in the PDF, prefer TikZ;
+reach for Mermaid when its concise flowchart/sequence syntax is the point and a
+cached raster image in print is an acceptable trade.
+
+## The crossings at a glance
+
+| Construct | HTML | LaTeX |
+|---|---|---|
+| GFM alert (`[!NOTE]` …) | GitHub-style callout `div` | `tcolorbox`, colour by kind |
+| Description list | `dl` with `dt` and `dd` | `description` environment |
+| Table over 20 rows | plain `table` | `longtable` (header repeats, breaks across pages) |
+| TikZ block | cached compiled image | native `tikzpicture` (vector, document fonts) |
+| Mermaid block | client-side mermaid.js | cached PDF via `mmdc`, or skipped with a hint |
+
+In every row the print form is a genuine LaTeX construct whose package is loaded
+only when the construct is actually used: you write one source, and JMarkdown picks
+the right tool for each medium.
+
+## Related pages
+
+- [Dual output](dual-output.html) — the HTML/LaTeX model, the usage-driven
+  preamble, document-assembly metadata, and conditional content.
+- [Figures, tables, and listings](floats.html) — captioned, numbered floats,
+  including how a long table sits inside a `table` float.
+- [Theorems, proofs, and equations](theorems-and-equations.html) — more
+  environments with dedicated print forms.
+- [Cross-references](cross-references.html) — how the numbered constructs above are
+  labelled and referenced.
+- [Strategic-form games](strategic-form-games.html) — another construct with a
+  dedicated print form (the `sgame` `game` environment).
+- [Math support](math-support.html) — how `$…$` and `$$…$$` pass through to LaTeX.

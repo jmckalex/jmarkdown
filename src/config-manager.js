@@ -34,6 +34,15 @@ export const DEFAULT_CONFIG = {
 	'HTML header': [],
 	'HTML footer': [],
 	"LaTeX preamble": [],
+	// LaTeX document assembly (see src/latex-template.js + src/preamble.js).
+	// All user-overridable via metadata/config; nothing about the document class
+	// or engine is baked in. `Class options` and `Packages` shape the preamble;
+	// `LaTeX engine` only tunes font/encoding defaults (JMarkdown emits .tex, it
+	// does not compile).
+	"Document class": "article",
+	"Class options": "",
+	"LaTeX engine": "pdflatex",
+	"Packages": [],
 	'MathJax': {
 		'configuration': String.raw`MathJax = {
 			tex: {
@@ -142,6 +151,18 @@ class ConfigManager {
 
 	getConfigForMustache() {
 		return this._replaceSpacesInKeys(this.config);
+	}
+
+	// Read a key that may have been overridden by the metadata header. The
+	// header merges overrides under the underscore spelling (e.g. `Document_class`
+	// from `Document class:`), while DEFAULT_CONFIG defaults live under the spaced
+	// spelling (`Document class`). Prefer the override, then the spaced default.
+	getMeta(spacedKey, defaultValue = null) {
+		const underscored = spacedKey.replace(/\s+/g, '_');
+		const override = this.get(underscored);
+		if (override != null) return override;
+		const spaced = this.get(spacedKey);
+		return spaced != null ? spaced : defaultValue;
 	}
 
 	// Set configuration value

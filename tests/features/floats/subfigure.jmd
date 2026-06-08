@@ -1,0 +1,11 @@
+@begin(figure)[Two related plots]{id=fig:plots}
+@begin(subfigure)[Left plot]{id=sub:left width=0.45}
+![left](left.png)
+@end(subfigure)
+@begin(subfigure)[Right plot]{id=sub:right width=0.45}
+![right](right.png)
+@end(subfigure)
+@end(figure)
+
+Compare :ref[sub:left] with :ref[sub:right]; both are in :ref[fig:plots].
+See also :cref[sub:left] and :Cref[fig:plots].

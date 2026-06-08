@@ -1,0 +1,367 @@
+Title: Theorems, proofs, and equations
+------------------------------------
+
+# Theorems, proofs, and equations
+
+Mathematical writing leans on a small, stable vocabulary of labelled,
+numbered objects: a *theorem* states a result, a *proof* discharges it, a
+*definition* fixes a term, and a numbered *equation* gets pointed at from the
+prose around it. JMarkdown gives you all of these as named block
+environments, written once and rendered correctly into **both** outputs — a
+styled HTML block on the web and a real amsthm and amsmath environment in
+LaTeX.
+
+These all use the `@begin(name) … @end(name)` form from
+[Block environments](block-environments.html); this page assumes you have met
+it and covers the seven theorem-like kinds, the `proof` environment, and
+numbered equations. Each section pairs a live demo with the **generated
+LaTeX** — produced by running the tool, never hand-written — so you can see
+exactly what compiles.
+
+## The theorem-like environments
+
+The theorem-like kinds all share one grammar:
+
+```
+@begin(theorem)[optional name]{id=thm:key}
+The body of the result, written as ordinary Markdown
+with inline math like $a^2 + b^2 = c^2$.
+@end(theorem)
+```
+
+The three argument slots follow the usual block-environment convention. The
+parentheses name the kind (`theorem`). The square brackets hold an **optional
+name** — a parenthetical note such as the person the result is named after.
+The braces hold attributes; the one that matters here is `id`, which sets the
+cross-reference key. (Keys like `thm:pyth` carry a colon, so they go in
+`{id=…}` rather than the `{#…}` shorthand — see
+[cross-references](cross-references.html).)
+
+The seven kinds are **theorem, lemma, corollary, proposition, definition,
+example,** and **remark.** They differ only in their display name and, in
+LaTeX, in their typographic style: `theorem`, `lemma`, `corollary`, and
+`proposition` are *plain* (the body is italicised in LaTeX), while
+`definition` and `example` use the upright *definition* style and `remark`
+the *remark* style. In HTML the kind appears as a class on the block, and you
+style it however you like.
+
+Here is one theorem with a name, and one definition without:
+
+:::markdown-demo
+@begin(theorem)[Pythagoras]{id=thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+@end(theorem)
+
+@begin(definition){id=def:rt}
+A *right triangle* has one ninety-degree angle.
+@end(definition)
+:::
+
+Notice how the optional `[Pythagoras]` becomes the parenthetical
+"Theorem 1 (Pythagoras)." in the rendered label, while the definition, which
+gave no name, reads simply "Definition 2."
+
+The same source compiles to native thmtools environments in LaTeX. The
+optional name becomes amsthm's bracketed note, and the `id` becomes a
+`\label` placed right after `\begin` so the engine captures the number:
+
+```latex
+\begin{theorem}[Pythagoras]\label{thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+\end{theorem}
+
+\begin{definition}\label{def:rt}
+A \textbf{right triangle} has one ninety-degree angle.
+\end{definition}
+```
+
+You write no preamble for this. JMarkdown's preamble is usage-driven: the
+first theorem-like block pulls in `amsthm` and `thmtools` and emits the
+`\declaretheorem` declarations automatically, so a document that uses these
+environments compiles with nothing further from you:
+
+```latex
+\usepackage{amsthm}
+\usepackage{thmtools}
+\declaretheorem{theorem}
+\declaretheorem[style=definition, sibling=theorem]{definition}
+```
+
+## One shared counter
+
+This is the most important thing to understand about the theorem-like kinds,
+and it is a deliberate design choice: **all seven share a single sequential
+counter.** You do not get a theorem counter, a separate lemma counter, and a
+separate definition counter each climbing independently. You get one stream —
+Theorem 1, Lemma 2, Definition 3, Theorem 4 — in document order, whatever the
+kinds.
+
+The reason is the reader. With per-kind counters, a cross-reference to
+"Lemma 1" tells you nothing about *where* it sits relative to "Theorem 2" — is
+the lemma before the theorem or after it? The reader has to hunt. With one
+shared counter the numbers themselves encode reading order: Lemma 2 plainly
+comes before Theorem 4 and after Theorem 1, no hunting required.
+
+Watch the single counter advance across four different kinds, each one
+adding one to the same running number:
+
+:::markdown-demo
+@begin(theorem)[Cantor]{id=thm:cantor}
+There is no surjection from a set onto its power set.
+@end(theorem)
+
+@begin(lemma){id=lem:diag}
+The diagonal set differs from every row.
+@end(lemma)
+
+@begin(definition){id=def:power}
+The *power set* of $S$ is the set of all subsets of $S$.
+@end(definition)
+
+@begin(corollary)
+The reals are uncountable.
+@end(corollary)
+:::
+
+The counter is **document-wide**, so on this page the demo numbers continue
+from the theorems shown earlier rather than starting again at one; were these
+the first such blocks in your document, they would read Theorem 1, Lemma 2,
+Definition 3, Corollary 4.
+
+In LaTeX the shared counter comes from thmtools' `sibling` option: the primary
+`theorem` counter is declared first, and every other kind with
+`sibling=theorem`, so they all advance the same count. A subtle benefit comes
+for free — **cleveref still names each kind correctly.** A naive shared
+`\newtheorem` counter would make a reference to a lemma print "theorem 2"; the
+`sibling` mechanism keeps the count shared but the *name* per-kind, so a lemma
+references as "lemma 2".
+
+## Cross-referencing a result
+
+Give a block an `id` and you can point at it from anywhere with the
+cross-reference directives — `:cref[key]` for "theorem 1" mid-sentence,
+`:Cref[key]` for "Theorem 1" at a sentence start, or bare `:ref[key]` for just
+the number. The directives, and how their wording stays identical in HTML and
+LaTeX, are documented in [cross-references](cross-references.html); here is how
+they look pointed at the blocks above:
+
+:::markdown-demo
+@begin(theorem)[Pythagoras]{id=thm:pyth2}
+For a right triangle, $a^2 + b^2 = c^2$.
+@end(theorem)
+
+@begin(definition){id=def:rt2}
+A *right triangle* has one ninety-degree angle.
+@end(definition)
+
+By :cref[thm:pyth2] and :cref[def:rt2] we are done. See also :Cref[thm:pyth2].
+:::
+
+The same source compiles to native cleveref commands, which the engine
+resolves:
+
+```latex
+\begin{theorem}[Pythagoras]\label{thm:pyth}
+For a right triangle, $a^2 + b^2 = c^2$.
+\end{theorem}
+
+\begin{definition}\label{def:rt}
+A \textbf{right triangle} has one ninety-degree angle.
+\end{definition}
+
+By \cref{thm:pyth} and \cref{def:rt} we are done. See also \Cref{thm:pyth}.
+```
+
+## Proofs
+
+A proof is written with its own environment, `@begin(proof) … @end(proof)`. It
+differs from the theorem-like kinds in two ways that match mathematical
+convention: it is **not numbered** — it carries no counter and never takes an
+`id` — and it ends with a **QED mark** (∎).
+
+:::markdown-demo
+@begin(theorem){id=thm:irr}
+$\sqrt{2}$ is irrational.
+@end(theorem)
+
+@begin(proof)
+Suppose $\sqrt{2} = p/q$ in lowest terms. Then $p^2 = 2q^2$,
+so $p$ is even, whence $q$ is even — contradicting lowest terms.
+@end(proof)
+:::
+
+A proof commonly refers back to the result it proves, and to lemmas it leans
+on, using the same cross-reference directives:
+
+:::markdown-demo
+@begin(lemma){id=lem:even}
+If $p^2$ is even then $p$ is even.
+@end(lemma)
+
+@begin(proof)
+The claim is the contrapositive of "$p$ odd implies $p^2$ odd",
+which follows by squaring. This is exactly :cref[lem:even].
+@end(proof)
+:::
+
+In LaTeX the proof becomes amsthm's `proof` environment, which supplies the
+QED mark itself:
+
+```latex
+\begin{proof}
+By rearrangement of areas.
+\end{proof}
+```
+
+## Numbered equations
+
+A numbered, cross-referenceable display equation is its own environment,
+`@begin(equation){id=eq:key}`. The body is **raw math** — you write it without
+the `$$ … $$` delimiters, because the environment supplies the display math
+for you. Everything between the fences is taken verbatim, so `_`, `^`, and `\`
+survive untouched:
+
+:::markdown-demo
+@begin(equation){id=eq:mass}
+E = mc^2
+@end(equation)
+
+@begin(equation){id=eq:sum}
+\sum_{i=1}^n i = \frac{n(n+1)}{2}
+@end(equation)
+:::
+
+Each equation is numbered in document order — (1), (2), (3) — and the number
+sits at the right, parenthesised, in the familiar mathematical convention.
+JMarkdown assigns these numbers at build time rather than leaning on the
+client-side math renderer, so a cross-reference resolves to a concrete number.
+
+You reference an equation exactly as you reference a theorem, but the wording
+follows the parenthesised convention: a typed `:cref` reads "equation (2)",
+and the bare `:ref` gives just the parenthesised number.
+
+:::markdown-demo
+@begin(equation){id=eq:euler}
+e^{i\pi} + 1 = 0
+@end(equation)
+
+@begin(equation){id=eq:gauss}
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+@end(equation)
+
+By :ref[eq:euler] and :cref[eq:gauss] we relate them. See also :Cref[eq:euler].
+:::
+
+In LaTeX the environment compiles to amsmath's `equation`, with the `\label`
+placed right after `\begin` so the equation counter is captured:
+
+```latex
+\begin{equation}
+\label{eq:mass}
+E = mc^2
+\end{equation}
+
+\begin{equation}
+\label{eq:sum}
+\sum_{i=1}^n i = \frac{n(n+1)}{2}
+\end{equation}
+
+By \ref{eq:mass} and \cref{eq:sum} we relate them. See also \Cref{eq:mass}.
+```
+
+As with theorems, the `amsmath` package is pulled into the preamble
+automatically the first time you use an equation block.
+
+For *unnumbered* display math, use the ordinary `$$ … $$` form described in
+[Math support](math-support.html); reach for the equation environment only
+when you want a number you can point at.
+
+## Reference
+
+### The environments
+
+| Environment | Numbered? | Optional `[name]`? | LaTeX target |
+|---|---|---|---|
+| `@begin(theorem)` | yes (shared counter) | yes | `theorem` (plain) |
+| `@begin(lemma)` | yes (shared counter) | yes | `lemma` (plain) |
+| `@begin(corollary)` | yes (shared counter) | yes | `corollary` (plain) |
+| `@begin(proposition)` | yes (shared counter) | yes | `proposition` (plain) |
+| `@begin(definition)` | yes (shared counter) | yes | `definition` style |
+| `@begin(example)` | yes (shared counter) | yes | `definition` style |
+| `@begin(remark)` | yes (shared counter) | yes | `remark` style |
+| `@begin(proof)` | no | no | `proof` (QED mark) |
+| `@begin(equation)` | yes (own counter) | no | `equation` (amsmath) |
+
+### Arguments
+
+| Slot | Holds | Example |
+|---|---|---|
+| `( … )` | the environment name | `theorem` |
+| `[ … ]` | optional parenthetical name (theorem-like only) | `[Pythagoras]` |
+| `{ … }` | attributes; `id` sets the cross-reference key | `{id=thm:pyth}` |
+
+### Cross-reference directives
+
+| Directive | HTML and LaTeX wording | Notes |
+|---|---|---|
+| `:ref[key]` | "1", or "(1)" for equations | bare number |
+| `:cref[key]` | "theorem 1", "equation (2)" | typed, lower-case |
+| `:Cref[key]` | "Theorem 1", "Equation (2)" | typed, sentence-start |
+
+### HTML structure
+
+A theorem-like block renders as a `div` carrying its kind and an injected
+label span:
+
+```html
+<div class="theorem-env theorem-plain" data-kind="theorem"
+     data-name="Pythagoras" id="thm:pyth">
+  <p><span class="theorem-label">Theorem 1 (Pythagoras).</span> … </p>
+</div>
+```
+
+A proof carries the `proof-env` class and a trailing QED span; an equation
+carries the `equation` class with its math body and a parenthesised number:
+
+```html
+<div class="proof-env">
+  <p><span class="proof-label">Proof.</span> … </p>
+  <span class="qed">∎</span>
+</div>
+
+<div class="equation" id="eq:mass">
+  <span class="eqn-body">\[ E = mc^2 \]</span>
+  <span class="eqn-number">(1)</span>
+</div>
+```
+
+JMarkdown ships default styling for `theorem-env`, `theorem-label`,
+`proof-env`, `proof-label`, `qed`, `equation`, `eqn-body`, and `eqn-number`,
+so blocks look reasonable out of the box; override any of it in your own
+stylesheet.
+
+### Behaviour at a glance
+
+- **One shared counter** for all seven theorem-like kinds, advancing in
+  document order; equations have their own separate counter.
+- **proof is unnumbered** and never takes an `id`; it ends with a QED mark.
+- **The optional `[name]`** becomes the parenthetical in the label,
+  "Theorem 1 (Name).", and amsthm's bracketed note in LaTeX.
+- **Equation bodies are raw math** with no `$$` delimiters, taken verbatim.
+- **Preamble is automatic** — `amsthm`, `thmtools`, and `\declaretheorem` for
+  theorems, `amsmath` for equations — pulled in only when used.
+- **Cross-references** with `:cref`, `:Cref`, and `:ref` work in both outputs;
+  see [cross-references](cross-references.html).
+
+## Related pages
+
+- [Block environments](block-environments.html) — the `@begin … @end` grammar
+  these environments are built on, and how to define your own.
+- [Math support](math-support.html) — inline `$…$` and unnumbered display
+  `$$…$$` math, the body language of every theorem and equation here.
+- [cross-references](cross-references.html) — the full cross-reference family,
+  the colon-safe `{id=…}` key, and the HTML/LaTeX wording parity.
+- [dual-output](dual-output.html) — how one source produces both the HTML and
+  the LaTeX you have seen side by side on this page.
+- [Markdown demo](markdown-demo.html) — the side-by-side directive used for
+  every live example above.

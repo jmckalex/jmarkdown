@@ -11,28 +11,15 @@
 */
 
 import { configManager } from './config-manager.js';
+import { requirePackage } from './preamble.js';
+import { escapeLatexText as escapeLatex } from './latex-escape.js';
+import { commandForDepth } from './sectioning.js';
 
-// LaTeX prose escaping. Only `&` and `#` need escaping at this layer:
-// `_` and `%` are JMarkdown source-level syntax (subscript / comment), so
-// any surviving instance has already been escaped by the author. `$` is
-// reserved for math, which the HTML pipeline validates via MathJax and
-// is passed through verbatim to LaTeX.
-function escapeLatex(text) {
-	if (text == null) return '';
-	return String(text).replace(/&/g, '\\&').replace(/#/g, '\\#');
-}
-
-// Default heading-depth → LaTeX command mapping.
-// depth 1 is \chapter by default (appropriate for book-class documents).
-// This can be shifted later via a heading-base metadata field.
-const headingCommands = {
-	1: 'chapter',
-	2: 'section',
-	3: 'subsection',
-	4: 'subsubsection',
-	5: 'paragraph',
-	6: 'subparagraph'
-};
+// Candidate \mintinline delimiters, tried in order. \mintinline takes its code
+// verbatim between a delimiter pair (like \verb), so the delimiter just has to
+// be a character the code does not contain — that is what lets inline code keep
+// literal braces, backslashes, %, & and so on.
+const MINTINLINE_DELIMS = ['|', '!', '+', '@', '/', ':', ';', '"', "'", '~', '?', '='];
 
 const latexRenderer = {
 
@@ -42,7 +29,7 @@ const latexRenderer = {
 
 	heading(token) {
 		let content = this.parser.parseInline(token.tokens);
-		const command = headingCommands[token.depth] || 'subparagraph';
+		const command = commandForDepth(token.depth);
 
 		// Check for {-} suffix, which signals an unnumbered heading.
 		let starred = '';
@@ -63,26 +50,41 @@ const latexRenderer = {
 	},
 
 	codespan(token) {
+		requirePackage('minted');
 		const lang = configManager.get('Code language') || 'text';
-		return `\\mintinline{${lang}}{${token.text}}`;
+		const code = token.text;
+		// Use a delimiter the code doesn't contain. The brace form
+		// \mintinline{lang}{code} breaks on a literal `}` in the code (the group
+		// closes early); a \verb-style delimiter avoids that.
+		const delim = MINTINLINE_DELIMS.find(c => !code.includes(c));
+		if (delim) return `\\mintinline{${lang}}${delim}${code}${delim}`;
+		// Pathological: code contains every candidate delimiter. Fall back to the
+		// brace form, which still works when the braces in the code are balanced.
+		return `\\mintinline{${lang}}{${code}}`;
 	},
 
 	code(token) {
 		// Prefer the fence's named language (```javascript) over the
 		// document-wide default. Requires \usepackage{minted} in the
-		// preamble and pdflatex -shell-escape at compile time.
+		// preamble (declared here) and pdflatex -shell-escape at compile time.
+		requirePackage('minted');
 		const lang = token.lang || configManager.get('Code language') || 'text';
 		return `\\begin{minted}{${lang}}\n${token.text}\n\\end{minted}\n\n`;
 	},
 
 	link(token) {
+		requirePackage('hyperref');
 		const text = this.parser.parseInline(token.tokens);
 		return `\\href{${escapeLatex(token.href)}}{${text}}`;
 	},
 
 	image(token) {
-		// A simple default; width and placement can be refined later.
-		return `\\begin{figure}[htbp]\n\\centering\n\\includegraphics[width=\\textwidth]{${escapeLatex(token.href)}}\n\\caption{${escapeLatex(token.text || '')}}\n\\end{figure}\n\n`;
+		// A bare image is just the graphic — NOT a floating, numbered figure.
+		// Use @begin(figure) (see floats.js) for a captioned, numbered,
+		// referenceable float; nesting \includegraphics there avoids a figure
+		// inside a figure.
+		requirePackage('graphicx');
+		return `\\includegraphics[width=\\textwidth]{${escapeLatex(token.href)}}`;
 	},
 
 	blockquote(token) {

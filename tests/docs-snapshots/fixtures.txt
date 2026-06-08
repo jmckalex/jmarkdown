@@ -37,3 +37,11 @@ strategic-form-games
 syntax-adjustments
 table-of-contents
 tables-and-alerts
+
+# LaTeX & document-preparation pages
+book-structure
+cross-references
+dual-output
+floats
+print-rendering
+theorems-and-equations

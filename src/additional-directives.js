@@ -10,12 +10,17 @@
 	identically to `:::abstract`.  abstract/feedback delegate to these; the
 	trivial :::TeX / :::HTML bodies are mirrored here for begin-end's use.
 
-	Note: like the directives, renderAbstract/renderFeedback have no LaTeX branch
-	— they emit their HTML in both output modes.  That existing behaviour is
-	preserved deliberately for parity.
+	Note: renderAbstract now branches — LaTeX gets the standard `abstract`
+	environment (so it compiles), HTML keeps the labelled div. renderFeedback
+	still has no LaTeX branch (no standard LaTeX env; it emits HTML in both modes,
+	deferred). Because the directive and @begin(name) forms share these bodies,
+	the branch keeps them in parity automatically.
 */
-export function renderAbstract(innerHtml) {
-	return `<div class="abstract"><div class='label'>Abstract</div>${innerHtml}</div>`;
+import { requirePackage } from './preamble.js';
+
+export function renderAbstract(inner) {
+	if (global.isLatex) return `\\begin{abstract}\n${inner.trim()}\n\\end{abstract}\n\n`;
+	return `<div class="abstract"><div class='label'>Abstract</div>${inner}</div>`;
 }
 
 export function renderFeedback(innerHtml) {
@@ -125,7 +130,13 @@ const additionalDirectives = [
 		label: "label",
 		renderer(token) {
 			if (token.meta.name === "label") {
-				return `<span class='xref-label' data-key='${token.text.replaceAll("'", '&#39;')}'></span>`;
+				// LaTeX: emit \label and let the engine attach it to the current
+				// counter (works inside \section{…} and after captions).
+				if (global.isLatex) return `\\label{${token.text}}`;
+				// HTML: an invisible, anchored marker. The post-processor reads
+				// the nearest preceding number for it; the id is the :ref target.
+				const key = token.text.replaceAll("'", '&#39;');
+				return `<span class='xref-label' id='xref-${key}' data-key='${key}'></span>`;
 			}
 			return false;
 		}
@@ -136,7 +147,40 @@ const additionalDirectives = [
 		label: "ref",
 		renderer(token) {
 			if (token.meta.name === "ref") {
+				// LaTeX: native \ref (bare number). HTML: a placeholder the
+				// post-processor turns into a hyperlink carrying the number.
+				if (global.isLatex) return `\\ref{${token.text}}`;
 				return `<span class='xref-ref' data-key='${token.text.replaceAll("'", '&#39;')}'></span>`;
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "cref",
+		renderer(token) {
+			if (token.meta.name === "cref") {
+				// Typed reference: "section 3". LaTeX uses cleveref's \cref
+				// (loaded on demand); HTML resolves the type word + number in
+				// the post-processor.
+				if (global.isLatex) { requirePackage('cleveref'); return `\\cref{${token.text}}`; }
+				const key = token.text.replaceAll("'", '&#39;');
+				return `<span class='xref-cref' data-key='${key}' data-cap='0'></span>`;
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "Cref",
+		renderer(token) {
+			if (token.meta.name === "Cref") {
+				// Sentence-start typed reference: "Section 3" → cleveref's \Cref.
+				if (global.isLatex) { requirePackage('cleveref'); return `\\Cref{${token.text}}`; }
+				const key = token.text.replaceAll("'", '&#39;');
+				return `<span class='xref-cref' data-key='${key}' data-cap='1'></span>`;
 			}
 			return false;
 		}
@@ -225,6 +269,62 @@ const additionalDirectives = [
 		label: "HTML",
 		renderer(token) {
 			if (token.meta.name === "HTML") {
+				return global.isLatex ? '' : marked.parser(token.tokens);
+			}
+			return false;
+		}
+	},
+	/*
+		:print[...] / :web[...] — inline conditional content (markdown inline
+		processed). :print appears only in LaTeX output, :web only in HTML.
+		Where :TeX/:HTML are about raw LaTeX/HTML *markup*, print/web are about
+		which output a piece of ordinary prose belongs to in one source.
+	*/
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "print",
+		renderer(token) {
+			if (token.meta.name === "print") {
+				return global.isLatex ? this.parser.parseInline(token.tokens) : '';
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'inline',
+		'marker': ":",
+		label: "web",
+		renderer(token) {
+			if (token.meta.name === "web") {
+				return global.isLatex ? '' : this.parser.parseInline(token.tokens);
+			}
+			return false;
+		}
+	},
+	/*
+		:::print ... ::: / :::web ... ::: — block conditional content (markdown
+		processed). :::print appears only in LaTeX output, :::web only in HTML —
+		e.g. a static figure for print vs. an interactive widget for the web,
+		from a single source.
+	*/
+	{
+		'level': 'container',
+		'marker': ":::",
+		label: "print",
+		renderer(token) {
+			if (token.meta.name === "print") {
+				return global.isLatex ? marked.parser(token.tokens) : '';
+			}
+			return false;
+		}
+	},
+	{
+		'level': 'container',
+		'marker': ":::",
+		label: "web",
+		renderer(token) {
+			if (token.meta.name === "web") {
 				return global.isLatex ? '' : marked.parser(token.tokens);
 			}
 			return false;

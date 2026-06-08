@@ -1,0 +1,500 @@
+<h1 id="toc-dual-output-one-source-html-and-latex">Dual output: one source, HTML and LaTeX</h1>
+<p>JMarkdown is built around a single promise: you write your document <span class="intense">once</span>, and
+  the same source produces both a polished web page and a compilable LaTeX document.
+  There is no second copy to keep in sync and no drift between what a reader sees
+  online and what goes to print. The two outputs differ only where they <strong>must</strong> —
+  prose, headings, lists, math, footnotes, cross-references, figures, theorems, and
+  tables all come from one source and render correctly in both targets.</p>
+<p>This page covers how to ask for each format, how a complete <code>.tex</code> document is
+  assembled for you, and how to write the occasional passage meant for <strong>one</strong> output
+  only — a note that makes sense only in print, a navigation aid that makes sense
+  only on the web.</p>
+<h2 id="toc-producing-each-format">Producing each format</h2>
+<p>JMarkdown has one command, <code>process</code>, and a flag that chooses the target. HTML is
+  the default; <code>--to latex</code> switches to LaTeX:</p>
+<pre><code class="hljs">jmarkdown process book.jmd                 # → book.html  (the default)
+jmarkdown process book.jmd --to latex      # → book.tex
+</code></pre>
+<p>The output filename is derived from the input by swapping the extension, so
+  <code>book.jmd</code> becomes <code>book.html</code> or <code>book.tex</code>. Pass <code>-o</code> to choose a different name:
+</p>
+<pre><code class="hljs">jmarkdown process book.jmd --to latex -o chapter1.tex
+</code></pre>
+<h3 id="toc-whole-documents-versus-fragments">Whole documents versus fragments</h3>
+<p>By default each target produces a <strong>complete</strong> document. For HTML that means a full
+  page — <code>&lt;!doctype html&gt;</code>, a <code>&lt;head&gt;</code> with your stylesheets and scripts, and a
+  <code>&lt;body&gt;</code>. For LaTeX it means a complete, compilable file: a <code>\documentclass</code>
+  line, an assembled preamble, the frontmatter, your body, and <code>\end{document}</code>. You
+  can hand the <code>.tex</code> straight to <code>pdflatex</code> and get a PDF.
+</p>
+<p>The <code>--fragment</code> flag strips the wrapper and emits the <span class="intense">body only</span> — the HTML
+  that would sit inside <code>&lt;body&gt;</code>, or the LaTeX that would sit between
+  <code>\begin{document}</code> and <code>\end{document}</code>:
+</p>
+<pre><code class="hljs">jmarkdown process snippet.jmd --fragment              # body-only HTML
+jmarkdown process snippet.jmd --to latex --fragment   # body-only LaTeX
+</code></pre>
+<p>Fragments are what you want when JMarkdown's output will be embedded in a larger
+  document you assemble yourself — a chapter included into a master file, a snippet
+  dropped into an existing web template, or the input to an automated test. The rest
+  of this page covers the full-document case, where the assembly machinery lives;
+  conditional content works identically in fragments.</p>
+<h2 id="toc-the-assembled-latex-document">The assembled LaTeX document</h2>
+<p>The headline feature of the LaTeX target is that you do not write any LaTeX
+  boilerplate. From a document whose metadata header is nothing more than a title
+  and an author, JMarkdown assembles a complete, ready-to-compile file. Take this
+  source:</p>
+<pre><code class="hljs">
+Title: A Short Note
+Author: Ada Lovelace
+
+
+# Beginnings
+
+A single paragraph of prose.
+</code></pre>
+<p>Running <code>jmarkdown process note.jmd --to latex</code> produces the whole document — class
+  declaration, preamble, frontmatter, body, and closer — with nothing for you to add:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>{article}
+<span class="hljs-keyword">\usepackage</span>[utf8]{inputenc}
+<span class="hljs-keyword">\usepackage</span>[T1]{fontenc}
+<span class="hljs-keyword">\usepackage</span>{hyperref}
+<span class="hljs-keyword">\hypersetup</span>{pdftitle={A Short Note}, pdfauthor={Ada Lovelace}}
+
+<span class="hljs-keyword">\begin</span>{document}
+
+<span class="hljs-keyword">\title</span>{A Short Note}
+<span class="hljs-keyword">\author</span>{Ada Lovelace}
+<span class="hljs-keyword">\maketitle</span>
+
+<span class="hljs-keyword">\section</span>{Beginnings}
+
+A single paragraph of prose.
+
+
+<span class="hljs-keyword">\end</span>{document}
+</code></pre>
+<p>Three things in that output are worth pointing out, because they happen for every
+  document without your asking:</p>
+<ul>
+  <li>The preamble is <span class="intense">assembled, not fixed.</span> The engine defaults (<code>inputenc</code>,
+    <code>fontenc</code>) are there because the default engine is <code>pdflatex</code>; nothing else is
+    loaded, because nothing else is used. (More on this under
+    <a href="#the-preamble-is-built-from-what-you-use">The preamble is built from what you use</a>.)
+  </li>
+  <li><code>hyperref</code> is <span class="intense">always loaded</span> for a full document, giving you clickable
+    cross-references and a table of contents, plus PDF bookmarks. Its
+    <code>\hypersetup{pdftitle=…, pdfauthor=…}</code> is filled in from your <code>Title</code> and
+    <code>Author</code>, so the compiled PDF carries proper document metadata.
+  </li>
+  <li>The <span class="intense">frontmatter</span> — <code>\title</code>, <code>\author</code>, <code>\maketitle</code>, and the heading turned
+    into <code>\section{Beginnings}</code> — is generated from your metadata and your Markdown
+    headings. You write <code># Beginnings</code>; JMarkdown decides it is a <code>\section</code> because
+    the default class is <code>article</code> (which has no <code>\chapter</code>).</li>
+</ul>
+<h2 id="toc-document-assembly-metadata">Document-assembly metadata</h2>
+<p>Everything about the assembled document is steered by metadata keys in the header.
+  All of them are optional — the short example above used only two — and all follow
+  JMarkdown's convention of <span class="intense">Capitalised Words With Spaces</span>. They group naturally
+  into the class, the preamble, and the page setup.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Default</th>
+      <th>Controls</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Document class</code></td>
+      <td><code>article</code></td>
+      <td>the <code>\documentclass{…}</code></td>
+    </tr>
+    <tr>
+      <td><code>Class options</code></td>
+      <td><strong>(none)</strong></td>
+      <td>the bracketed options, e.g. <code>11pt, a4paper</code></td>
+    </tr>
+    <tr>
+      <td><code>LaTeX engine</code></td>
+      <td><code>pdflatex</code></td>
+      <td>font and encoding setup (<code>inputenc</code> plus <code>fontenc</code>, versus <code>fontspec</code>)</td>
+    </tr>
+    <tr>
+      <td><code>Packages</code></td>
+      <td><strong>(none)</strong></td>
+      <td>extra <code>\usepackage</code> lines, comma-separated</td>
+    </tr>
+    <tr>
+      <td><code>LaTeX preamble</code></td>
+      <td><strong>(none)</strong></td>
+      <td>verbatim preamble lines (macros, environments)</td>
+    </tr>
+    <tr>
+      <td><code>Geometry</code></td>
+      <td><strong>(none)</strong></td>
+      <td>margins and paper via the <code>geometry</code> package</td>
+    </tr>
+    <tr>
+      <td><code>Line spacing</code></td>
+      <td><code>single</code></td>
+      <td><code>single</code>, <code>onehalf</code>, <code>double</code>, or a number</td>
+    </tr>
+    <tr>
+      <td><code>Header</code></td>
+      <td><strong>(none)</strong></td>
+      <td>a running header via <code>fancyhdr</code></td>
+    </tr>
+    <tr>
+      <td><code>Footer</code></td>
+      <td><strong>(none)</strong></td>
+      <td>a running footer via <code>fancyhdr</code></td>
+    </tr>
+    <tr>
+      <td><code>Heading base</code></td>
+      <td><strong>(from class)</strong></td>
+      <td>the top sectioning level for <code>#</code></td>
+    </tr>
+  </tbody>
+</table>
+<p><code>Title</code>, <code>Author</code>, and <code>Date</code> are not LaTeX-specific — they feed <code>\maketitle</code> in
+  print and the document header on the web — but they belong in the same header and
+  are what populate the PDF metadata.</p>
+<h3 id="toc-a-worked-metadata-header">A worked metadata header</h3>
+<p>Here is a header that exercises most of the keys at once:</p>
+<pre><code class="hljs">
+Title: On Coordination
+Author: J. McKenzie Alexander
+Date: June 2026
+Document class: article
+Class options: 11pt, a4paper
+LaTeX engine: pdflatex
+Packages: amsmath, amssymb
+Geometry: margin=1in
+Line spacing: onehalf
+Header: The Rise of Computational Philosophy
+Footer: Draft
+
+
+# Introduction
+
+The argument begins with a coordination problem and some math $E = mc^2$.
+</code></pre>
+<p>JMarkdown turns that header into the top of the document — the class line, every
+  package the keys call for, the page setup, and the <code>hyperref</code> block — entirely
+  automatically:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>[11pt, a4paper]{article}
+<span class="hljs-keyword">\usepackage</span>[utf8]{inputenc}
+<span class="hljs-keyword">\usepackage</span>[T1]{fontenc}
+<span class="hljs-keyword">\usepackage</span>[margin=1in]{geometry}
+<span class="hljs-keyword">\usepackage</span>{setspace}
+<span class="hljs-keyword">\usepackage</span>{fancyhdr}
+<span class="hljs-keyword">\usepackage</span>{amsmath, amssymb}
+<span class="hljs-keyword">\onehalfspacing</span>
+<span class="hljs-keyword">\pagestyle</span>{fancy}
+<span class="hljs-keyword">\fancyhf</span>{}
+<span class="hljs-keyword">\fancyhead</span>[C]{The Rise of Computational Philosophy}
+<span class="hljs-keyword">\fancyfoot</span>[C]{Draft}
+<span class="hljs-keyword">\usepackage</span>{hyperref}
+<span class="hljs-keyword">\hypersetup</span>{pdftitle={On Coordination}, pdfauthor={J. McKenzie Alexander}}
+
+<span class="hljs-keyword">\begin</span>{document}
+
+<span class="hljs-keyword">\title</span>{On Coordination}
+<span class="hljs-keyword">\author</span>{J. McKenzie Alexander}
+<span class="hljs-keyword">\date</span>{June 2026}
+<span class="hljs-keyword">\maketitle</span>
+
+<span class="hljs-keyword">\section</span>{Introduction}
+
+The argument begins with a coordination problem and some math <span class="hljs-built_in">$</span>E = mc<span class="hljs-built_in">^</span>2<span class="hljs-built_in">$</span>.
+
+
+<span class="hljs-keyword">\end</span>{document}
+</code></pre>
+<p>Notice how <code>Geometry: margin=1in</code> became <code>\usepackage[margin=1in]{geometry}</code>, how
+  <code>Line spacing: onehalf</code> pulled in <code>setspace</code> and emitted <code>\onehalfspacing</code>, and how
+  <code>Header</code> and <code>Footer</code> pulled in <code>fancyhdr</code>. You never named <code>setspace</code> or
+  <code>fancyhdr</code>; using the feature loaded the package.
+</p>
+<h3 id="toc-the-preamble-is-built-from-what-you-use">The preamble is built from what you use</h3>
+<p>That is the general rule: the preamble is <strong>usage-driven</strong>. JMarkdown's renderers
+  ask for a package only when they actually emit something that needs it. Write a
+  theorem and <code>thmtools</code> appears; draw a TikZ diagram and <code>tikz</code> plus its libraries
+  appear; the package list grows to fit the document and no further.</p>
+<p>That leaves two keys for the cases the automatic machinery cannot guess:</p>
+<ul>
+  <li><span class="intense"><code>Packages</code></span> — a comma-separated list of package names you want loaded
+    regardless, for packages JMarkdown does not request on your behalf. In the worked
+    example, <code>Packages: amsmath, amssymb</code> became a single
+    <code>\usepackage{amsmath, amssymb}</code>.
+  </li>
+  <li><span class="intense"><code>LaTeX preamble</code></span> — verbatim lines inserted into the preamble, for macros and
+    environment definitions. Give it one line after the key, or several on their own
+    lines beneath it; each line is copied through unchanged:</li>
+</ul>
+<pre><code class="hljs">
+Title: A Book
+Document class: book
+Packages: amsmath, amssymb
+LaTeX preamble:
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+</code></pre>
+<p>That header produces a preamble whose tail carries your two macros verbatim,
+  ready to use in the body (<code>$x \in \R$</code> and so on):</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>{book}
+<span class="hljs-keyword">\usepackage</span>[utf8]{inputenc}
+<span class="hljs-keyword">\usepackage</span>[T1]{fontenc}
+<span class="hljs-keyword">\usepackage</span>{amsmath, amssymb}
+<span class="hljs-keyword">\usepackage</span>{hyperref}
+<span class="hljs-keyword">\hypersetup</span>{pdftitle={A Book}}
+<span class="hljs-keyword">\newcommand</span>{<span class="hljs-keyword">\R</span>}{<span class="hljs-keyword">\mathbb</span>{R}}
+<span class="hljs-keyword">\newcommand</span>{<span class="hljs-keyword">\N</span>}{<span class="hljs-keyword">\mathbb</span>{N}}
+</code></pre>
+<h3 id="toc-engines-classes-and-sectioning">Engines, classes, and sectioning</h3>
+<p>Two keys change the shape of the document more deeply than the others.</p>
+<p><code>LaTeX engine</code> selects the typesetting engine and, with it, the font machinery. The
+  default <code>pdflatex</code> loads <code>inputenc</code> and <code>fontenc</code>, as you have seen. A Unicode
+  engine instead loads <code>fontspec</code> and omits the legacy encoding packages — so
+  <code>LaTeX engine: lualatex</code> (or <code>xelatex</code>) produces a different top of preamble:
+</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>{article}
+<span class="hljs-keyword">\usepackage</span>{fontspec}
+<span class="hljs-keyword">\usepackage</span>{hyperref}
+<span class="hljs-keyword">\hypersetup</span>{pdftitle={Unicode Doc}}
+</code></pre>
+<p><code>Document class</code> and <code>Heading base</code> together decide what a <code>#</code> heading becomes. The
+  default class, <code>article</code>, has no <code>\chapter</code>, which is exactly why a level-one
+  heading defaults to <code>\section</code>. Switch to <code>book</code> or <code>report</code> and the base shifts so
+  that <code>#</code> becomes <code>\chapter</code>. You can also set the base explicitly with
+  <code>Heading base: chapter</code> (or <code>section</code>, <code>subsection</code>, …) when you want a different
+  top level than the class would pick. The sectioning ladder then descends from
+  there: under a <code>chapter</code> base, <code>#</code> is <code>\chapter</code>, <code>##</code> is <code>\section</code>, and so on.
+</p>
+<p>The same heading levels drive the HTML output too — they become <code>&lt;h1&gt;</code>, <code>&lt;h2&gt;</code>,
+  and friends — so a single set of <code>#</code> headings gives a correctly nested document in
+  both targets.</p>
+<h2 id="toc-conditional-content">Conditional content</h2>
+<p>Most of your document belongs in both outputs. Occasionally a passage does not: a
+  sentence that says "see the figure on the facing page" makes sense only in print,
+  and a line that says "click the link below" makes sense only on the web. JMarkdown
+  gives you three matched shapes for content that should be emitted in <span class="intense">one output
+    only</span>, at every granularity from a whole block down to a few words mid-sentence.</p>
+<p>The two audiences are <span class="intense">print</span> (the LaTeX/PDF output) and <span class="intense">web</span> (the HTML
+  output). Content marked <code>print</code> is dropped from HTML; content marked <code>web</code> is
+  dropped from LaTeX. The marked content is <strong>removed entirely</strong> from the other target
+  — not hidden with CSS, not commented out, simply absent.</p>
+<h3 id="toc-block-inline-and-named-block-forms">Block, inline, and named-block forms</h3>
+<p>The container directive form wraps one or more block-level elements. The inline
+  form wraps a run of text inside a paragraph. And because every container directive
+  has a named-block twin, you can also write <code>@begin(print)</code> … <code>@end(print)</code> (see
+  <a href="block-environments.html">Block environments</a>). All three are shown together here:
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">:::print
+This sentence appears only in the printed PDF.
+:::
+
+:::web
+This sentence appears only on the web page.
+:::
+
+The build is available both as a PDF :print[(this very document)] and
+:web[online at the project site].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p>This sentence appears only on the web page.</p>
+    <p>The build is available both as a PDF and
+      online at the project site.</p>
+
+  </div>
+</div>
+<p>Read the right-hand panel above — that is the <span class="intense">HTML</span> rendering, so the
+  print-only block is gone, the web-only block is present, the inline <code>:print[…]</code>
+  vanished, and the inline <code>:web[…]</code> survived. The exact same source produces the
+  mirror image in LaTeX. Run it through <code>--to latex --fragment</code> and you get only the
+  print material:</p>
+<pre><code class="hljs language-latex">This sentence appears only in the printed PDF.
+
+The build is available both as a PDF (this very document) and
+.
+</code></pre>
+<p>The web-only block and the inline <code>:web[…]</code> are simply not there. (The stray full
+  stop is the punctuation that surrounded the dropped inline span — conditional
+  content removes exactly its own text and nothing else, so you keep authorial
+  control of the surrounding sentence.)</p>
+<p>The HTML fragment is the inverse:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>This sentence appears only on the web page.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>The build is available both as a PDF and
+  online at the project site.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<h3 id="toc-when-to-reach-for-which-form">When to reach for which form</h3>
+<ul>
+  <li>Use the <span class="intense">block form</span> (<code>:::print</code> and <code>:::web</code>, or <code>@begin(print)</code> and
+    <code>@begin(web)</code>) for whole paragraphs, lists, figures, or several blocks at once —
+    a print-only preface, a web-only interactive demo.
+  </li>
+  <li>Use the <span class="intense">inline form</span> (<code>:print[…]</code> and <code>:web[…]</code>) for a phrase inside running
+    prose — a cross-reference worded for the page it lands on, a parenthetical that
+    only one medium needs.</li>
+</ul>
+<p>The named-block twin behaves identically to the container directive; choose it when
+  you are already using <code>@begin</code>/<code>@end</code> blocks elsewhere and prefer their named
+  closers, or when nesting makes colon-counting awkward.</p>
+<h3 id="toc-conditional-content-versus-raw-markup">Conditional content versus raw markup</h3>
+<p>Conditional content is about <span class="intense">which output gets your Markdown</span>. It is easy to
+  confuse with a different, older pair of constructs — <code>:TeX</code> and <code>:HTML</code>, and their
+  container forms — which are about <span class="intense">raw, unprocessed markup</span>. The two solve
+  different problems:</p>
+<ul>
+  <li><code>:print[…]</code> and <code>:web[…]</code> take <span class="intense">Markdown</span> and route it to one output. The
+    content is parsed and rendered normally; it just appears in only one target.</li>
+  <li><code>:TeX[…]</code> and <code>:HTML[…]</code> take <span class="intense">raw markup</span> and pass it through verbatim. <code>:TeX</code>
+    injects literal LaTeX into the LaTeX output and emits nothing in HTML; <code>:HTML</code>
+    injects literal HTML into the HTML output and emits nothing in LaTeX. A <code>:TeX</code>
+    body gets no Markdown processing at all; a <code>:HTML</code> body, by contrast, <strong>is</strong>
+    processed as Markdown — an intentional asymmetry covered in
+    <a href="directives-syntax.html">Directives</a>.
+  </li>
+</ul>
+<p>Concretely, this source mixes both block forms:</p>
+<pre><code class="hljs">Intro paragraph.
+
+:::TeX
+\fbox{Raw LaTeX box, PDF only.}
+:::
+
+Middle paragraph.
+
+:::HTML
+&lt;aside&gt;Raw HTML aside, web only.&lt;/aside&gt;
+:::
+
+Final paragraph.
+</code></pre>
+<p>In LaTeX output the raw <code>\fbox{…}</code> passes straight through and the HTML aside is
+  gone:</p>
+<pre><code class="hljs language-latex">Intro paragraph.
+
+
+<span class="hljs-keyword">\fbox</span>{Raw LaTeX box, PDF only.}Middle paragraph.
+
+Final paragraph.
+</code></pre>
+<p>In HTML output the raw <code>&lt;aside&gt;</code> passes straight through and the LaTeX box is gone:</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Intro paragraph.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Middle paragraph.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">aside</span>&gt;</span>Raw HTML aside, web only.<span class="hljs-tag">&lt;/<span class="hljs-name">aside</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Final paragraph.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+</code></pre>
+<p>In short: <code>:print</code> and <code>:web</code> are about <span class="intense">audience</span> — Markdown routed to one
+  target; <code>:TeX</code> and <code>:HTML</code> are about <span class="intense">escape-hatching</span> raw target-language markup
+  that has no Markdown equivalent.</p>
+<h2 id="toc-reference">Reference</h2>
+<h3 id="toc-cli">CLI</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Invocation</th>
+      <th>Output</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>jmarkdown process FILE</code></td>
+      <td>complete HTML page</td>
+    </tr>
+    <tr>
+      <td><code>jmarkdown process FILE --to latex</code></td>
+      <td>complete, compilable <code>.tex</code></td>
+    </tr>
+    <tr>
+      <td><code>jmarkdown process FILE --fragment</code></td>
+      <td>body-only HTML</td>
+    </tr>
+    <tr>
+      <td><code>jmarkdown process FILE --to latex --fragment</code></td>
+      <td>body-only LaTeX</td>
+    </tr>
+    <tr>
+      <td><code>jmarkdown process FILE -o NAME</code></td>
+      <td>write to <code>NAME</code> instead of the derived name</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-document-assembly-metadata-keys">Document-assembly metadata keys</h3>
+<p>See the table under <a href="#document-assembly-metadata">Document-assembly metadata</a>
+  above. All are optional and all use <code>Capitalised Words With Spaces</code>.</p>
+<h3 id="toc-conditional-content-1">Conditional content</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Form</th>
+      <th>Appears only in</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:::print … :::</code> or <code>@begin(print) … @end(print)</code></td>
+      <td>LaTeX (PDF)</td>
+    </tr>
+    <tr>
+      <td><code>:::web … :::</code> or <code>@begin(web) … @end(web)</code></td>
+      <td>HTML (web)</td>
+    </tr>
+    <tr>
+      <td><code>:print[…]</code></td>
+      <td>LaTeX (PDF)</td>
+    </tr>
+    <tr>
+      <td><code>:web[…]</code></td>
+      <td>HTML (web)</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-raw-markup-escape-hatches-for-contrast">Raw-markup escape hatches (for contrast)</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Form</th>
+      <th>Emits</th>
+      <th>In the other output</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:TeX[…]</code> and <code>:::TeX … :::</code></td>
+      <td>raw LaTeX, verbatim</td>
+      <td>nothing</td>
+    </tr>
+    <tr>
+      <td><code>:HTML[…]</code> and <code>:::HTML … :::</code></td>
+      <td>raw HTML (body parsed as Markdown)</td>
+      <td>nothing</td>
+    </tr>
+  </tbody>
+</table>
+<h2 id="toc-related-pages">Related pages</h2>
+<ul>
+  <li><a href="metadata-header.html">Metadata header</a> — the full grammar of the header these
+    keys live in.</li>
+  <li><a href="configuration-files.html">Configuration files</a> — setting the same keys globally
+    or per project, and how the layers merge.</li>
+  <li><a href="sources-and-targets.html">Sources and targets</a> — more on choosing HTML versus
+    LaTeX and the shape of each.</li>
+  <li><a href="output-templates.html">Output templates</a> — customising the full-document wrapper
+    beyond what the metadata keys reach.</li>
+  <li><a href="directives-syntax.html">Directives</a> — the container and inline grammar that
+    the <code>print</code>, <code>web</code>, <code>TeX</code>, and <code>HTML</code> directives are built on.</li>
+  <li><a href="block-environments.html">Block environments</a> — the <code>@begin</code> and <code>@end</code> twins of
+    the conditional directives, and named blocks in general.</li>
+  <li><a href="cross-references.html">Cross-references</a> — <code>:label</code>, <code>:ref</code>, <code>:cref</code>, and the
+    reference wording that stays correct in both targets.</li>
+  <li><a href="print-rendering.html">Print rendering</a> — how alerts, description lists, long
+    tables, and diagrams render once the document reaches LaTeX.</li>
+</ul>

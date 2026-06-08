@@ -1,0 +1,536 @@
+Title: Book structure: contents, matter, and multi-file
+------------------------------------
+
+# Book structure: contents, matter, and multi-file
+
+A book is more than a sequence of chapters. It has a *table of contents*, perhaps
+a *list of figures* and a *list of tables*; it is divided into *front matter*,
+*main matter*, *appendices*, and *back matter*; and — once it grows past a
+handful of pages — it is split across many source files that a single master
+document assembles into one work. JMarkdown gives you a small, declarative set of
+markers for all of this, and, true to the system's purpose, each marker does the
+right thing in **both** outputs: in LaTeX it becomes the native command the
+document class already knows how to typeset, and in HTML it becomes a generated,
+linked list (or, for the print-only divisions, nothing at all).
+
+This page covers three related topics:
+
+{{TOC}}
+
+The markers are all *moustache tokens* — `{{NAME}}` on a line of its own — except
+file inclusion, which uses the double-bracket `[[file.md]]` form. None of them
+require an extension or a named package; a parse hook recognises them on every
+document. They build on the [dual-output model](dual-output.html), where one
+source produces both web and print.
+
+## Contents lists
+
+Three markers build the standard front-of-book lists. Put each on a line by
+itself, with a blank line above and below, at the point where the list should
+appear:
+
+```
+{{TOC}}     table of contents
+{{LOF}}     list of figures
+{{LOT}}     list of tables
+```
+
+In **LaTeX** these expand to `\tableofcontents`, `\listoffigures`, and
+`\listoftables`, and the document class numbers and formats them. In **HTML**
+JMarkdown builds the lists itself: `{{TOC}}` becomes a nested `<div class="toc">`
+of every heading (see the dedicated [Table of contents](table-of-contents.html)
+page for its full structure and styling), while `{{LOF}}` and `{{LOT}}` become a
+`<nav>` listing every captioned [figure or table](floats.html), each entry linked
+to the float it names.
+
+### What the lists collect
+
+`{{LOF}}` and `{{LOT}}` are populated from *captioned floats* — the
+[`@begin(figure)` and `@begin(table)`](floats.html) environments, which carry a
+caption in `[brackets]` and an id in `{id=…}`. A bare image (`![](…)`) is not a
+float and does not appear in the list. The numbering is automatic and shared with
+the cross-reference system, so "Figure 1" in the list is the same "Figure 1" a
+`:cref` points to.
+
+Here is a document with a contents list, a list of figures, a list of tables, and
+two numbered floats. The source (with `Headings: numeric` in its metadata
+header):
+
+```
+Headings: numeric
+
+{{TOC}}
+
+{{LOF}}
+
+{{LOT}}
+
+# Introduction
+
+@begin(figure)[The first figure]{id=fig:a}
+![a](a.png)
+@end(figure)
+
+# Data
+
+@begin(table)[The first table]{id=tab:a}
+| A | B |
+|---|---|
+| 1 | 2 |
+@end(table)
+```
+
+In LaTeX, the three markers become the engine's own commands and the floats their
+native environments — the document class handles all numbering and page
+references:
+
+```latex
+\tableofcontents
+
+\listoffigures
+
+\listoftables
+
+\section{Introduction}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{a.png}
+
+\caption{The first figure}
+\label{fig:a}
+\end{figure}
+
+\section{Data}
+
+\begin{table}[htbp]
+\centering
+\caption{The first table}
+\label{tab:a}
+\begin{tabular}{ll}
+\hline
+A & B \\
+\hline
+1 & 2 \\
+\hline
+\end{tabular}
+\end{table}
+```
+
+In HTML the same source produces generated lists. The `{{LOF}}` and `{{LOT}}`
+markers become `<nav>` lists whose entries link to each float:
+
+```html
+<nav class="list-of-figures">
+  <ul>
+    <li><a href="#fig:a">Figure 1: The first figure</a></li>
+  </ul>
+</nav>
+<nav class="list-of-tables">
+  <ul>
+    <li><a href="#tab:a">Table 1: The first table</a></li>
+  </ul>
+</nav>
+```
+
+### A live look at numbered floats
+
+The contents markers cannot appear in a live `markdown-demo` — their substitution
+is document-wide and would clash with the surrounding page (this page uses a real
+`{{TOC}}` above). The *floats* the lists collect, however, render fine in a demo,
+showing the numbering and cross-referencing that feeds `{{LOF}}`:
+
+:::markdown-demo
+@begin(figure)[A sample figure]{id=fig:sample}
+![sample](sample.png)
+@end(figure)
+
+As :cref[fig:sample] shows, the float is numbered automatically, and
+the reference resolves to it.
+:::
+
+The "Figure 1" label and the resolved "figure 1" link are exactly the text that
+an entry in `{{LOF}}` would carry. (The image is a missing-file placeholder — the
+point is the caption, numbering, and reference, not the picture.)
+
+### Each marker on its own line
+
+The contents markers are matched as whole paragraphs: in HTML a marker is replaced
+only when it is the *entire* text of a paragraph. If you stack two markers on
+adjacent lines with no blank line between them —
+
+```
+{{TOC}}
+{{LOF}}
+```
+
+— Markdown folds them into one paragraph, and only the first is replaced; the
+second is left as the literal text `{{LOF}}` in the output. Always separate the
+markers with a blank line:
+
+```
+{{TOC}}
+
+{{LOF}}
+
+{{LOT}}
+```
+
+## Front matter, main matter, and appendices
+
+The LaTeX `book` and `report` classes divide a document into formal parts:
+*front matter* (title page, contents, preface — numbered with roman folios and no
+section numbers), *main matter* (the chapters proper, arabic folios), and *back
+matter* (bibliography, index). An *appendix* switches chapter numbering from
+numerals to letters. JMarkdown exposes each division as a marker:
+
+```
+{{frontmatter}}    \frontmatter
+{{mainmatter}}     \mainmatter
+{{appendix}}       \appendix
+{{backmatter}}     \backmatter
+```
+
+In **LaTeX** these become the matching commands, and the class takes over from
+there. In **HTML** there is no equivalent division, so the markers are simply
+stripped — they leave nothing behind. (HTML appendix lettering — relabelling the
+headings after `{{appendix}}` as A, B, … — is not yet implemented; for now the
+marker just vanishes in HTML.)
+
+`\frontmatter`, `\mainmatter`, and `\backmatter` are defined only by the `book`
+and `report` classes, so set the document class accordingly in the metadata
+header (the `Document class` and `Heading base` keys are documented under the
+[dual-output model](dual-output.html)):
+
+```
+Title: My Treatise
+Document class: book
+```
+
+The default `article` has no chapters and no matter divisions; the comparison
+under [Choosing a document class](#choosing-a-document-class) below shows what each
+class buys you.
+
+## A complete book skeleton
+
+Putting the contents and matter markers together with a metadata header gives a
+short but complete book master file. The source (the metadata header is shown
+here in its bare-key form; the YAML-fenced `---` form works identically):
+
+```
+Title: My Treatise
+Author: A. Scholar
+Document class: book
+
+{{frontmatter}}
+
+{{TOC}}
+
+{{mainmatter}}
+
+# Introduction
+
+Body text of the first chapter.
+
+{{appendix}}
+
+# Supplementary Proofs
+
+More material here.
+
+{{backmatter}}
+```
+
+Run through `--to latex`, this assembles a full, compilable document — the
+[dual-output model](dual-output.html) builds the `\documentclass` wrapper and
+preamble; here each marker simply drops into place:
+
+```latex
+\documentclass{book}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\hypersetup{pdftitle={My Treatise}, pdfauthor={A. Scholar}}
+
+\begin{document}
+
+\title{My Treatise}
+\author{A. Scholar}
+\maketitle
+
+\frontmatter
+
+\tableofcontents
+
+\mainmatter
+
+\chapter{Introduction}
+
+Body text of the first chapter.
+
+\appendix
+
+\chapter{Supplementary Proofs}
+
+More material here.
+
+\backmatter
+
+
+\end{document}
+```
+
+Notice that `#` became `\chapter` (because the class is `book`), `{{TOC}}` sits
+inside the front matter as `\tableofcontents`, and the appendix chapter follows
+`\appendix` so the class will letter it. That `.tex` compiles to a properly
+structured PDF with no further hand-editing.
+
+The same source built for the web (`--fragment`, no class wrapper) produces the
+generated contents list and silently drops the matter markers:
+
+```html
+<div class="toc">
+  <p id="toc">Table of contents</p>
+  <ul>
+    <li><a data-id="toc-introduction" href="#toc-introduction">Introduction</a></li>
+    <li><a data-id="toc-supplementary-proofs" href="#toc-supplementary-proofs">Supplementary Proofs</a></li>
+  </ul>
+</div>
+
+<h1 id="toc-introduction">Introduction</h1>
+<p>Body text of the first chapter.</p>
+
+<h1 id="toc-supplementary-proofs">Supplementary Proofs</h1>
+<p>More material here.</p>
+```
+
+One source, two structurally correct outputs.
+
+## Multi-file books
+
+A real book lives in many files — one per chapter — assembled by a short *master
+file*. JMarkdown's [file inclusion](file-inclusion.html) does the assembly: a
+line containing only `[[chapter.md]]` is replaced, before parsing, with the entire
+contents of that file. The master holds the metadata header and the structure
+markers; each chapter file holds only its prose.
+
+A master file for a two-chapter book:
+
+```
+Title: A Short Book
+Author: A. Scholar
+Document class: book
+Headings: numeric
+
+{{frontmatter}}
+
+{{TOC}}
+
+{{LOF}}
+
+{{mainmatter}}
+
+[[intro.md]]
+
+[[methods.md]]
+
+{{backmatter}}
+```
+
+with `intro.md`:
+
+```
+# Introduction
+
+We will rely on the diagram in :cref[fig:flow] throughout.
+
+@begin(figure)[The overall workflow]{id=fig:flow}
+![flow](flow.png)
+@end(figure)
+```
+
+and `methods.md`:
+
+```
+# Methods
+
+As :cref[fig:flow] showed, the pipeline has three stages.
+
+@begin(figure)[A detailed view of stage two]{id=fig:stage2}
+![stage2](stage2.png)
+@end(figure)
+
+Compare :cref[fig:flow] with :cref[fig:stage2].
+```
+
+### Why inclusion makes one document
+
+Inclusion is *textual splicing before parsing*, not a separate compilation step.
+By the time the parser runs, the master and its chapters are a single stream of
+source. Three consequences matter for book structure:
+
+- **Numbering is continuous.** The figure in `intro.md` is Figure 1; the figure
+  in `methods.md` is Figure 2 — they share one counter because they are, after
+  splicing, one document. No per-file resets, no manual offsets.
+- **Cross-references span chapters.** A `:cref[fig:flow]` in `methods.md` resolves
+  to the figure defined back in `intro.md`, in either direction — the whole
+  document is in memory before any reference resolves. (How that single resolution
+  pass works is covered under [cross-references](cross-references.html).)
+- **The structure markers belong in the master.** Keep `{{frontmatter}}`,
+  `{{TOC}}`, the matter divisions, and the metadata header in the master file
+  only. An included file is raw Markdown from its first byte — it is *not*
+  re-scanned for a metadata header — so a `---`-fenced block at the top of a
+  chapter would be rendered as content, not read as configuration.
+
+### The assembled LaTeX
+
+Built with `--to latex`, the master file above produces one complete document.
+The preamble has grown `graphicx` (the figures) and `cleveref` (the typed
+[cross-references](cross-references.html)); the chapters are spliced in order, the
+figures carry continuous `\label`s, and every `:cref` became a native `\cref`:
+
+```latex
+\documentclass{book}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\crefname{figure}{figure}{figures}
+\Crefname{figure}{Figure}{Figures}
+\hypersetup{pdftitle={A Short Book}, pdfauthor={A. Scholar}}
+
+\begin{document}
+
+\title{A Short Book}
+\author{A. Scholar}
+\maketitle
+
+\frontmatter
+
+\tableofcontents
+\listoffigures
+
+\mainmatter
+
+\chapter{Introduction}
+
+We will rely on the diagram in \cref{fig:flow} throughout.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{flow.png}
+
+\caption{The overall workflow}
+\label{fig:flow}
+\end{figure}
+
+\chapter{Methods}
+
+As \cref{fig:flow} showed, the pipeline has three stages.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{stage2.png}
+
+\caption{A detailed view of stage two}
+\label{fig:stage2}
+\end{figure}
+
+Compare \cref{fig:flow} with \cref{fig:stage2}.
+
+\backmatter
+
+
+\end{document}
+```
+
+### The assembled HTML
+
+The same master file, built for the web, resolves every cross-reference itself,
+forward and backward across chapter boundaries. The backward reference in
+`methods.md` to `fig:flow` and the forward references all point at the right
+"figure 1" and "figure 2":
+
+```html
+<h1 id="toc-introduction"><span class="header-label h1-label xref">1.</span> Introduction</h1>
+<p>We will rely on the diagram in <a class="xref-cref" href="#fig:flow">figure&nbsp;1</a> throughout.</p>
+<figure class="figure" id="fig:flow">
+  <p><img src="flow.png" alt="flow"></p>
+  <figcaption class="figure-caption"><span class="figure-label xref">Figure 1:</span> The overall workflow</figcaption>
+</figure>
+<h1 id="toc-methods"><span class="header-label h1-label xref">2.</span> Methods</h1>
+<p>As <a class="xref-cref" href="#fig:flow">figure&nbsp;1</a> showed, the pipeline has three stages.</p>
+<figure class="figure" id="fig:stage2">
+  <p><img src="stage2.png" alt="stage2"></p>
+  <figcaption class="figure-caption"><span class="figure-label xref">Figure 2:</span> A detailed view of stage two</figcaption>
+</figure>
+<p>Compare <a class="xref-cref" href="#fig:flow">figure&nbsp;1</a> with <a class="xref-cref" href="#fig:stage2">figure&nbsp;2</a>.</p>
+```
+
+The figures kept their continuous numbering (1, then 2) and every link found its
+target — the whole point of assembling chapters from one master.
+
+## Choosing a document class
+
+Matter divisions and chapter sectioning depend entirely on the class:
+
+| Class | Use for | `#` becomes | Matter divisions |
+|---|---|---|---|
+| `article` (default) | papers, short reports, the docs you are reading | `\section` | not available |
+| `report` | long reports, theses, multi-chapter works without a half-title | `\chapter` | available |
+| `book` | books, with half-title and front-and-back-matter conventions | `\chapter` | available |
+
+Only `book` and `report` define `\frontmatter`, `\mainmatter`, and `\backmatter`; using
+those markers under `article` emits commands the class does not define, which the
+engine will reject. `\appendix`, by contrast, is defined everywhere, so
+`{{appendix}}` is safe in any class — under `article` it switches `\section`
+numbering to letters.
+
+## Reference
+
+### Markers
+
+| Marker | LaTeX | HTML |
+|---|---|---|
+| `{{TOC}}` | `\tableofcontents` | generated `<div class="toc">` of headings |
+| `{{LOF}}` | `\listoffigures` | generated `<nav class="list-of-figures">` |
+| `{{LOT}}` | `\listoftables` | generated `<nav class="list-of-tables">` |
+| `{{frontmatter}}` | `\frontmatter` | stripped (book and report only in LaTeX) |
+| `{{mainmatter}}` | `\mainmatter` | stripped (book and report only in LaTeX) |
+| `{{appendix}}` | `\appendix` | stripped (lettering TODO in HTML) |
+| `{{backmatter}}` | `\backmatter` | stripped (book and report only in LaTeX) |
+| `[[file.md]]` | spliced before parsing | spliced before parsing |
+
+### Rules at a glance
+
+- **Each marker on its own line, blank lines around it.** A marker is matched as
+  a whole paragraph; two markers on adjacent lines fold into one paragraph and
+  only the first is replaced.
+- **`{{LOF}}` and `{{LOT}}` collect captioned floats** — `@begin(figure)` and
+  `@begin(table)` with `[caption]` and `{id=…}`. Bare `![](…)` images do not
+  appear.
+- **Matter divisions need `Document class: book` or `report`** for the front,
+  main, and back divisions; `{{appendix}}` works in any class.
+- **Structure markers live in the master file**, not in included chapters.
+- **Metadata only in the master.** Included files are not re-scanned for a header.
+- **Cross-chapter refs and numbering work in one pass** — no rerun, no
+  intermediate file.
+- **Do not put a contents/matter marker inside a `markdown-demo`** — its
+  substitution is document-wide and would clash with the surrounding page. Floats
+  and cross-references, however, render fine inside a demo.
+
+## Related pages
+
+- [Table of contents](table-of-contents.html) — the full structure, ids, and
+  styling of the HTML `{{TOC}}` list.
+- [File inclusion](file-inclusion.html) — the `[[file.md]]` mechanism in detail:
+  path resolution, recursion, and cycle handling.
+- [Dual output](dual-output.html) — the HTML/LaTeX model, the `Document class` and
+  `Heading base` keys, and how `--to latex` assembles a full document.
+- [Cross-references](cross-references.html) — the `:label`, `:ref`, `:cref`, and
+  `:Cref` commands, and how forward references resolve.
+- [Floats](floats.html) — the `@begin(figure|table|listing)` environments that
+  `{{LOF}}` and `{{LOT}}` collect.
+- [Metadata header](metadata-header.html) — the header syntax, and keys like
+  `Author` and `Headings: numeric`.

@@ -1,9 +1,9 @@
-@begin(theorem)[Pythagoras]
-A right triangle, and a nested proof:
-@begin(proof)
+@begin(note)[Pythagoras]
+A right triangle, and a nested subnote:
+@begin(subnote)
 Left as an exercise.
-@end(proof)
-@end(theorem)
+@end(subnote)
+@end(note)
 
 @begin(TeX)
 \custom{verbatim $math$ and _underscores_ survive}

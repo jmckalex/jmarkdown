@@ -1,0 +1,7 @@
+---
+Title: Lua Doc
+LaTeX engine: lualatex
+---
+
+Hello world. The engine should swap inputenc for fontspec, and the document
+class should fall back to the default.
