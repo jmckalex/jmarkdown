@@ -10,14 +10,20 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import crypto from 'crypto';
 import { configManager } from './config-manager.js';
+import { requirePackage, addPreamble } from './preamble.js';
 import Mustache from 'mustache';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const LaTeX_template = String.raw`\documentclass[tikz,border=3mm,12pt]{standalone}
+// The tikz libraries loaded both for the standalone SVG compile (HTML) and the
+// main-document preamble (native LaTeX output). One list, no drift.
+const TIKZ_LIBRARIES = 'arrows,arrows.meta,positioning,shapes,backgrounds,calc,fit,decorations,decorations.pathreplacing,decorations.markings,patterns,matrix,calligraphy,trees,graphs,intersections,through,shapes.geometric,datavisualization';
+
+const LaTeX_template =
+	String.raw`\documentclass[tikz,border=3mm,12pt]{standalone}
 \usepackage{tikz}
-\usetikzlibrary{arrows,arrows.meta,positioning,shapes,backgrounds,calc,fit,decorations,decorations.pathreplacing,decorations.markings,patterns,matrix,calligraphy,trees,graphs,intersections,through,shapes.geometric,datavisualization}
+\usetikzlibrary{` + TIKZ_LIBRARIES + String.raw`}
 {{#LaTeX_preamble}}
 {{{.}}}
 {{/LaTeX_preamble}}
@@ -77,6 +83,12 @@ function createTiKZ(marker) {
 			if (text.includes('begin{tikzpicture}') == false) {
 				text = "\\begin{tikzpicture}[>=latex]\n" + text + "\n\\end{tikzpicture}";
 			}
+			// Keep the raw source for native LaTeX output (see renderer). In LaTeX
+			// mode we don't need the cached SVG at all, so skip the (expensive)
+			// lualatex+dvisvgm compile entirely.
+			token['tikz'] = text;
+			if (global.isLatex) return token;
+
 			const opts = { 'TiKZ': text, 'LaTeX_preamble': configManager.get('LaTeX preamble') };
 			const file_contents = Mustache.render(LaTeX_template, opts);
 
@@ -141,9 +153,13 @@ function createTiKZ(marker) {
 		},
 		renderer(token) {
 			if (token.meta.name === "TiKZ") {
-				// The TiKZ directive emits an SVG <img>/<div>; suppress it in
-				// LaTeX mode rather than leaking raw HTML into the .tex output.
-				if (global.isLatex) return '';
+				// LaTeX: emit the tikzpicture natively (true vector, document
+				// fonts) rather than the cached SVG. Pull in tikz + its libraries.
+				if (global.isLatex) {
+					requirePackage('tikz');
+					addPreamble(`\\usetikzlibrary{${TIKZ_LIBRARIES}}`);
+					return `\\begin{center}\n${token['tikz']}\n\\end{center}\n\n`;
+				}
 				if (token['has_error']) {
 					// Create a button that opens the error log
 					const errorLogBase64 = Buffer.from(token['error_log']).toString('base64');

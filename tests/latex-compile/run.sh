@@ -61,6 +61,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		equations)         extra='\usepackage{amsmath}\usepackage{cleveref}'; needs='cleveref.sty' ;;
 		listings)          extra='\usepackage{minted}\usepackage{cleveref}'; needs='minted.sty cleveref.sty' ;;
 		contents)          extra='\usepackage[draft]{graphicx}'; needs='' ;;
+		tikz-diagrams)     extra='\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning,shapes,calc}'; needs='tikz.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
