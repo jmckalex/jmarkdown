@@ -1,163 +1,251 @@
 Title: Bibliographic Support
 ------------------------------------
 
-# Bibliographic support (`\​cite{…}`)
+# Bibliographic support (`\cite{…}`)
 
-A scholarly document needs citations and a bibliography. JMarkdown provides
+A scholarly document needs citations and a bibliography. JMarkdown gives you
 both with a deliberately familiar interface: you write LaTeX-style citation
-commands — `\​cite{…}`, `\​citep{…}`, `\​nocite{…}`, and friends — directly
-in your prose, point JMarkdown at a BibTeX `.bib` database and a citation
-style, and a fully formatted bibliography is assembled automatically, complete
-with an optional heading and table-of-contents entry.
+commands — `\cite{…}`, `\citep{…}`, `\nocite{…}`, and friends — directly in
+your prose, point JMarkdown at a BibTeX `.bib` database and a citation style,
+and a fully formatted bibliography is assembled for you.
 
-The work is split between two stages, and understanding the split explains
-everything else on this page:
+There are **three** ways that source can turn into finished citations, and the
+one you get depends on the output format and one metadata key:
 
-- **At build time, JMarkdown does almost nothing to your citations.** It leaves
-  every `\​cite{…}` command in the HTML output exactly as you typed it, and
-  wires the page up to use a small JavaScript library called
-  [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html).
-- **In the browser, Biblify does the real work.** When the page loads, Biblify
-  fetches your `.bib` file, scans the rendered document for citation commands,
-  replaces each one with a properly formatted inline citation, and appends the
-  bibliography to the end of the document.
+- **Compile-time HTML (recommended).** With `Resolve citations: true`, the
+  bibliography is assembled *while the document is processed*. The inline
+  citations and the reference list are baked into the HTML; the file is finished
+  the moment it is written. This is the right default for a static web page or a
+  printable web document — open it offline and everything is already resolved.
+- **Runtime HTML (the alternative).** Without that key, JMarkdown leaves your
+  `\cite{…}` commands literal and wires the page up to the browser
+  [Biblify](https://jmckalex.org/software/bibtex-in-webpages.html) client, which
+  resolves them when the page loads. Choose this when the document's content is
+  revealed *dynamically* — the original [reveal.js](https://revealjs.com/)
+  slide-deck use case — so there is nothing to resolve until the browser builds
+  it.
+- **LaTeX (native natbib).** With `--to latex`, the citation commands pass
+  through verbatim to `natbib` and `::Bibliography` emits `\bibliographystyle`
+  and `\bibliography`. Real `bibtex`/`biber` does the work when you compile the
+  `.tex`.
 
-Biblify is a browser-side implementation of a useful subset of BibTeX and
-`natbib`, built on [citation.js](https://citation.js.org/) and the
-[Citation Style Language](https://citationstyles.org/) (CSL). It was originally
-written to give [reveal.js](https://revealjs.com/) presentations real
-bibliographic support, and it slots into JMarkdown's HTML output unchanged.
+The same `\cite`-family grammar, the same `Bibliography` database, and the same
+style name drive all three, so one source feeds a web edition and a print
+edition without rewriting a single citation.
 
-> **Web only.** Because the formatting happens in the browser, bibliographic
-> support applies to JMarkdown's **HTML** output. It is not part of the LaTeX
-> pipeline, where you would use BibTeX or biblatex directly.
+> **Showing the syntax versus using it.** Every citation command on this page is
+> shown inside a code span or a fenced code block. The compile-time tokenizer
+> never fires inside code (and the runtime client is not active here), so these
+> examples display as literal syntax rather than resolving. When *you* write a
+> real `\cite{…}` in running prose, type it plainly and it is processed normally.
 
-## Turning it on
+## Compile-time HTML resolution (recommended)
 
-Support is **off by default**, because JMarkdown cannot guess which database or
-style you want. You switch it on by supplying three things in the document's
+Switch compile-time resolution on with three keys in the document's
 [metadata header](metadata-header.html) (or in a
-[configuration file](configuration-files.html) — see below):
+[configuration file](configuration-files.html)):
 
 ```
 Title: A Paper About Conventions
-------------------------------------
-Biblify activate: true
+Resolve citations: true
 Bibliography: references.bib
 Bibliography style: chicago
+------------------------------------
 
 # Introduction
 
-As argued in \​cite{Lewis:1969}, …
-```
+As argued in \cite{Lewis:1969}, …
 
-Each key does one job:
+::Bibliography
+```
 
 | Metadata key | Purpose |
 |---|---|
-| `Biblify activate` | `true` to enable bibliographic support; `false` (the default) to leave it off. |
-| `Bibliography` | A path to a BibTeX `.bib` database, relative to the rendered HTML file. |
-| `Bibliography style` | One of the preloaded style names, or a path to a CSL style file. |
+| `Resolve citations` | `true` to assemble citations and the bibliography at build time. Absent (the default) leaves the runtime path in charge. |
+| `Bibliography` | Path to a BibTeX `.bib` database, resolved relative to the **source** file. |
+| `Bibliography style` | A built-in style name or a path to a CSL file (see below). |
 
-If `Biblify activate` is `true` but no `Bibliography` is given, Biblify logs an
-error to the browser console and leaves your citation commands untouched —
-activation enables the machinery, but you still have to point it at a database.
+When `Resolve citations` is on, processing does the following, with no browser
+involved:
 
-## Citation styles
+1. JMarkdown reads and indexes your `.bib` file from disk.
+2. A post-pass formats every citation with [citation.js](https://citation.js.org/)
+   and the [Citation Style Language](https://citationstyles.org/) (CSL), replacing
+   each `\cite{…}` with a finished inline citation.
+3. The `::Bibliography` directive is replaced by the assembled reference list, in
+   citation.js's standard `div.csl-bib-body` structure.
+4. The runtime client scripts are **suppressed** — there is nothing left for the
+   browser to do, so the page carries no Biblify JavaScript at all.
 
-`Bibliography style` accepts either one of Biblify's preloaded style names or
-the path to your own CSL file.
+The engine is `citation-js`, the same library the runtime client uses, so
+compiled output matches what the browser would have produced. Because everything
+is resolved in the file, a compile-time document opens correctly offline and does
+not depend on the `.bib` being reachable at view time.
 
-The preloaded names recognised directly are:
+### Where the bibliography goes: `::Bibliography`
 
-| Name | Style |
+In the compile-time path you say **where** the reference list belongs with a
+`::Bibliography` directive on a line of its own. (The runtime path appends the
+bibliography to the end of the document automatically; the compile-time path puts
+you in control of placement.)
+
+```
+::Bibliography
+```
+
+It takes an optional attribute block:
+
+```
+::Bibliography{style="apa" scope="#sec-history" all}
+```
+
+| Attribute | Effect |
 |---|---|
-| `apa` | American Psychological Association (author–date) |
-| `chicago` | Chicago Manual of Style (author–date) |
-| `harvard1` | Harvard, numbered variant |
-| `vancouver` | Vancouver (numeric, superscript) |
-| `bjps` | *British Journal for the Philosophy of Science* |
+| `style` | Format *this* bibliography (and the inline citations that feed it) with a different style from the document default. |
+| `scope` | A CSS selector; the list is built from only the citations inside that element — a **sectional** bibliography. |
+| `all` | List every cited work in the whole document, regardless of where the directive sits. |
 
-Any other value is treated as a **path to a CSL file** (a `.csl` or `.xml`
-document). Biblify loads it through citation.js and registers it under a name
-derived from the file's basename, so
+By default each `::Bibliography` lists the citations that have appeared **since
+the previous one**, so several directives partition a document into per-section
+reference lists. A `scope` selector instead gathers the citations within a named
+element, and `all` gathers the entire document. Per-section style switching (via
+`style`) and `scope`-based sectional bibliographies are **HTML-only**
+conveniences; the LaTeX path emits a single `\bibliography` for the whole
+document.
 
-```
-Bibliography style: ergo.csl
-```
+The **Vancouver** style is a whole-document numeric mode: citations become
+collapsed bracketed numbers (e.g. `[1,3-5]`) and a single numbered reference list
+is produced, so per-section partitioning does not apply to it.
 
-formats your citations and bibliography with the *Ergo* style defined in
-`ergo.csl`. This is how you support a journal whose style is not preloaded:
-download its CSL file (the [Zotero Style Repository](https://www.zotero.org/styles)
-is a comprehensive source), drop it beside your document, and name it here.
+### Tooltips and a trimmed `.bib`
+
+Two further keys refine the compile-time output:
+
+| Metadata key | Effect |
+|---|---|
+| `Citation tooltips` | `true` to attach a hover tooltip to each inline citation showing the full reference. |
+| `Minimal bibliography` | `true` to write a trimmed `<output>.cited.bib` next to your HTML, containing only the entries actually cited. |
+
+`Minimal bibliography` needs a real output file to sit beside, so it is skipped
+(with a console note) when output goes to stdout. The trimmed database is handy
+for shipping a paper with exactly the references it uses and nothing more.
 
 ## The citation commands
 
-JMarkdown does not parse the citation commands itself — it passes them through
-verbatim — so the grammar Biblify recognises in the browser is what matters.
-The commands mirror LaTeX and `natbib`. Every command names one or more keys
-from your `.bib` file inside braces; multiple keys are separated by commas.
+The `\cite`-family grammar is shared by all three paths. Every command names one
+or more keys from your `.bib` file inside braces; multiple keys are separated by
+commas.
 
 | Command | Result |
 |---|---|
-| `\​cite{key}` | Textual (author-as-subject) citation — author names followed by a parenthesised year, e.g. *Lewis (1969)*. |
-| `\​citet{key}` | The same as `\​cite` — `t` for *textual*; the default when no suffix is given. |
-| `\​citep{key}` | Parenthetical citation — everything in parentheses, e.g. *(Lewis 1969)*. |
-| `\​citeauthor{key}` | The author names only, with no year. |
-| `\​citeauthor*{key}` | The author names with full given names, and all authors listed (no *et al.* truncation). |
-| `\​nocite{key}` | Adds the entry to the bibliography but prints nothing inline. Accepts several comma-separated keys at once. |
-| `\​fullcite{key}` | Inserts the entry's complete bibliography-style reference inline, at that spot. |
+| `\cite{key}` | Textual (author-as-subject) citation — author names followed by a parenthesised year, e.g. /Lewis (1969)/. |
+| `\citet{key}` | The same as `\cite` — `t` for /textual/; the default when no suffix is given. |
+| `\citep{key}` | Parenthetical citation — everything in parentheses, e.g. /(Lewis 1969)/. |
+| `\citeauthor{key}` | The author names only, with no year. |
+| `\citeauthor*{key}` | The author names with full given names, and all authors listed (no /et al./ truncation). |
+| `\nocite{key}` | Adds the entry to the bibliography but prints nothing inline. Accepts several comma-separated keys at once. |
+| `\fullcite{key}` | Inserts the entry's complete bibliography-style reference inline, at that spot. |
 
-Two **optional arguments**, in square brackets *before* the brace, work exactly
+Two **optional arguments** in square brackets, *before* the brace, work exactly
 as in `natbib`: a lone `[postnote]` is appended inside the citation, and a
 `[prenote][postnote]` pair brackets it on both sides. They are most useful with
 the parenthetical form:
 
 | Source | Renders as |
 |---|---|
-| `\​citep{Lewis:1969}` | (Lewis 1969) |
-| `\​citep[42]{Lewis:1969}` | (Lewis 1969, 42) |
-| `\​citep[see][ch. 3]{Lewis:1969}` | (see Lewis 1969, ch. 3) |
-| `\​cite[42]{Lewis:1969}` | Lewis (1969, 42) |
+| `\citep{Lewis:1969}` | (Lewis 1969) |
+| `\citep[42]{Lewis:1969}` | (Lewis 1969, 42) |
+| `\citep[see][ch. 3]{Lewis:1969}` | (see Lewis 1969, ch. 3) |
+| `\cite[42]{Lewis:1969}` | Lewis (1969, 42) |
 
 A few details worth knowing:
 
-- **Multiple keys.** `\​citep{Axelrod/Hamilton:1981,Skyrms:1996}` produces a
+- **Multiple keys.** `\citep{Axelrod/Hamilton:1981,Skyrms:1996}` produces a
   single parenthetical group listing both works, separated by a semicolon.
-- **The default is textual.** `\​cite{…}` behaves like `\​citet{…}`; reach for
-  `\​citep{…}` when you want the author and year fully inside parentheses.
-- **`\​nocite` is the way to pad a bibliography.** Use it for works you want
-  listed but do not cite in the body — for instance `\​nocite{*}`-style
-  curation, one key at a time or several at once.
+- **The default is textual.** `\cite{…}` behaves like `\citet{…}`; reach for
+  `\citep{…}` when you want the author and year fully inside parentheses.
+- **`\nocite` pads a bibliography.** Use it for works you want listed but do not
+  cite in the body — one key at a time or several at once.
+- **Keys with `_` or `/` are safe.** The tokenizer claims each whole command
+  before any other inline rule runs, so a key like `Axelrod/Hamilton:1981` is
+  never mangled by the `/italics/` or subscript syntax, and a literal example in
+  a code span is left alone.
 
-> **Showing the syntax versus using it.** This very page is built with Biblify
-> active, so any citation command left literally in the text would be resolved
-> in your browser. The commands in the tables above are shown with an invisible
-> break so they display as syntax instead of resolving. When *you* write a real
-> `\​cite{…}` in your own document, type it without any such break and it will
-> be processed normally.
+## Citation styles
 
-## What gets added to the page
+`Bibliography style` accepts either a recognised style name or the path to your
+own CSL file. The names handled directly are:
 
-When the page loads and at least one citation is found, Biblify assembles the
-bibliography and appends it to the end of the document, after any
-[footnotes](footnotes.html). By default it also adds, for convenience:
+| Name | Style |
+|---|---|
+| `apa` | American Psychological Association (author–date) |
+| `harvard1` | Harvard, numbered variant |
+| `vancouver` | Vancouver (numeric, whole-document) |
+| `chicago` | Chicago Manual of Style (author–date) |
+| `bjps` | /British Journal for the Philosophy of Science/ |
+| `ajp` | /Australasian Journal of Philosophy/ |
+| `econometrica` | /Econometrica/ |
+| `ergo` | /Ergo/ |
 
-- a `Bibliography` heading (an `h1` with `id="bib"`) above the list, and
-- if the document has a [table of contents](table-of-contents.html), a
-  `Bibliography` entry linking to that heading.
+The first four (`apa`, `harvard1`, `vancouver`, `chicago`) plus `bjps` are
+recognised as built-in names directly. The journal styles `ajp`, `econometrica`,
+and `ergo` ship as bundled CSL files in JMarkdown, so naming them works too —
+they resolve to the bundled template of the same name.
 
-Each inline citation is wrapped in a `span` carrying a `data-bibtex` attribute
-that records the key(s) it came from, which makes citations easy to style or to
-hook tooltips onto. The bibliography itself is rendered into citation.js's
-standard `div.csl-bib-body` structure, so CSL stylesheets and CSS that target
-those classes work as they do anywhere else.
+Any **other** value is treated as a **path to a CSL file** (a `.csl` or `.xml`
+document):
 
-## Fine-tuning Biblify
+```
+Bibliography style: my-journal.csl
+```
 
-Beyond the three activation keys, Biblify's behaviour is controlled through the
-nested `Biblify` object in a [configuration file](configuration-files.html).
-These are the keys and their defaults:
+JMarkdown registers the file under a name derived from its basename and formats
+your citations and bibliography with it. This is how you support a journal whose
+style is not bundled: download its CSL file (the
+[Zotero Style Repository](https://www.zotero.org/styles) is a comprehensive
+source), drop it beside your document, and name it here. The path resolves
+relative to the source file.
+
+## Runtime browser Biblify (the alternative)
+
+The original mechanism resolves citations **in the browser** instead of at build
+time. You enable it with `Biblify activate: true` and *without* `Resolve
+citations`:
+
+```
+Title: A Set of Slides
+Biblify activate: true
+Bibliography: references.bib
+Bibliography style: chicago
+------------------------------------
+
+# First slide
+
+As argued in \cite{Lewis:1969}, …
+```
+
+JMarkdown then leaves every `\cite{…}` command literal in the HTML and loads the
+[Biblify](https://jmckalex.org/software/bibtex-in-webpages.html) client
+(`citation.min.js` + `biblify.js`). When the page loads, the client fetches your
+`.bib` over a relative URL, scans the rendered document, replaces each command
+with a formatted inline citation, and **appends** the bibliography to the end of
+the page (after any [footnotes](footnotes.html)).
+
+By default the runtime client also adds, for convenience, a `Bibliography`
+heading (an `h1` with `id="bib"`) and — if the document has a
+[table of contents](table-of-contents.html) — a `Bibliography` entry linking to
+it. Each inline citation is wrapped in a `span` carrying a `data-bibtex`
+attribute recording its key(s), so citations are easy to style.
+
+Reach for this path when resolution must happen **in the browser** — most often
+because the cited content is built or revealed dynamically. For an ordinary
+static document, prefer compile-time resolution: it needs no JavaScript at view
+time and the `.bib` need not be reachable from where the page is served.
+
+### Fine-tuning the runtime client
+
+Beyond the activation keys, the runtime client's behaviour is controlled through
+the nested `Biblify` object in a [configuration file](configuration-files.html):
 
 | Config key (under `Biblify`) | Default | Effect |
 |---|---|---|
@@ -166,90 +254,112 @@ These are the keys and their defaults:
 | `add toc entry` | `true` | Add a `Bibliography` link to the table of contents. |
 | `bibliography` | `""` | The `.bib` database path (set via the `Bibliography` metadata key). |
 | `bibliography style` | `""` | The style name or CSL path (set via `Bibliography style`). |
-| `defer` | `false` | If `true`, Biblify is configured but does **not** auto-process on load. |
-
-A typical project-level `.jmarkdown/config.json` looks like this, so that every
-document in the project shares one database and style without repeating it in
-each header:
-
-```json
-{
-    "Biblify activate": true,
-    "Biblify": {
-        "bibliography": "references.bib",
-        "bibliography style": "chicago",
-        "add section heading": true,
-        "add toc entry": true
-    }
-}
-```
-
-Metadata keys in an individual document still apply on top of the project
-configuration, so a single paper can override the shared style — set
-`Bibliography style` in its header — while inheriting everything else.
+| `defer` | `false` | If `true`, the client configures itself but does **not** auto-process on load. |
 
 ### Deferred processing
 
-Setting `Bibliography defer: true` in the metadata header (or `"defer": true`
-in the config) tells Biblify to load and configure itself but **not** to scan
-and replace citations automatically when the page loads. This is for documents
-whose content is built or revealed dynamically — the original reveal.js use
-case, where slides appear over time — and you want to trigger processing
+Setting `Bibliography defer: true` in the metadata header (or `"defer": true` in
+the config) tells the client to load and configure itself but **not** to scan and
+replace citations automatically on load. This is for documents whose content
+appears over time — the reveal.js slides case — so you trigger processing
 yourself once the relevant content exists. Deferring also suppresses the
-heading/TOC helper, because there may be nothing to process yet. For an ordinary
+heading/TOC helper, since there may be nothing to process yet. For an ordinary
 static document, leave `defer` at its default of `false`.
+
+## LaTeX output (native natbib)
+
+With `--to latex`, JMarkdown does **not** format anything itself — it hands the
+work to LaTeX:
+
+- The `\cite`-family commands pass through **verbatim** as native `natbib`
+  commands. The one exception is `\fullcite`, which natbib lacks: it is
+  translated to `\bibentry` (from the `bibentry` package).
+- The `::Bibliography` directive emits `\bibliographystyle{…}` followed by
+  `\bibliography{…}`, pointing at the basename of your `Bibliography` database.
+- Real `bibtex`/`biber` resolves the citations and builds the reference list when
+  you compile the resulting `.tex`.
+
+Two things are therefore on you in the surrounding document. JMarkdown's
+`--to latex` output is **body-only**, so add `\usepackage{natbib}` (and
+`\usepackage{bibentry}` if you use `\fullcite`) in your own preamble. The
+`.bst` style file used by `\bibliographystyle` is chosen from `Bibliography
+style` by default; override it explicitly with the `LaTeX bib style` key:
+
+| Metadata key | Effect |
+|---|---|
+| `LaTeX bib style` | The natbib `.bst` name for `\bibliographystyle` in LaTeX output (e.g. `apalike`, `plainnat`). Overrides the default derived from `Bibliography style`. |
+
+So a single source — `\cite{…}` commands plus a `::Bibliography` directive,
+`Bibliography` and `Bibliography style` in the header — yields a resolved HTML
+bibliography under `Resolve citations`, and a `bibtex`-ready `.tex` under
+`--to latex`.
 
 ## A complete minimal example
 
-Putting it together, here is a self-contained document that cites three works in
-different forms and produces a Chicago-style bibliography in the browser:
+Putting the recommended path together, here is a self-contained document that
+cites three works in different forms and produces a Chicago-style bibliography at
+build time:
 
 ```
 Title: Signalling and Convention
-------------------------------------
-Biblify activate: true
+Resolve citations: true
 Bibliography: references.bib
 Bibliography style: chicago
+------------------------------------
 
 # Signalling and Convention
 
 The idea that meaning rests on convention is developed at length in
-\​cite{Lewis:1969}, and given a game-theoretic foundation by
-\​citet{Skyrms:1996}. The evolutionary stability of cooperation is a
-related thread \​citep[see][]{Axelrod/Hamilton:1981}.
+\cite{Lewis:1969}, and given a game-theoretic foundation by
+\citet{Skyrms:1996}. The evolutionary stability of cooperation is a
+related thread \citep[see][]{Axelrod/Hamilton:1981}.
 
-\​nocite{Lewis:2002}
+\nocite{Lewis:2002}
+
+# References
+
+::Bibliography
 ```
 
-When this file is rendered to HTML and opened in a browser, Biblify fetches
-`references.bib`, turns the three citations into formatted Chicago references,
-silently adds `Lewis:2002` to the reference list via `\​nocite`, and appends a
-`Bibliography` section listing all four works.
+When this file is processed to HTML, JMarkdown reads `references.bib`, turns the
+three citations into formatted Chicago references, silently folds `Lewis:2002`
+into the list via `\nocite`, and replaces `::Bibliography` with the four-work
+reference list — all in the output file, no browser required. Render the same
+source with `--to latex` and you get the `\cite` commands and a
+`\bibliographystyle`/`\bibliography` pair for `bibtex` to resolve instead.
 
 ## Gotchas and limitations
 
-- **Open it in a browser.** Nothing about a citation is resolved at build time.
-  If you inspect the raw HTML you will see your `\​cite{…}` commands sitting
-  there literally; that is correct. They become formatted citations only when
-  the page is loaded and Biblify runs.
-- **The `.bib` file must be reachable from the HTML.** Biblify fetches it with a
-  relative URL, so the path in `Bibliography` is resolved against the **output
-  HTML file**, and the file must be served from somewhere the browser can reach
-  (a local file or a web server). Citations will silently fail to resolve if the
-  fetch fails — check the browser console for a load error.
-- **One database, one style per document.** Biblify configures a single
-  bibliography file and a single style for the whole page.
-- **Citation commands are matched anywhere in the body.** Biblify scans every
-  text node, including inside code blocks. If you need to *show* a citation
-  command as literal text on a Biblify-active page (as this documentation does),
-  break it so the pattern no longer matches — for example by inserting a soft
-  hyphen between the backslash and `cite`.
+- **Pick a path with one key.** `Resolve citations: true` gives you compile-time
+  HTML and suppresses the runtime scripts; omit it (with `Biblify activate:
+  true`) for browser-side resolution. The two are mutually exclusive for a given
+  document.
+- **`Resolve citations` needs a `Bibliography`.** If it is on but no database is
+  given, JMarkdown logs an error and leaves the citation commands literal in the
+  output rather than emitting empty placeholders.
+- **The `.bib` path resolves differently per path.** Compile-time reads the file
+  from disk relative to the **source** file. The runtime client fetches it over a
+  relative URL resolved against the **output HTML** file, so for the runtime path
+  the `.bib` must be served from somewhere the browser can reach.
+- **One database, one default style per document.** A single `.bib` and one
+  document-wide style apply; in compile-time HTML a per-`::Bibliography` `style`
+  override and `scope`-based sectional lists are available, but the LaTeX path
+  emits one `\bibliography` for the whole document.
+- **Vancouver is whole-document.** It produces a single numbered reference list
+  and collapsed numeric in-text citations; per-section partitioning and per-list
+  style switching do not apply to it.
+- **A missing key is reported, not fatal.** A `\cite` to a key absent from the
+  `.bib` logs a warning and is skipped; the build still completes.
 
 ## See also
 
-- [Metadata Header](metadata-header.html) — where the activation keys live.
+- [Metadata Header](metadata-header.html) — where the activation and resolution
+  keys live.
 - [Configuration Files](configuration-files.html) — project- and user-wide
   Biblify defaults.
-- [Footnotes](footnotes.html) — the bibliography is appended after footnotes.
-- [Table of Contents](table-of-contents.html) — gains an automatic
-  `Bibliography` entry.
+- [Footnotes](footnotes.html) — the runtime bibliography is appended after
+  footnotes.
+- [Table of Contents](table-of-contents.html) — the runtime path can add an
+  automatic `Bibliography` entry.
+- [Dual output](dual-output.html) — the one-source HTML and LaTeX model these
+  citations follow.
