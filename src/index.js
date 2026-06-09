@@ -384,6 +384,12 @@ registerExtension( inlineMathematica );
 marked.use(markedMoreLists());
 marked_copy.use(markedMoreLists());
 
+// Protect display-math blocks ($$…$$, \[…\], \begin{env}…\end{env}) from the
+// block tokenizers. Registered AFTER marked-more-lists so marked tries it first
+// (last-registered wins), claiming the whole block before a line that starts
+// with +/-/* inside an aligned equation can be mistaken for a list item.
+registerExtension(jmarkdownSyntaxEnhancements.mathBlock);
+
 // This extension has to be registered after the directives in order for it to work.
 registerExtensions([ 
 	jmarkdownSyntaxEnhancements.emojis

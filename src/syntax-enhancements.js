@@ -48,7 +48,53 @@ export const latex = {
     renderer(token) {
         let sanitised_text = token.text.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
         return token.block ? `$$${sanitised_text}$$` : `$${sanitised_text}$`;
-    }       
+    }
+};
+
+// Block-level math protector. The `latex` extension above is INLINE, so the
+// markdown BLOCK tokenizers (lists, headings, blockquotes, …) run first — and a
+// display-math block whose lines start with `+ `/`- `/`* ` (operators in an
+// aligned equation) gets sliced into <ul>/<li> before any math handler sees it.
+// This extension claims a whole display-math block — `$$…$$`, `\[…\]`, or a
+// `\begin{env}…\end{env}` environment — as ONE token at the block level, so its
+// content is protected verbatim and even a bare `\begin{align}` works without a
+// `$$` wrapper. Register it AFTER the list extensions (marked tries the
+// last-registered first) so it wins. Inline `$…$` / `\(…\)` stay with `latex`.
+export const mathBlock = {
+    name: 'mathBlock',
+    level: 'block',
+    start(src) {
+        const m = src.match(/(?:^|\n)[ ]{0,3}(?:\$\$|\\\[|\\begin\{[A-Za-z*]+\})/);
+        return m ? m.index : undefined;
+    },
+    tokenizer(src) {
+        let m = /^[ ]{0,3}\$\$([\s\S]+?)\$\$/.exec(src);
+        if (m) return { type: 'mathBlock', raw: m[0], text: m[1], math: 'dollar' };
+        m = /^[ ]{0,3}\\\[([\s\S]+?)\\\]/.exec(src);
+        if (m) return { type: 'mathBlock', raw: m[0], text: m[1], math: 'bracket' };
+        // \begin{env} … \end{env}  (matched env name via the \2 backreference, so
+        // nested environments like pmatrix inside align don't end it early).
+        m = /^[ ]{0,3}(\\begin\{([A-Za-z*]+)\}[\s\S]*?\\end\{\2\})/.exec(src);
+        if (m) return { type: 'mathBlock', raw: m[0], text: m[1], math: 'env' };
+        return undefined;
+    },
+    renderer(token) {
+        const text = token.text;
+        if (global.isLatex) {
+            // Pass straight through into the .tex (delimiters preserved; the
+            // engine handles them — align needs amsmath in the user's preamble).
+            if (token.math === 'dollar') return `$$${text}$$\n\n`;
+            if (token.math === 'bracket') return `\\[${text}\\]\n\n`;
+            return `${text}\n\n`;
+        }
+        // HTML: emit raw for MathJax, escaping only < and > (as the inline `latex`
+        // renderer does). Bare \begin{env} relies on MathJax processEnvironments
+        // (on by default; tex-svg bundles ams).
+        const sane = String(text).replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        if (token.math === 'dollar') return `<p>$$${sane}$$</p>\n`;
+        if (token.math === 'bracket') return `<p>\\[${sane}\\]</p>\n`;
+        return `<p>${sane}</p>\n`;
+    }
 };
 
 import { metadata } from './metadata-header.js';
