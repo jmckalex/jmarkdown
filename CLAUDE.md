@@ -97,12 +97,23 @@ standby):
   (bypasses `fs`), so editing one needs a watcher restart.
 - **Preview server + SSE:** a tiny `http` server rooted at the output dir, with a
   `/__livereload` SSE endpoint; the live-reload client is **injected into served
-  HTML on the fly** (so the on-disk output stays a clean build). Reload restores
-  scroll via `sessionStorage`; build errors show a browser overlay. `--no-serve`
-  for rebuild-only; `--open` to launch the browser. HTML-only in v1 (`--to latex`
-  PDF-refresh is a documented follow-on).
-- New dep: `chokidar`. The four watch files are import-isolated from the build
-  path, so they only load on the `watch` command.
+  HTML on the fly** (so the on-disk output stays a clean build). Build errors show
+  a browser overlay. `--no-serve` for rebuild-only; `--open` to launch the
+  browser. HTML-only in v1 (`--to latex` PDF-refresh is a documented follow-on).
+- **morphdom live update (default):** on rebuild the client fetches the raw build
+  (`/__jmd/src`) and **morphdom-diffs it onto the live DOM**, so only changed
+  blocks update — no full reload, no flicker, scroll preserved, and **rendered
+  MathJax/Mermaid in unchanged blocks are kept**. The trick: each leaf content
+  block is tagged `data-jmdsrc = hash(rawInnerHTML)` BEFORE MathJax/Mermaid run;
+  the morph skips blocks whose hash is unchanged (the live DOM is post-render but
+  the hash is of source, so they always match) and re-typesets / `mermaid.run`s
+  only the changed ones. `onBeforeNodeDiscarded` protects scripts and MathJax
+  globals. **Any morph error → automatic `location.reload()` fallback**;
+  `--full-reload` forces the old whole-page reload. Bundle served at
+  `/__jmd/morphdom.js`. (Browser-side morph/re-render is verified by design +
+  fallback, not by an automated test — there's no headless browser in the suite.)
+- New deps: `chokidar`, `morphdom`. The four watch files are import-isolated from
+  the build path, so they only load on the `watch` command.
 
 ## Critical conventions and gotchas
 

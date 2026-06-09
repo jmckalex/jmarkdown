@@ -28,6 +28,7 @@ import chokidar from 'chokidar';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKER = path.join(__dirname, 'watch-worker.js');
 const FS_PRELOAD = path.join(__dirname, 'watch-fs-preload.cjs');
+const MORPHDOM = path.join(__dirname, '..', 'node_modules', 'morphdom', 'dist', 'morphdom-umd.min.js');
 
 const MIME = {
 	'.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript',
@@ -152,7 +153,7 @@ export async function startWatch(file, options) {
 	// ----- preview server + SSE injection -----
 	let serverPort = null;
 	if (serve) {
-		serverPort = await startServer(outDir, outFile, parseInt(options.port, 10) || 3000, sseClients, () => lastError);
+		serverPort = await startServer(outDir, outFile, parseInt(options.port, 10) || 3000, sseClients, () => lastError, !!options.fullReload);
 	}
 
 	// ----- run -----
@@ -181,11 +182,19 @@ export async function startWatch(file, options) {
 	process.on('SIGTERM', shutdown);
 }
 
-// A tiny static server rooted at the output directory, with an SSE endpoint and
-// on-the-fly injection of the live-reload client into served HTML (so the file
-// on disk stays a clean, normal build — no watch cruft baked in).
-function startServer(outDir, outFile, port, sseClients, getError) {
-	const client = liveReloadClient();
+// A tiny static server rooted at the output directory. Serves the build with an
+// injected live-reload client (the on-disk file stays a clean build — injection
+// is on the fly), plus three control endpoints under /__jmd/:
+//   /__livereload   — SSE stream (reload / builderror events)
+//   /__jmd/src      — the raw built HTML (no injection): the morph target
+//   /__jmd/morphdom.js — the morphdom UMD bundle
+// Live updates use morphdom to patch only changed blocks (preserving rendered
+// MathJax/Mermaid in unchanged ones); --full-reload (or a missing morphdom)
+// falls back to a plain location.reload().
+function startServer(outDir, outFile, port, sseClients, getError, fullReload) {
+	const morphAvailable = !fullReload && fs.existsSync(MORPHDOM);
+	const client = liveReloadClient(!morphAvailable);
+
 	const server = http.createServer((req, res) => {
 		const u = new URL(req.url, 'http://localhost');
 
@@ -196,6 +205,25 @@ function startServer(outDir, outFile, port, sseClients, getError) {
 			const err = getError();
 			if (err) res.write(`event: builderror\ndata: ${JSON.stringify(err)}\n\n`);
 			req.on('close', () => sseClients.delete(res));
+			return;
+		}
+
+		// The raw build (no injected client) — what the morph diffs against.
+		if (u.pathname === '/__jmd/src') {
+			fs.readFile(outFile, (err, data) => {
+				if (err) { res.writeHead(404); res.end('Not found'); return; }
+				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+				res.end(data);
+			});
+			return;
+		}
+
+		if (u.pathname === '/__jmd/morphdom.js') {
+			fs.readFile(MORPHDOM, (err, data) => {
+				if (err) { res.writeHead(404); res.end('//'); return; }
+				res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' });
+				res.end(data);
+			});
 			return;
 		}
 
@@ -232,24 +260,93 @@ function startServer(outDir, outFile, port, sseClients, getError) {
 	});
 }
 
-function liveReloadClient() {
-	return `<script>(function(){
-  if (window.__jmdLive) return; window.__jmdLive = true;
+// Shared helpers for both client variants: scroll restore across a full reload,
+// and the build-error overlay.
+const CLIENT_COMMON = `
+  function saveScroll(){ try{ sessionStorage.setItem('__jmd_scroll', String(window.scrollY)); }catch(e){} }
+  window.addEventListener('load', function(){ try{ var y=sessionStorage.getItem('__jmd_scroll'); if(y!==null){ window.scrollTo(0,+y); sessionStorage.removeItem('__jmd_scroll'); } }catch(e){} });
+  function fullReload(){ saveScroll(); location.reload(); }
+  function clearErr(){ var d=document.getElementById('__jmd_err'); if(d) d.remove(); }
+  function showErr(msg){ var d=document.getElementById('__jmd_err')||document.createElement('div'); d.id='__jmd_err'; d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#b00020;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3)'; d.textContent='JMarkdown build error:\\n'+msg; document.body.appendChild(d); }`;
+
+function liveReloadClient(useFullReload) {
+	if (useFullReload) {
+		return `<script>(function(){
+  if (window.__jmdLive) return; window.__jmdLive = true;${CLIENT_COMMON}
   var es = new EventSource('/__livereload');
-  es.addEventListener('reload', function(){
-    try { sessionStorage.setItem('__jmd_scroll', String(window.scrollY)); } catch(e){}
-    location.reload();
-  });
-  es.addEventListener('builderror', function(ev){ try { showErr(JSON.parse(ev.data)); } catch(e){} });
-  window.addEventListener('load', function(){
-    try { var y = sessionStorage.getItem('__jmd_scroll'); if (y !== null){ window.scrollTo(0, +y); sessionStorage.removeItem('__jmd_scroll'); } } catch(e){}
-  });
-  function showErr(msg){
-    var d = document.getElementById('__jmd_err') || document.createElement('div');
-    d.id = '__jmd_err';
-    d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#b00020;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3)';
-    d.textContent = 'JMarkdown build error:\\n' + msg;
-    document.body.appendChild(d);
+  es.addEventListener('reload', function(){ fullReload(); });
+  es.addEventListener('builderror', function(ev){ try{ showErr(JSON.parse(ev.data)); }catch(e){} });
+})();</script>`;
+	}
+
+	// morphdom client: diff at the block level by source hash, preserving rendered
+	// MathJax/Mermaid in unchanged blocks and re-rendering only changed ones.
+	return `<script src="/__jmd/morphdom.js"></script>
+<script>(function(){
+  if (window.__jmdLive) return; window.__jmdLive = true;${CLIENT_COMMON}
+  var BLOCK='p,li,h1,h2,h3,h4,h5,h6,td,th,dt,dd,figcaption,caption,pre,blockquote,div,section,article,aside,details,summary';
+  function hash(s){ var h=0,i=0,l=s.length; for(;i<l;i++){ h=((h<<5)-h+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+  // A "leaf" content block: no nested block element (mermaid divs always count).
+  function isLeaf(el){ if(el.classList&&el.classList.contains('mermaid')) return true; return !el.querySelector(BLOCK); }
+  // Tag every leaf block with a hash of its RAW innerHTML. At load this runs
+  // before MathJax/Mermaid touch the DOM, so the hash is of the source — the
+  // invariant we keep (updates copy the new raw hash; we never re-hash rendered
+  // output), so unchanged blocks always compare equal and keep their rendering.
+  function tag(root){
+    var els=root.querySelectorAll(BLOCK), i, el;
+    for(i=0;i<els.length;i++){ el=els[i]; if(el.closest('[id^="__jmd"]')) continue; if(isLeaf(el)) el.setAttribute('data-jmdsrc', hash(el.innerHTML)); }
+    var mers=root.querySelectorAll('.mermaid'); for(i=0;i<mers.length;i++){ if(!mers[i].hasAttribute('data-jmdsrc')) mers[i].setAttribute('data-jmdsrc', hash(mers[i].textContent)); }
   }
+  try{ tag(document.body); }catch(e){}
+
+  function reRender(nodes){
+    if(!nodes.length) return;
+    if(window.MathJax && MathJax.typesetPromise){ try{ if(MathJax.typesetClear) MathJax.typesetClear(nodes); }catch(e){} MathJax.typesetPromise(nodes).catch(function(){}); }
+    if(window.mermaid){ var mer=[],i,j; for(i=0;i<nodes.length;i++){ var n=nodes[i]; if(n.classList&&n.classList.contains('mermaid')) mer.push(n); if(n.querySelectorAll){ var inner=n.querySelectorAll('.mermaid'); for(j=0;j<inner.length;j++) mer.push(inner[j]); } } if(mer.length){ for(i=0;i<mer.length;i++){ mer[i].removeAttribute('data-processed'); } try{ mermaid.run({nodes:mer}); }catch(e){ try{ mermaid.init(undefined,mer); }catch(_){} } } }
+  }
+
+  function morph(){
+    return fetch('/__jmd/src',{cache:'no-store'}).then(function(r){return r.text();}).then(function(html){
+      var doc=new DOMParser().parseFromString(html,'text/html');
+      tag(doc.body);
+      var changed=[];
+      window.morphdom(document.body, doc.body, {
+        childrenOnly:true,
+        getNodeKey:function(node){ return (node.id)||undefined; },
+        onBeforeNodeDiscarded:function(node){
+          if(node.nodeType!==1) return true;
+          var tn=node.tagName;
+          if(tn==='SCRIPT'||tn==='STYLE'||tn==='LINK') return false;          // keep scripts/styles
+          if(node.id&&node.id.indexOf('__jmd')===0) return false;             // keep our nodes
+          if(node.parentNode===document.body && ((tn&&tn.indexOf('MJX-')===0)||(node.id&&/^MJX/.test(node.id))||(typeof node.className==='string'&&/MathJax|mjx/.test(node.className)))) return false; // keep MathJax globals
+          return true;
+        },
+        onBeforeElUpdated:function(fromEl,toEl){
+          var fsrc=fromEl.getAttribute&&fromEl.getAttribute('data-jmdsrc');
+          if(fsrc!=null){
+            if(fsrc===(toEl.getAttribute&&toEl.getAttribute('data-jmdsrc'))) return false; // unchanged → keep rendered
+            changed.push(fromEl);                                              // changed → re-render after morph
+          }
+          return true;
+        },
+        onNodeAdded:function(node){
+          if(node.nodeType===1){
+            if(node.getAttribute&&node.getAttribute('data-jmdsrc')!=null) changed.push(node);
+            if(node.querySelectorAll){ var ls=node.querySelectorAll('[data-jmdsrc]'); for(var i=0;i<ls.length;i++) changed.push(ls[i]); }
+          }
+          return node;
+        }
+      });
+      clearErr();
+      reRender(changed);
+    });
+  }
+
+  var es=new EventSource('/__livereload');
+  es.addEventListener('reload', function(){
+    if(!window.morphdom){ fullReload(); return; }
+    morph().catch(function(err){ try{ console.warn('[jmarkdown] morph failed; falling back to full reload', err); }catch(e){} fullReload(); });
+  });
+  es.addEventListener('builderror', function(ev){ try{ showErr(JSON.parse(ev.data)); }catch(e){} });
 })();</script>`;
 }
