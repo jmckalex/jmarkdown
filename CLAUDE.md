@@ -8,7 +8,7 @@ JMarkdown is a Node.js Markdown authoring system built on **marked.js v16**. A s
 
 - **Language:** JavaScript (ES modules — `"type": "module"` in `package.json`).
 - **Entry point:** `src/index.js`, exposed as the `jmarkdown` binary via the `bin` field.
-- **CLI:** `jmarkdown process <file.md> [--to html|latex] [--fragment] [-n]`, plus `jmarkdown init` and `jmarkdown options`.
+- **CLI:** `jmarkdown process <file.md> [--to html|latex] [--fragment] [-n]`, plus `jmarkdown init`, `jmarkdown options`, and `jmarkdown watch <file.md>` (live rebuild + browser reload — see "Watch mode").
 - **No build step.** Source runs directly under Node. No test suite at present (`npm test` is a placeholder).
 
 ## Repository layout
@@ -17,7 +17,11 @@ All source lives in `src/`. Key files:
 
 | File | Role |
 |---|---|
-| `index.js` | CLI entry, extension registration, pipeline orchestration |
+| `index.js` | Exports `processFile(filename, options)` (the whole per-file build); the CLI (commander: `process`/`init`/`options`/`watch`) is **guarded behind a main-module check** so importing index.js warms the module graph without building. Extension registration + pipeline orchestration live inside `processFile`. |
+| `watch.js` | `jmarkdown watch`: the watcher — standby manager, generation-guarded dispatch, chokidar, static server + SSE live-reload. See "Watch mode". |
+| `watch-worker.js` | One-shot warm build worker (forked): imports index.js (warm), reports `ready`, does exactly ONE `processFile` on a `build` message, then exits. |
+| `watch-fs-preload.cjs` | CJS `-r` preload for the worker — patches `fs` reads before any ESM links `fs` (so even `import { readFileSync }` named imports are tracked) to record a build's file dependencies. |
+| `dep-tracker.js` | `getDeps()`/`resetDeps()` over the global Set the preload fills. |
 | `utils.js` | Shared `marked` / `marked_copy` instances, `registerExtension(s)`, `registerDirectives`, `runInThisContext` |
 | `config-manager.js` | Configuration loading/merging; central state bus (`configManager.get/set`) |
 | `metadata-header.js` | YAML-like metadata header parsing; dynamic loading of extensions/directives/JS |
@@ -59,6 +63,57 @@ All source lives in `src/`. Key files:
 10. Output divergence:
    - **LaTeX:** write `.tex` directly, no post-processing.
    - **HTML:** cheerio post-processing → template wrapping → inverse-search script injection → js-beautify → write `.html`.
+
+## Watch mode (`jmarkdown watch <file>`)
+
+Live rebuild + browser reload for authoring. **Built on the one-shot CLI, not an
+in-process loop** — because a JMarkdown build mutates global interpreter state
+(additive `marked.use()` on the shared singleton, script blocks polluting the
+real `global`/`String.prototype`, a populated ESM `import()` cache), so each
+build must run in a fresh process. Architecture (Option A + a pre-warmed
+standby):
+
+- **Enabling refactor:** `index.js` exports `processFile(filename, options)` and
+  guards its CLI behind `import.meta.url === pathToFileURL(process.argv[1]).href`.
+  So importing index.js (in the worker) **warms the heavy module graph without
+  building**; the build runs only when `processFile` is called. The full test
+  suite shells out to `node src/index.js process …`, so it gates this refactor.
+- **One-shot warm workers:** the watcher (`watch.js`) keeps **exactly one warm
+  standby** worker (`watch-worker.js`, forked) that has imported index.js and
+  reported `ready`. On a change it dispatches the build to the standby and
+  **immediately forks the replacement** (which warms during the build + the
+  author's think-time). A worker does ONE build then exits — never reused, so no
+  state bleed. Net: only the first build is cold (~600ms); later builds are warm
+  (~150–250ms).
+- **Generation guard:** a counter means only the latest change's result triggers
+  a reload; superseded in-flight builds are ignored. Debounce 150ms + coalesce.
+- **Dependency tracking:** the worker is forked with `-r watch-fs-preload.cjs`,
+  which patches `fs` reads **before any ESM links `fs`** (so named imports like
+  `import { readFileSync } from 'fs'` in `file-inclusion.js` are caught too) and
+  records every path read into a global Set. `dep-tracker.js` exposes
+  `getDeps()`/`resetDeps()`; the watcher watches exactly that set (source +
+  `[[includes]]` + config + templates + `.bib` + images). **v1 limitation:**
+  files pulled in via `Load directives/extensions/javascript` use `import()`
+  (bypasses `fs`), so editing one needs a watcher restart.
+- **Preview server + SSE:** a tiny `http` server rooted at the output dir, with a
+  `/__livereload` SSE endpoint; the live-reload client is **injected into served
+  HTML on the fly** (so the on-disk output stays a clean build). Build errors show
+  a browser overlay. `--no-serve` for rebuild-only; `--open` to launch the
+  browser. HTML-only in v1 (`--to latex` PDF-refresh is a documented follow-on).
+- **morphdom live update (default):** on rebuild the client fetches the raw build
+  (`/__jmd/src`) and **morphdom-diffs it onto the live DOM**, so only changed
+  blocks update — no full reload, no flicker, scroll preserved, and **rendered
+  MathJax/Mermaid in unchanged blocks are kept**. The trick: each leaf content
+  block is tagged `data-jmdsrc = hash(rawInnerHTML)` BEFORE MathJax/Mermaid run;
+  the morph skips blocks whose hash is unchanged (the live DOM is post-render but
+  the hash is of source, so they always match) and re-typesets / `mermaid.run`s
+  only the changed ones. `onBeforeNodeDiscarded` protects scripts and MathJax
+  globals. **Any morph error → automatic `location.reload()` fallback**;
+  `--full-reload` forces the old whole-page reload. Bundle served at
+  `/__jmd/morphdom.js`. (Browser-side morph/re-render is verified by design +
+  fallback, not by an automated test — there's no headless browser in the suite.)
+- New deps: `chokidar`, `morphdom`. The four watch files are import-isolated from
+  the build path, so they only load on the `watch` command.
 
 ## Critical conventions and gotchas
 

@@ -20,6 +20,7 @@
         "acorn": "^8.14.1",
         "algebra.js": "^0.2.6",
         "cheerio": "^1.0.0",
+        "chokidar": "^5.0.0",
         "citation-js": "^0.7.22",
         "commander": "^13.1.0",
         "highlight.js": "^11.11.1",
@@ -35,6 +36,7 @@
         "marked-more-lists": "^1.0.0",
         "marked-token-position": "^2.0.0",
         "mathjs": "^14.4.0",
+        "morphdom": "^2.7.8",
         "mustache": "^4.2.0",
         "seedrandom": "^3.0.5",
         "sync-request": "^6.1.0"

@@ -3,69 +3,66 @@
 import fs from 'fs';
 import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-
-// Load the configuration at startup.
-// This needs to be done before the initialise() routine is called below, because that might use
-// configuration data for the default jmarkdown template (i.e., {{Author}} info)
 import { configManager } from './config-manager.js';
+import { Command } from 'commander';
+import { initialise } from './init.js';
+import { showOptions } from './init.js';
+import { runInThisContext, marked, marked_copy, registerExtension, registerExtensions } from './utils.js';
+import { createRequire } from 'module';
+import * as cheerio from 'cheerio';
+import { execSync } from 'child_process';
+import markedFootnote from 'marked-footnote';
+import * as jmarkdownSyntaxEnhancements from './syntax-enhancements.js';
+import * as jmarkdownSyntaxModifications from './syntax-modifications.js';
+import { anchors } from './anchors.js';
+import { editors } from './editor-tag.js';
+import { markedExtendedTablesHeaderless } from './marked-extended-tables-headerless.js';
+import { markedHighlight } from "marked-highlight";
+import hljs from 'highlight.js';
+import { createDirectives, presetDirectiveConfigs } from './extended-directives.js';
+import additionalDirectives, {titleBox} from './additional-directives.js';
+import { createMermaid } from './mermaid.js';
+import { createMultilevelOptionals } from './metadata-header.js';
+import { targets, sources, inlineTarget } from './sources-and-targets.js';
+import markedAlert from 'marked-alert';
+import { renderAlertLatex } from './alerts.js';
+import createMarkdownDemo from './markdown-demo.js';
+import strategicFormGame from './strategic-form-games.js';
+import createTiKZ from './tikz.js';
+import { inlineMathematica, createMathematica } from './mathematica.js';
+import markedMoreLists from 'marked-more-lists';
+import { jmarkdownScriptExtensions } from './script-blocks.js';
+import export_to_jmarkdown from './function-extensions.js';
+import { math, mathjs } from './mathjs-extension.js';
+import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
+import { citations, bibliography } from './citations.js';
+import { beginEnd } from './begin-end.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
+import './floats.js';
+import './theorems.js';
+import './equations.js';
+import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
+import { createTOC } from './utils.js';
+import { metadata, processYAMLheader } from './metadata-header.js';
+import processFileInclusions from './file-inclusion.js';
+import { processTemplate } from './html-template.js';
+import { processLatexTemplate } from './latex-template.js';
+import { preprocessFootnotes, inlineFootnote, getFootnotesHTML, resetFootnotes } from './inline-footnotes.js';
+import { Renderer } from 'marked';
+import { header_length } from './metadata-header.js';
+import { sourcePositions } from './source-positions.js';
+import latexRenderer from './latex-renderer.js';
+import * as PostProcessor from './post-processor.js';
+import { pathToFileURL } from 'url';
+
+// Load global/project configuration at startup (file-independent; part
+// of warm-up so a forked watch worker pays this once on import).
 configManager.load();
 
-// Command-line processing of options, so that extensions can be switched on or off, as desired.
-import { Command } from 'commander';
-const program = new Command();
-
-// Main program setup
-program
-	.version('0.5')
-	.description("A Markdown process with great customisation capabilities, plus JavaScript as a scripting language");
-
-// Init subcommand
-import { initialise } from './init.js';
-program
-	.command('init')
-	.description('Initialise a new JMarkdown project')
-	.option('-f, --file <filename>', 'Construct a skeleton file named "filename" from a template')
-	.option('-t, --title [title]', 'Title for the newly created jmarkdown file (default: \'My title\')')
-	.option('-m, --makefile [key]', 'Include a Makefile template (an optional key is required if adding to an existing Makefile, otherwise the first three letters of the filename will be used to differentiate the targets in the Makefile). This requires the -f option.')
-	.option('-p, --print', 'Copy files for exporting jmarkdown to PDF using puppeteer')
-	.action((options) => {
-		if (options.title === true) {
-			options.title = 'My title';
-		}
-
-		if (options.makefile !== undefined && options.file == undefined) {
-			console.log('You need to specify a markdown file name for the Makefile template.');
-			process.exit();
-		}
-		initialise(options, path.dirname(fileURLToPath(import.meta.url)));
-		process.exit();
-	});
-
-// Options subcommand
-import { showOptions } from './init.js';
-program
-	.command('options')
-	.description('Show the default configuration options')
-	.action(() => {
-		showOptions();
-		process.exit();
-	});
-
-// Default command for processing files
-program
-	.command('process [filename]', { isDefault: true })
-	.description("Process a JMarkdown file (use '-' or pipe to stdin to read from stdin)")
-	.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface*, etc., and revert to normal Markdown syntax')
-	.option('--fragment', 'Output an HTML fragment without the template wrapper (no <html>, <head>, <body>)')
-	.option('--to <format>', 'Output format: html (default) or latex', 'html')
-	.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension; stdout in stdin mode)')
-	.action((filename, options) => {
-		program.file_to_process = filename;
-		program.process_options = options;
-	});
-
-program.parse(process.argv);
-const options = { ...program.opts(), ...program.process_options };
+// The whole per-file build pipeline, callable. Importing this module runs
+// only the (file-independent) module-load above; the build runs on call —
+// which is what lets a pre-warmed watch worker do exactly one build.
+export async function processFile(rawFilename, options) {
 
 const outputFormat = options.to || 'html';
 if (!['html', 'latex'].includes(outputFormat)) {
@@ -77,7 +74,6 @@ const isLatex = outputFormat === 'latex';
 // Get the markdown file we are supposed to process, or detect stdin mode.
 // stdin is used when the filename is '-', or when no filename is given and
 // stdin is not a TTY (i.e. the user is piping input in).
-const rawFilename = program.file_to_process;
 const isStdin = rawFilename === '-' || (rawFilename === undefined && !process.stdin.isTTY);
 if (!rawFilename && process.stdin.isTTY) {
 	console.error("Please provide a filename (or pipe input via stdin, or pass '-' to read from stdin)");
@@ -111,7 +107,6 @@ if (writingToStdout) {
 	});
 }
 
-import { runInThisContext, marked, marked_copy, registerExtension, registerExtensions } from './utils.js';
 
 // --- Inverse search utilities ---
 // Stamp data-source-line onto the first HTML opening tag in a rendered fragment.
@@ -137,7 +132,6 @@ function wrapRendererWithSourceLine(extension) {
 configManager.set("Markdown file directory", markdownFileDirectory);
 configManager.set("Jmarkdown app directory", path.dirname(fileURLToPath(import.meta.url)) )
 
-import { createRequire } from 'module';
 const baseRequire = createRequire(import.meta.url);
 // Create a custom require function that checks both the CWD and the original paths
 // const customRequire = (modulePath) => {
@@ -190,10 +184,8 @@ const customRequire = (modulePath) => {
 
 global.require = customRequire;
 
-import * as cheerio from 'cheerio';
 global.cheerio = cheerio;
 
-import { execSync } from 'child_process';
 const globalNodeModulesPath = execSync('npm root -g').toString().trim();
 
 function requireGlobal(the_package) {
@@ -205,7 +197,6 @@ function requireGlobal(the_package) {
 global.requireGlobal = requireGlobal;
 
 // Initialise the default footnote extension
-import markedFootnote from 'marked-footnote';
 
 // We create two versions of the marked interpreter, because if we want to 
 // call the interpreter from a <script> block in the jmarkdown code, we cannot
@@ -224,14 +215,12 @@ marked.use(markedFootnote({
 // the brackets) is checked before marked-footnote's [^label] reference syntax.
 registerExtension(inlineFootnote);
 
-import * as jmarkdownSyntaxEnhancements from './syntax-enhancements.js';
 
 registerExtensions([ 
 	jmarkdownSyntaxEnhancements.latex,
 	jmarkdownSyntaxEnhancements.moustache
 ]);
 
-import * as jmarkdownSyntaxModifications from './syntax-modifications.js';
 
 if (options.normalSyntax != true) {
 	// Wrap each inline extension's renderer to stamp data-source-line
@@ -248,10 +237,8 @@ if (options.normalSyntax != true) {
 	registerExtensions(inlineExts);
 }
 
-import { anchors } from './anchors.js';
 registerExtension(anchors);
 
-import { editors } from './editor-tag.js';
 registerExtension(editors);
 
 
@@ -259,15 +246,12 @@ registerExtension(editors);
 // [marked, marked_copy].map(m => {
 // 	m.use(extendedTables());
 // });
-import { markedExtendedTablesHeaderless } from './marked-extended-tables-headerless.js';
 [marked, marked_copy].map(m => {
 	m.use(markedExtendedTablesHeaderless());
 });
 
 
 
-import { markedHighlight } from "marked-highlight";
-import hljs from 'highlight.js';
 
 [marked, marked_copy].map(m => {
 	m.use(
@@ -286,7 +270,6 @@ import hljs from 'highlight.js';
 	);
 });
 
-import { createDirectives, presetDirectiveConfigs } from './extended-directives.js';
 
 [marked, marked_copy].map(m => {
 	m.use(createDirectives([
@@ -303,13 +286,10 @@ import { createDirectives, presetDirectiveConfigs } from './extended-directives.
 // If you install the titleBox directive here, you get an error whenever
 // you try to use it in the markdown file.  However, if you install
 // it later, after some other directives have been installed, it works.
-import additionalDirectives, {titleBox} from './additional-directives.js';
 marked.use(createDirectives(additionalDirectives));
 
-import { createMermaid } from './mermaid.js';
 marked.use(createDirectives( [ createMermaid(":::") ]));
 
-import { createMultilevelOptionals } from './metadata-header.js';
 createMultilevelOptionals('comment', false);
 
 function createMultilevelDirectives(rendering_function) {
@@ -328,7 +308,6 @@ function createMultilevelDirectives(rendering_function) {
 	marked_copy.use(createDirectives(directives));
 }
 
-import { targets, sources, inlineTarget } from './sources-and-targets.js';
 createMultilevelDirectives(sources.renderer);
 marked.use(createDirectives([targets]));
 marked_copy.use(createDirectives([targets]));
@@ -351,7 +330,6 @@ marked.use({
 });
 
 
-import markedAlert from 'marked-alert';
 const alert_options = {
   variants: [
     {
@@ -371,7 +349,6 @@ const alert_options = {
 // Capture marked-alert's HTML renderer and wrap it so LaTeX output renders the
 // callout as a tcolorbox (see alerts.js) instead of leaking its HTML. One
 // extension object, shared by marked and marked_copy.
-import { renderAlertLatex } from './alerts.js';
 const alertExtension = markedAlert(alert_options);
 const alertRenderer = alertExtension.extensions.find(e => e.name === 'alert');
 const htmlAlertRenderer = alertRenderer.renderer;
@@ -382,7 +359,6 @@ marked.use(alertExtension);
 marked_copy.use(alertExtension);
 
 
-import createMarkdownDemo from './markdown-demo.js';
 const markdownDemos = [
   createMarkdownDemo(':::'),
   createMarkdownDemo('::::'),
@@ -393,7 +369,6 @@ const markdownDemos = [
 ];
 marked.use( createDirectives( markdownDemos ) );
 
-import strategicFormGame from './strategic-form-games.js';
 marked.use( createDirectives([ strategicFormGame ]) );
 marked_copy.use( createDirectives([ strategicFormGame ]) );
 
@@ -401,14 +376,11 @@ registerExtensions([
 	jmarkdownSyntaxEnhancements.descriptionLists 
 ]);
 
-import createTiKZ from './tikz.js';
 marked.use( createDirectives( [ createTiKZ(':::') ] ) );
 
-import { inlineMathematica, createMathematica } from './mathematica.js';
 marked.use( createDirectives( [ createMathematica(':::') ] ) );
 registerExtension( inlineMathematica );
 
-import markedMoreLists from 'marked-more-lists';
 marked.use(markedMoreLists());
 marked_copy.use(markedMoreLists());
 
@@ -418,7 +390,6 @@ registerExtensions([
 ]);
 
 
-import { jmarkdownScriptExtensions } from './script-blocks.js';
 marked.use({
 	extensions: [
 		jmarkdownScriptExtensions['javascript'],
@@ -432,7 +403,6 @@ global.marked = marked;
 
 // This function needs to be available to code executed in runInThisContext,
 // in order to be able to create extensions which execute JavaScript code.
-import export_to_jmarkdown from './function-extensions.js';
 global.export_to_jmarkdown = export_to_jmarkdown;
 
 registerExtensions([ 
@@ -444,16 +414,13 @@ registerExtensions([
 	jmarkdownSyntaxEnhancements.centerAlign 
 ]);
 
-import { math, mathjs } from './mathjs-extension.js';
 registerExtension( mathjs );
 
-import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
 registerExtensions([ inlineFunctions, blockFunctions ]);
 
 // Compile-time citation support. Registered late so the inline \cite-family
 // tokenizer is checked before the markdown inline rules (links, emphasis), and
 // so the ::Bibliography block extension wins over the generic `::` directive.
-import { citations, bibliography } from './citations.js';
 registerExtensions([ citations, bibliography ]);
 
 // Load extensions and directives from the configuration file(s).
@@ -471,17 +438,12 @@ marked.use(createDirectives([titleBox]));
 // Named-scope block environments: @begin(name) … @end(name) (see begin-end.js).
 // `@` is an otherwise-unused sigil, so nothing else matches `@begin(...)` and the
 // registration position doesn't matter; it lives here, after the directive set.
-import { beginEnd } from './begin-end.js';
-import { registerBlockEnvironment } from './begin-end-core.js';
 marked.use({ extensions: [beginEnd] });
 
 // Float environments (@begin(figure) …) register into the block-environment
 // registry at import time; the @begin extension consults it at render time.
-import './floats.js';
 // Theorem-like environments (@begin(theorem|lemma|proof|…)) — same pattern.
-import './theorems.js';
 // Numbered display equations (@begin(equation)).
-import './equations.js';
 
 // Let users define their own @begin environments from a <script data-type="jmarkdown">
 // block, the same way export_to_jmarkdown is exposed for inline functions. The
@@ -489,8 +451,6 @@ import './equations.js';
 // ({attributes}). Define an environment before the @begin that uses it.
 global.defineEnvironment = registerBlockEnvironment;
 
-import { gfmHeadingId, getHeadingList } from "marked-gfm-heading-id";
-import { createTOC } from './utils.js';
 
 // gfm-heading-id supplies the heading renderer that (a) assigns each heading a
 // stable, slugged id (prefixed 'toc-') and (b) records the heading in the list
@@ -535,10 +495,6 @@ marked.use(gfmHeadingIdExtension, {
 	}
 });
 
-import { metadata, processYAMLheader } from './metadata-header.js';
-import processFileInclusions from './file-inclusion.js';
-import { processTemplate } from './html-template.js';
-import { processLatexTemplate } from './latex-template.js';
 
 async function readStdin() {
 	const chunks = [];
@@ -575,13 +531,9 @@ const text_no_inclusions = processFileInclusions(markdown_no_metadata, markdownF
 
 // Collapse multi-paragraph inline footnotes so they stay within a single
 // paragraph block for the inline tokenizer.
-import { preprocessFootnotes, inlineFootnote, getFootnotesHTML, resetFootnotes } from './inline-footnotes.js';
 resetFootnotes();
 const text = preprocessFootnotes(text_no_inclusions);
 
-import { Renderer } from 'marked';
-import { header_length } from './metadata-header.js';
-import { sourcePositions } from './source-positions.js';
 
 // Strip the {-} "unnumbered" marker from a heading token's inline text BEFORE
 // gfm-heading-id slugs it, so the heading id and the {{TOC}} entry are clean
@@ -664,14 +616,12 @@ if (!skipInverseSearch) {
 
 // Install the LaTeX renderer for built-in tokens (paragraph, heading, etc.).
 // This must come after all extensions are registered so it takes precedence.
-import latexRenderer from './latex-renderer.js';
 if (isLatex) {
 	marked.use({ renderer: latexRenderer });
 }
 
 const content = marked.parse(text);
 
-import * as PostProcessor from './post-processor.js';
 
 if (isLatex) {
 	// LaTeX output: no cheerio post-processing or inverse-search injection. In
@@ -716,4 +666,85 @@ if (isLatex) {
 
 	html = PostProcessor.beautifyHTML(html);
 	writeOutput(html);
+}
+
+
+	return { outFile, isLatex };
+}
+
+// ===========================================================================
+// CLI bootstrap — runs ONLY when this file is the entry point (`jmarkdown …`).
+// Guarded so that importing index.js (e.g. from the watch worker, to warm up)
+// loads the module graph WITHOUT parsing argv or building anything.
+//
+// process.argv[1] must be realpath-resolved before comparing: the global
+// `jmarkdown` bin is a SYMLINK to this file, and Node reports the symlink path
+// in argv[1] but the resolved real path in import.meta.url. Without realpathSync
+// the guard is false for every symlinked invocation and the CLI silently does
+// nothing.
+// ===========================================================================
+const isCliEntry = (() => {
+	try { return import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href; }
+	catch { return false; }
+})();
+if (isCliEntry) {
+	const program = new Command();
+
+	program
+		.version('0.5')
+		.description("A Markdown process with great customisation capabilities, plus JavaScript as a scripting language");
+
+	program
+		.command('init')
+		.description('Initialise a new JMarkdown project')
+		.option('-f, --file <filename>', 'Construct a skeleton file named "filename" from a template')
+		.option('-t, --title [title]', 'Title for the newly created jmarkdown file (default: \'My title\')')
+		.option('-m, --makefile [key]', 'Include a Makefile template (an optional key is required if adding to an existing Makefile, otherwise the first three letters of the filename will be used to differentiate the targets in the Makefile). This requires the -f option.')
+		.option('-p, --print', 'Copy files for exporting jmarkdown to PDF using puppeteer')
+		.action((options) => {
+			if (options.title === true) {
+				options.title = 'My title';
+			}
+			if (options.makefile !== undefined && options.file == undefined) {
+				console.log('You need to specify a markdown file name for the Makefile template.');
+				process.exit();
+			}
+			initialise(options, path.dirname(fileURLToPath(import.meta.url)));
+			process.exit();
+		});
+
+	program
+		.command('options')
+		.description('Show the default configuration options')
+		.action(() => {
+			showOptions();
+			process.exit();
+		});
+
+	program
+		.command('process [filename]', { isDefault: true })
+		.description("Process a JMarkdown file (use '-' or pipe to stdin to read from stdin)")
+		.option('-n --normal-syntax', 'Disable JMarkdown syntax for /italics/ and *boldface*, etc., and revert to normal Markdown syntax')
+		.option('--fragment', 'Output an HTML fragment without the template wrapper (no <html>, <head>, <body>)')
+		.option('--to <format>', 'Output format: html (default) or latex', 'html')
+		.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension; stdout in stdin mode)')
+		.action(async (filename, options) => {
+			await processFile(filename, { ...program.opts(), ...options });
+		});
+
+	program
+		.command('watch <filename>')
+		.description('Rebuild a JMarkdown file on every change and live-reload it in the browser')
+		.option('--to <format>', 'Output format: html (default) or latex', 'html')
+		.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension)')
+		.option('--port <number>', 'Port for the live-preview server', '3000')
+		.option('--open', 'Open the live preview in your browser on start')
+		.option('--no-serve', 'Only rebuild on change; do not start the preview server')
+		.option('--full-reload', 'Reload the whole page on change instead of morphdom DOM-diffing')
+		.action(async (filename, options) => {
+			const { startWatch } = await import('./watch.js');
+			await startWatch(filename, options);
+		});
+
+	await program.parseAsync(process.argv);
 }
