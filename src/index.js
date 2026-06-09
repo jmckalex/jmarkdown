@@ -676,8 +676,18 @@ if (isLatex) {
 // CLI bootstrap — runs ONLY when this file is the entry point (`jmarkdown …`).
 // Guarded so that importing index.js (e.g. from the watch worker, to warm up)
 // loads the module graph WITHOUT parsing argv or building anything.
+//
+// process.argv[1] must be realpath-resolved before comparing: the global
+// `jmarkdown` bin is a SYMLINK to this file, and Node reports the symlink path
+// in argv[1] but the resolved real path in import.meta.url. Without realpathSync
+// the guard is false for every symlinked invocation and the CLI silently does
+// nothing.
 // ===========================================================================
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+const isCliEntry = (() => {
+	try { return import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href; }
+	catch { return false; }
+})();
+if (isCliEntry) {
 	const program = new Command();
 
 	program
