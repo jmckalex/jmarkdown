@@ -1,0 +1,19 @@
+---
+Title: Body rules
+---
+
+A fenced code block that *shows* a metadata header keeps its `---` fences
+verbatim — they must not be mistaken for the document's own header terminator:
+
+```
+---
+Title: Example
+Author: Someone
+---
+```
+
+A `---` line in prose is an ordinary thematic break, not a stray terminator:
+
+---
+
+Done.

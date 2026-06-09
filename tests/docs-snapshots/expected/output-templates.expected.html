@@ -168,8 +168,10 @@
 </p>
 <p>To use a custom template for a single document, name it in that document's
   metadata header:</p>
-<pre><code class="hljs language-yaml"><span class="hljs-attr">Title:</span> <span class="hljs-string">My</span> <span class="hljs-string">Page</span>
+<pre><code class="hljs language-yaml"><span class="hljs-meta">---</span>
+<span class="hljs-attr">Title:</span> <span class="hljs-string">My</span> <span class="hljs-string">Page</span>
 <span class="hljs-attr">Template:</span> <span class="hljs-string">my-template.html.mustache</span>
+<span class="hljs-meta">---</span>
 </code></pre>
 <p>To use it for an entire project, set the same key in the project's
   <code>.jmarkdown/config.json</code> so every document in that directory inherits it:

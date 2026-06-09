@@ -1,3 +1,4 @@
+---
 Title: Introduction
 Extension smallcaps: ↑ ↑ false 1
 	<span style="font-variant-caps: small-caps;">${content1}</span>
@@ -7,7 +8,7 @@ Extension subscripts:  /[pxyz][0-9k]+/	/^([pxyz])([0-9k]+)/	false 2
 	<span>\(${content1}_{${content2}}\)</span>
 Extension tuples:  /\(\s*x([0-9a-z])\s*,\s*y([0-9a-z])\s*,\s*z([0-9a-z])\)/	/^\(\s*x([0-9a-z])\s*,\s*y([0-9a-z])\s*,\s*z([0-9a-z])\)/	false 3
 	<span>\((x_${content1}, y_${content2}, z_${content3})\)</span>
-------------------------------------
+---
 
 # Introduction
 

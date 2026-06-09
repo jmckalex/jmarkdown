@@ -214,19 +214,24 @@ the reference resolves to it.</code></pre>
   header (the <code>Document class</code> and <code>Heading base</code> keys are documented under the
   <a href="dual-output.html">dual-output model</a>):
 </p>
-<pre><code class="hljs">Title: My Treatise
+<pre><code class="hljs">---
+Title: My Treatise
 Document class: book
+---
 </code></pre>
 <p>The default <code>article</code> has no chapters and no matter divisions; the comparison
   under <a href="#choosing-a-document-class">Choosing a document class</a> below shows what each
   class buys you.</p>
 <h2 id="toc-a-complete-book-skeleton">A complete book skeleton</h2>
 <p>Putting the contents and matter markers together with a metadata header gives a
-  short but complete book master file. The source (the metadata header is shown
-  here in its bare-key form; the YAML-fenced <code>---</code> form works identically):</p>
-<pre><code class="hljs">Title: My Treatise
+  short but complete book master file. The source (shown with a YAML-fenced
+  <code>---</code> header; the bare-key form without fences works identically):
+</p>
+<pre><code class="hljs">---
+Title: My Treatise
 Author: A. Scholar
 Document class: book
+---
 
 {{frontmatter}}
 
@@ -312,10 +317,12 @@ More material here.
   contents of that file. The master holds the metadata header and the structure
   markers; each chapter file holds only its prose.</p>
 <p>A master file for a two-chapter book:</p>
-<pre><code class="hljs">Title: A Short Book
+<pre><code class="hljs">---
+Title: A Short Book
 Author: A. Scholar
 Document class: book
 Headings: numeric
+---
 
 {{frontmatter}}
 

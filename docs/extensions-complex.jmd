@@ -1,3 +1,4 @@
+---
 Title: Extensions Complex
 Extension mark: /\[\d\d\]/   /\[(\d\d)\]/   false 1
 	<span style='float: right; font-weight: bold; position: relative; top: 6pt'>Grade <span class='mark' style='padding: 3pt; border: 1pt solid black'>${content1}</span></span>
@@ -7,7 +8,7 @@ Extension subscripts:  /[pxyz][0-9k]+/	/^([pxyz])([0-9k]+)/	false 2
 	<span>\(${content1}_{${content2}}\)</span>
 Extension boxform: /BOX\[[^\]]+\]/	/^BOX\[([^\]]+)\]/	inline 1
 	**${content1}**
-------------------------------------
+---
 
 # Regular-expression syntax extensions
 

@@ -173,8 +173,10 @@ sequenceDiagram
   </li>
 </ul>
 <p>A metadata-header override looks like any other key:</p>
-<pre><code class="hljs">Title: My document
+<pre><code class="hljs">---
+Title: My document
 Mermaid: https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js
+---
 </code></pre>
 <p>Because the library is only added by the template, the <code>Mermaid</code> key matters only
   for full HTML documents. In <code>--fragment</code> mode JMarkdown emits the bare

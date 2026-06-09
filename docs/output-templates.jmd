@@ -1,7 +1,8 @@
+---
 Title: Output Templates
 Address: Department of Philosophy, Logic and Scientific Method<br>
 	London School of Economics and Political Science
-------------------------------------
+---
 
 # Output templates
 
@@ -173,9 +174,10 @@ To use a custom template for a single document, name it in that document's
 metadata header:
 
 ```yaml
+---
 Title: My Page
 Template: my-template.html.mustache
-------------------------------------
+---
 ```
 
 To use it for an entire project, set the same key in the project's

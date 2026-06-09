@@ -1,5 +1,6 @@
+---
 Title: Code Highlighting
-------------------------------------
+---
 
 # Code highlighting
 
@@ -122,9 +123,10 @@ leave the URL alone. To switch to highlight.js's dark "Atom One" theme, the
 metadata header needs only one line:
 
 ```
+---
 Title: My document
 Highlight theme: atom-one-dark
-------------------------------------
+---
 ```
 
 Any theme name that exists in the highlight.js distribution works — `github`,
@@ -138,9 +140,10 @@ want to bypass the CDN, override `Highlight src` directly. You can still use the
 `{{Highlight_theme}}` placeholder so the theme name stays in one place:
 
 ```
+---
 Highlight theme: monokai
 Highlight src: /assets/css/highlight/{{Highlight_theme}}.min.css
-------------------------------------
+---
 ```
 
 Because these are ordinary configuration keys, you are not limited to setting
@@ -208,8 +211,9 @@ The `Code language` metadata key sets the default minted language for inline
 spans and for fenced blocks that have no fence hint:
 
 ```
+---
 Code language: python
-------------------------------------
+---
 ```
 
 With that set, an inline `` `range(10)` `` becomes `\mintinline{python}{range(10)}`,

@@ -1,5 +1,6 @@
+---
 Title: Bibliographic Support
-------------------------------------
+---
 
 # Bibliographic support (`\cite{…}`)
 
@@ -46,11 +47,12 @@ Switch compile-time resolution on with three keys in the document's
 [configuration file](configuration-files.html)):
 
 ```
+---
 Title: A Paper About Conventions
 Resolve citations: true
 Bibliography: references.bib
 Bibliography style: chicago
-------------------------------------
+---
 
 # Introduction
 
@@ -213,11 +215,12 @@ time. You enable it with `Biblify activate: true` and *without* `Resolve
 citations`:
 
 ```
+---
 Title: A Set of Slides
 Biblify activate: true
 Bibliography: references.bib
 Bibliography style: chicago
-------------------------------------
+---
 
 # First slide
 
@@ -301,11 +304,12 @@ cites three works in different forms and produces a Chicago-style bibliography a
 build time:
 
 ```
+---
 Title: Signalling and Convention
 Resolve citations: true
 Bibliography: references.bib
 Bibliography style: chicago
-------------------------------------
+---
 
 # Signalling and Convention
 
