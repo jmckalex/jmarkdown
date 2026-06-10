@@ -4,6 +4,7 @@ import fs from 'fs';
 import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { configManager } from './config-manager.js';
+import { resetWarnings, reportWarnings } from './warnings.js';
 import { Command } from 'commander';
 import { initialise } from './init.js';
 import { showOptions } from './init.js';
@@ -83,6 +84,10 @@ if (!rawFilename && process.stdin.isTTY) {
 const filename = isStdin ? null : rawFilename;
 global.current_file = isStdin ? '<stdin>' : filename;
 global.isLatex = isLatex;
+
+// Start each build with a clean warning list (module state survives across
+// processFile calls in library/watch use); the summary prints after writeOutput.
+resetWarnings();
 const markdownFile = filename;
 // In stdin mode, [[file.md]] inclusions and the "Markdown file directory"
 // config (used by mathematica/tikz/template/metadata-header) resolve against
@@ -674,6 +679,9 @@ if (isLatex) {
 	writeOutput(html);
 }
 
+	// Build-quality warnings (unresolved :refs, duplicate labels, …) collected
+	// during the run — a short stderr summary, like LaTeX's end-of-run nags.
+	reportWarnings();
 
 	return { outFile, isLatex };
 }

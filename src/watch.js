@@ -88,6 +88,7 @@ export async function startWatch(file, options) {
 	// ----- live-reload clients (SSE) -----
 	const sseClients = new Set();
 	let lastError = null;
+	let lastWarnings = [];   // build-quality warnings from the last successful build
 	function broadcast(event, data = '') {
 		for (const res of sseClients) {
 			try { res.write(`event: ${event}\ndata: ${data}\n\n`); } catch { /* client gone */ }
@@ -123,11 +124,17 @@ export async function startWatch(file, options) {
 			if (myGen !== gen) return;     // a newer change superseded this build
 			if (m.type === 'done') {
 				lastError = null;
+				lastWarnings = Array.isArray(m.warnings) ? m.warnings : [];
 				updateWatchSet(m.deps);
 				console.log(`  ✓ ${path.relative(process.cwd(), outFile)}  (${Date.now() - t0}ms)${reason ? '  · ' + reason : ''}`);
+				for (const w of lastWarnings) console.warn(`  ⚠ ${w}`);
+				// reload first, warnings second: the client clears the old banner
+				// on 'reload' and repaints it from this event if warnings persist.
 				broadcast('reload');
+				if (lastWarnings.length) broadcast('buildwarnings', JSON.stringify(lastWarnings));
 			} else if (m.type === 'error') {
 				lastError = m.message;
+				lastWarnings = [];           // the red overlay supersedes stale warnings
 				console.error(`  ✗ build failed: ${m.message}`);
 				broadcast('builderror', JSON.stringify(m.message));
 			}
@@ -153,7 +160,7 @@ export async function startWatch(file, options) {
 	// ----- preview server + SSE injection -----
 	let serverPort = null;
 	if (serve) {
-		serverPort = await startServer(outDir, outFile, parseInt(options.port, 10) || 3000, sseClients, () => lastError, !!options.fullReload);
+		serverPort = await startServer(outDir, outFile, parseInt(options.port, 10) || 3000, sseClients, () => lastError, () => lastWarnings, !!options.fullReload);
 	}
 
 	// ----- run -----
@@ -185,13 +192,13 @@ export async function startWatch(file, options) {
 // A tiny static server rooted at the output directory. Serves the build with an
 // injected live-reload client (the on-disk file stays a clean build — injection
 // is on the fly), plus three control endpoints under /__jmd/:
-//   /__livereload   — SSE stream (reload / builderror events)
+//   /__livereload   — SSE stream (reload / builderror / buildwarnings events)
 //   /__jmd/src      — the raw built HTML (no injection): the morph target
 //   /__jmd/morphdom.js — the morphdom UMD bundle
 // Live updates use morphdom to patch only changed blocks (preserving rendered
 // MathJax/Mermaid in unchanged ones); --full-reload (or a missing morphdom)
 // falls back to a plain location.reload().
-function startServer(outDir, outFile, port, sseClients, getError, fullReload) {
+function startServer(outDir, outFile, port, sseClients, getError, getWarnings, fullReload) {
 	const morphAvailable = !fullReload && fs.existsSync(MORPHDOM);
 	const client = liveReloadClient(!morphAvailable);
 
@@ -202,8 +209,12 @@ function startServer(outDir, outFile, port, sseClients, getError, fullReload) {
 			res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
 			res.write(': connected\n\n');
 			sseClients.add(res);
+			// Replay current state to a fresh connection, so the overlay/banner
+			// survives a full page reload (the events were broadcast pre-reload).
 			const err = getError();
 			if (err) res.write(`event: builderror\ndata: ${JSON.stringify(err)}\n\n`);
+			const warns = getWarnings();
+			if (warns && warns.length) res.write(`event: buildwarnings\ndata: ${JSON.stringify(warns)}\n\n`);
 			req.on('close', () => sseClients.delete(res));
 			return;
 		}
@@ -267,7 +278,9 @@ const CLIENT_COMMON = `
   window.addEventListener('load', function(){ try{ var y=sessionStorage.getItem('__jmd_scroll'); if(y!==null){ window.scrollTo(0,+y); sessionStorage.removeItem('__jmd_scroll'); } }catch(e){} });
   function fullReload(){ saveScroll(); location.reload(); }
   function clearErr(){ var d=document.getElementById('__jmd_err'); if(d) d.remove(); }
-  function showErr(msg){ var d=document.getElementById('__jmd_err')||document.createElement('div'); d.id='__jmd_err'; d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#b00020;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3)'; d.textContent='JMarkdown build error:\\n'+msg; document.body.appendChild(d); }`;
+  function showErr(msg){ var d=document.getElementById('__jmd_err')||document.createElement('div'); d.id='__jmd_err'; d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#b00020;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3)'; d.textContent='JMarkdown build error:\\n'+msg; document.body.appendChild(d); }
+  function clearWarn(){ var d=document.getElementById('__jmd_warn'); if(d) d.remove(); }
+  function showWarn(msgs){ var d=document.getElementById('__jmd_warn')||document.createElement('div'); d.id='__jmd_warn'; d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483646;background:#9a6b00;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3);cursor:pointer'; d.title='Click to dismiss'; d.onclick=function(){ d.remove(); }; d.textContent='JMarkdown build warnings (click to dismiss):\\n'+msgs.join('\\n'); document.body.appendChild(d); }`;
 
 function liveReloadClient(useFullReload) {
 	if (useFullReload) {
@@ -276,6 +289,7 @@ function liveReloadClient(useFullReload) {
   var es = new EventSource('/__livereload');
   es.addEventListener('reload', function(){ fullReload(); });
   es.addEventListener('builderror', function(ev){ try{ showErr(JSON.parse(ev.data)); }catch(e){} });
+  es.addEventListener('buildwarnings', function(ev){ try{ showWarn(JSON.parse(ev.data)); }catch(e){} });
 })();</script>`;
 	}
 
@@ -344,9 +358,11 @@ function liveReloadClient(useFullReload) {
 
   var es=new EventSource('/__livereload');
   es.addEventListener('reload', function(){
+    clearWarn();  // a fresh 'buildwarnings' event follows immediately if warnings persist
     if(!window.morphdom){ fullReload(); return; }
     morph().catch(function(err){ try{ console.warn('[jmarkdown] morph failed; falling back to full reload', err); }catch(e){} fullReload(); });
   });
   es.addEventListener('builderror', function(ev){ try{ showErr(JSON.parse(ev.data)); }catch(e){} });
+  es.addEventListener('buildwarnings', function(ev){ try{ showWarn(JSON.parse(ev.data)); }catch(e){} });
 })();</script>`;
 }

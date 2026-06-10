@@ -15,6 +15,7 @@
 	pre-warmed standby instead of ever reusing a worker.
 */
 import { getDeps, resetDeps } from './dep-tracker.js';
+import { getWarnings } from './warnings.js';
 
 // File reads are recorded by the CJS preload (watch-fs-preload.cjs, applied via
 // -r when this worker is forked); resetDeps() before the build clears the
@@ -31,7 +32,9 @@ process.once('message', async (msg) => {
 	resetDeps();
 	try {
 		const { outFile } = await processFile(msg.file, msg.options);
-		if (process.send) process.send({ type: 'done', output: outFile, deps: getDeps() });
+		// warnings: build-quality nags (unresolved refs, duplicate labels) the
+		// watcher shows in the browser as an amber banner.
+		if (process.send) process.send({ type: 'done', output: outFile, deps: getDeps(), warnings: getWarnings() });
 	} catch (err) {
 		if (process.send) process.send({
 			type: 'error',

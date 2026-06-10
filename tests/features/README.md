@@ -2,7 +2,10 @@
 
 Small isolated `.jmd` fixtures that exercise one feature each, with paired
 goldens for HTML output (`*.expected.html`) and, where the LaTeX renderer
-produces correct output, LaTeX output (`*.expected.tex`).
+produces correct output, LaTeX output (`*.expected.tex`). A fixture may also
+carry `*.expected.stderr` — a golden for the HTML run's stderr (the
+build-warnings summary); it is checked only if present and never created by
+`--bootstrap`, so warning-silent fixtures don't accumulate empty goldens.
 
 Where the docs-snapshots suite gives broad coverage of real-world `.jmd`
 documents, this suite gives surgical coverage: tiny inputs that pinpoint

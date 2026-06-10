@@ -9,7 +9,19 @@ import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
 import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
+import { addWarning } from './warnings.js';
 import { commandForDepth } from './sectioning.js';
+
+// A :ref/:cref that can't produce a number renders '??' (mirroring LaTeX's
+// undefined-reference mark) — but '??' deep in a long document is easy to
+// miss, so also record a warning for the end-of-build summary. The two
+// failure modes get distinct messages: no such label at all, vs. a label
+// whose target carries no number (e.g. headings without `Headings: numeric`).
+function warnUnresolvedRef(key, info) {
+	addWarning(info
+		? `reference '${key}' resolved to a target with no number (is heading numbering off?)`
+		: `unresolved reference '${key}' — no matching :label`);
+}
 
 // Post-process HTML output using cheerio
 export function postProcessHTML(html, options = {}) {
@@ -326,6 +338,7 @@ function process_crossrefs($) {
 		}
 		else {
 			$elem.text('??');
+			warnUnresolvedRef(key, info);
 		}
 	});
 
@@ -340,6 +353,7 @@ function process_crossrefs($) {
 		}
 		else {
 			$elem.text('??');
+			warnUnresolvedRef(key, info);
 		}
 	});
 }

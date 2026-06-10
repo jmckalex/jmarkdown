@@ -40,6 +40,7 @@ All source lives in `src/`. Key files:
 | `latex-escape.js` | Shared `&`/`#` prose escaping (`escapeLatexText`) |
 | `sectioning.js` | Sectioning ladder + `Heading base`/`Document class` resolution (shared by the LaTeX heading renderer and the HTML cref word) |
 | `crossref.js` | HTML cross-reference registry: per-run label table + `typedRefText` (the `:cref` wording) |
+| `warnings.js` | Build-warning collector (reset per run from `processFile`): unresolved `:ref`/`:cref` and duplicate labels still render/overwrite as before, but are collected and summarised on stderr at end of build; watch mode shows them as an amber dismissible banner (`buildwarnings` SSE event, replayed to fresh connections) |
 | `floats.js` | `@begin(figure|table|subfigure|listing)` — captioned, numbered, referenceable floats |
 | `theorems.js` | `@begin(theorem|lemma|…|proof)` — thmtools, one shared sequential counter |
 | `equations.js` | `@begin(equation)` — numbered, referenceable display math |
@@ -98,8 +99,11 @@ standby):
 - **Preview server + SSE:** a tiny `http` server rooted at the output dir, with a
   `/__livereload` SSE endpoint; the live-reload client is **injected into served
   HTML on the fly** (so the on-disk output stays a clean build). Build errors show
-  a browser overlay. `--no-serve` for rebuild-only; `--open` to launch the
-  browser. HTML-only in v1 (`--to latex` PDF-refresh is a documented follow-on).
+  a red browser overlay; build warnings (from `warnings.js` — unresolved refs,
+  duplicate labels) an amber click-to-dismiss banner, replayed to fresh SSE
+  connections so it survives full reloads. `--no-serve` for rebuild-only;
+  `--open` to launch the browser. HTML-only in v1 (`--to latex` PDF-refresh is a
+  documented follow-on).
 - **morphdom live update (default):** on rebuild the client fetches the raw build
   (`/__jmd/src`) and **morphdom-diffs it onto the live DOM**, so only changed
   blocks update — no full reload, no flicker, scroll preserved, and **rendered
@@ -234,7 +238,10 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   **single-pass**). Wording is identical in both outputs (full words via
   `crefName`; equations parenthesised, "(2)"). Counters: sections (native /
   heading numbering), figures, tables, listings (own counters), theorems (one
-  shared sequential counter), equations.
+  shared sequential counter), equations. An unresolvable `:ref`/`:cref` still
+  renders `??` and a duplicate label still lets the later definition win, but
+  both now also record a build warning (`warnings.js`) — stderr summary +
+  watch-mode banner; the LaTeX path leaves this to the engine's native nags.
 - **Sectioning** (`sectioning.js`): heading depth → command from a base derived
   from the class (`article`→`\section`, `book`/`report`→`\chapter`) or explicit
   `Heading base`. The default `article` is why `#`→`\section` (article has no
