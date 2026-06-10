@@ -1,0 +1,9 @@
+Headings: numeric
+------------------------------------
+
+# Introduction :label[sec:intro]
+
+# Introduction copy-pasted :label[sec:intro]
+
+A resolvable reference: Section :ref[sec:intro]. An unresolvable one:
+Section :ref[sec:missing]. A typed one to nowhere: :cref[fig:nowhere].

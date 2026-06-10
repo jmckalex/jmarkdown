@@ -8,6 +8,8 @@
 #                           latex-document suite, and these fragments are what
 #                           tests/latex-compile wraps and compiles)
 #   <name>.flags          — single line of extra CLI args to pass to jmarkdown
+#   <name>.expected.stderr — golden for the HTML run's stderr (build warnings);
+#                           checked only if present, never auto-created
 #
 # A fixture without a corresponding *.expected.{html,tex} is treated as
 # silently absent for that output format. A fixture with NO goldens at all
@@ -80,6 +82,15 @@ find tests/features -mindepth 2 -name '*.jmd' -type f 2>/dev/null | sort | while
 			_counter_bump 2
 		else
 			assert_match "features/${base} [html]" "$actual_html" "$expected_html" "$mode"
+			# Optional stderr golden (<name>.expected.stderr) — diffs the HTML
+			# run's stderr (e.g. the build-warnings summary). Only checked when
+			# the golden already exists; --bootstrap never creates one, so the
+			# (silent) common case doesn't grow empty goldens. Seed it by hand
+			# or with --update after creating an empty placeholder.
+			expected_stderr="${dir}/${stem}.expected.stderr"
+			if [ -f "$expected_stderr" ]; then
+				assert_match "features/${base} [stderr]" "$stderr_log" "$expected_stderr" "$mode"
+			fi
 		fi
 	fi
 

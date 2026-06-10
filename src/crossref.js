@@ -14,6 +14,8 @@
 	builds more than one document (library use, multi-file books).
 */
 
+import { addWarning } from './warnings.js';
+
 let labels = {};
 
 // Discard all recorded labels. Call once at the start of each document build.
@@ -29,6 +31,13 @@ export function resetCrossrefs() {
 //             type    the kind of target ('section', 'figure', …) — used by the
 //                     typed :cref/:Cref form
 export function recordLabel(key, info) {
+	// A duplicate is almost always an author mistake (copy-pasted :label), and
+	// silently letting the later definition win sends every :ref to the wrong
+	// target. Keep the overwrite (it matches LaTeX, where the last \label wins
+	// after a "multiply defined" warning) but say so.
+	if (Object.prototype.hasOwnProperty.call(labels, key)) {
+		addWarning(`duplicate label '${key}' — the later definition replaces the earlier one`);
+	}
 	labels[key] = info;
 }
 

@@ -1,0 +1,4 @@
+jmarkdown: 3 warnings:
+  - duplicate label 'sec:intro' — the later definition replaces the earlier one
+  - unresolved reference 'sec:missing' — no matching :label
+  - unresolved reference 'fig:nowhere' — no matching :label
