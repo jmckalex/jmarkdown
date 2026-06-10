@@ -1,0 +1,4 @@
+# Marks without a home
+
+Here is term:index[term], and another:index[name]{name=authors} — but no
+placement anywhere, so both indexes are silently unprintable.

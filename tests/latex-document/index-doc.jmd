@@ -1,0 +1,10 @@
+LaTeX engine: pdflatex
+------------------------------------
+
+# Terms
+
+A mark:index[recursion] and an author:index[Church, Alonzo]{name=authors}.
+
+::Index{intoc}
+
+::Index{name=authors title="Author Index"}

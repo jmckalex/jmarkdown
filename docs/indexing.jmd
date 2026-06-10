@@ -1,0 +1,137 @@
+---
+Title: Back-of-book index
+---
+
+# Back-of-book index
+
+A scholarly book ends with an index: an alphabetized list of terms, each
+pointing at every place the term is discussed. The entries themselves are a
+craft — choosing what to index and how to phrase it is editorial work — but
+the *marks* must live in the source, or the book abandons its single source
+of truth at the final step. JMarkdown gives you one inline command for the
+marks and one block command for the index itself, and both editions come out
+right: print gets a native `makeindex` index, the web gets a generated,
+hyperlinked one.
+
+The design follows the [dual-output model](dual-output.html). In **LaTeX**
+output each mark becomes a native `\index{…}` command and the index prints
+with `\printindex` (via the `imakeidx` package, loaded automatically) — the
+TeX toolchain does the collecting, sorting, and page numbering. In **HTML**
+output JMarkdown does the same job itself in the post-processor: it collects
+the marks in document order, sorts and groups them, and builds a linked index
+right in the page.
+
+## Marking a term
+
+Write `:index[entry]` next to the word it indexes. The mark is *invisible* in
+both outputs — it only records "this spot discusses *entry*":
+
+```
+The halting problem:index[halting problem] was posed by
+Turing:index[Turing, Alan] in 1936.
+```
+
+Because the mark is invisible, you still write the word itself in the prose;
+the mark just tags the location, exactly like LaTeX's `word\index{word}`
+idiom.
+
+## The entry grammar
+
+The bracket content uses the standard `makeindex` grammar, passed to LaTeX
+verbatim — so everything `makeindex` can do, JMarkdown can do:
+
+| You write | Meaning |
+|---|---|
+| `:index[recursion]` | plain entry |
+| `:index[recursion!tail calls]` | subentry — `!` nests, up to three levels |
+| `:index[alpha@$\alpha$-conversion]` | sort key `@` display form: sorted as "alpha", shown as *α-conversion* |
+| `:index[lambda calculus\|see{$\alpha$-conversion}]` | cross-reference — no locator, just "*see* α-conversion" |
+| `:index[fixed points\|seealso{recursion}]` | "*see also*", appended after any locators |
+| `:index[induction\|(]` … `:index[induction\|)]` | a locator *range* — open at the first mark, close at the second |
+| `:index[currying\|textbf]` | emphasized locator, conventionally "the main discussion" (`textbf`, `textit`, `emph`) |
+| `:index[Oh"!]` | `"` quotes a literal `!`, `@`, `\|`, or `"` |
+
+Entries merge by their text: every `:index[recursion]` in the document
+contributes a locator to the single *recursion* entry. (A sort-key form is
+its own entry — `alpha@$\alpha$-conversion` and a bare `$\alpha$-conversion`
+would not merge — so pick one spelling and stick to it.)
+
+Math in the display form works in both editions: LaTeX typesets it natively,
+and in HTML the generated index leaves `$…$` for MathJax.
+
+## Printing the index
+
+Put `::Index` on a line of its own where the index should appear — by
+convention, at the very end:
+
+```
+::Index
+```
+
+It takes optional attributes:
+
+```
+::Index{title="Subject Index" intoc}
+```
+
+- `title` — the heading. Defaults to "Index".
+- `intoc` — LaTeX only: list the index in the table of contents.
+
+In LaTeX this loads `imakeidx`, registers `\makeindex` in the preamble, and
+emits `\printindex`. If you compile with `latexmk`, the `makeindex` runs
+happen automatically; compiling by hand, run `makeindex` on the `.idx` file
+between two LaTeX passes, as usual.
+
+If you mark terms but never place an `::Index`, the marks are silently
+useless in both editions — so JMarkdown's end-of-build summary warns you.
+
+## What the web edition shows instead of page numbers
+
+HTML has no pages, so each locator is the *section number* of the mark —
+"recursion, §2.3, §4.1" — and every locator is a link to the exact spot the
+mark occupies. This needs `Headings: numeric` in the metadata header; without
+it, locators fall back to plain occurrence numbers (1, 2, …). Repeated marks
+in the same section collapse to one locator, the way `makeindex` collapses
+repeated page numbers. Entries are grouped under letter headings (a
+*Symbols* group first), subentries nest, and `see`/`see also` references are
+hyperlinked to their target entry — something print cannot do.
+
+The generated markup is a `<nav class="index">` of letter-grouped lists, all
+plain elements with stable class names (`index-group`, `index-entry-text`,
+`index-locators`, `index-see`), so your stylesheet can typeset it however
+you like — multi-column, run-in subentries, whatever the design calls for.
+
+## Multiple indexes
+
+Scholarly books often want more than one index — a subject index and an
+author index, say. Give a mark a `name` attribute and give each named index
+its own placement:
+
+```
+Alonzo Church:index[Church, Alonzo]{name=authors} proved this.
+
+::Index{title="Subject Index"}
+
+::Index{name=authors title="Author Index"}
+```
+
+Unnamed marks go to the default index; named marks go to theirs. In LaTeX
+this uses `imakeidx`'s named indexes (`\index[authors]{…}`,
+`\printindex[authors]`), which is exactly what they exist for.
+
+## One naming caveat
+
+A handful of LaTeX-side constraints carry over by design: entries are
+single-line, at most three levels deep, and one `|` encap per entry — the
+`makeindex` rules. JMarkdown warns at build time where it can (too-deep
+entries, unbalanced ranges, a `see` target that doesn't exist).
+
+## A live example
+
+The marks scattered through this section:index[live example] demonstrate the
+machinery:index[machinery!demonstration] — including a Greek
+entry:index[alpha@$\alpha$-conversion], a bold locator:index[live example|textbf],
+and a cross-reference:index[demo|see{live example}]. Here is the index they
+produce:
+
+::Index{title="Index of this page"}

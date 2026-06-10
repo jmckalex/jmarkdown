@@ -64,6 +64,11 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		tikz-diagrams)     extra='\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning,shapes,calc}'; needs='tikz.sty' ;;
 		alerts)            extra='\usepackage{tcolorbox}'; needs='tcolorbox.sty' ;;
 		typography)        extra='\usepackage{minted}'; needs='minted.sty' ;;
+		# indexing: fragments carry \index + \printindex; the \makeindex
+		# declarations live in the (absent) preamble, so the wrapper supplies
+		# them. Without a makeindex run \printindex just warns (no .ind file)
+		# — the compile still proves the emitted commands are valid.
+		indexing)          extra='\usepackage{imakeidx}\makeindex\makeindex[name=authors, title={Author Index}]'; needs='imakeidx.sty' ;;
 		# begin-end: the fixtures' generic environments get the same no-op
 		# definitions a full-document build auto-provides (fragments carry no
 		# preamble, so the wrapper supplies them); game → sgame, callout takes

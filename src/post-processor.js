@@ -10,6 +10,7 @@ import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
 import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
 import { addWarning } from './warnings.js';
+import { buildIndexes } from './indexing.js';
 import { commandForDepth } from './sectioning.js';
 
 // A :ref/:cref that can't produce a number renders '??' (mirroring LaTeX's
@@ -62,6 +63,9 @@ export function postProcessHTML(html, options = {}) {
 	number_equations($);
 	process_crossrefs($);
 	replace_float_lists($);
+	// Back-of-book index: AFTER heading numbering (locators read the
+	// header-label spans) — collects :index marks, replaces ::Index divs.
+	buildIndexes($);
 	strip_matter_markers($);
 	replaceTargetsBySources($);
 

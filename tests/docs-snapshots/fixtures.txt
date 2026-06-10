@@ -44,5 +44,6 @@ book-structure
 cross-references
 dual-output
 floats
+indexing
 print-rendering
 theorems-and-equations
