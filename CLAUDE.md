@@ -263,9 +263,11 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   resolve at build time. `:cref` → "equation (2)".
 - **Conditional content**: `:::print`/`:::web` (+ inline `:print[…]`/`:web[…]` and
   `@begin(print)`/`@begin(web)`) — markdown emitted in one output only.
-- **Contents & matter** (parse hook in `index.js`): `{{TOC}}`/`{{LOF}}`/`{{LOT}}`
-  (LaTeX `\tableofcontents`/`\listoffigures`/`\listoftables`; HTML generated
-  lists) and `{{frontmatter}}`/`{{mainmatter}}`/`{{backmatter}}`/`{{appendix}}`
+- **Contents & matter** (parse hook in `index.js`): `{{TOC}}`/`{{LOF}}`/`{{LOT}}`/
+  `{{LOL}}` (LaTeX `\tableofcontents`/`\listoffigures`/`\listoftables`/
+  `\listoflistings` — the last requires minted, which the marker pulls in even
+  with no listings present; HTML generated lists) and
+  `{{frontmatter}}`/`{{mainmatter}}`/`{{backmatter}}`/`{{appendix}}`
   (LaTeX commands; HTML strips them — HTML appendix lettering not yet done).
 - **Other**: GFM alerts → `tcolorbox` (`alerts.js`); description lists →
   `description` env; tables rule with booktabs (`\toprule`/`\midrule`/

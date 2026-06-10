@@ -1,0 +1,7 @@
+LaTeX engine: pdflatex
+------------------------------------
+
+{{LOL}}
+
+No listing floats in this document — the list-of-listings marker above must
+still pull in the minted package on its own.
