@@ -337,8 +337,10 @@ find /opt/homebrew/Cellar/ghostscript -name 'libgs.*.dylib'
 #   /usr/lib/x86_64-linux-gnu/libgs.so
 </code></pre>
 <p>Then, in a document's metadata header or a config file:</p>
-<pre><code class="hljs">Title: My document
+<pre><code class="hljs">---
+Title: My document
 TiKZ libgs: /opt/homebrew/Cellar/ghostscript/10.07.0/lib/libgs.10.07.dylib
+---
 </code></pre>
 <p>(Setting it once in your global <code>~/.jmarkdown/config.json</code> is usually the right
   move, since the correct path is a property of the machine, not the document.)</p>
@@ -348,11 +350,13 @@ TiKZ libgs: /opt/homebrew/Cellar/ghostscript/10.07.0/lib/libgs.10.07.dylib
   style or macro your diagrams share. Because it is a <strong>list</strong>, give one entry per
   line. In a metadata header, a multi-line list is written with each item indented
   under the key:</p>
-<pre><code class="hljs">Title: My document
+<pre><code class="hljs">---
+Title: My document
 LaTeX preamble:
     \usetikzlibrary{automata, petri}
     \usepackage{xcolor}
     \tikzset{mystyle/.style={thick, blue}}
+---
 </code></pre>
 <p>Because the preamble is part of every diagram's hashed contents, changing it
   invalidates the cache for every diagram that depends on it — exactly what you

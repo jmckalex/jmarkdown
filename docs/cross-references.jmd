@@ -1,5 +1,6 @@
+---
 Title: Cross-references
-------------------------------------
+---
 
 # Cross-references
 
@@ -65,8 +66,9 @@ bare number (`:ref`) or the typed form (`:cref`, `:Cref`), which prints "section
 "subsection", and so on according to the heading's depth.
 
 ```markdown
+---
 Headings: numeric
-------------------------------------
+---
 
 # Introduction :label[sec:intro]
 

@@ -1,3 +1,4 @@
+---
 Title: Metadata Header
 Custom element: callout-box
 	<p part='top'><strong>Note</strong></p>
@@ -5,7 +6,7 @@ Custom element: callout-box
 Address: Department of Philosophy, Logic and Scientific Method<br>
 	London School of Economics and Political Science<br>
 	London, United Kingdom WC2A 2AE
-------------------------------------
+---
 
 # Metadata header
 
@@ -28,22 +29,28 @@ and cross-referenced below.
 
 ## The shape of a header
 
-When `jmarkdown` opens a file it inspects the first line. If that line looks like
-a key — letters, digits, spaces or hyphens, followed by a colon — JMarkdown
-treats the file as having a metadata header:
+A metadata header is a block of `Key: value` lines wrapped in a pair of `---`
+fences at the very top of the file — the convention Pandoc, Jekyll, Hugo, and
+Obsidian use:
 
 ```yaml
+---
 Key description: value assigned to the key
+---
 ```
 
-It then reads line after line until it reaches a line that begins with **at least
-three hyphens** (`---`). Everything above that rule is the header; everything
-below it is your document. The header is removed before parsing, so the rule and
-the keys never appear in the output.
+When `jmarkdown` opens a file it inspects the first line. An opening `---` fence
+(or a first line that already looks like a key — letters, digits, spaces or
+hyphens, followed by a colon) tells JMarkdown the file has a metadata header. It
+then reads line after line until it reaches a closing line that begins with **at
+least three hyphens** (`---`). Everything between the fences is the header;
+everything below it is your document. The header is removed before parsing, so the
+fences and the keys never appear in the output.
 
 A representative header looks like this:
 
 ```yaml
+---
 Title: The Rise of Computational Philosophy
 Date: 24 January 2025
 Author: J. McKenzie Alexander
@@ -51,7 +58,7 @@ CSS: book.css
 CSS: chapter.css
 Highlight theme: atom-one-dark
 HTML header: <!-- build 2025-01-24 -->
-------------------------------------
+---
 ```
 
 Two rules about values are worth fixing in mind from the outset, because the rest
@@ -67,26 +74,25 @@ of the page leans on them:
   the repeated values are concatenated. This is covered under
   [Repeated keys](#toc-repeated-keys).
 
-### The optional YAML fence
+### The bare form (without fences)
 
-JMarkdown's native form is the bare `Key: value` block shown above. For
-compatibility with the wider Markdown ecosystem — Pandoc, Jekyll, Hugo, Obsidian
-— you may also wrap the header in a pair of `---` fences, the convention those
-tools use:
+The `---` fences are recommended and are used throughout this documentation, but
+they are optional. JMarkdown's original native form is a *bare* `Key: value`
+block with no opening fence, terminated by the same three-or-more-hyphens rule:
 
 ```yaml
----
 Title: The Rise of Computational Philosophy
 Author: J. McKenzie Alexander
----
+------------------------------------
 ```
 
-The opening `---` is recognised only when it is the very first line of the file.
-The closing fence is the same "three or more hyphens" rule that terminates the
-bare form, so the two styles share one terminator. If what follows a leading
-`---` does not actually look like a header, JMarkdown backs off and treats the
-`---` as an ordinary horizontal rule, so you never lose a real `<hr>` to a false
-positive. Both styles are equivalent; pick whichever you prefer.
+An opening `---` is recognised only when it is the very first line of the file;
+otherwise the first `Key:` line opens the header. The closing rule is the same
+"three or more hyphens" in both styles, so the two forms share one terminator (a
+header may even open with `---` and close with a long rule). If what follows a
+leading `---` does not actually look like a header, JMarkdown backs off and treats
+the `---` as an ordinary horizontal rule, so you never lose a real `<hr>` to a
+false positive. Both styles are equivalent; pick whichever you prefer.
 
 ### When there is no header
 

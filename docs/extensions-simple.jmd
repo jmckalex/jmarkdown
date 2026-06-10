@@ -1,3 +1,4 @@
+---
 Title: Defining new inline syntax (simple form)
 Extension highlight3: [: :] [true,false,true] 3
 	<span class='test' style='background: #ffd5d5; padding: 0 .25em'>${content3}</span>
@@ -11,7 +12,7 @@ Extension keycap: ⌜ ⌝ false 1
 	<kbd>${content1}</kbd>
 Extension lead-in: »» «« true 1
 	<span style="font-variant-caps: small-caps; letter-spacing: .03em;">${content1}</span>
-------------------------------------
+---
 
 # Defining new inline syntax (simple form)
 

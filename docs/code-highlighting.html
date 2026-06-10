@@ -155,8 +155,10 @@ plain text, no highlighting applied
   leave the URL alone. To switch to highlight.js's dark "Atom One" theme, the
   metadata header needs only one line:
 </p>
-<pre><code class="hljs">Title: My document
+<pre><code class="hljs">---
+Title: My document
 Highlight theme: atom-one-dark
+---
 </code></pre>
 <p>Any theme name that exists in the highlight.js distribution works — <code>github</code>,
   <code>github-dark</code>, <code>monokai</code>, <code>nord</code>, <code>vs2015</code>, <code>default</code>, and dozens more. Browse
@@ -167,8 +169,10 @@ Highlight theme: atom-one-dark
   want to bypass the CDN, override <code>Highlight src</code> directly. You can still use the
   <code>{{Highlight_theme}}</code> placeholder so the theme name stays in one place:
 </p>
-<pre><code class="hljs">Highlight theme: monokai
+<pre><code class="hljs">---
+Highlight theme: monokai
 Highlight src: /assets/css/highlight/{{Highlight_theme}}.min.css
+---
 </code></pre>
 <p>Because these are ordinary configuration keys, you are not limited to setting
   them per document. Putting them in a project or global
@@ -223,7 +227,9 @@ greet('world');
 <h3 id="toc-choosing-the-latex-language">Choosing the LaTeX language</h3>
 <p>The <code>Code language</code> metadata key sets the default minted language for inline
   spans and for fenced blocks that have no fence hint:</p>
-<pre><code class="hljs">Code language: python
+<pre><code class="hljs">---
+Code language: python
+---
 </code></pre>
 <p>With that set, an inline <code>`range(10)`</code> becomes <code>\mintinline{python}{range(10)}</code>,
   and a fence written as three backticks with no language becomes a Python

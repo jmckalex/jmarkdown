@@ -33,8 +33,14 @@ export async function processYAMLheader(markdown) {
 	let has_header = /^[-a-zA-Z0-9 ]+:/.test(stripped);
 	if (has_header) {
 		markdown = stripped;
-		const [first, ...rest] = markdown.split(/\n^---.*$/m);
-		const remainder = rest.join('\n');
+		// Split off ONLY the first terminator line: everything before it is the
+		// header, everything after is the body — kept verbatim. (A plain
+		// `String.split(/…/m)` splits at *every* `---`/`------` line, which would
+		// silently delete such lines from the body — e.g. fences inside a code
+		// block that shows a header, or a `---` thematic break in prose.)
+		const term = markdown.match(/\n^---.*$/m);
+		const first = term ? markdown.slice(0, term.index) : markdown;
+		const remainder = term ? markdown.slice(term.index + term[0].length) : '';
 
 		header_length = first.split('\n').length + 1 + yaml_fence_lines;
 

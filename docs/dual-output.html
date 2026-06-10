@@ -44,10 +44,10 @@ jmarkdown process snippet.jmd --to latex --fragment   # body-only LaTeX
   boilerplate. From a document whose metadata header is nothing more than a title
   and an author, JMarkdown assembles a complete, ready-to-compile file. Take this
   source:</p>
-<pre><code class="hljs">
+<pre><code class="hljs">---
 Title: A Short Note
 Author: Ada Lovelace
-
+---
 
 # Beginnings
 
@@ -163,7 +163,7 @@ A single paragraph of prose.
   are what populate the PDF metadata.</p>
 <h3 id="toc-a-worked-metadata-header">A worked metadata header</h3>
 <p>Here is a header that exercises most of the keys at once:</p>
-<pre><code class="hljs">
+<pre><code class="hljs">---
 Title: On Coordination
 Author: J. McKenzie Alexander
 Date: June 2026
@@ -175,7 +175,7 @@ Geometry: margin=1in
 Line spacing: onehalf
 Header: The Rise of Computational Philosophy
 Footer: Draft
-
+---
 
 # Introduction
 
@@ -234,13 +234,14 @@ The argument begins with a coordination problem and some math <span class="hljs-
     environment definitions. Give it one line after the key, or several on their own
     lines beneath it; each line is copied through unchanged:</li>
 </ul>
-<pre><code class="hljs">
+<pre><code class="hljs">---
 Title: A Book
 Document class: book
 Packages: amsmath, amssymb
 LaTeX preamble:
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\N}{\mathbb{N}}
+---
 </code></pre>
 <p>That header produces a preamble whose tail carries your two macros verbatim,
   ready to use in the body (<code>$x \in \R$</code> and so on):</p>

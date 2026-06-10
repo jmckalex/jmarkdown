@@ -1,5 +1,6 @@
+---
 Title: TiKZ Diagrams
-------------------------------------
+---
 
 # TiKZ diagrams (the `TiKZ` directive)
 
@@ -298,9 +299,10 @@ find /opt/homebrew/Cellar/ghostscript -name 'libgs.*.dylib'
 Then, in a document's metadata header or a config file:
 
 ```
+---
 Title: My document
 TiKZ libgs: /opt/homebrew/Cellar/ghostscript/10.07.0/lib/libgs.10.07.dylib
-------------------------------------
+---
 ```
 
 (Setting it once in your global `~/.jmarkdown/config.json` is usually the right
@@ -315,12 +317,13 @@ line. In a metadata header, a multi-line list is written with each item indented
 under the key:
 
 ```
+---
 Title: My document
 LaTeX preamble:
     \usetikzlibrary{automata, petri}
     \usepackage{xcolor}
     \tikzset{mystyle/.style={thick, blue}}
-------------------------------------
+---
 ```
 
 Because the preamble is part of every diagram's hashed contents, changing it

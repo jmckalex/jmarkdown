@@ -1,5 +1,6 @@
+---
 Title: Book structure: contents, matter, and multi-file
-------------------------------------
+---
 
 # Book structure: contents, matter, and multi-file
 
@@ -203,8 +204,10 @@ header (the `Document class` and `Heading base` keys are documented under the
 [dual-output model](dual-output.html)):
 
 ```
+---
 Title: My Treatise
 Document class: book
+---
 ```
 
 The default `article` has no chapters and no matter divisions; the comparison
@@ -214,13 +217,15 @@ class buys you.
 ## A complete book skeleton
 
 Putting the contents and matter markers together with a metadata header gives a
-short but complete book master file. The source (the metadata header is shown
-here in its bare-key form; the YAML-fenced `---` form works identically):
+short but complete book master file. The source (shown with a YAML-fenced
+`---` header; the bare-key form without fences works identically):
 
 ```
+---
 Title: My Treatise
 Author: A. Scholar
 Document class: book
+---
 
 {{frontmatter}}
 
@@ -317,10 +322,12 @@ markers; each chapter file holds only its prose.
 A master file for a two-chapter book:
 
 ```
+---
 Title: A Short Book
 Author: A. Scholar
 Document class: book
 Headings: numeric
+---
 
 {{frontmatter}}
 
