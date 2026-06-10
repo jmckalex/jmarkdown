@@ -26,7 +26,7 @@ source produces both web and print.
 
 ## Contents lists
 
-Three markers build the standard front-of-book lists. Put each on a line by
+Four markers build the standard front-of-book lists. Put each on a line by
 itself, with a blank line above and below, at the point where the list should
 appear:
 
@@ -34,24 +34,27 @@ appear:
 {{TOC}}     table of contents
 {{LOF}}     list of figures
 {{LOT}}     list of tables
+{{LOL}}     list of listings
 ```
 
-In **LaTeX** these expand to `\tableofcontents`, `\listoffigures`, and
-`\listoftables`, and the document class numbers and formats them. In **HTML**
-JMarkdown builds the lists itself: `{{TOC}}` becomes a nested `<div class="toc">`
-of every heading (see the dedicated [Table of contents](table-of-contents.html)
-page for its full structure and styling), while `{{LOF}}` and `{{LOT}}` become a
-`<nav>` listing every captioned [figure or table](floats.html), each entry linked
-to the float it names.
+In **LaTeX** these expand to `\tableofcontents`, `\listoffigures`,
+`\listoftables`, and `\listoflistings`, and the document class numbers and
+formats them. (`\listoflistings` comes from the minted package, which the
+marker pulls in automatically.) In **HTML** JMarkdown builds the lists itself:
+`{{TOC}}` becomes a nested `<div class="toc">` of every heading (see the
+dedicated [Table of contents](table-of-contents.html) page for its full
+structure and styling), while `{{LOF}}`, `{{LOT}}`, and `{{LOL}}` become a
+`<nav>` listing every captioned [figure, table, or listing](floats.html), each
+entry linked to the float it names.
 
 ### What the lists collect
 
-`{{LOF}}` and `{{LOT}}` are populated from *captioned floats* — the
-[`@begin(figure)` and `@begin(table)`](floats.html) environments, which carry a
-caption in `[brackets]` and an id in `{id=…}`. A bare image (`![](…)`) is not a
-float and does not appear in the list. The numbering is automatic and shared with
-the cross-reference system, so "Figure 1" in the list is the same "Figure 1" a
-`:cref` points to.
+`{{LOF}}`, `{{LOT}}`, and `{{LOL}}` are populated from *captioned floats* — the
+[`@begin(figure)`, `@begin(table)`, and `@begin(listing)`](floats.html)
+environments, which carry a caption in `[brackets]` and an id in `{id=…}`. A
+bare image (`![](…)`) or a plain code fence is not a float and does not appear
+in the list. The numbering is automatic and shared with the cross-reference
+system, so "Figure 1" in the list is the same "Figure 1" a `:cref` points to.
 
 Here is a document with a contents list, a list of figures, a list of tables, and
 two numbered floats. The source (with `Headings: numeric` in its metadata

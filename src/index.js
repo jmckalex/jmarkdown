@@ -505,6 +505,11 @@ marked.use(gfmHeadingIdExtension, {
 				html = html.replace(/\{\{TOC\}\}/g, '\\tableofcontents');
 				html = html.replace(/\{\{LOF\}\}/g, '\\listoffigures');
 				html = html.replace(/\{\{LOT\}\}/g, '\\listoftables');
+				// \listoflistings is minted's command (the listing float's
+				// package) — require it here too, so a {{LOL}} in a document
+				// with no actual listings still compiles.
+				if (/\{\{LOL\}\}/.test(html)) requirePackage('minted');
+				html = html.replace(/\{\{LOL\}\}/g, '\\listoflistings');
 				// Matter divisions (book/report) and appendix. \frontmatter and
 				// friends require the book/report class; \appendix works anywhere.
 				html = html.replace(/\{\{frontmatter\}\}/g, '\\frontmatter');
@@ -514,8 +519,8 @@ marked.use(gfmHeadingIdExtension, {
 				return html;
 			}
 			// HTML: build the table of contents here from the heading list.
-			// {{LOF}}/{{LOT}} are built later in the post-processor, once figures
-			// and tables have been numbered.
+			// {{LOF}}/{{LOT}}/{{LOL}} are built later in the post-processor,
+			// once figures, tables, and listings have been numbered.
 			const headings = getHeadingList();
 			const toc = createTOC(headings);
 			html = html.replace("{{TOC}}", toc);

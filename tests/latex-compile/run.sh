@@ -60,7 +60,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		theorems)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[sibling=theorem]{lemma}\declaretheorem[sibling=theorem]{corollary}\declaretheorem[sibling=theorem]{proposition}\declaretheorem[style=definition,sibling=theorem]{definition}\declaretheorem[style=definition,sibling=theorem]{example}\declaretheorem[style=remark,sibling=theorem]{remark}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
 		equations)         extra='\usepackage{amsmath}\usepackage{cleveref}'; needs='cleveref.sty' ;;
 		listings)          extra='\usepackage{minted}\usepackage{cleveref}'; needs='minted.sty cleveref.sty' ;;
-		contents)          extra='\usepackage[draft]{graphicx}\usepackage{booktabs}'; needs='booktabs.sty' ;;
+		contents)          extra='\usepackage[draft]{graphicx}\usepackage{booktabs}\usepackage{minted}'; needs='booktabs.sty minted.sty' ;;
 		tikz-diagrams)     extra='\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning,shapes,calc}'; needs='tikz.sty' ;;
 		alerts)            extra='\usepackage{tcolorbox}'; needs='tcolorbox.sty' ;;
 		typography)        extra='\usepackage{minted}'; needs='minted.sty' ;;
@@ -86,7 +86,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))

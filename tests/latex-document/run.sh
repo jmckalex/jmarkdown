@@ -121,6 +121,13 @@ if render matter; then
 	want "matter/backmatter"      "$TEX" '\backmatter'
 fi
 
+# --- contents-lol.jmd: {{LOL}} expands to minted's \listoflistings and pulls
+#     in minted even when the document has no listing floats. ---
+if render contents-lol; then
+	want "lol/listoflistings" "$TEX" '\listoflistings'
+	want "lol/minted"         "$TEX" '\usepackage{minted}'
+fi
+
 # --- generic-env.jmd: an unregistered @begin(name) auto-provides a guarded
 #     no-op \newenvironment via \AtBeginDocument (so the author's own
 #     definition, wherever it appears, always wins); registered names don't. ---

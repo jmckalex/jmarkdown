@@ -51,6 +51,7 @@ export function postProcessHTML(html, options = {}) {
 	resetCrossrefs();
 	figureList = [];
 	tableList = [];
+	listingList = [];
 	if (configManager.get("Headings") && configManager.get("Headings")[0] == "numeric") {
 		add_labels_to_headers($);
 	}
@@ -124,15 +125,17 @@ function add_labels_to_headers($) {
 	})
 }
 
-// Ordered caption text + anchor for each figure / table, collected during
-// numbering and consumed by replace_float_lists to build {{LOF}} / {{LOT}}.
-// Reset per run in postProcessHTML.
+// Ordered caption text + anchor for each figure / table / listing, collected
+// during numbering and consumed by replace_float_lists to build {{LOF}} /
+// {{LOT}} / {{LOL}}. Reset per run in postProcessHTML.
 let figureList = [];
 let tableList = [];
+let listingList = [];
 
-// Replace {{LOF}} / {{LOT}} paragraphs with a list of figures / tables, each
-// entry linking to its float. LaTeX uses \listoffigures/\listoftables instead
-// (handled in the parse hook), so this is HTML-only.
+// Replace {{LOF}} / {{LOT}} / {{LOL}} paragraphs with a list of figures /
+// tables / listings, each entry linking to its float. LaTeX uses
+// \listoffigures/\listoftables/\listoflistings instead (handled in the parse
+// hook), so this is HTML-only.
 function replace_float_lists($) {
 	const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 	const build = (items, cls) => {
@@ -145,6 +148,7 @@ function replace_float_lists($) {
 		const t = $(el).text().trim();
 		if (t === '{{LOF}}') $(el).replaceWith(build(figureList, 'list-of-figures'));
 		else if (t === '{{LOT}}') $(el).replaceWith(build(tableList, 'list-of-tables'));
+		else if (t === '{{LOL}}') $(el).replaceWith(build(listingList, 'list-of-listings'));
 	});
 }
 
@@ -222,8 +226,9 @@ function number_listings($) {
 		const $lst = $(elem);
 		n++;
 		const id = $lst.attr('id');
-		$lst.children('figcaption').first()
-			.prepend(`<span class="listing-label xref">Listing ${n}:</span> `);
+		const $cap = $lst.children('figcaption').first();
+		$cap.prepend(`<span class="listing-label xref">Listing ${n}:</span> `);
+		listingList.push({ text: $cap.text(), anchor: id });
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'listing', anchor: id });
 		}

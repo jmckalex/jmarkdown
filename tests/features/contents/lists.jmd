@@ -7,6 +7,8 @@ Headings: numeric
 
 {{LOT}}
 
+{{LOL}}
+
 # Introduction
 
 @begin(figure)[First figure]{id=fig:a}
@@ -20,3 +22,11 @@ Headings: numeric
 |---|---|
 | 1 | 2 |
 @end(table)
+
+# Code
+
+@begin(listing)[First listing]{id=lst:a}
+```python
+print("hello")
+```
+@end(listing)

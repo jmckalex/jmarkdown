@@ -51,28 +51,31 @@
   document. They build on the <a href="dual-output.html">dual-output model</a>, where one
   source produces both web and print.</p>
 <h2 id="toc-contents-lists">Contents lists</h2>
-<p>Three markers build the standard front-of-book lists. Put each on a line by
+<p>Four markers build the standard front-of-book lists. Put each on a line by
   itself, with a blank line above and below, at the point where the list should
   appear:</p>
 <pre><code class="hljs">{{TOC}}     table of contents
 {{LOF}}     list of figures
 {{LOT}}     list of tables
+{{LOL}}     list of listings
 </code></pre>
-<p>In <span class="intense">LaTeX</span> these expand to <code>\tableofcontents</code>, <code>\listoffigures</code>, and
-  <code>\listoftables</code>, and the document class numbers and formats them. In <span class="intense">HTML</span>
-  JMarkdown builds the lists itself: <code>{{TOC}}</code> becomes a nested <code>&lt;div class="toc"&gt;</code>
-  of every heading (see the dedicated <a href="table-of-contents.html">Table of contents</a>
-  page for its full structure and styling), while <code>{{LOF}}</code> and <code>{{LOT}}</code> become a
-  <code>&lt;nav&gt;</code> listing every captioned <a href="floats.html">figure or table</a>, each entry linked
-  to the float it names.
+<p>In <span class="intense">LaTeX</span> these expand to <code>\tableofcontents</code>, <code>\listoffigures</code>,
+  <code>\listoftables</code>, and <code>\listoflistings</code>, and the document class numbers and
+  formats them. (<code>\listoflistings</code> comes from the minted package, which the
+  marker pulls in automatically.) In <span class="intense">HTML</span> JMarkdown builds the lists itself:
+  <code>{{TOC}}</code> becomes a nested <code>&lt;div class="toc"&gt;</code> of every heading (see the
+  dedicated <a href="table-of-contents.html">Table of contents</a> page for its full
+  structure and styling), while <code>{{LOF}}</code>, <code>{{LOT}}</code>, and <code>{{LOL}}</code> become a
+  <code>&lt;nav&gt;</code> listing every captioned <a href="floats.html">figure, table, or listing</a>, each
+  entry linked to the float it names.
 </p>
 <h3 id="toc-what-the-lists-collect">What the lists collect</h3>
-<p><code>{{LOF}}</code> and <code>{{LOT}}</code> are populated from <strong>captioned floats</strong> — the
-  <a href="floats.html"><code>@begin(figure)</code> and <code>@begin(table)</code></a> environments, which carry a
-  caption in <code>[brackets]</code> and an id in <code>{id=…}</code>. A bare image (<code>![](…)</code>) is not a
-  float and does not appear in the list. The numbering is automatic and shared with
-  the cross-reference system, so "Figure 1" in the list is the same "Figure 1" a
-  <code>:cref</code> points to.
+<p><code>{{LOF}}</code>, <code>{{LOT}}</code>, and <code>{{LOL}}</code> are populated from <strong>captioned floats</strong> — the
+  <a href="floats.html"><code>@begin(figure)</code>, <code>@begin(table)</code>, and <code>@begin(listing)</code></a>
+  environments, which carry a caption in <code>[brackets]</code> and an id in <code>{id=…}</code>. A
+  bare image (<code>![](…)</code>) or a plain code fence is not a float and does not appear
+  in the list. The numbering is automatic and shared with the cross-reference
+  system, so "Figure 1" in the list is the same "Figure 1" a <code>:cref</code> points to.
 </p>
 <p>Here is a document with a contents list, a list of figures, a list of tables, and
   two numbered floats. The source (with <code>Headings: numeric</code> in its metadata
