@@ -175,6 +175,7 @@
     <span class="hljs-attr">"TiKZ libgs"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib"</span><span class="hljs-punctuation">,</span>
     <span class="hljs-attr">"TiKZ optimise"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"group-attributes,collapse-groups"</span><span class="hljs-punctuation">,</span>
     <span class="hljs-attr">"Code language"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"text"</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Smart typography"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
     <span class="hljs-attr">"Block elements"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"hyphenated"</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -262,6 +263,12 @@
       <td>string</td>
       <td><code>"text"</code></td>
       <td>The fallback language used by the <a href="sources-and-targets.html">LaTeX renderer</a> for fenced code blocks that carry no language tag.</td>
+    </tr>
+    <tr>
+      <td><code>Smart typography</code></td>
+      <td>boolean</td>
+      <td><code>false</code></td>
+      <td>Educate ASCII typography in prose, in <strong>both</strong> outputs: straight quotes become curly ones (with context-sensitive opening/closing and apostrophes), <code>---</code> and <code>--</code> become em and en dashes, and <code>...</code> becomes an ellipsis. Code, math, and backslash-escaped characters are left untouched — as are curly quotes and real dashes you typed yourself.</td>
     </tr>
   </tbody>
 </table>

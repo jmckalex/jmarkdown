@@ -63,6 +63,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		contents)          extra='\usepackage[draft]{graphicx}\usepackage{booktabs}'; needs='booktabs.sty' ;;
 		tikz-diagrams)     extra='\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning,shapes,calc}'; needs='tikz.sty' ;;
 		alerts)            extra='\usepackage{tcolorbox}'; needs='tcolorbox.sty' ;;
+		typography)        extra='\usepackage{minted}'; needs='minted.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -79,7 +80,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))

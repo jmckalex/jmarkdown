@@ -58,6 +58,9 @@ export const DEFAULT_CONFIG = {
 	'TiKZ libgs': '/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib',
 	'TiKZ optimise': 'group-attributes,collapse-groups',
 	'Code language': 'text',
+	// Opt-in typographic educator (see src/smart-typography.js): straight
+	// quotes → curly, ---/-- → em/en dash, ... → ellipsis, in both outputs.
+	'Smart typography': false,
 	// How a generic @begin(name) block renders in HTML (see src/begin-end.js):
 	// 'hyphenated' → hyphenated names become custom elements, others div.class;
 	// 'all' → always a custom element; 'none' → always a div.class.
@@ -260,6 +263,12 @@ class ConfigManager {
 				// Written to the space-keyed config so begin-end.js can read it
 				// directly via configManager.get('Block elements').
 				this.config["Block elements"] = value[0].trim().toLowerCase();
+				break;
+			case "Smart_typography":
+				// Space-keyed for the same reason: smart-typography.js reads
+				// configManager.get('Smart typography') lazily at walk time.
+				str = value[0].trim().toLowerCase();
+				this.config["Smart typography"] = (str == "true");
 				break;
 			default:
 				formattedMetadata[formattedKey] = value;
