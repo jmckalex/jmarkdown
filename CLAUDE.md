@@ -261,7 +261,14 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   TikZ emits native `tikzpicture` (preamble auto-loads tikz + libraries); Mermaid
   rasterises to a cached PDF via `mmdc` (optional — skipped with a hint if absent).
 - **Math passthrough**: inline/display `$…$`/`$$…$$` pass through verbatim; escaping
-  touches only `&`/`#` (see `latex-escape.js` + the reserved-chars memory).
+  touches only `&`/`#` (see `latex-escape.js` + the reserved-chars memory). The
+  inline `latex` extension protects inline `$…$`/`\(…\)`; a **block-level**
+  `mathBlock` extension (`syntax-enhancements.js`, registered after the list
+  extensions so marked tries it first) claims whole display blocks — `$$…$$`,
+  `\[…\]`, and bare `\begin{env}…\end{env}` — BEFORE the list/paragraph tokenizers,
+  so math whose lines start with `+ `/`- `/`* ` (aligned-equation operators) isn't
+  sliced into `<ul>/<li>`, and bare `\begin{align}` works without a `$$` wrapper.
+  `\[…\]` is now preserved (not rewritten to `$$`).
 - **`:::game`** (`strategic-form-games.js`) → `sgame`'s `game` environment.
   Positional optional args: lone `[...]` = caption; `[...][...]` = player labels;
   `[row][col][caption]` = all three (empty `[]` fills a missing player label).
