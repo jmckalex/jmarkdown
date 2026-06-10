@@ -37,6 +37,7 @@ strategic-form-games
 syntax-adjustments
 table-of-contents
 tables-and-alerts
+watch-mode
 
 # LaTeX & document-preparation pages
 book-structure

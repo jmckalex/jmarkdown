@@ -1,0 +1,175 @@
+---
+Title: Watch mode: live preview
+---
+
+# Watch mode: live preview
+
+Authoring is a loop: write a little, look at the result, write a little more. If
+every look means switching to a terminal, re-running `jmarkdown process`, and
+reloading the browser by hand, the loop is slow enough that you stop looking —
+and mistakes accumulate unseen. *Watch mode* closes the loop. One command
+rebuilds the document every time you save and updates the page in the browser
+*in place*: no manual rebuild, no reload button, no flicker, no losing your
+scroll position. Rendered mathematics and diagrams in the parts you did not
+touch stay exactly as they are; only the blocks you changed are re-rendered.
+
+```bash
+jmarkdown watch notes.md --open
+```
+
+That is the whole workflow. Leave it running in a terminal, write in your
+editor, and the browser keeps up.
+
+## Getting started
+
+Point `jmarkdown watch` at the document you are writing. The `--open` flag
+launches your browser at the preview address:
+
+```bash
+jmarkdown watch notes.md --open
+```
+
+The terminal reports the build target, the preview address, and then one line
+per rebuild:
+
+```
+jmarkdown watch: notes.md → notes.html
+  live preview at http://localhost:3000/  (Ctrl-C to stop)
+  ✓ notes.html  (675ms)  · initial
+  ✓ notes.html  (182ms)  · change notes.md
+  ✓ notes.html  (179ms)  · change notes.md
+```
+
+The first build is the slowest, because it pays the full start-up cost. Every
+build after that runs in a *pre-warmed* worker process, so a save typically
+becomes a finished rebuild in a fraction of a second. Each rebuild runs in a
+fresh process — exactly the environment `jmarkdown process` would give you — so
+what you preview is byte-for-byte what a normal build produces.
+
+If the requested port is already in use, the server simply walks upward to the
+next free one — the address printed in the terminal is always the right one. To
+pin a specific port, pass `--port`:
+
+```bash
+jmarkdown watch notes.md --open --port 8015
+```
+
+## Command reference
+
+```
+jmarkdown watch <filename> [options]
+```
+
+| Option | Effect |
+|---|---|
+| `--open` | Open the live preview in your browser on start. |
+| `--port <number>` | Port for the preview server (default `3000`; walks upward if taken). |
+| `-o, --output <file>` | Write the build to `<file>` instead of the derived name. |
+| `--to <format>` | `html` (default) or `latex` — see "Rebuild-only workflows" below. |
+| `--no-serve` | Only rebuild on change; do not start the preview server. |
+| `--full-reload` | Reload the whole page on change instead of patching it in place. |
+
+Stop watching with `Ctrl-C`.
+
+## What is watched
+
+You name one file — the document itself — but watch mode tracks *everything the
+build actually reads* and rebuilds when any of it changes:
+
+- the source document;
+- every file spliced in with [`[[file.md]]` inclusion](file-inclusion.html),
+  recursively — so for a book, watch the *master* file and edit any chapter;
+- the [configuration files](configuration-files.html)
+  (`~/.jmarkdown/config.json` and `./.jmarkdown/config.json`);
+- any custom [output template](output-templates.html);
+- the bibliography `.bib` file;
+- images and other assets the build touches.
+
+The dependency list is rediscovered on every rebuild, so it never goes stale:
+add a new `[[chapter.md]]` line to the master, save, and the new chapter is
+watched from that build onward.
+
+One caveat in the current version: files brought in through the `Load
+directives`, `Load extensions`, `Load environments`, or `Load javascript`
+metadata keys are loaded as JavaScript modules rather than read as files, so
+edits to *them* are not detected. After changing one of those, restart the
+watcher (`Ctrl-C`, then the same command again).
+
+## How the page updates
+
+When a rebuild finishes, the browser does *not* reload. The preview client
+fetches the new build, compares it block by block with the page on screen, and
+patches only the blocks whose source changed. In practice this means:
+
+- *No flicker, no scroll jump.* The page stays where you left it; only the
+  paragraph you edited changes.
+- *Rendered math survives.* MathJax output in untouched blocks is left alone —
+  no re-typesetting flash across the whole document. A block whose mathematics
+  you actually edited is re-typeset, alone.
+- *Diagrams survive too.* [Mermaid diagrams](mermaid-diagrams.html) in
+  unchanged blocks keep their rendered SVG; an edited diagram is re-rendered by
+  itself.
+
+If a build fails — a malformed directive, an unclosed environment — the browser
+shows an error overlay with the message from the build, and the last good page
+stays underneath. Fix the source and save: the overlay clears and the page
+updates as usual. The terminal carries the same message, prefixed `✗`.
+
+The in-place patching is conservative: if it ever cannot apply an update
+cleanly, the client falls back to a plain full reload automatically (restoring
+your scroll position). If you prefer the old-fashioned behaviour always — every
+change reloads the whole page — pass `--full-reload`.
+
+## The file on disk stays clean
+
+The preview server injects its live-reload client into the page *as it serves
+it*; the `.html` file written to disk is a normal, clean build with nothing
+added. You can deploy or share the output of a watch session as-is — it is the
+same file `jmarkdown process` would have written.
+
+## Rebuild-only workflows
+
+Sometimes you want the rebuilds without the preview server — for instance, when
+the output is served by your own development server, or consumed by another
+tool. Pass `--no-serve`:
+
+```bash
+jmarkdown watch notes.md --no-serve
+```
+
+The same applies automatically to LaTeX: live preview is HTML-only in this
+version, so with `--to latex` watch mode rebuilds the `.tex` file on every save
+and skips the server. Pair it with a PDF viewer that reloads on file change and
+you have a serviceable print-preview loop:
+
+```bash
+jmarkdown watch book.md --to latex
+```
+
+## Quick reference
+
+- *One command:* `jmarkdown watch file.md --open` — rebuild on save, update the
+  browser in place.
+- *Watch the master file* of a multi-file book; edits to included chapters are
+  picked up automatically.
+- *Math and diagrams* in unchanged blocks are never re-rendered; edited ones
+  are re-rendered alone.
+- *Build errors* appear as a browser overlay (and `✗` in the terminal); fix and
+  save to recover.
+- *The on-disk output is a clean build* — the live-reload machinery exists only
+  in the served copy.
+- *Changed a `Load …` file?* Restart the watcher; those modules are not
+  auto-tracked yet.
+- `--no-serve` for rebuild-only; `--to latex` implies it. `--full-reload` for
+  whole-page reloads. `--port` to pin the server port.
+
+## Related pages
+
+- [File inclusion](file-inclusion.html) — the `[[file.md]]` mechanism that
+  watch mode tracks recursively.
+- [Configuration files](configuration-files.html) — the `config.json` layers,
+  both watched during a session.
+- [Dual output](dual-output.html) — the HTML/LaTeX model behind `--to latex`,
+  and what a full (non-watch) build produces.
+- [Output templates](output-templates.html) — custom templates, also rebuilt
+  on change.

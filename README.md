@@ -67,6 +67,8 @@ to make the `jmarkdown` executable available from the command line.
 	- Parameter variables (`{{myvar}}`)
 	- Defining new markdown syntax
 - Inline and post-processing scripts
+- Live preview: `jmarkdown watch file.md --open` rebuilds on save and updates
+  the browser in place, preserving rendered math and diagrams in unchanged blocks
 
 ## Example Syntax
 

@@ -262,6 +262,7 @@ what you are trying to do.
 | If you want to… | See |
 |---|---|
 | Understand the project's goals | [Motivation](motivation.html) |
+| See your edits live while writing | [Watch mode](watch-mode.html) |
 | Learn the adjusted base syntax | [Syntax adjustments](syntax-adjustments.html), [Disabled syntax](disabled-syntax.html) |
 | Define inline notation in the header | [Extensions (simple)](extensions-simple.html), [Extensions (complex)](extensions-complex.html) |
 | Use block-level containers | [Directives syntax](directives-syntax.html), [Block environments](block-environments.html) |

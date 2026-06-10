@@ -114,6 +114,9 @@ standby):
   fallback, not by an automated test — there's no headless browser in the suite.)
 - New deps: `chokidar`, `morphdom`. The four watch files are import-isolated from
   the build path, so they only load on the `watch` command.
+- Author-facing docs: `docs/watch-mode.jmd` (in the docs-snapshot suite and the
+  `index.html` nav). Port collisions auto-walk upward (up to 20 attempts); the
+  printed URL is authoritative.
 
 ## Critical conventions and gotchas
 
