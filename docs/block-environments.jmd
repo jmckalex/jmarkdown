@@ -59,9 +59,21 @@ custom-element name.
 You can force either form with a sigil — `@begin(.name)` is always a `<div>`,
 `@begin(<name>)` is always an element — or set the document-wide policy with the
 `Block elements` metadata key (`hyphenated` (default) · `all` · `none`). In
-LaTeX, every environment renders as `\begin{name}[label]…\end{name}` regardless,
-so you supply the matching CSS for the web and the matching `\newenvironment` for
-print. JMarkdown invents no meaning for the name — that is your job, which brings
+LaTeX, every environment renders as `\begin{name}[label]…\end{name}` regardless.
+You do *not* have to define the environment to get a compilable document: the
+assembled preamble automatically provides a guarded no-op definition for any
+undefined name (deferred with `\AtBeginDocument`, so a real
+`\newenvironment{name}` of yours — from the `LaTeX preamble` key, a package, or
+your document class — always wins, wherever it appears). Until you define it,
+the body typesets as plain paragraphs and a `[label]` shows literally — the
+print twin of an unstyled `<div>` waiting for its CSS.
+
+One naming caveat for print: a name that is already a TeX command — `box`,
+`outer`, `middle`, `frame`, … — cannot work as a LaTeX environment at all (TeX
+runs the existing command when the environment opens), so dual-output documents
+should avoid such names.
+
+JMarkdown invents no meaning for the name — that is your job, which brings
 us to:
 
 # Defining your own environments
@@ -170,6 +182,26 @@ Paths are resolved relative to the document, so the file travels with your
 project. (For environments you want available to *every* project, list the file
 under the `Environments` key in a global or project `.jmarkdown/config.json`,
 using an absolute path.)
+
+## Declaring LaTeX packages from a handler
+
+If your `latex` renderer relies on a package, declare it the way JMarkdown's
+own renderers do — call `requirePackage('name')` inside the renderer (also
+available: `addPreamble(line)` for raw preamble lines such as a
+`\newtcolorbox`, and `addLatePreamble(line)` for lines that must follow
+hyperref/cleveref). The declaration is usage-driven: the full-document preamble
+gains the `\usepackage` only when the environment actually renders, and the
+calls are harmless in HTML output.
+
+```js
+defineEnvironment('shaded', {
+	html:  (ctx) => `<div class="shaded">${ctx.inner}</div>`,
+	latex: (ctx) => {
+		requirePackage('tcolorbox');
+		return `\\begin{tcolorbox}\n${ctx.inner}\n\\end{tcolorbox}\n\n`;
+	},
+});
+```
 
 ## Built-in environments
 

@@ -40,6 +40,7 @@ import { blockFunctions, inlineFunctions } from './inline-function-extension.js'
 import { citations, bibliography } from './citations.js';
 import { beginEnd } from './begin-end.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
+import { requirePackage, addPreamble, addLatePreamble } from './preamble.js';
 import './floats.js';
 import './theorems.js';
 import './equations.js';
@@ -469,6 +470,15 @@ marked.use({ extensions: [beginEnd] });
 // callback receives the full ctx — including ctx.text ([label]) and ctx.attrs
 // ({attributes}). Define an environment before the @begin that uses it.
 global.defineEnvironment = registerBlockEnvironment;
+
+// And let those user-defined handlers declare their LaTeX preamble needs the
+// same way the built-in renderers do (floats → graphicx, game → sgame, …):
+// usage-driven, so a `latex` renderer that emits \begin{tcolorbox} just calls
+// requirePackage('tcolorbox') as it renders and the assembled full-document
+// preamble stays minimal. All three are no-ops in HTML/fragment builds.
+global.requirePackage = requirePackage;
+global.addPreamble = addPreamble;
+global.addLatePreamble = addLatePreamble;
 
 
 // gfm-heading-id supplies the heading renderer that (a) assigns each heading a

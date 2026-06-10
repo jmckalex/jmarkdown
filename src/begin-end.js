@@ -30,6 +30,7 @@
 import { createBeginEnd, registerBlockEnvironment } from './begin-end-core.js';
 import { renderAbstract, renderFeedback } from './additional-directives.js';
 import { configManager } from './config-manager.js';
+import { addPreamble } from './preamble.js';
 
 const format = () => (global.isLatex ? 'latex' : 'html');
 
@@ -74,6 +75,17 @@ export const beginEnd = createBeginEnd({
 	// (The core supplies the matching generic HTML; this is the LaTeX half.)
 	fallback: {
 		latex: (ctx) => {
+			// Graceful degradation, mirroring the HTML side: an unstyled
+			// <div class="name"> renders fine before the author writes CSS, so
+			// an undefined \begin{name} should typeset as a plain block, not
+			// die with "Environment name undefined". The guard is deferred to
+			// \AtBeginDocument — i.e. past the ENTIRE preamble — so an author
+			// definition (LaTeX preamble key, a package, a class) always wins
+			// regardless of where it appears; the no-op only fills genuine
+			// gaps. Full-document builds only by nature: --fragment output is
+			// body-only and its consumer owns the preamble. addPreamble
+			// dedupes, so re-rendering the same name adds one line.
+			addPreamble(`\\AtBeginDocument{\\ifcsname ${ctx.name}\\endcsname\\else\\newenvironment{${ctx.name}}{}{}\\fi}`);
 			const opt = ctx.text ? `[${ctx.text}]` : '';
 			return `\\begin{${ctx.name}}${opt}\n${ctx.inner}\n\\end{${ctx.name}}\n\n`;
 		}
