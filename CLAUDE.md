@@ -29,6 +29,7 @@ All source lives in `src/`. Key files:
 | `additional-directives.js` | Project directives, including `:TeX`, `:HTML`, `:::TeX`, `:::HTML` |
 | `syntax-modifications.js` | Inline syntax: `/italics/`, `*strong*`, `==highlight==`, `__underline__`, sub/sup |
 | `syntax-enhancements.js` | Further inline/block syntax |
+| `smart-typography.js` | **Opt-in** (`Smart typography: true`, default off) typographic educator: straight quotes → curly, `---`/`--` → em/en dash, `...` → ellipsis. A `walkTokens` hook on both marked instances mutating only **leaf inline `text` tokens** (code/math/`:::TeX`/escapes never produce those, so protection is free); emits raw **Unicode** so one implementation serves both outputs. Reads the config key lazily at walk time — registration happens before the metadata header is parsed |
 | `script-blocks.js` | `<script type="jmarkdown">` and `jmarkdown-postprocess` blocks |
 | `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown` |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |

@@ -170,6 +170,7 @@ from the source, so it can never drift from reality. The current output is:
     "TiKZ libgs": "/opt/homebrew/Cellar/ghostscript/10.05.0_1/lib/libgs.10.05.dylib",
     "TiKZ optimise": "group-attributes,collapse-groups",
     "Code language": "text",
+    "Smart typography": false,
     "Block elements": "hyphenated"
 }
 ```
@@ -230,6 +231,7 @@ the authoritative source for the header syntax.
 | `Body classes` | string | `""` | Text placed in the `class` attribute of the output `body` element, so your CSS can key off it. |
 | `Template` | string | `"default"` | `"default"` uses JMarkdown's built-in HTML template; any other value is a path (relative to the document) to a custom [Mustache template](output-templates.html). |
 | `Code language` | string | `"text"` | The fallback language used by the [LaTeX renderer](sources-and-targets.html) for fenced code blocks that carry no language tag. |
+| `Smart typography` | boolean | `false` | Educate ASCII typography in prose, in *both* outputs: straight quotes become curly ones (with context-sensitive opening/closing and apostrophes), `---` and `--` become em and en dashes, and `...` becomes an ellipsis. Code, math, and backslash-escaped characters are left untouched — as are curly quotes and real dashes you typed yourself. |
 
 ### Injected markup and scripts
 

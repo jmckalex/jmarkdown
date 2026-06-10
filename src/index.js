@@ -5,6 +5,7 @@ import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { configManager } from './config-manager.js';
 import { resetWarnings, reportWarnings } from './warnings.js';
+import { smartTypography } from './smart-typography.js';
 import { Command } from 'commander';
 import { initialise } from './init.js';
 import { showOptions } from './init.js';
@@ -396,9 +397,16 @@ marked_copy.use(markedMoreLists());
 registerExtension(jmarkdownSyntaxEnhancements.mathBlock);
 
 // This extension has to be registered after the directives in order for it to work.
-registerExtensions([ 
+registerExtensions([
 	jmarkdownSyntaxEnhancements.emojis
 ]);
+
+// Smart typography (opt-in via `Smart typography: true`): a walkTokens hook on
+// both instances. Registration is unconditional — the hook reads the config
+// key lazily at walk time, AFTER the metadata header has been merged, so the
+// per-document key works even though extensions register before it's parsed.
+marked.use({ walkTokens: smartTypography });
+marked_copy.use({ walkTokens: smartTypography });
 
 
 marked.use({
