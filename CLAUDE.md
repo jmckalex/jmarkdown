@@ -267,7 +267,10 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   lists) and `{{frontmatter}}`/`{{mainmatter}}`/`{{backmatter}}`/`{{appendix}}`
   (LaTeX commands; HTML strips them — HTML appendix lettering not yet done).
 - **Other**: GFM alerts → `tcolorbox` (`alerts.js`); description lists →
-  `description` env; long tables auto-flip `tabular`→`longtable` past 20 rows;
+  `description` env; tables rule with booktabs (`\toprule`/`\midrule`/
+  `\bottomrule`, auto-`requirePackage('booktabs')` — both the extension path
+  and the `table()` fallback; headerless tables get top/bottom only); long
+  tables auto-flip `tabular`→`longtable` past 20 rows;
   TikZ emits native `tikzpicture` (preamble auto-loads tikz + libraries); Mermaid
   rasterises to a cached PDF via `mmdc` (optional — skipped with a hint if absent).
 - **Math passthrough**: inline/display `$…$`/`$$…$$` pass through verbatim; escaping
