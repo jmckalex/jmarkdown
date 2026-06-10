@@ -58,11 +58,22 @@ custom-element name.
 <p>You can force either form with a sigil — <code>@begin(.name)</code> is always a <code>&lt;div&gt;</code>,
   <code>@begin(&lt;name&gt;)</code> is always an element — or set the document-wide policy with the
   <code>Block elements</code> metadata key (<code>hyphenated</code> (default) · <code>all</code> · <code>none</code>). In
-  LaTeX, every environment renders as <code>\begin{name}[label]…\end{name}</code> regardless,
-  so you supply the matching CSS for the web and the matching <code>\newenvironment</code> for
-  print. JMarkdown invents no meaning for the name — that is your job, which brings
-  us to:
+  LaTeX, every environment renders as <code>\begin{name}[label]…\end{name}</code> regardless.
+  You do <strong>not</strong> have to define the environment to get a compilable document: the
+  assembled preamble automatically provides a guarded no-op definition for any
+  undefined name (deferred with <code>\AtBeginDocument</code>, so a real
+  <code>\newenvironment{name}</code> of yours — from the <code>LaTeX preamble</code> key, a package, or
+  your document class — always wins, wherever it appears). Until you define it,
+  the body typesets as plain paragraphs and a <code>[label]</code> shows literally — the
+  print twin of an unstyled <code>&lt;div&gt;</code> waiting for its CSS.
 </p>
+<p>One naming caveat for print: a name that is already a TeX command — <code>box</code>,
+  <code>outer</code>, <code>middle</code>, <code>frame</code>, … — cannot work as a LaTeX environment at all (TeX
+  runs the existing command when the environment opens), so dual-output documents
+  should avoid such names.
+</p>
+<p>JMarkdown invents no meaning for the name — that is your job, which brings
+  us to:</p>
 <h1 id="toc-defining-your-own-environments">Defining your own environments</h1>
 <p>A definition is a <span class="intense">name</span> plus a <span class="intense">handler</span> — an object that says how the
   environment renders. The one required key is <code>html</code>; everything else is optional:</p>
@@ -213,6 +224,23 @@ environment — the body is processed as markdown, so
   project. (For environments you want available to <strong>every</strong> project, list the file
   under the <code>Environments</code> key in a global or project <code>.jmarkdown/config.json</code>,
   using an absolute path.)</p>
+<h2 id="toc-declaring-latex-packages-from-a-handler">Declaring LaTeX packages from a handler</h2>
+<p>If your <code>latex</code> renderer relies on a package, declare it the way JMarkdown's
+  own renderers do — call <code>requirePackage('name')</code> inside the renderer (also
+  available: <code>addPreamble(line)</code> for raw preamble lines such as a
+  <code>\newtcolorbox</code>, and <code>addLatePreamble(line)</code> for lines that must follow
+  hyperref/cleveref). The declaration is usage-driven: the full-document preamble
+  gains the <code>\usepackage</code> only when the environment actually renders, and the
+  calls are harmless in HTML output.
+</p>
+<pre><code class="hljs language-js"><span class="hljs-title function_">defineEnvironment</span>(<span class="hljs-string">'shaded'</span>, {
+	<span class="hljs-attr">html</span>:  <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`&lt;div class="shaded"&gt;<span class="hljs-subst">${ctx.inner}</span>&lt;/div&gt;`</span>,
+	<span class="hljs-attr">latex</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> {
+		<span class="hljs-title function_">requirePackage</span>(<span class="hljs-string">'tcolorbox'</span>);
+		<span class="hljs-keyword">return</span> <span class="hljs-string">`\\begin{tcolorbox}\n<span class="hljs-subst">${ctx.inner}</span>\n\\end{tcolorbox}\n\n`</span>;
+	},
+});
+</code></pre>
 <h2 id="toc-built-in-environments">Built-in environments</h2>
 <p>A handful of names are predefined so that <code>@begin(x)</code> matches its corresponding
   container directive exactly:</p>

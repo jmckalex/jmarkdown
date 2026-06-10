@@ -64,6 +64,12 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		tikz-diagrams)     extra='\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning,shapes,calc}'; needs='tikz.sty' ;;
 		alerts)            extra='\usepackage{tcolorbox}'; needs='tcolorbox.sty' ;;
 		typography)        extra='\usepackage{minted}'; needs='minted.sty' ;;
+		# begin-end: the fixtures' generic environments get the same no-op
+		# definitions a full-document build auto-provides (fragments carry no
+		# preamble, so the wrapper supplies them); game → sgame, callout takes
+		# {mandatory}[optional] (hence \NewDocumentEnvironment), theorem is a
+		# real \newtheorem, \custom is a macro used inside a TeX block.
+		begin-end)         extra='\usepackage{sgame}\usepackage{minted}\newcommand{\custom}[1]{}\newtheorem{theorem}{Theorem}\NewDocumentEnvironment{callout}{m o}{}{}\newenvironment{warning}{}{}\newenvironment{aside}{}{}\newenvironment{note}{}{}\newenvironment{subnote}{}{}\newenvironment{panel}{}{}\newenvironment{pull-quote}{}{}\newenvironment{side-bar}{}{}\newenvironment{outerblock}{}{}\newenvironment{middleblock}{}{}\newenvironment{innerblock}{}{}'; needs='sgame.sty minted.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -80,7 +86,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))

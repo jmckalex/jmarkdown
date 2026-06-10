@@ -1,0 +1,12 @@
+LaTeX engine: pdflatex
+------------------------------------
+
+@begin(warning)[Careful]
+A generic, unregistered environment — the preamble must auto-provide a
+guarded no-op definition so the document compiles before the author
+supplies a real one.
+@end(warning)
+
+@begin(print)
+A registered environment (conditional content) — no guard for this one.
+@end(print)

@@ -121,6 +121,15 @@ if render matter; then
 	want "matter/backmatter"      "$TEX" '\backmatter'
 fi
 
+# --- generic-env.jmd: an unregistered @begin(name) auto-provides a guarded
+#     no-op \newenvironment via \AtBeginDocument (so the author's own
+#     definition, wherever it appears, always wins); registered names don't. ---
+if render generic-env; then
+	want   "generic-env/guard"    "$TEX" '\AtBeginDocument{\ifcsname warning\endcsname\else\newenvironment{warning}{}{}\fi}'
+	want   "generic-env/body"     "$TEX" '\begin{warning}[Careful]'
+	absent "generic-env/no guard for registered" "$TEX" '\ifcsname print'
+fi
+
 echo
 echo "latex-document: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

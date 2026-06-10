@@ -5,6 +5,6 @@ Block elements: all
 Under the 'all' policy, even a plain name becomes a custom element.
 @end(note)
 
-@begin(.box)
+@begin(.panel)
 A per-block dot override still forces a class, overriding the policy.
-@end(.box)
+@end(.panel)
