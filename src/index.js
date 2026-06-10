@@ -38,6 +38,7 @@ import export_to_jmarkdown from './function-extensions.js';
 import { math, mathjs } from './mathjs-extension.js';
 import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
 import { citations, bibliography } from './citations.js';
+import { indexMark, indexPlacement, resetIndexing, checkIndexPlacements } from './indexing.js';
 import { beginEnd } from './begin-end.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { requirePackage, addPreamble, addLatePreamble } from './preamble.js';
@@ -90,6 +91,7 @@ global.isLatex = isLatex;
 // Start each build with a clean warning list (module state survives across
 // processFile calls in library/watch use); the summary prints after writeOutput.
 resetWarnings();
+resetIndexing();
 const markdownFile = filename;
 // In stdin mode, [[file.md]] inclusions and the "Markdown file directory"
 // config (used by mathematica/tikz/template/metadata-header) resolve against
@@ -443,6 +445,12 @@ registerExtensions([ inlineFunctions, blockFunctions ]);
 // so the ::Bibliography block extension wins over the generic `::` directive.
 registerExtensions([ citations, bibliography ]);
 
+// Back-of-book index (indexing.js): the inline :index[…] mark + the ::Index
+// placement block. Registered HERE — after the directive framework — so the
+// raw-claiming :index tokenizer beats any generic inline directive (marked
+// tries the last-registered extension first).
+registerExtensions([ indexMark, indexPlacement ]);
+
 // Load extensions and directives from the configuration file(s).
 // This should happen before the metadata header is processed.
 await configManager.loadExtensions();
@@ -655,6 +663,10 @@ if (isLatex) {
 }
 
 const content = marked.parse(text);
+
+// Index marks whose index never prints are silently lost in both outputs —
+// collect the warning now that the whole document has been parsed.
+checkIndexPlacements();
 
 
 if (isLatex) {

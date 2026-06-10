@@ -1,0 +1,3 @@
+jmarkdown: 2 warnings:
+  - 1 index mark but no ::Index placement — the index will not appear
+  - 1 index mark for index 'authors' but no ::Index{name=authors} placement — the index will not appear

@@ -1,0 +1,213 @@
+<h1 id="toc-back-of-book-index">Back-of-book index</h1>
+<p>A scholarly book ends with an index: an alphabetized list of terms, each
+  pointing at every place the term is discussed. The entries themselves are a
+  craft — choosing what to index and how to phrase it is editorial work — but
+  the <strong>marks</strong> must live in the source, or the book abandons its single source
+  of truth at the final step. JMarkdown gives you one inline command for the
+  marks and one block command for the index itself, and both editions come out
+  right: print gets a native <code>makeindex</code> index, the web gets a generated,
+  hyperlinked one.</p>
+<p>The design follows the <a href="dual-output.html">dual-output model</a>. In <span class="intense">LaTeX</span>
+  output each mark becomes a native <code>\index{…}</code> command and the index prints
+  with <code>\printindex</code> (via the <code>imakeidx</code> package, loaded automatically) — the
+  TeX toolchain does the collecting, sorting, and page numbering. In <span class="intense">HTML</span>
+  output JMarkdown does the same job itself in the post-processor: it collects
+  the marks in document order, sorts and groups them, and builds a linked index
+  right in the page.</p>
+<h2 id="toc-marking-a-term">Marking a term</h2>
+<p>Write <code>:index[entry]</code> next to the word it indexes. The mark is <strong>invisible</strong> in
+  both outputs — it only records "this spot discusses <strong>entry</strong>":</p>
+<pre><code class="hljs">The halting problem:index[halting problem] was posed by
+Turing:index[Turing, Alan] in 1936.
+</code></pre>
+<p>Because the mark is invisible, you still write the word itself in the prose;
+  the mark just tags the location, exactly like LaTeX's <code>word\index{word}</code>
+  idiom.</p>
+<h2 id="toc-the-entry-grammar">The entry grammar</h2>
+<p>The bracket content uses the standard <code>makeindex</code> grammar, passed to LaTeX
+  verbatim — so everything <code>makeindex</code> can do, JMarkdown can do:</p>
+<table>
+  <thead>
+    <tr>
+      <th>You write</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>:index[recursion]</code></td>
+      <td>plain entry</td>
+    </tr>
+    <tr>
+      <td><code>:index[recursion!tail calls]</code></td>
+      <td>subentry — <code>!</code> nests, up to three levels</td>
+    </tr>
+    <tr>
+      <td><code>:index[alpha@$\alpha$-conversion]</code></td>
+      <td>sort key <code>@</code> display form: sorted as "alpha", shown as <strong>α-conversion</strong></td>
+    </tr>
+    <tr>
+      <td><code>:index[lambda calculus|see{$\alpha$-conversion}]</code></td>
+      <td>cross-reference — no locator, just "<strong>see</strong> α-conversion"</td>
+    </tr>
+    <tr>
+      <td><code>:index[fixed points|seealso{recursion}]</code></td>
+      <td>"<strong>see also</strong>", appended after any locators</td>
+    </tr>
+    <tr>
+      <td><code>:index[induction|(]</code> … <code>:index[induction|)]</code></td>
+      <td>a locator <strong>range</strong> — open at the first mark, close at the second</td>
+    </tr>
+    <tr>
+      <td><code>:index[currying|textbf]</code></td>
+      <td>emphasized locator, conventionally "the main discussion" (<code>textbf</code>, <code>textit</code>, <code>emph</code>)</td>
+    </tr>
+    <tr>
+      <td><code>:index[Oh"!]</code></td>
+      <td><code>"</code> quotes a literal <code>!</code>, <code>@</code>, <code>|</code>, or <code>"</code></td>
+    </tr>
+  </tbody>
+</table>
+<p>Entries merge by their text: every <code>:index[recursion]</code> in the document
+  contributes a locator to the single <strong>recursion</strong> entry. (A sort-key form is
+  its own entry — <code>alpha@$\alpha$-conversion</code> and a bare <code>$\alpha$-conversion</code>
+  would not merge — so pick one spelling and stick to it.)</p>
+<p>Math in the display form works in both editions: LaTeX typesets it natively,
+  and in HTML the generated index leaves <code>$…$</code> for MathJax.</p>
+<h2 id="toc-printing-the-index">Printing the index</h2>
+<p>P
+  u
+  t
+
+  `</p>
+<index>
+</index>
+<p>` on a line of its own where the index should appear — by
+  convention, at the very end:</p>
+<pre><code class="hljs">::Index
+</code></pre>
+<p>It takes optional attributes:</p>
+<pre><code class="hljs">::Index{title="Subject Index" intoc}
+</code></pre>
+<ul>
+  <li><code>title</code> — the heading. Defaults to "Index".</li>
+  <li><code>intoc</code> — LaTeX only: list the index in the table of contents.</li>
+</ul>
+<p>In LaTeX this loads <code>imakeidx</code>, registers <code>\makeindex</code> in the preamble, and
+  emits <code>\printindex</code>. If you compile with <code>latexmk</code>, the <code>makeindex</code> runs
+  happen automatically; compiling by hand, run <code>makeindex</code> on the <code>.idx</code> file
+  between two LaTeX passes, as usual.</p>
+<p>I
+  f
+
+  y
+  o
+  u
+
+  m
+  a
+  r
+  k
+
+  t
+  e
+  r
+  m
+  s
+
+  b
+  u
+  t
+
+  n
+  e
+  v
+  e
+  r
+
+  p
+  l
+  a
+  c
+  e
+
+  a
+  n
+
+  `</p>
+<index>
+</index>
+<p>`, the marks are silently
+  useless in both editions — so JMarkdown's end-of-build summary warns you.</p>
+<h2 id="toc-what-the-web-edition-shows-instead-of-page-numbers">What the web edition shows instead of page numbers</h2>
+<p>HTML has no pages, so each locator is the <strong>section number</strong> of the mark —
+  "recursion, §2.3, §4.1" — and every locator is a link to the exact spot the
+  mark occupies. This needs <code>Headings: numeric</code> in the metadata header; without
+  it, locators fall back to plain occurrence numbers (1, 2, …). Repeated marks
+  in the same section collapse to one locator, the way <code>makeindex</code> collapses
+  repeated page numbers. Entries are grouped under letter headings (a
+  <strong>Symbols</strong> group first), subentries nest, and <code>see</code>/<code>see also</code> references are
+  hyperlinked to their target entry — something print cannot do.
+</p>
+<p>The generated markup is a <code>&lt;nav class="index"&gt;</code> of letter-grouped lists, all
+  plain elements with stable class names (<code>index-group</code>, <code>index-entry-text</code>,
+  <code>index-locators</code>, <code>index-see</code>), so your stylesheet can typeset it however
+  you like — multi-column, run-in subentries, whatever the design calls for.
+</p>
+<h2 id="toc-multiple-indexes">Multiple indexes</h2>
+<p>Scholarly books often want more than one index — a subject index and an
+  author index, say. Give a mark a <code>name</code> attribute and give each named index
+  its own placement:</p>
+<pre><code class="hljs">Alonzo Church:index[Church, Alonzo]{name=authors} proved this.
+
+::Index{title="Subject Index"}
+
+::Index{name=authors title="Author Index"}
+</code></pre>
+<p>Unnamed marks go to the default index; named marks go to theirs. In LaTeX
+  this uses <code>imakeidx</code>'s named indexes (<code>\index[authors]{…}</code>,
+  <code>\printindex[authors]</code>), which is exactly what they exist for.
+</p>
+<h2 id="toc-one-naming-caveat">One naming caveat</h2>
+<p>A handful of LaTeX-side constraints carry over by design: entries are
+  single-line, at most three levels deep, and one <code>|</code> encap per entry — the
+  <code>makeindex</code> rules. JMarkdown warns at build time where it can (too-deep
+  entries, unbalanced ranges, a <code>see</code> target that doesn't exist).
+</p>
+<h2 id="toc-a-live-example">A live example</h2>
+<p>The marks scattered through this section<span class="index-mark" data-entry="live example" id="idx-1"></span> demonstrate the
+  machinery<span class="index-mark" data-entry="machinery!demonstration" id="idx-2"></span> — including a Greek
+  entry<span class="index-mark" data-entry="alpha@$\alpha$-conversion" id="idx-3"></span>, a bold locator<span class="index-mark" data-entry="live example|textbf" id="idx-4"></span>,
+  and a cross-reference<span class="index-mark" data-entry="demo|see{live example}" id="idx-5"></span>. Here is the index they
+  produce:</p>
+<nav class="index" aria-label="Index of this page">
+  <h2 class="index-title" id="index">Index of this page</h2>
+  <div class="index-group">
+    <p class="index-group-letter">A</p>
+    <ul class="index-entries">
+      <li id="index-entry-alpha-conversion"><span class="index-entry-text">$\alpha$-conversion</span><span class="index-locators">, <a href="#idx-3">1</a></span></li>
+    </ul>
+  </div>
+  <div class="index-group">
+    <p class="index-group-letter">D</p>
+    <ul class="index-entries">
+      <li id="index-entry-demo"><span class="index-entry-text">demo</span><span class="index-locators">, <span class="index-see"><em>see</em> <a href="#index-entry-live-example">live example</a></span></span></li>
+    </ul>
+  </div>
+  <div class="index-group">
+    <p class="index-group-letter">L</p>
+    <ul class="index-entries">
+      <li id="index-entry-live-example"><span class="index-entry-text">live example</span><span class="index-locators">, <a href="#idx-1">1</a>, <strong><a href="#idx-4">2</a></strong></span></li>
+    </ul>
+  </div>
+  <div class="index-group">
+    <p class="index-group-letter">M</p>
+    <ul class="index-entries">
+      <li id="index-entry-machinery"><span class="index-entry-text">machinery</span>
+        <ul class="index-subentries">
+          <li id="index-entry-machinery--demonstration"><span class="index-entry-text">demonstration</span><span class="index-locators">, <a href="#idx-2">1</a></span></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>

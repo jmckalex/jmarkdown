@@ -1,0 +1,30 @@
+Headings: numeric
+------------------------------------
+
+# Recursion :label[sec:rec]
+
+Plain marks: recursion:index[recursion] and a repeat later in this
+section:index[recursion] (the duplicate locator collapses). A
+subentry:index[recursion!tail calls], and a sorted display
+form:index[alpha@$\alpha$-conversion].
+
+# Functions
+
+The main discussion of currying:index[currying|textbf] is here; a
+range opens:index[combinators|(] now.
+
+## Closures
+
+More on recursion:index[recursion] from another section, and the range
+closes:index[combinators|)] here. A literal special character:index[Oh"!].
+
+# Names
+
+Alonzo Church:index[Church, Alonzo]{name=authors} and Haskell
+Curry:index[Curry, Haskell]{name=authors} go in the author index.
+Cross-references: :index[lambda calculus|see{$\alpha$-conversion}]
+and :index[fixed points|seealso{recursion}].
+
+::Index{title="Subject Index" intoc}
+
+::Index{name=authors title="Author Index"}

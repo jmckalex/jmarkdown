@@ -121,6 +121,18 @@ if render matter; then
 	want "matter/backmatter"      "$TEX" '\backmatter'
 fi
 
+# --- index-doc.jmd: :index marks pass through; ::Index pulls in imakeidx and
+#     registers the \makeindex declarations (default + named) in the preamble. ---
+if render index-doc; then
+	want "index/imakeidx"        "$TEX" '\usepackage{imakeidx}'
+	want "index/makeindex"       "$TEX" '\makeindex[intoc]'
+	want "index/makeindex named" "$TEX" '\makeindex[name=authors, title={Author Index}]'
+	want "index/mark"            "$TEX" '\index{recursion}'
+	want "index/mark named"      "$TEX" '\index[authors]{Church, Alonzo}'
+	want "index/printindex"      "$TEX" '\printindex'
+	want "index/printindex named" "$TEX" '\printindex[authors]'
+fi
+
 # --- contents-lol.jmd: {{LOL}} expands to minted's \listoflistings and pulls
 #     in minted even when the document has no listing floats. ---
 if render contents-lol; then
