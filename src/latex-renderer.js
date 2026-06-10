@@ -120,13 +120,17 @@ const latexRenderer = {
 		});
 		const colspec = aligns.join('');
 
-		let tex = `\\begin{tabular}{${colspec}}\n\\hline\n`;
+		// booktabs rules (\toprule/\midrule/\bottomrule) — the publication
+		// look, not \hline's spreadsheet look. Same rules in both table paths
+		// (see renderTableLatex in marked-extended-tables-headerless.js).
+		requirePackage('booktabs');
+		let tex = `\\begin{tabular}{${colspec}}\n\\toprule\n`;
 
 		// Header row
 		const headerCells = token.header.map(cell =>
 			this.parser.parseInline(cell.tokens)
 		);
-		tex += headerCells.join(' & ') + ' \\\\\n\\hline\n';
+		tex += headerCells.join(' & ') + ' \\\\\n\\midrule\n';
 
 		// Body rows
 		for (const row of token.rows) {
@@ -136,7 +140,7 @@ const latexRenderer = {
 			tex += cells.join(' & ') + ' \\\\\n';
 		}
 
-		tex += '\\hline\n\\end{tabular}\n\n';
+		tex += '\\bottomrule\n\\end{tabular}\n\n';
 		return tex;
 	},
 

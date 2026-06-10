@@ -235,13 +235,18 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
     const env = long ? 'longtable' : 'tabular';
     if (long) requirePackage('longtable');
 
-    let tex = `\\begin{${env}}{${colspec}}\n\\hline\n`;
+    // booktabs rules (\toprule/\midrule/\bottomrule) — the publication look,
+    // not \hline's spreadsheet look. A headerless table gets just top/bottom.
+    // booktabs rules work inside longtable too. Same rules in the fallback
+    // table() renderer in latex-renderer.js.
+    requirePackage('booktabs');
+    let tex = `\\begin{${env}}{${colspec}}\n\\toprule\n`;
 
     if (hasHeader) {
       for (const hrow of token.header) {
         tex += renderLatexRow(parser, hrow, token.align, token.width) + ' \\\\\n';
       }
-      tex += '\\hline\n';
+      tex += '\\midrule\n';
     }
     // longtable: repeat the head (rule + any header row) at the top of each page.
     if (long) tex += '\\endhead\n';
@@ -250,7 +255,7 @@ function markedExtendedTablesHeaderless({ interruptPatterns = [], skipEmptyRows 
       tex += renderLatexRow(parser, brow, token.align, token.width) + ' \\\\\n';
     }
 
-    tex += `\\hline\n\\end{${env}}\n\n`;
+    tex += `\\bottomrule\n\\end{${env}}\n\n`;
     return tex;
   };
 
