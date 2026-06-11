@@ -1,0 +1,778 @@
+/*
+ * jmarkdown-style.css — standalone document stylesheet
+ *
+ * The JMarkdown documentation's "dynamo" design system (warm paper palette,
+ * Crimson Pro serif body, JetBrains Mono code + uppercase eyebrow labels,
+ * h2 headings with a top divider rule, bordered zebra-striped tables, warm
+ * rounded code panels), repackaged for STANDALONE JMarkdown documents.
+ *
+ * The docs site scopes its typography to the shell's .content-area and lets
+ * the shell supply fonts, page layout, and the highlight.js theme. This file
+ * is self-contained: it imports the fonts itself, styles <body> directly,
+ * and adds the reading-column layout the shell used to provide. It also
+ * styles the document-preparation constructs the docs shell left to browser
+ * defaults: floats + captions, theorems, numbered equations, contents lists,
+ * and the back-of-book index.
+ *
+ * Use it from a document's metadata header:
+ *
+ *     HTML header: <link rel="stylesheet" href="jmarkdown-style.css">
+ *     Highlight theme: github
+ *
+ * (`Highlight theme: github` matches the docs site's code-token colours;
+ * the warm panel behind them comes from this file either way.)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+
+/* ============================================================
+   Dynamo design tokens
+   ============================================================ */
+
+:root {
+  --ink:     #2c2c2c;
+  --ink2:    #555;
+  --ink3:    #888;
+  --paper:   #faf9f7;
+  --paper2:  #f5f4f2;
+  --card:    #fff;
+  --accent:  #8b7355;
+  --accent2: #6d5a43;
+  --border:  #e2e0dc;
+  --divider: #e8e5e0;
+  /* Warm code panel surfaces */
+  --code-panel:  #f6f3ee;
+  --code-inline: #f1ede6;
+  --code-inline-border: #e6e1d8;
+  --row-stripe:  #fcfbf9;
+}
+
+
+/* ============================================================
+   Page layout (the docs shell provided this; standalone docs
+   need it here): a centred reading column on warm paper.
+   ============================================================ */
+
+html {
+  background: var(--paper);
+}
+
+body {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 18px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+code, pre, .mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+a {
+  color: var(--accent2);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+
+/* ============================================================
+   Headings
+   ============================================================ */
+
+h1 {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--divider);
+}
+
+h2 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 48px 0 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+}
+
+h3 {
+  font-size: 21px;
+  font-weight: 600;
+  margin: 32px 0 6px;
+}
+
+h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 22px 0 4px;
+}
+
+p {
+  margin: 10px 0;
+}
+
+ul, ol {
+  margin: 10px 0;
+  padding-left: 24px;
+}
+
+li {
+  margin: 4px 0;
+}
+
+blockquote {
+  margin: 14px 0;
+  padding: 2px 18px;
+  border-left: 3px solid var(--border);
+  color: var(--ink2);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: 28px 0;
+}
+
+sup, sub {
+  line-height: 0pt;
+}
+
+
+/* ============================================================
+   Code panels
+   ============================================================ */
+
+pre code.hljs {
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+pre {
+  background: var(--code-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 14px 0;
+}
+
+:not(pre) > code {
+  background: var(--code-inline);
+  border: 1px solid var(--code-inline-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.86em;
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* highlight.js: take the theme's token colours but keep our warm panel. */
+pre code.hljs {
+  background: transparent;
+  padding: 0;
+  color: var(--ink);
+}
+
+code {
+  font-size: 14px;
+}
+
+
+/* ============================================================
+   Tables (bordered, zebra-striped, mono uppercase headers)
+   ============================================================ */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 15.5px;
+}
+
+table:not(.game),
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 8px 11px;
+}
+
+th {
+  background: var(--paper2);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink2);
+  font-weight: 500;
+  text-align: left;
+}
+
+table:not(.game) tr:nth-child(even) td {
+  background: var(--row-stripe);
+}
+
+td,
+th {
+  vertical-align: top;
+}
+
+
+/* ============================================================
+   Inline syntax (JMarkdown's **intense**, __underline__, ==highlight==)
+   ============================================================ */
+
+span.intense {
+  font-variant: small-caps;
+  font-weight: 700;
+  text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.35);
+}
+
+span.underline {
+  text-decoration: underline;
+}
+
+span.highlight {
+  background: yellow;
+}
+
+.marked-emoji-img {
+  height: 1em;
+  vertical-align: -0.15em;
+}
+
+
+/* ============================================================
+   GFM alerts
+   ============================================================ */
+
+.markdown-alert-title {
+  margin-top: 0pt;
+  margin-bottom: 3pt;
+}
+
+.markdown-alert svg.octicon {
+  margin: 3pt;
+  vertical-align: middle;
+}
+
+.markdown-alert {
+  padding: 0.5rem 0.5rem;
+  margin-bottom: 16px;
+  border-left: .25em solid;
+  border-radius: 4px;
+}
+
+.markdown-alert-note      { border-color: #0969DA; background-color: #DAEEFF; }
+.markdown-alert-warning   { border-color: #9A6700; background-color: #FFF8E5; }
+.markdown-alert-tip       { border-color: #1A7F37; background-color: #DDFBE6; }
+.markdown-alert-important { border-color: #CF222E; background-color: #FFEBE9; }
+
+
+/* ============================================================
+   Markdown-demo (side-by-side source / output grid)
+   ============================================================ */
+
+.markdown-demo-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "codelabel outlabel"
+    "code      out";
+  column-gap: 16px;
+  row-gap: 4px;
+  align-items: start;
+  margin: 16px 0;
+}
+
+.markdown-demo-code-label   { grid-area: codelabel; }
+.markdown-demo-output-label { grid-area: outlabel; }
+.markdown-demo-markdown     { grid-area: code; }
+.markdown-demo-parsed       { grid-area: out; }
+
+/* A grid track's implicit min-width is `auto`, so a <pre> of long code lines
+   would expand its column and squeeze the other; min-width:0 plus overflow-x
+   lets each column keep its 1fr share and scroll instead. */
+.markdown-demo-markdown,
+.markdown-demo-parsed {
+  min-width: 0;
+}
+
+.markdown-demo-container pre {
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+.markdown-demo-container code {
+  height: auto;
+  display: block;
+  box-sizing: border-box;
+}
+
+/* Source (left) pane: flush code, no panel chrome, full column width. */
+.markdown-demo-markdown pre {
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+div.markdown-demo-markdown code.hljs {
+  font-size: 10.5pt;
+  background-color: transparent;
+}
+
+div.markdown-demo-parsed {
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.markdown-demo-parsed ol,
+.markdown-demo-parsed ul,
+.markdown-demo-parsed p {
+  margin: 0pt;
+}
+
+.markdown-demo-code-label,
+.markdown-demo-output-label {
+  font-weight: bold;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+/* Mobile: stack the source above the output. */
+@media (max-width: 720px) {
+  .markdown-demo-container {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "codelabel"
+      "code"
+      "outlabel"
+      "out";
+  }
+  .markdown-demo-output-label {
+    margin-top: 12px;
+  }
+}
+
+
+/* ============================================================
+   Strategic-form games
+   ============================================================ */
+
+table.game caption {
+  caption-side: bottom;
+  padding-top: 10px;
+  text-align: center;
+  color: inherit;
+}
+
+table.game {
+  border-collapse: collapse;
+  width: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+table.game td {
+  border: 1px solid var(--ink);
+  border-collapse: collapse;
+  text-align: center;
+}
+
+table.game tr:first-child td:first-child { border: none; }
+table.game td.columnLabel                { border: none; }
+table.game .caption                      { padding: 6pt; }
+
+table.game td.rowLabel {
+  border: none;
+  vertical-align: middle;
+  padding-right: 6pt;
+}
+
+table.game td.strategyLabels { border: none; }
+table.game tr.no-border td   { border: none; }
+
+table.game td.rowStrategies {
+  text-align: left;
+  padding-right: 12px;
+}
+
+table.game td.columnStrategies {
+  text-align: center;
+  min-width: 4em;
+}
+
+table.game td.payoffs {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+table.game.playerLabels td {
+  border: 1px solid var(--ink) !important;
+  text-align: center !important;
+}
+
+table.game.playerLabels tr:first-child td  { border: none !important; }
+table.game.playerLabels tr:nth-child(2) td { border: none !important; }
+
+table.game.playerLabels tr:nth-child(3) td:first-child {
+  border: none !important;
+  vertical-align: middle;
+}
+
+table.game.playerLabels tr:nth-child(3) td:nth-child(2) { border: none !important; }
+
+table.game td.caption p,
+table.game td.rowLabel p,
+table.game td.columnLabel p {
+  margin: 0pt;
+}
+
+
+/* ============================================================
+   TiKZ error display
+   ============================================================ */
+
+.tikz-error {
+  border: 2px solid #ff6b6b;
+  background-color: #fff5f5;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+.tikz-error-message {
+  color: #d63031;
+  font-weight: bold;
+  margin-top: 0;
+}
+
+.tikz-error button {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tikz-error button:hover {
+  background-color: var(--accent2);
+}
+
+
+/* ============================================================
+   Feedback / marking
+   ============================================================ */
+
+p.feedback {
+  font-size: 14pt;
+  margin-top: 8pt;
+}
+
+section.feedback {
+  margin-top: 8pt;
+}
+
+section.feedback > p:first-child {
+  margin-bottom: 6pt;
+}
+
+section.feedback .question {
+  margin-bottom: 6pt;
+  margin-top: 6pt;
+}
+
+section.feedback .mark {
+  background-color: var(--paper2);
+}
+
+
+/* ============================================================
+   Alignment extensions
+   ============================================================ */
+
+.jmarkdown-right p { text-align: right; }
+.jmarkdown-right p:not(:first-of-type) { margin-top: 12pt; }
+
+.jmarkdown-center p { text-align: center; }
+.jmarkdown-center p:not(:first-of-type) { margin-top: 12pt; }
+
+
+/* ============================================================
+   Title box directive
+   ============================================================ */
+
+div.title-box div.title {
+  border: solid 1pt var(--accent);
+  background-color: var(--accent);
+  color: white;
+  border-top-left-radius: 8pt;
+  border-top-right-radius: 8pt;
+  padding: 6pt;
+}
+
+div.title-box div.title p {
+  margin: 0pt;
+}
+
+div.title-box div.body {
+  border: solid 1pt var(--border);
+  background-color: var(--paper2);
+  border-top: none;
+  border-bottom-left-radius: 8pt;
+  border-bottom-right-radius: 8pt;
+  padding: 6pt;
+}
+
+div.title-box div.body > :last-child {
+  margin-bottom: 0pt;
+}
+
+
+/* ============================================================
+   Description lists (dl grid)
+   ============================================================ */
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  margin-top: 0pt;
+  margin-bottom: 0pt;
+}
+
+dl dt {
+  font-weight: bold;
+}
+
+dl dt:after {
+  content: ":";
+}
+
+dl dd p:first-child {
+  margin-top: 0pt;
+}
+
+dl dd p {
+  margin-bottom: 6pt !important;
+}
+
+dl dd p:not(:first-of-type) {
+  margin-top: 6pt !important;
+}
+
+dl dt.clean:after {
+  content: '';
+}
+
+
+/* ============================================================
+   Checkbox lists
+   ============================================================ */
+
+li:has(input[type="checkbox"]:first-child) {
+  list-style: none;
+  margin-left: -18pt;
+}
+
+
+/* ============================================================
+   Table of contents + lists of figures/tables/listings
+   ============================================================ */
+
+p#toc {
+  font-weight: bold;
+}
+
+div.toc {
+  background: var(--paper2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 16px 0;
+}
+
+div.toc ul {
+  margin: 6px 0 0;
+  list-style: none;
+  padding-left: 0;
+}
+
+div.toc ul ul {
+  padding-left: 18px;
+  margin-top: 0;
+}
+
+nav.list-of-figures ul,
+nav.list-of-tables ul,
+nav.list-of-listings ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 8px 0 16px;
+}
+
+
+/* ============================================================
+   Floats: figures, tables, listings (@begin(figure) …)
+   ============================================================ */
+
+figure.figure,
+figure.table-float,
+figure.listing {
+  margin: 22px auto;
+  text-align: center;
+}
+
+figure img {
+  max-width: 100%;
+}
+
+figure.subfigure {
+  display: inline-block;
+  vertical-align: top;
+  margin: 0 1%;
+}
+
+/* Listings are code: left-aligned content under a centred caption. */
+figure.listing pre {
+  text-align: left;
+}
+
+figcaption {
+  font-size: 15.5px;
+  color: var(--ink2);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.figure-label,
+.table-label,
+.listing-label,
+.subfigure-label {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Table floats put the caption above, like LaTeX convention. */
+figure.table-float figcaption {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+
+/* ============================================================
+   Theorems and equations (@begin(theorem) …, @begin(equation) …)
+   ============================================================ */
+
+.theorem-env {
+  margin: 16px 0;
+}
+
+.theorem-env .theorem-label {
+  font-weight: 700;
+}
+
+.theorem-env.theorem-definition .theorem-label,
+.theorem-env.theorem-example .theorem-label,
+.theorem-env.theorem-remark .theorem-label {
+  font-weight: 600;
+}
+
+.proof-env {
+  margin: 16px 0;
+}
+
+.equation {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.equation .eqn-body {
+  flex: 1;
+  text-align: center;
+}
+
+.equation .eqn-number {
+  color: var(--ink2);
+}
+
+
+/* ============================================================
+   Back-of-book index (::Index)
+   ============================================================ */
+
+nav.index .index-title {
+  /* inherits h2's divider rule */
+}
+
+p.index-group-letter {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin: 18px 0 4px;
+}
+
+nav.index ul.index-entries {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+nav.index ul.index-subentries {
+  list-style: none;
+  padding-left: 20px;
+  margin: 0;
+}
+
+nav.index li {
+  margin: 2px 0;
+}
+
+.index-see em {
+  color: var(--ink2);
+}
+
+
+/* ============================================================
+   Footnotes (marked-footnote's end-of-document section)
+   ============================================================ */
+
+section.footnotes {
+  margin-top: 40px;
+  padding-top: 14px;
+  border-top: 1px solid var(--divider);
+  font-size: 15.5px;
+  color: var(--ink2);
+}
