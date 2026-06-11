@@ -171,6 +171,7 @@ from the source, so it can never drift from reality. The current output is:
     "TiKZ optimise": "group-attributes,collapse-groups",
     "Code language": "text",
     "Smart typography": false,
+    "Math macros": [],
     "Block elements": "hyphenated"
 }
 ```
@@ -232,6 +233,7 @@ the authoritative source for the header syntax.
 | `Template` | string | `"default"` | `"default"` uses JMarkdown's built-in HTML template; any other value is a path (relative to the document) to a custom [Mustache template](output-templates.html). |
 | `Code language` | string | `"text"` | The fallback language used by the [LaTeX renderer](sources-and-targets.html) for fenced code blocks that carry no language tag. |
 | `Smart typography` | boolean | `false` | Educate ASCII typography in prose, in *both* outputs: straight quotes become curly ones (with context-sensitive opening/closing and apostrophes), `---` and `--` become em and en dashes, and `...` becomes an ellipsis. Code, math, and backslash-escaped characters are left untouched — as are curly quotes and real dashes you typed yourself. |
+| `Math macros` | array | `[]` | Raw LaTeX macro definitions (`\newcommand`, `\DeclareMathOperator`, …), one per entry (backslashes doubled in JSON), shared by *both* outputs: preamble lines in LaTeX, a hidden MathJax block in HTML. See [Math support](math-support.html). |
 
 ### Injected markup and scripts
 

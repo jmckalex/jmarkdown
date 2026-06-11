@@ -680,8 +680,21 @@ if (isLatex) {
 } else {
 	// HTML output: full pipeline with post-processing, template, and inverse search.
 
+	// Math macros (`Math macros` key): the same raw \newcommand lines the
+	// LaTeX preamble gets are injected in a hidden inline-math block at the
+	// TOP of the body. MathJax processes the document in order, so the macros
+	// exist before any math that uses them; inline math is never numbered, so
+	// tags:'ams' can't give the hidden block an equation number. Only HTML
+	// text specials are escaped — MathJax reads the decoded text.
+	const mathMacros = configManager.get('Math macros') || [];
+	const macrosHTML = mathMacros.length
+		? `<div class="math-macros" style="display:none">\\(\n${
+			mathMacros.map(l => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n')
+		}\n\\)</div>\n`
+		: '';
+
 	// Append the collected inline footnotes section, if any.
-	const contentWithFootnotes = content + getFootnotesHTML();
+	const contentWithFootnotes = macrosHTML + content + getFootnotesHTML();
 
 	let html = options.fragment ? contentWithFootnotes : processTemplate(contentWithFootnotes);
 

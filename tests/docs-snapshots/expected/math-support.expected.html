@@ -260,6 +260,41 @@ Outside math, a_subscript_b is interpreted by JMarkdown.</span></code></pre>
   inequalities with the macros <code>\lt</code>, <code>\gt</code>, <code>\le</code>, <code>\ge</code> (or <code>&lt;</code> outside math
   mode), and you will never hit this.
 </p>
+<h2 id="toc-custom-macros">Custom macros</h2>
+<p>Define your notation once, in plain LaTeX, with the <code>Math macros</code> metadata
+  key — one definition per line:</p>
+<pre><code class="hljs language-text">---
+Title: My paper
+Math macros:
+	\newcommand{\RR}{\mathbb{R}}
+	\newcommand{\E}[1]{\mathbb{E}\!\left[#1\right]}
+	\DeclareMathOperator{\argmax}{arg\,max}
+---
+
+The estimator $\argmax_{x \in \RR} \E{f(x)}$ now works everywhere.
+</code></pre>
+<p>The same lines feed <span class="intense">both</span> outputs, so the two editions cannot drift. In
+  LaTeX they become preamble definitions, placed before your <code>LaTeX preamble</code>
+  (which may therefore build on them); amsmath and amssymb are loaded
+  automatically alongside them, matching the <code>ams</code> vocabulary MathJax provides
+  on the web side, so <code>\DeclareMathOperator</code> and <code>\mathbb</code> work identically in
+  both editions. In HTML the lines are injected into a hidden math block at the
+  very top of the body — MathJax processes the document in order, so the macros
+  exist before any math that uses them.</p>
+<p>Anything both MathJax's TeX input and your LaTeX engine understand is fair
+  game: <code>\newcommand</code>, <code>\renewcommand</code>, <code>\DeclareMathOperator</code>, optional
+  arguments with defaults. (Environments are the exception — define
+  <code>\newenvironment</code> in <code>LaTeX preamble</code> instead; MathJax's support for custom
+  environments in math mode is too partial to promise parity.)
+</p>
+<p>For macros shared across a whole project, put the key in
+  <code>.jmarkdown/config.json</code> instead — there it is a JSON array of strings, one
+  definition per entry, with backslashes doubled as JSON requires:
+</p>
+<pre><code class="hljs language-json"><span class="hljs-attr">"Math macros"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">"\\newcommand{\\RR}{\\mathbb{R}}"</span><span class="hljs-punctuation">]</span>
+</code></pre>
+<p>A document's <code>Math macros</code> key replaces the config-file value, the same
+  rule as <code>Packages</code> and <code>LaTeX preamble</code>.</p>
 <h2 id="toc-changing-the-defaults">Changing the defaults</h2>
 <p>JMarkdown configures MathJax through two keys, both nested under <code>MathJax</code>. You
   can set them in a <a href="metadata-header.html">metadata header</a>, a project
@@ -321,9 +356,11 @@ Outside math, a_subscript_b is interpreted by JMarkdown.</span></code></pre>
       }
     }
 </code></pre>
-<p>Any other MathJax option — custom macros, additional packages, accessibility
-  settings — goes in the same <code>configuration</code> block; consult the
-  <a href="https://docs.mathjax.org/">MathJax documentation</a> for the full list.
+<p>Any other MathJax option — additional packages, accessibility settings — goes
+  in the same <code>configuration</code> block; consult the
+  <a href="https://docs.mathjax.org/">MathJax documentation</a> for the full list. (For
+  custom macros, prefer the dedicated <a href="#toc-custom-macros"><code>Math macros</code> key</a>,
+  which feeds the LaTeX edition too.)
 </p>
 <h2 id="toc-reference">Reference</h2>
 <h3 id="toc-delimiters">Delimiters</h3>

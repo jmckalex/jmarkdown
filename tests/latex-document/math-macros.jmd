@@ -1,0 +1,8 @@
+---
+LaTeX engine: pdflatex
+Math macros:
+	\newcommand{\RR}{\mathbb{R}}
+	\DeclareMathOperator{\argmax}{arg\,max}
+---
+
+A document whose macros must land in the preamble: $\argmax_{x \in \RR} f(x)$.

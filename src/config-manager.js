@@ -61,6 +61,11 @@ export const DEFAULT_CONFIG = {
 	// Opt-in typographic educator (see src/smart-typography.js): straight
 	// quotes → curly, ---/-- → em/en dash, ... → ellipsis, in both outputs.
 	'Smart typography': false,
+	// Raw LaTeX macro definitions (\newcommand, \DeclareMathOperator, …),
+	// one per line, shared verbatim by BOTH outputs: preamble lines in LaTeX
+	// (latex-template.js), a hidden MathJax block at the top of the body in
+	// HTML (index.js). One source, no drift.
+	'Math macros': [],
 	// How a generic @begin(name) block renders in HTML (see src/begin-end.js):
 	// 'hyphenated' → hyphenated names become custom elements, others div.class;
 	// 'all' → always a custom element; 'none' → always a div.class.
@@ -269,6 +274,16 @@ class ConfigManager {
 				// configManager.get('Smart typography') lazily at walk time.
 				str = value[0].trim().toLowerCase();
 				this.config["Smart typography"] = (str == "true");
+				break;
+			case "Math_macros":
+				// A multi-line metadata value arrives as one newline-joined
+				// string with the source indentation intact; normalise to
+				// trimmed, non-empty lines (one definition per line). Replaces
+				// any config-file value, like the other array keys.
+				this.config["Math macros"] = value
+					.flatMap(v => String(v).split('\n'))
+					.map(s => s.trim())
+					.filter(Boolean);
 				break;
 			default:
 				formattedMetadata[formattedKey] = value;

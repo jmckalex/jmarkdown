@@ -64,6 +64,12 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		tikz-diagrams)     extra='\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning,shapes,calc}'; needs='tikz.sty' ;;
 		alerts)            extra='\usepackage{tcolorbox}'; needs='tcolorbox.sty' ;;
 		typography)        extra='\usepackage{minted}'; needs='minted.sty' ;;
+		# description-lists: the codespan-double-colon fixture has inline code
+		# spans, which render as \mintinline.
+		description-lists) extra='\usepackage{minted}'; needs='minted.sty' ;;
+		# math-macros: the definitions live in the (absent) preamble of a
+		# fragment, so the wrapper supplies what a full document auto-provides.
+		math-macros)       extra='\usepackage{amsmath}\usepackage{amssymb}\newcommand{\RR}{\mathbb{R}}\newcommand{\E}[1]{\mathbb{E}\!\left[#1\right]}\DeclareMathOperator{\argmax}{arg\,max}'; needs='amsmath.sty amssymb.sty' ;;
 		# indexing: fragments carry \index + \printindex; the \makeindex
 		# declarations live in the (absent) preamble, so the wrapper supplies
 		# them. Without a makeindex run \printindex just warns (no .ind file)
@@ -91,7 +97,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))

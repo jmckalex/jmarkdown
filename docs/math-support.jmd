@@ -202,6 +202,49 @@ including LaTeX. A literal `<` inside math therefore reaches your `.tex` file as
 inequalities with the macros `\lt`, `\gt`, `\le`, `\ge` (or `<` outside math
 mode), and you will never hit this.
 
+## Custom macros
+
+Define your notation once, in plain LaTeX, with the `Math macros` metadata
+key — one definition per line:
+
+```text
+---
+Title: My paper
+Math macros:
+	\newcommand{\RR}{\mathbb{R}}
+	\newcommand{\E}[1]{\mathbb{E}\!\left[#1\right]}
+	\DeclareMathOperator{\argmax}{arg\,max}
+---
+
+The estimator $\argmax_{x \in \RR} \E{f(x)}$ now works everywhere.
+```
+
+The same lines feed **both** outputs, so the two editions cannot drift. In
+LaTeX they become preamble definitions, placed before your `LaTeX preamble`
+(which may therefore build on them); amsmath and amssymb are loaded
+automatically alongside them, matching the `ams` vocabulary MathJax provides
+on the web side, so `\DeclareMathOperator` and `\mathbb` work identically in
+both editions. In HTML the lines are injected into a hidden math block at the
+very top of the body — MathJax processes the document in order, so the macros
+exist before any math that uses them.
+
+Anything both MathJax's TeX input and your LaTeX engine understand is fair
+game: `\newcommand`, `\renewcommand`, `\DeclareMathOperator`, optional
+arguments with defaults. (Environments are the exception — define
+`\newenvironment` in `LaTeX preamble` instead; MathJax's support for custom
+environments in math mode is too partial to promise parity.)
+
+For macros shared across a whole project, put the key in
+`.jmarkdown/config.json` instead — there it is a JSON array of strings, one
+definition per entry, with backslashes doubled as JSON requires:
+
+```json
+"Math macros": ["\\newcommand{\\RR}{\\mathbb{R}}"]
+```
+
+A document's `Math macros` key replaces the config-file value, the same
+rule as `Packages` and `LaTeX preamble`.
+
 ## Changing the defaults
 
 JMarkdown configures MathJax through two keys, both nested under `MathJax`. You
@@ -259,9 +302,11 @@ MathJax:
     }
 ```
 
-Any other MathJax option — custom macros, additional packages, accessibility
-settings — goes in the same `configuration` block; consult the
-[MathJax documentation](https://docs.mathjax.org/) for the full list.
+Any other MathJax option — additional packages, accessibility settings — goes
+in the same `configuration` block; consult the
+[MathJax documentation](https://docs.mathjax.org/) for the full list. (For
+custom macros, prefer the dedicated [`Math macros` key](#toc-custom-macros),
+which feeds the LaTeX edition too.)
 
 ## Reference
 

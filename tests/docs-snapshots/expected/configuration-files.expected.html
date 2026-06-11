@@ -176,6 +176,7 @@
     <span class="hljs-attr">"TiKZ optimise"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"group-attributes,collapse-groups"</span><span class="hljs-punctuation">,</span>
     <span class="hljs-attr">"Code language"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"text"</span><span class="hljs-punctuation">,</span>
     <span class="hljs-attr">"Smart typography"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">"Math macros"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
     <span class="hljs-attr">"Block elements"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"hyphenated"</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -269,6 +270,12 @@
       <td>boolean</td>
       <td><code>false</code></td>
       <td>Educate ASCII typography in prose, in <strong>both</strong> outputs: straight quotes become curly ones (with context-sensitive opening/closing and apostrophes), <code>---</code> and <code>--</code> become em and en dashes, and <code>...</code> becomes an ellipsis. Code, math, and backslash-escaped characters are left untouched — as are curly quotes and real dashes you typed yourself.</td>
+    </tr>
+    <tr>
+      <td><code>Math macros</code></td>
+      <td>array</td>
+      <td><code>[]</code></td>
+      <td>Raw LaTeX macro definitions (<code>\newcommand</code>, <code>\DeclareMathOperator</code>, …), one per entry (backslashes doubled in JSON), shared by <strong>both</strong> outputs: preamble lines in LaTeX, a hidden MathJax block in HTML. See <a href="math-support.html">Math support</a>.</td>
     </tr>
   </tbody>
 </table>

@@ -77,6 +77,22 @@ export function processLatexTemplate(content) {
 		addPreamble(`\\fancyfoot[C]{${footer || '\\thepage'}}`);
 	}
 
+	// Math macros (`Math macros` key): the same raw \newcommand lines the HTML
+	// build injects for MathJax become preamble definitions here. Registered
+	// as raw preamble lines, so they precede the user `LaTeX preamble` (which
+	// may build on them). One source for both outputs — no drift.
+	const mathMacros = configManager.get('Math macros') || [];
+	if (mathMacros.length) {
+		// Parity: MathJax loads its `ams` package by default, so the macro
+		// language available on the web side includes \DeclareMathOperator,
+		// \mathbb, and friends — the LaTeX side must offer the same
+		// vocabulary (amsmath + amssymb together ≈ MathJax's `ams`) or
+		// identical definitions would compile in one output only.
+		requirePackage('amsmath');
+		requirePackage('amssymb');
+		for (const line of mathMacros) addPreamble(line);
+	}
+
 	// hyperref for every full document: clickable refs/ToC + PDF bookmarks, plus
 	// PDF metadata from Title/Author. (cleveref, when used, still loads after it.)
 	requirePackage('hyperref');
