@@ -121,6 +121,16 @@ if render matter; then
 	want "matter/backmatter"      "$TEX" '\backmatter'
 fi
 
+# --- math-macros.jmd: the `Math macros` lines become preamble definitions,
+#     with the amsmath+amssymb vocabulary MathJax's `ams` provides on the web
+#     side (so identical definitions compile in both outputs). ---
+if render math-macros; then
+	want "macros/newcommand" "$TEX" '\newcommand{\RR}{\mathbb{R}}'
+	want "macros/operator"   "$TEX" '\DeclareMathOperator{\argmax}{arg\,max}'
+	want "macros/amsmath"    "$TEX" '\usepackage{amsmath}'
+	want "macros/amssymb"    "$TEX" '\usepackage{amssymb}'
+fi
+
 # --- index-doc.jmd: :index marks pass through; ::Index pulls in imakeidx and
 #     registers the \makeindex declarations (default + named) in the preamble. ---
 if render index-doc; then

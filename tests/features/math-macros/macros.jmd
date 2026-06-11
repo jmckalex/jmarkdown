@@ -1,0 +1,10 @@
+---
+Math macros:
+	\newcommand{\RR}{\mathbb{R}}
+	\newcommand{\E}[1]{\mathbb{E}\!\left[#1\right]}
+	\DeclareMathOperator{\argmax}{arg\,max}
+---
+
+Inline: $f \colon \RR \to \RR$ and $\E{X}$.
+
+$$\argmax_{x \in \RR} \E{f(x)}$$

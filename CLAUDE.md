@@ -308,6 +308,14 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   so math whose lines start with `+ `/`- `/`* ` (aligned-equation operators) isn't
   sliced into `<ul>/<li>`, and bare `\begin{align}` works without a `$$` wrapper.
   `\[…\]` is now preserved (not rewritten to `$$`).
+- **Math macros** (`Math macros` metadata/config key): raw LaTeX definitions,
+  one per line, shared VERBATIM by both outputs — LaTeX gets preamble lines
+  (before user `LaTeX preamble`; amsmath+amssymb auto-required to match
+  MathJax's default `ams` vocabulary), HTML gets a hidden inline-math block at
+  the top of the body (`div.math-macros`; inline math is never numbered, so
+  `tags:'ams'` can't number it). Macros only — `\newenvironment` stays in
+  `LaTeX preamble` (MathJax parity too partial). Fragment LaTeX output omits
+  them (body-only contract); fragment HTML includes the block.
 - **`:::game`** (`strategic-form-games.js`) → `sgame`'s `game` environment.
   Positional optional args: lone `[...]` = caption; `[...][...]` = player labels;
   `[row][col][caption]` = all three (empty `[]` fills a missing player label).
