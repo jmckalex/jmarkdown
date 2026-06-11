@@ -186,6 +186,7 @@ function number_figures($) {
 			const letter = String.fromCharCode(97 + sub);
 			sub++;
 			const subId = $sub.attr('id');
+			$sub.attr('data-xref-number', `${n}${letter}`).attr('data-xref-type', 'figure');
 			$sub.children('figcaption').first()
 				.prepend(`<span class="subfigure-label">(${letter})</span> `);
 			if (subId) {
@@ -194,6 +195,9 @@ function number_figures($) {
 		});
 
 		// Number the parent figure (its own direct figcaption) + collect for LOF.
+		// The data-xref-number/-type stamp lets a :label INSIDE the construct
+		// adopt its number (see the xref-label pass).
+		$fig.attr('data-xref-number', `${n}`).attr('data-xref-type', 'figure');
 		const $cap = $fig.children('figcaption').first();
 		$cap.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
 		figureList.push({ text: $cap.text(), anchor: id });
@@ -212,6 +216,7 @@ function number_tables($) {
 		const $tab = $(elem);
 		n++;
 		const id = $tab.attr('id');
+		$tab.attr('data-xref-number', `${n}`).attr('data-xref-type', 'table');
 		const $cap = $tab.children('figcaption').first();
 		$cap.prepend(`<span class="table-label xref">Table ${n}:</span> `);
 		tableList.push({ text: $cap.text(), anchor: id });
@@ -230,6 +235,7 @@ function number_listings($) {
 		const $lst = $(elem);
 		n++;
 		const id = $lst.attr('id');
+		$lst.attr('data-xref-number', `${n}`).attr('data-xref-type', 'listing');
 		const $cap = $lst.children('figcaption').first();
 		$cap.prepend(`<span class="listing-label xref">Listing ${n}:</span> `);
 		listingList.push({ text: $cap.text(), anchor: id });
@@ -257,6 +263,7 @@ function number_theorems($) {
 		const kind = $env.attr('data-kind') || 'theorem';
 		const name = $env.attr('data-name');
 		const id = $env.attr('id');
+		$env.attr('data-xref-number', `${n}`).attr('data-xref-type', kind);
 		let text = `${cap(kind)} ${n}`;
 		if (name) text += ` (${esc(name)})`;
 		text += '.';
@@ -289,6 +296,7 @@ function number_equations($) {
 		const $eq = $(elem);
 		n++;
 		const id = $eq.attr('id');
+		$eq.attr('data-xref-number', `${n}`).attr('data-xref-type', 'equation');
 		$eq.append(`<span class="eqn-number">(${n})</span>`);
 		if (id) {
 			recordLabel(id, { number: `${n}`, type: 'equation', anchor: id });
@@ -303,35 +311,42 @@ function process_crossrefs($) {
 		let key = $elem.attr('data-key');
 		let anchor = $elem.attr('id');
 		let number;
+		let type;
 		let in_footnote = $elem.closest('[id^="footnote-"]').length > 0 ? true : false;
+		// A :label INSIDE a numbered construct (theorem, figure, table, listing,
+		// equation — anything a numbering pass stamped data-xref-number on)
+		// adopts that construct's number and type: the HTML twin of LaTeX's
+		// \label inside an environment, which the LaTeX output supports
+		// natively. Equivalent to labelling via the {id=…} attribute.
+		const $host = $elem.closest('[data-xref-number]');
 		if (in_footnote) {
 			let $footnote = $elem.closest('[id^="footnote-"]');
 			const $ol = $footnote.closest("ol");
 			const $allItems = $ol.children('li');
 			const currentIndex = $allItems.index($footnote);
 			number = `${currentIndex+1}`;
+			type = 'footnote';
+		}
+		else if ($host.length) {
+			number = $host.attr('data-xref-number');
+			type = $host.attr('data-xref-type');
 		}
 		else {
 			// The nearest preceding .xref is the number span a numbered heading
 			// prepends (see add_labels_to_headers). Needs Headings: numeric.
+			// Type word for the typed :cref/:Cref form: a heading-anchored
+			// label takes the sectioning word for its depth (section/
+			// subsection/chapter…), honouring Heading base / Document class.
 			let $xref = $elem.prevAll(".xref").first();
 			number = $xref.text();
-		}
-		if (number != undefined && number.endsWith('.')) {
-			number = number.slice(0, -1);
-		}
-		// Type word for the typed :cref/:Cref form: footnotes are 'footnote';
-		// a heading-anchored label takes the sectioning word for its depth
-		// (section/subsection/chapter…), honouring Heading base / Document class.
-		let type;
-		if (in_footnote) {
-			type = 'footnote';
-		} else {
 			const $heading = $elem.closest(':header');
 			if ($heading.length) {
 				const level = parseInt($heading.prop('tagName').slice(1), 10);
 				type = commandForDepth(level);
 			}
+		}
+		if (number != undefined && number.endsWith('.')) {
+			number = number.slice(0, -1);
 		}
 		recordLabel(key, { number, anchor, type });
 	});

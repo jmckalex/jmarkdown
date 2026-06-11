@@ -55,7 +55,10 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		inline-syntax)     extra='\usepackage{color}\usepackage{soul}';   needs='soul.sty' ;;
 		code)              extra='\usepackage{minted}';                   needs='minted.sty' ;;
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
-		crossref)          extra='\usepackage{cleveref}';                 needs='cleveref.sty' ;;
+		# crossref: label-in-env labels theorem-like environments, so the
+		# wrapper declares the two kinds that fixture uses (shared counter,
+		# as theorems.js declares them).
+		crossref)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[style=definition,sibling=theorem]{definition}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
 		floats)            extra='\usepackage[draft]{graphicx}\usepackage{subcaption}\usepackage{booktabs}\usepackage{cleveref}'; needs='subcaption.sty cleveref.sty booktabs.sty' ;;
 		theorems)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[sibling=theorem]{lemma}\declaretheorem[sibling=theorem]{corollary}\declaretheorem[sibling=theorem]{proposition}\declaretheorem[style=definition,sibling=theorem]{definition}\declaretheorem[style=definition,sibling=theorem]{example}\declaretheorem[style=remark,sibling=theorem]{remark}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
 		equations)         extra='\usepackage{amsmath}\usepackage{cleveref}'; needs='cleveref.sty' ;;
