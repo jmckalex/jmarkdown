@@ -42,7 +42,7 @@
 See :ref[fig:demo] for the diagram, or more precisely :cref[fig:demo].</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <figure class="figure" id="fig:demo">
+    <figure class="figure" id="fig:demo" data-xref-number="1" data-xref-type="figure">
       <p><img src="https://placehold.co/360x150?text=diagram" alt="a placeholder diagram"></p>
       <figcaption class="figure-caption"><span class="figure-label xref">Figure 1:</span> Inputs and outputs of the model</figcaption>
     </figure>
@@ -97,12 +97,12 @@ Compare :ref[sub:left] with :ref[sub:right]; both are in :ref[fig:plots].
 See also :cref[sub:left] and :Cref[fig:plots].</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <figure class="figure" id="fig:plots">
-      <figure class="subfigure" id="sub:left" style="width:45%">
+    <figure class="figure" id="fig:plots" data-xref-number="2" data-xref-type="figure">
+      <figure class="subfigure" id="sub:left" style="width:45%" data-xref-number="2a" data-xref-type="figure">
         <p><img src="https://placehold.co/220x140?text=left" alt="left"></p>
         <figcaption class="subfigure-caption"><span class="subfigure-label">(a)</span> The left-hand plot</figcaption>
       </figure>
-      <figure class="subfigure" id="sub:right" style="width:45%">
+      <figure class="subfigure" id="sub:right" style="width:45%" data-xref-number="2b" data-xref-type="figure">
         <p><img src="https://placehold.co/220x140?text=right" alt="right"></p>
         <figcaption class="subfigure-caption"><span class="subfigure-label">(b)</span> The right-hand plot</figcaption>
       </figure>
@@ -166,7 +166,7 @@ See also <span class="hljs-keyword">\cref</span>{sub:left} and <span class="hljs
 See :ref[tab:results] for the numbers, or more precisely :cref[tab:results].</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <figure class="table-float" id="tab:results">
+    <figure class="table-float" id="tab:results" data-xref-number="1" data-xref-type="table">
       <figcaption class="table-caption"><span class="table-label xref">Table 1:</span> Summary of results</figcaption>
       <table>
         <thead>
@@ -255,7 +255,7 @@ print("hello, world")
 See :ref[lst:hello], or more precisely :cref[lst:hello].</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <figure class="listing" id="lst:hello">
+    <figure class="listing" id="lst:hello" data-xref-number="1" data-xref-type="listing">
       <pre><code class="hljs language-python"><span class="hljs-built_in">print</span>(<span class="hljs-string">"hello, world"</span>)
 </code></pre>
       <figcaption class="listing-caption"><span class="listing-label xref">Listing 1:</span> A hello-world program</figcaption>

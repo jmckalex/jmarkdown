@@ -251,7 +251,13 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   **single-pass**). Wording is identical in both outputs (full words via
   `crefName`; equations parenthesised, "(2)"). Counters: sections (native /
   heading numbering), figures, tables, listings (own counters), theorems (one
-  shared sequential counter), equations. An unresolvable `:ref`/`:cref` still
+  shared sequential counter), equations. A `:label` INSIDE a numbered
+  construct adopts its number/kind via the `data-xref-number`/`-type` stamps
+  the numbering passes leave on the DOM (the HTML twin of `\label` inside an
+  environment, which LaTeX supports natively) — equivalent to `{id=…}`;
+  floats should still prefer `{id=…}` (a body `\label` lands before
+  `\caption` in the .tex and binds the wrong counter). An unresolvable
+  `:ref`/`:cref` still
   renders `??` and a duplicate label still lets the later definition win, but
   both now also record a build warning (`warnings.js`) — stderr summary +
   watch-mode banner; the LaTeX path leaves this to the engine's native nags.

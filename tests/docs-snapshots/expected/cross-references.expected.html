@@ -142,7 +142,7 @@ As described in <span class="hljs-keyword">\cref</span>{sec:intro}, we proceed.
 See :ref[fig:demo] for the diagram, or more precisely :cref[fig:demo].</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <figure class="figure" id="fig:demo">
+    <figure class="figure" id="fig:demo" data-xref-number="1" data-xref-type="figure">
       <p><img src="https://placehold.co/240x90?text=diagram" alt="a diagram"></p>
       <figcaption class="figure-caption"><span class="figure-label xref">Figure 1:</span> Inputs and outputs</figcaption>
     </figure>
@@ -190,10 +190,10 @@ By :cref[thm:pyth] and :cref[def:rt] we are done.
 See also :Cref[thm:pyth].</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth" data-xref-number="1" data-xref-type="theorem">
       <p><span class="theorem-label">Theorem 1 (Pythagoras).</span> For a right triangle, $a^2 + b^2 = c^2$.</p>
     </div>
-    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt">
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt" data-xref-number="2" data-xref-type="definition">
       <p><span class="theorem-label">Definition 2.</span> A <strong>right triangle</strong> has one ninety-degree angle.</p>
     </div>
     <p>By <a class="xref-cref" href="#thm:pyth">theorem&nbsp;1</a> and <a class="xref-cref" href="#def:rt">definition&nbsp;2</a> we are done.
@@ -201,6 +201,21 @@ See also :Cref[thm:pyth].</code></pre>
 
   </div>
 </div>
+<p>If LaTeX muscle memory makes you reach for a label <strong>inside</strong> the environment
+  body instead — the <code>\label{…}</code> idiom — that works too, and means exactly the
+  same thing:</p>
+<pre><code class="hljs">@begin(definition)[Macro-coarsenings]
+    :label[def:macro]
+    A definition whose label sits in the body, as \label would.
+@end(definition)
+</code></pre>
+<p>A <code>:label</code> inside any numbered environment (a theorem-like, a captioned float,
+  an equation) adopts that environment's number and kind in the web edition, and
+  becomes a native <code>\label</code> inside the environment in print. For floats, prefer
+  the <code>{id=…}</code> attribute all the same: in LaTeX a <code>\label</code> placed before the
+  <code>\caption</code> binds to the wrong counter — the classic figure-labelling pitfall —
+  whereas the attribute always emits it in the right place.
+</p>
 <p>Each <code>:cref</code> names the construct it points at, while the bare number stays
   continuous across both kinds. In LaTeX this maps onto thmtools with one shared
   counter, so the same source yields:</p>
@@ -234,13 +249,13 @@ By :ref[eq:mass] and :cref[eq:sum] we relate them.
 See also :Cref[eq:mass].</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="equation" id="eq:mass">
+    <div class="equation" id="eq:mass" data-xref-number="1" data-xref-type="equation">
       <span class="eqn-body">\[
         E = mc^2
         \]</span>
       <span class="eqn-number">(1)</span>
     </div>
-    <div class="equation" id="eq:sum">
+    <div class="equation" id="eq:sum" data-xref-number="2" data-xref-type="equation">
       <span class="eqn-body">\[
         \sum_{i=1}^n i = \frac{n(n+1)}{2}
         \]</span>
@@ -291,7 +306,7 @@ Every bounded monotone sequence converges.
   </div>
   <div class="markdown-demo-parsed">
     <p>We will prove this in <a class="xref-cref" href="#thm:later">theorem&nbsp;3</a> below.</p>
-    <div class="theorem-env theorem-plain" data-kind="theorem" id="thm:later">
+    <div class="theorem-env theorem-plain" data-kind="theorem" id="thm:later" data-xref-number="3" data-xref-type="theorem">
       <p><span class="theorem-label">Theorem 3.</span> Every bounded monotone sequence converges.</p>
     </div>
 

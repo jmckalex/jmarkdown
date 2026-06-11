@@ -27,7 +27,9 @@ with inline math like $a^2 + b^2 = c^2$.
   The braces hold attributes; the one that matters here is <code>id</code>, which sets the
   cross-reference key. (Keys like <code>thm:pyth</code> carry a colon, so they go in
   <code>{id=…}</code> rather than the <code>{#…}</code> shorthand — see
-  <a href="cross-references.html">cross-references</a>.)
+  <a href="cross-references.html">cross-references</a>.) Equivalently, LaTeX style, a
+  <code>:label[thm:key]</code> placed <strong>inside</strong> the body adopts the environment's number
+  and kind, exactly as <code>\label</code> would.
 </p>
 <p>The seven kinds are <span class="intense">theorem, lemma, corollary, proposition, definition,
     example,</span> and <span class="intense">remark.</span> They differ only in their display name and, in
@@ -51,10 +53,10 @@ A <span class="hljs-emphasis">*right triangle*</span> has one ninety-degree angl
 @end(definition)</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth" data-xref-number="1" data-xref-type="theorem">
       <p><span class="theorem-label">Theorem 1 (Pythagoras).</span> For a right triangle, $a^2 + b^2 = c^2$.</p>
     </div>
-    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt">
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt" data-xref-number="2" data-xref-type="definition">
       <p><span class="theorem-label">Definition 2.</span> A <strong>right triangle</strong> has one ninety-degree angle.</p>
     </div>
 
@@ -120,16 +122,16 @@ The reals are uncountable.
 @end(corollary)</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Cantor" id="thm:cantor">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Cantor" id="thm:cantor" data-xref-number="3" data-xref-type="theorem">
       <p><span class="theorem-label">Theorem 3 (Cantor).</span> There is no surjection from a set onto its power set.</p>
     </div>
-    <div class="theorem-env theorem-plain" data-kind="lemma" id="lem:diag">
+    <div class="theorem-env theorem-plain" data-kind="lemma" id="lem:diag" data-xref-number="4" data-xref-type="lemma">
       <p><span class="theorem-label">Lemma 4.</span> The diagonal set differs from every row.</p>
     </div>
-    <div class="theorem-env theorem-definition" data-kind="definition" id="def:power">
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:power" data-xref-number="5" data-xref-type="definition">
       <p><span class="theorem-label">Definition 5.</span> The <strong>power set</strong> of $S$ is the set of all subsets of $S$.</p>
     </div>
-    <div class="theorem-env theorem-plain" data-kind="corollary">
+    <div class="theorem-env theorem-plain" data-kind="corollary" data-xref-number="6" data-xref-type="corollary">
       <p><span class="theorem-label">Corollary 6.</span> The reals are uncountable.</p>
     </div>
 
@@ -170,10 +172,10 @@ A <span class="hljs-emphasis">*right triangle*</span> has one ninety-degree angl
 By :cref[thm:pyth2] and :cref[def:rt2] we are done. See also :Cref[thm:pyth2].</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth2">
+    <div class="theorem-env theorem-plain" data-kind="theorem" data-name="Pythagoras" id="thm:pyth2" data-xref-number="7" data-xref-type="theorem">
       <p><span class="theorem-label">Theorem 7 (Pythagoras).</span> For a right triangle, $a^2 + b^2 = c^2$.</p>
     </div>
-    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt2">
+    <div class="theorem-env theorem-definition" data-kind="definition" id="def:rt2" data-xref-number="8" data-xref-type="definition">
       <p><span class="theorem-label">Definition 8.</span> A <strong>right triangle</strong> has one ninety-degree angle.</p>
     </div>
     <p>By <a class="xref-cref" href="#thm:pyth2">theorem&nbsp;7</a> and <a class="xref-cref" href="#def:rt2">definition&nbsp;8</a> we are done. See also <a class="xref-cref" href="#thm:pyth2">Theorem&nbsp;7</a>.</p>
@@ -212,7 +214,7 @@ so $p$ is even, whence $q$ is even — contradicting lowest terms.
 @end(proof)</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="theorem-env theorem-plain" data-kind="theorem" id="thm:irr">
+    <div class="theorem-env theorem-plain" data-kind="theorem" id="thm:irr" data-xref-number="9" data-xref-type="theorem">
       <p><span class="theorem-label">Theorem 9.</span> $\sqrt{2}$ is irrational.</p>
     </div>
     <div class="proof-env">
@@ -239,7 +241,7 @@ which follows by squaring. This is exactly :cref[lem:even].
 @end(proof)</code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="theorem-env theorem-plain" data-kind="lemma" id="lem:even">
+    <div class="theorem-env theorem-plain" data-kind="lemma" id="lem:even" data-xref-number="10" data-xref-type="lemma">
       <p><span class="theorem-label">Lemma 10.</span> If $p^2$ is even then $p$ is even.</p>
     </div>
     <div class="proof-env">
@@ -276,13 +278,13 @@ E = mc^2
 @end(equation)</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="equation" id="eq:mass">
+    <div class="equation" id="eq:mass" data-xref-number="1" data-xref-type="equation">
       <span class="eqn-body">\[
         E = mc^2
         \]</span>
       <span class="eqn-number">(1)</span>
     </div>
-    <div class="equation" id="eq:sum">
+    <div class="equation" id="eq:sum" data-xref-number="2" data-xref-type="equation">
       <span class="eqn-body">\[
         \sum_{i=1}^n i = \frac{n(n+1)}{2}
         \]</span>
@@ -313,13 +315,13 @@ e^{i\pi} + 1 = 0
 By :ref[eq:euler] and :cref[eq:gauss] we relate them. See also :Cref[eq:euler].</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="equation" id="eq:euler">
+    <div class="equation" id="eq:euler" data-xref-number="3" data-xref-type="equation">
       <span class="eqn-body">\[
         e^{i\pi} + 1 = 0
         \]</span>
       <span class="eqn-number">(3)</span>
     </div>
-    <div class="equation" id="eq:gauss">
+    <div class="equation" id="eq:gauss" data-xref-number="4" data-xref-type="equation">
       <span class="eqn-body">\[
         \int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
         \]</span>

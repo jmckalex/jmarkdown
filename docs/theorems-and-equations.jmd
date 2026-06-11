@@ -36,7 +36,9 @@ name** — a parenthetical note such as the person the result is named after.
 The braces hold attributes; the one that matters here is `id`, which sets the
 cross-reference key. (Keys like `thm:pyth` carry a colon, so they go in
 `{id=…}` rather than the `{#…}` shorthand — see
-[cross-references](cross-references.html).)
+[cross-references](cross-references.html).) Equivalently, LaTeX style, a
+`:label[thm:key]` placed *inside* the body adopts the environment's number
+and kind, exactly as `\label` would.
 
 The seven kinds are **theorem, lemma, corollary, proposition, definition,
 example,** and **remark.** They differ only in their display name and, in

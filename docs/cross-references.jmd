@@ -179,6 +179,24 @@ By :cref[thm:pyth] and :cref[def:rt] we are done.
 See also :Cref[thm:pyth].
 :::
 
+If LaTeX muscle memory makes you reach for a label *inside* the environment
+body instead — the `\label{…}` idiom — that works too, and means exactly the
+same thing:
+
+```
+@begin(definition)[Macro-coarsenings]
+    :label[def:macro]
+    A definition whose label sits in the body, as \label would.
+@end(definition)
+```
+
+A `:label` inside any numbered environment (a theorem-like, a captioned float,
+an equation) adopts that environment's number and kind in the web edition, and
+becomes a native `\label` inside the environment in print. For floats, prefer
+the `{id=…}` attribute all the same: in LaTeX a `\label` placed before the
+`\caption` binds to the wrong counter — the classic figure-labelling pitfall —
+whereas the attribute always emits it in the right place.
+
 Each `:cref` names the construct it points at, while the bare number stays
 continuous across both kinds. In LaTeX this maps onto thmtools with one shared
 counter, so the same source yields:
