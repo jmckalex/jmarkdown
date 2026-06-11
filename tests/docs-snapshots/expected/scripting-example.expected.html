@@ -212,54 +212,9 @@ This is the feedback for the student, written as ordinary prose with
   <code>&lt;section class="feedback"&gt;…&lt;/section&gt;</code>. That <code>section.feedback</code> is the container
   the post-processing script treats as one student's record: footnotes, the
   bibliography, and the computed grade all get appended <strong>inside</strong> it. The <code>feedback</code>
-  n
-  a
-  m
-  e
-
-  i
-  s
-
-  a
-
-  [
-  b
-  u
-  i
-  l
-  t
-  -
-  i
-  n
-  ]
-  (
-  b
-  l
-  o
-  c
-  k
-  -
-  e
-  n
-  v
-  i
-  r
-  o
-  n
-  m
-  e
-  n
-  t
-  s
-  .
-  h
-  t
-  m
+  name is a <a href="block-environments.html">built-in</a> — <code>:::feedback</code> and the block
+  environment <code>@begin(feedback) … @end(feedback)</code> render identically.
 </p>
-<ol type="i">
-  <li value="50">— <code>:::feedback</code> and the block
-    environment <code>@begin(feedback) … @end(feedback)</code> render identically.</li>
-</ol>
 <h2 id="toc-the-post-processing-script">The post-processing script</h2>
 <p>So far everything has happened during the parse. The real leverage comes
   <strong>afterwards</strong>. Once JMarkdown has assembled the whole HTML document, a

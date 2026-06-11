@@ -40,30 +40,8 @@
   description can run to many paragraphs, contain code, hold a list — even contain
   another description list nested inside it.</p>
 <h2 id="toc-the-basic-form">The basic form</h2>
-<p>W
-  r
-  i
-  t
-  e
-
-  t
-  h
-  e
-
-  t
-  e
-  r
-  m
-  ,
-
-  t
-  h
-  e
-  n
-
-  <code> ::</code>, then the description. The description may sit on the
-  same line as the term, or begin on the next line indented past the term:
-</p>
+<p>Write the term, then <code>::</code>, then the description. The description may sit on the
+  same line as the term, or begin on the next line indented past the term:</p>
 <div class="markdown-demo-container">
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
@@ -108,31 +86,10 @@ JMarkdown:: A Markdown authoring system that
 <p>pairs are gathered into one surrounding <code>&lt;dl&gt;</code>. A blank line <strong>between</strong> pairs is
   fine — it does not end the list — which lets you space entries out for
   readability in the source.</p>
-<p>T
-  h
-  e
-
-  <code> ::</code> is the only special marker. The term is everything to its left; the
+<p>The <code>::</code> is the only special marker. The term is everything to its left; the
   description is everything to its right (and below). The marker must be followed
   by whitespace or the end of the line, so a doubled colon that is part of prose
-  o
-  r
-
-  c
-  o
-  d
-  e
-
-  —
-
-  `
-  f
-  o
-  o
-</p>
-<bar>
-</bar>
-<p>` with no space — is left untouched.</p>
+  or code — <code>foo::bar</code> with no space — is left untouched.</p>
 <h3 id="toc-single-colons-are-safe-in-the-term">Single colons are safe in the term</h3>
 <p>Only the <strong>double</strong> colon splits a term from its description. A lone colon inside
   the term is ordinary text, so terms that themselves contain a colon work without

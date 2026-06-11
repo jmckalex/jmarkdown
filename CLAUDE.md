@@ -160,6 +160,17 @@ An alternative to the colon-counted container directives. Because the closer *na
 ### Extension registration order matters
 Inline extensions registered **later** are checked first in marked.js. The inline footnote extension is registered after `marked-footnote` for this reason. Document any ordering dependencies you introduce.
 
+### Block extension `start()` must only report positions its tokenizer can match
+marked truncates the paragraph being built at the smallest index any block
+`start()` returns, then retries tokenizers there — so a `start` that matches
+where its own tokenizer can't (mid-line `::` in a code span, say) shreds the
+paragraph one character at a time and hands the remainder to whichever
+tokenizer mis-claims it (the old `` `::Note` ``-in-prose bug, fixed 2026-06).
+Anchor block/container starts to line starts (`(?:^|\n)…`, returning the
+post-newline index) and pre-check the tokenizer's real shape (see
+`description-lists.js` and the directive `start` in `extended-directives.js`).
+Inline starts may match anywhere — that's correct for them.
+
 ### `runInThisContext`
 Script blocks, function extensions, and post-processor scripts share a single VM context (`runInThisContext` from Node's `vm` module, re-exported via `utils.js`). Anything assigned to `global.*` is visible everywhere downstream.
 

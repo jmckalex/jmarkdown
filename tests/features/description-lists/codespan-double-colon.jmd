@@ -1,0 +1,10 @@
+# Prose with double colons in code spans
+
+A paragraph mentioning `::Note` and `:::TeX` mid-sentence must stay one
+paragraph — the description-list and directive start functions must not
+shred it. Then a real description list still works:
+
+First term:: Its definition on the same line.
+
+Second term::
+	A definition on the following line.

@@ -21,8 +21,22 @@ function createDirectives(configs = presetDirectiveConfigs) {
             const defn = {
                 name: type,
                 level: level === 'inline' ? 'inline' : 'block',
-                start: (src) => src.match(new RegExp(`${marker}${label || ''}`))?.index,
-                //start: (src) => src.match(new RegExp(marker))?.index,
+                // Where might this directive begin? For block/container levels
+                // the answer must be A LINE START: the tokenizer's pattern is
+                // ^-anchored, so a marker in mid-line (e.g. `::Note` inside a
+                // code span in prose) can never tokenize as a directive — but
+                // reporting its index here made marked truncate the paragraph
+                // at that spot, where OTHER tokenizers then mis-claimed the
+                // remainder (the "`::X` in a code span shreds the paragraph"
+                // bug). Inline directives genuinely can begin anywhere, and
+                // inline code spans are claimed before text is cut, so the
+                // unanchored match stays correct for them.
+                start: level === 'inline'
+                    ? (src) => src.match(new RegExp(`${marker}${label || ''}`))?.index
+                    : (src) => {
+                        const m = src.match(new RegExp(`(?:^|\\n)${marker}${label || ''}`));
+                        return m ? m.index + (m[0].startsWith('\n') ? 1 : 0) : undefined;
+                    },
 
                 tokenizer: function(src) {
                     const pattern = getDirectivePattern(level, marker, label);
