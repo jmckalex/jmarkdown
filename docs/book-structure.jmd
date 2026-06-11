@@ -238,7 +238,7 @@ Document class: book
 
 # Introduction
 
-Body text of the first chapter.
+Body text of the first chapter, marking a term:index[body text] for the index.
 
 {{appendix}}
 
@@ -247,6 +247,8 @@ Body text of the first chapter.
 More material here.
 
 {{backmatter}}
+
+::Index
 ```
 
 Run through `--to latex`, this assembles a full, compilable document — the
@@ -257,6 +259,8 @@ preamble; here each marker simply drops into place:
 \documentclass{book}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{imakeidx}
+\makeindex
 \usepackage{hyperref}
 \hypersetup{pdftitle={My Treatise}, pdfauthor={A. Scholar}}
 
@@ -274,7 +278,7 @@ preamble; here each marker simply drops into place:
 
 \chapter{Introduction}
 
-Body text of the first chapter.
+Body text of the first chapter, marking a term\index{body text} for the index.
 
 \appendix
 
@@ -284,17 +288,22 @@ More material here.
 
 \backmatter
 
+\printindex
 
 \end{document}
 ```
 
 Notice that `#` became `\chapter` (because the class is `book`), `{{TOC}}` sits
 inside the front matter as `\tableofcontents`, and the appendix chapter follows
-`\appendix` so the class will letter it. That `.tex` compiles to a properly
-structured PDF with no further hand-editing.
+`\appendix` so the class will letter it. The single `::Index` pulled in the
+`imakeidx` package and its `\makeindex` declaration (placed before `hyperref`,
+as that package requires) and became `\printindex` in the back matter. That
+`.tex` compiles to a properly structured PDF with no further hand-editing —
+`latexmk` even runs `makeindex` for you.
 
 The same source built for the web (`--fragment`, no class wrapper) produces the
-generated contents list and silently drops the matter markers:
+generated contents list, silently drops the matter markers, and builds the
+index in place — the mark is the invisible span, and the entry links back to it:
 
 ```html
 <div class="toc">
@@ -306,13 +315,28 @@ generated contents list and silently drops the matter markers:
 </div>
 
 <h1 id="toc-introduction">Introduction</h1>
-<p>Body text of the first chapter.</p>
+<p>Body text of the first chapter, marking a
+   term<span class="index-mark" data-entry="body text" id="idx-1"></span>
+   for the index.</p>
 
 <h1 id="toc-supplementary-proofs">Supplementary Proofs</h1>
 <p>More material here.</p>
+
+<nav class="index" aria-label="Index">
+  <h2 class="index-title" id="index">Index</h2>
+  <div class="index-group">
+    <p class="index-group-letter">B</p>
+    <ul class="index-entries">
+      <li id="index-entry-body-text"><span class="index-entry-text">body text</span><span
+          class="index-locators">, <a href="#idx-1">1</a></span></li>
+    </ul>
+  </div>
+</nav>
 ```
 
-One source, two structurally correct outputs.
+One source, two structurally correct outputs. (The full mark grammar —
+subentries, sort keys, cross-references, ranges, multiple indexes — is on the
+[Back-of-book index](indexing.html) page.)
 
 ## Multi-file books
 
@@ -506,6 +530,8 @@ numbering to letters.
 | `{{TOC}}` | `\tableofcontents` | generated `<div class="toc">` of headings |
 | `{{LOF}}` | `\listoffigures` | generated `<nav class="list-of-figures">` |
 | `{{LOT}}` | `\listoftables` | generated `<nav class="list-of-tables">` |
+| `{{LOL}}` | `\listoflistings` (pulls in minted) | generated `<nav class="list-of-listings">` |
+| `::Index` | `\printindex` (pulls in imakeidx + `\makeindex`) | generated `<nav class="index">` — see [Back-of-book index](indexing.html) |
 | `{{frontmatter}}` | `\frontmatter` | stripped (book and report only in LaTeX) |
 | `{{mainmatter}}` | `\mainmatter` | stripped (book and report only in LaTeX) |
 | `{{appendix}}` | `\appendix` | stripped (lettering TODO in HTML) |
@@ -517,9 +543,9 @@ numbering to letters.
 - **Each marker on its own line, blank lines around it.** A marker is matched as
   a whole paragraph; two markers on adjacent lines fold into one paragraph and
   only the first is replaced.
-- **`{{LOF}}` and `{{LOT}}` collect captioned floats** — `@begin(figure)` and
-  `@begin(table)` with `[caption]` and `{id=…}`. Bare `![](…)` images do not
-  appear.
+- **`{{LOF}}`, `{{LOT}}`, and `{{LOL}}` collect captioned floats** —
+  `@begin(figure)`, `@begin(table)`, and `@begin(listing)` with `[caption]`
+  and `{id=…}`. Bare `![](…)` images and plain code fences do not appear.
 - **Matter divisions need `Document class: book` or `report`** for the front,
   main, and back divisions; `{{appendix}}` works in any class.
 - **Structure markers live in the master file**, not in included chapters.
@@ -542,5 +568,7 @@ numbering to letters.
   `:Cref` commands, and how forward references resolve.
 - [Floats](floats.html) — the `@begin(figure|table|listing)` environments that
   `{{LOF}}` and `{{LOT}}` collect.
+- [Back-of-book index](indexing.html) — `:index[…]` marks and the `::Index`
+  placement: the back-matter counterpart of the front-of-book lists above.
 - [Metadata header](metadata-header.html) — the header syntax, and keys like
   `Author` and `Headings: numeric`.

@@ -67,6 +67,11 @@ to make the `jmarkdown` executable available from the command line.
 	- Parameter variables (`{{myvar}}`)
 	- Defining new markdown syntax
 - Inline and post-processing scripts
+- Dual output: the same `.md` source compiles to polished HTML *or* a complete
+  LaTeX document (`--to latex`), with cross-references, floats, theorems,
+  citations, and a back-of-book index (`:index[…]` marks become native
+  `\index`/makeindex entries in print and a generated, hyperlinked index on
+  the web)
 - Live preview: `jmarkdown watch file.md --open` rebuilds on save and updates
   the browser in place, preserving rendered math and diagrams in unchanged blocks
 

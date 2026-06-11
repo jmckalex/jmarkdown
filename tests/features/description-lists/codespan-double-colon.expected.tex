@@ -1,0 +1,11 @@
+\section{Prose with double colons in code spans}
+
+A paragraph mentioning \mintinline{text}|::Note| and \mintinline{text}|:::TeX| mid-sentence must stay one
+paragraph — the description-list and directive start functions must not
+shred it. Then a real description list still works:
+
+\begin{description}
+\item[First term] Its definition on the same line.
+\item[Second term] A definition on the following line.
+\end{description}
+

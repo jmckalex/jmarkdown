@@ -271,6 +271,7 @@ what you are trying to do.
 | Draw diagrams | [Mermaid diagrams](mermaid-diagrams.html), [TiKZ diagrams](tikz-diagrams.html) |
 | Configure a document or project | [Metadata header](metadata-header.html), [Configuration files](configuration-files.html), [Output templates](output-templates.html) |
 | Compose larger works | [File inclusion](file-inclusion.html), [Table of contents](table-of-contents.html), [Anchors](anchors.html) |
+| Produce a print (LaTeX/PDF) edition | [Dual output](dual-output.html), [Cross-references](cross-references.html), [Figures, tables & listings](floats.html), [Theorems & equations](theorems-and-equations.html), [Book structure](book-structure.html), [Back-of-book index](indexing.html), [Print rendering](print-rendering.html) |
 
 ## Try it yourself
 

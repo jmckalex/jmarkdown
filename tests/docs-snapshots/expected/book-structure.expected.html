@@ -244,7 +244,7 @@ Document class: book
 
 # Introduction
 
-Body text of the first chapter.
+Body text of the first chapter, marking a term:index[body text] for the index.
 
 {{appendix}}
 
@@ -253,6 +253,8 @@ Body text of the first chapter.
 More material here.
 
 {{backmatter}}
+
+::Index
 </code></pre>
 <p>Run through <code>--to latex</code>, this assembles a full, compilable document — the
   <a href="dual-output.html">dual-output model</a> builds the <code>\documentclass</code> wrapper and
@@ -261,6 +263,8 @@ More material here.
 <pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>{book}
 <span class="hljs-keyword">\usepackage</span>[utf8]{inputenc}
 <span class="hljs-keyword">\usepackage</span>[T1]{fontenc}
+<span class="hljs-keyword">\usepackage</span>{imakeidx}
+<span class="hljs-keyword">\makeindex</span>
 <span class="hljs-keyword">\usepackage</span>{hyperref}
 <span class="hljs-keyword">\hypersetup</span>{pdftitle={My Treatise}, pdfauthor={A. Scholar}}
 
@@ -278,7 +282,7 @@ More material here.
 
 <span class="hljs-keyword">\chapter</span>{Introduction}
 
-Body text of the first chapter.
+Body text of the first chapter, marking a term<span class="hljs-keyword">\index</span>{body text} for the index.
 
 <span class="hljs-keyword">\appendix</span>
 
@@ -288,16 +292,21 @@ More material here.
 
 <span class="hljs-keyword">\backmatter</span>
 
+<span class="hljs-keyword">\printindex</span>
 
 <span class="hljs-keyword">\end</span>{document}
 </code></pre>
 <p>Notice that <code>#</code> became <code>\chapter</code> (because the class is <code>book</code>), <code>{{TOC}}</code> sits
   inside the front matter as <code>\tableofcontents</code>, and the appendix chapter follows
-  <code>\appendix</code> so the class will letter it. That <code>.tex</code> compiles to a properly
-  structured PDF with no further hand-editing.
+  <code>\appendix</code> so the class will letter it. The single <code>::Index</code> pulled in the
+  <code>imakeidx</code> package and its <code>\makeindex</code> declaration (placed before <code>hyperref</code>,
+  as that package requires) and became <code>\printindex</code> in the back matter. That
+  <code>.tex</code> compiles to a properly structured PDF with no further hand-editing —
+  <code>latexmk</code> even runs <code>makeindex</code> for you.
 </p>
 <p>The same source built for the web (<code>--fragment</code>, no class wrapper) produces the
-  generated contents list and silently drops the matter markers:</p>
+  generated contents list, silently drops the matter markers, and builds the
+  index in place — the mark is the invisible span, and the entry links back to it:</p>
 <pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"toc"</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc"</span>&gt;</span>Table of contents<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
   <span class="hljs-tag">&lt;<span class="hljs-name">ul</span>&gt;</span>
@@ -307,12 +316,28 @@ More material here.
 <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
 
 <span class="hljs-tag">&lt;<span class="hljs-name">h1</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc-introduction"</span>&gt;</span>Introduction<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Body text of the first chapter.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>Body text of the first chapter, marking a
+   term<span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"index-mark"</span> <span class="hljs-attr">data-entry</span>=<span class="hljs-string">"body text"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"idx-1"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span>
+   for the index.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
 
 <span class="hljs-tag">&lt;<span class="hljs-name">h1</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"toc-supplementary-proofs"</span>&gt;</span>Supplementary Proofs<span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span>
 <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>More material here.<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+
+<span class="hljs-tag">&lt;<span class="hljs-name">nav</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"index"</span> <span class="hljs-attr">aria-label</span>=<span class="hljs-string">"Index"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">h2</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"index-title"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"index"</span>&gt;</span>Index<span class="hljs-tag">&lt;/<span class="hljs-name">h2</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"index-group"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"index-group-letter"</span>&gt;</span>B<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">ul</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"index-entries"</span>&gt;</span>
+      <span class="hljs-tag">&lt;<span class="hljs-name">li</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"index-entry-body-text"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"index-entry-text"</span>&gt;</span>body text<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span>
+          <span class="hljs-attr">class</span>=<span class="hljs-string">"index-locators"</span>&gt;</span>, <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"#idx-1"</span>&gt;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">li</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">ul</span>&gt;</span>
+  <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span>
 </code></pre>
-<p>One source, two structurally correct outputs.</p>
+<p>One source, two structurally correct outputs. (The full mark grammar —
+  subentries, sort keys, cross-references, ranges, multiple indexes — is on the
+  <a href="indexing.html">Back-of-book index</a> page.)
+</p>
 <h2 id="toc-multi-file-books">Multi-file books</h2>
 <p>A real book lives in many files — one per chapter — assembled by a short <strong>master
     file</strong>. JMarkdown's <a href="file-inclusion.html">file inclusion</a> does the assembly: a
@@ -527,6 +552,16 @@ Compare <span class="hljs-keyword">\cref</span>{fig:flow} with <span class="hljs
       <td>generated <code>&lt;nav class="list-of-tables"&gt;</code></td>
     </tr>
     <tr>
+      <td><code>{{LOL}}</code></td>
+      <td><code>\listoflistings</code> (pulls in minted)</td>
+      <td>generated <code>&lt;nav class="list-of-listings"&gt;</code></td>
+    </tr>
+    <tr>
+      <td><code>::Index</code></td>
+      <td><code>\printindex</code> (pulls in imakeidx + <code>\makeindex</code>)</td>
+      <td>generated <code>&lt;nav class="index"&gt;</code> — see <a href="indexing.html">Back-of-book index</a></td>
+    </tr>
+    <tr>
       <td><code>{{frontmatter}}</code></td>
       <td><code>\frontmatter</code></td>
       <td>stripped (book and report only in LaTeX)</td>
@@ -558,9 +593,9 @@ Compare <span class="hljs-keyword">\cref</span>{fig:flow} with <span class="hljs
   <li><span class="intense">Each marker on its own line, blank lines around it.</span> A marker is matched as
     a whole paragraph; two markers on adjacent lines fold into one paragraph and
     only the first is replaced.</li>
-  <li><span class="intense"><code>{{LOF}}</code> and <code>{{LOT}}</code> collect captioned floats</span> — <code>@begin(figure)</code> and
-    <code>@begin(table)</code> with <code>[caption]</code> and <code>{id=…}</code>. Bare <code>![](…)</code> images do not
-    appear.
+  <li><span class="intense"><code>{{LOF}}</code>, <code>{{LOT}}</code>, and <code>{{LOL}}</code> collect captioned floats</span> —
+    <code>@begin(figure)</code>, <code>@begin(table)</code>, and <code>@begin(listing)</code> with <code>[caption]</code>
+    and <code>{id=…}</code>. Bare <code>![](…)</code> images and plain code fences do not appear.
   </li>
   <li><span class="intense">Matter divisions need <code>Document class: book</code> or <code>report</code></span> for the front,
     main, and back divisions; <code>{{appendix}}</code> works in any class.</li>
@@ -587,6 +622,8 @@ Compare <span class="hljs-keyword">\cref</span>{fig:flow} with <span class="hljs
   <li><a href="floats.html">Floats</a> — the <code>@begin(figure|table|listing)</code> environments that
     <code>{{LOF}}</code> and <code>{{LOT}}</code> collect.
   </li>
+  <li><a href="indexing.html">Back-of-book index</a> — <code>:index[…]</code> marks and the <code>::Index</code>
+    placement: the back-matter counterpart of the front-of-book lists above.</li>
   <li><a href="metadata-header.html">Metadata header</a> — the header syntax, and keys like
     <code>Author</code> and <code>Headings: numeric</code>.
   </li>

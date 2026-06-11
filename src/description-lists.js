@@ -27,11 +27,14 @@ const descriptionList = {
 		// Fast pre-check: bail out if '::' doesn't appear at all. Avoids the
 		// catastrophic backtracking the old unanchored regex was prone to on
 		// large documents with no description lists.
-		const idx = src.indexOf('::');
-		if (idx < 0) return undefined;
-		// Return the start of the line containing '::' so marked.js can ask
-		// the tokenizer (whose dt_rule is anchored at ^) to try matching there.
-		return src.lastIndexOf('\n', idx - 1) + 1;
+		if (src.indexOf('::') < 0) return undefined;
+		// Only report a line the tokenizer could actually match: a non-empty
+		// term, then '::', then whitespace or end-of-line (dt_rule's shape).
+		// Reporting the line of ANY '::' — e.g. `::Note` inside a code span —
+		// made marked shred the enclosing paragraph one character at a time
+		// and hand the remainder to tokenizers that mis-claimed it.
+		const m = /^[ \t]*(?:[^:\n]|:(?!:))+?::(?=\s|$)/m.exec(src);
+		return m ? m.index : undefined;
 	},
 	tokenizer(src, tokens) {
 		const dt_rule = /^([ \t]*(?:[^:\n]|(?<!:):(?!:))+?)::(\s+(?:.*)|$)/;

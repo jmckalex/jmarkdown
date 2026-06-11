@@ -75,14 +75,7 @@ Turing:index[Turing, Alan] in 1936.
 <p>Math in the display form works in both editions: LaTeX typesets it natively,
   and in HTML the generated index leaves <code>$…$</code> for MathJax.</p>
 <h2 id="toc-printing-the-index">Printing the index</h2>
-<p>P
-  u
-  t
-
-  `</p>
-<index>
-</index>
-<p>` on a line of its own where the index should appear — by
+<p>Put <code>::Index</code> on a line of its own where the index should appear — by
   convention, at the very end:</p>
 <pre><code class="hljs">::Index
 </code></pre>
@@ -97,47 +90,7 @@ Turing:index[Turing, Alan] in 1936.
   emits <code>\printindex</code>. If you compile with <code>latexmk</code>, the <code>makeindex</code> runs
   happen automatically; compiling by hand, run <code>makeindex</code> on the <code>.idx</code> file
   between two LaTeX passes, as usual.</p>
-<p>I
-  f
-
-  y
-  o
-  u
-
-  m
-  a
-  r
-  k
-
-  t
-  e
-  r
-  m
-  s
-
-  b
-  u
-  t
-
-  n
-  e
-  v
-  e
-  r
-
-  p
-  l
-  a
-  c
-  e
-
-  a
-  n
-
-  `</p>
-<index>
-</index>
-<p>`, the marks are silently
+<p>If you mark terms but never place an <code>::Index</code>, the marks are silently
   useless in both editions — so JMarkdown's end-of-build summary warns you.</p>
 <h2 id="toc-what-the-web-edition-shows-instead-of-page-numbers">What the web edition shows instead of page numbers</h2>
 <p>HTML has no pages, so each locator is the <strong>section number</strong> of the mark —
