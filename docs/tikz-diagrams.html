@@ -242,55 +242,11 @@ dvisvgm --bbox=min --libgs=… --no-fonts=1 --optimize=… {hash}.dvi
   that must appear in <strong>both</strong> web and print is to keep the drawing code in a form
   both pipelines can use. If you want a figure to render in the LaTeX build as a
   genuine typeset <code>tikzpicture</code> (rather than as a suppressed SVG), author it with a
-  [
-  b
-  l
-  o
-  c
-  k
-
-  e
-  n
-  v
-  i
-  r
-  o
-  n
-  m
-  e
-  n
-  t
-  ]
-  (
-  b
-  l
-  o
-  c
-  k
-  -
-  e
-  n
-  v
-  i
-  r
-  o
-  n
-  m
-  e
-  n
-  t
-  s
-  .
-  h
-  t
-  m</p>
-<ol type="i">
-  <li value="50">or a <code>:::TeX</code> block carrying the same
-    <code>tikzpicture</code> code, which passes through to LaTeX verbatim; use the <code>TiKZ</code>
-    directive for the web SVG. The <code>TiKZ</code> directive guarantees only that it will never
-    corrupt your LaTeX with HTML — it produces graphics for the web.
-  </li>
-</ol>
+  <a href="block-environments.html">block environment</a> or a <code>:::TeX</code> block carrying the same
+  <code>tikzpicture</code> code, which passes through to LaTeX verbatim; use the <code>TiKZ</code>
+  directive for the web SVG. The <code>TiKZ</code> directive guarantees only that it will never
+  corrupt your LaTeX with HTML — it produces graphics for the web.
+</p>
 <p>By contrast, <a href="mermaid-diagrams.html">Mermaid</a> is web-only by nature (it renders in
   the browser), so it too emits nothing in LaTeX. The pair is complementary: Mermaid
   for quick web-only diagrams, TiKZ when the figure is typeset and may need to reach

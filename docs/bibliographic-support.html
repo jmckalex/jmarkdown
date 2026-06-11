@@ -94,12 +94,10 @@ As argued in \cite{Lewis:1969}, …
   not depend on the <code>.bib</code> being reachable at view time.</p>
 <h3 id="toc-where-the-bibliography-goes-bibliography">Where the bibliography goes: <code>::Bibliography</code></h3>
 <p>In the compile-time path you say <span class="intense">where</span> the reference list belongs with a
-  `</p>
-<bibliography>
-</bibliography>
-<p>` directive on a line of its own. (The runtime path appends the
+  <code>::Bibliography</code> directive on a line of its own. (The runtime path appends the
   bibliography to the end of the document automatically; the compile-time path puts
-  you in control of placement.)</p>
+  you in control of placement.)
+</p>
 <pre><code class="hljs">::Bibliography
 </code></pre>
 <p>It takes an optional attribute block:</p>
@@ -127,27 +125,14 @@ As argued in \cite{Lewis:1969}, …
     </tr>
   </tbody>
 </table>
-<p>B
-  y
-
-  d
-  e
-  f
-  a
-  u
-  l
-  t
-
-  e
-  a
-  c
-  h
-
-  `</p>
-<bibliography>
-</bibliography>
-<p><code>lists the citations that have appeared **since the previous one**, so several directives partition a document into per-section reference lists. A</code>scope<code>selector instead gathers the citations within a named element, and</code>all<code>gathers the entire document. Per-section style switching (via</code>style<code>) and </code>scope<code>-based sectional bibliographies are **HTML-only** conveniences; the LaTeX path emits a single </code>\bibliography` for the whole
-  document.</p>
+<p>By default each <code>::Bibliography</code> lists the citations that have appeared <span class="intense">since
+    the previous one</span>, so several directives partition a document into per-section
+  reference lists. A <code>scope</code> selector instead gathers the citations within a named
+  element, and <code>all</code> gathers the entire document. Per-section style switching (via
+  <code>style</code>) and <code>scope</code>-based sectional bibliographies are <span class="intense">HTML-only</span>
+  conveniences; the LaTeX path emits a single <code>\bibliography</code> for the whole
+  document.
+</p>
 <p>The <span class="intense">Vancouver</span> style is a whole-document numeric mode: citations become
   collapsed bracketed numbers (e.g. <code>[1,3-5]</code>) and a single numbered reference list
   is produced, so per-section partitioning does not apply to it.</p>
@@ -436,50 +421,11 @@ As argued in \cite{Lewis:1969}, …
     </tr>
   </tbody>
 </table>
-<p>S
-  o
-
-  a
-
-  s
-  i
-  n
-  g
-  l
-  e
-
-  s
-  o
-  u
-  r
-  c
-  e
-
-  —
-
-  <code>\ c i t e { … }</code>
-
-  c
-  o
-  m
-  m
-  a
-  n
-  d
-  s
-
-  p
-  l
-  u
-  s
-
-  a
-
-  `
+<p>So a single source — <code>\cite{…}</code> commands plus a <code>::Bibliography</code> directive,
+  <code>Bibliography</code> and <code>Bibliography style</code> in the header — yields a resolved HTML
+  bibliography under <code>Resolve citations</code>, and a <code>bibtex</code>-ready <code>.tex</code> under
+  <code>--to latex</code>.
 </p>
-<bibliography>
-</bibliography>
-<p><code>directive,</code>Bibliography<code>and</code>Bibliography style<code>in the header — yields a resolved HTML bibliography under</code>Resolve citations<code>, and a </code>bibtex<code>-ready </code>.tex<code>under</code>--to latex`.</p>
 <h2 id="toc-a-complete-minimal-example">A complete minimal example</h2>
 <p>Putting the recommended path together, here is a self-contained document that
   cites three works in different forms and produces a Chicago-style bibliography at
@@ -506,45 +452,11 @@ related thread \citep[see][]{Axelrod/Hamilton:1981}.
 </code></pre>
 <p>When this file is processed to HTML, JMarkdown reads <code>references.bib</code>, turns the
   three citations into formatted Chicago references, silently folds <code>Lewis:2002</code>
-  i
-  n
-  t
-  o
-
-  t
-  h
-  e
-
-  l
-  i
-  s
-  t
-
-  v
-  i
-  a
-
-  <code>\ n o c i t e</code>
-  ,
-
-  a
-  n
-  d
-
-  r
-  e
-  p
-  l
-  a
-  c
-  e
-  s
-
-  `
+  into the list via <code>\nocite</code>, and replaces <code>::Bibliography</code> with the four-work
+  reference list — all in the output file, no browser required. Render the same
+  source with <code>--to latex</code> and you get the <code>\cite</code> commands and a
+  <code>\bibliographystyle</code>/<code>\bibliography</code> pair for <code>bibtex</code> to resolve instead.
 </p>
-<bibliography>
-</bibliography>
-<p><code>with the four-work reference list — all in the output file, no browser required. Render the same source with</code>--to latex<code>and you get the</code>\cite<code>commands and a</code>\bibliographystyle<code>/</code>\bibliography<code>pair for</code>bibtex` to resolve instead.</p>
 <h2 id="toc-gotchas-and-limitations">Gotchas and limitations</h2>
 <ul>
   <li><span class="intense">Pick a path with one key.</span> <code>Resolve citations: true</code> gives you compile-time
