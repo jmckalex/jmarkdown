@@ -11,6 +11,7 @@ import { resolveCitations } from './biblify-compile.js';
 import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
 import { addWarning } from './warnings.js';
 import { buildIndexes } from './indexing.js';
+import { getNumberedSpecs } from './numbered-environments.js';
 import { commandForDepth } from './sectioning.js';
 
 // A :ref/:cref that can't produce a number renders '??' (mirroring LaTeX's
@@ -61,6 +62,7 @@ export function postProcessHTML(html, options = {}) {
 	number_listings($);
 	number_theorems($);
 	number_equations($);
+	number_environments($);
 	process_crossrefs($);
 	replace_float_lists($);
 	// Back-of-book index: AFTER heading numbering (locators read the
@@ -283,6 +285,46 @@ function number_theorems($) {
 		if ($firstP.length) $firstP.prepend(labelHtml);
 		else $p.prepend(labelHtml);
 		$p.append('<span class="qed">&#8718;</span>');
+	});
+}
+
+// Number user-defined numbered environments (defineEnvironment(..., {numbered:
+// true}); see numbered-environments.js). The decorated HTML renderer wrapped
+// each in a .jmd-env marker carrying its counter group, kind, optional name,
+// and id. One document-order walk over all markers keeps a counter per group,
+// so environments that share a `counter` interleave correctly (Exercise 1,
+// Solution 2, Exercise 3). The number/label/cross-ref handling mirrors
+// number_theorems exactly — including the data-xref-number/-type stamp that
+// lets a :label inside the body adopt this number. LaTeX numbers these
+// natively (thmtools), so this is HTML-only.
+function number_environments($) {
+	const specs = getNumberedSpecs();
+	if (!specs.size) return;
+	const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+	const counters = {};
+	$('.jmd-env').each((i, elem) => {
+		const $env = $(elem);
+		const kind = $env.attr('data-jmd-kind');
+		const spec = specs.get(kind);
+		if (!spec) return;                          // marker without a live spec — skip
+		const group = $env.attr('data-jmd-counter') || spec.counter;
+		counters[group] = (counters[group] || 0) + 1;
+		const n = counters[group];
+		const name = $env.attr('data-jmd-name');
+		const id = $env.attr('id');
+		$env.attr('data-xref-number', `${n}`).attr('data-xref-type', spec.type);
+		let text = `${spec.title} ${n}`;
+		if (name) text += ` (${esc(name)})`;
+		text += '.';
+		const labelHtml = `<span class="env-label">${text}</span> `;
+		// Prepend into the first paragraph (the author's box nests inside the
+		// marker, so reach in with find), falling back to the marker itself.
+		const $firstP = $env.find('p').first();
+		if ($firstP.length) $firstP.prepend(labelHtml);
+		else $env.prepend(labelHtml);
+		if (id) {
+			recordLabel(id, { number: `${n}`, type: spec.type, anchor: id });
+		}
 	});
 }
 

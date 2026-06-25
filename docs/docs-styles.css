@@ -573,6 +573,15 @@ sup, sub {
   line-height: 0pt;
 }
 
+/* User-defined numbered environments (defineEnvironment(..., {numbered:true})). */
+.jmd-env {
+  margin: 16px 0;
+}
+
+.jmd-env .env-label {
+  font-weight: 700;
+}
+
 
 /* ============================================================
    Alignment extensions

@@ -58,11 +58,22 @@ custom-element name.
 <p>You can force either form with a sigil — <code>@begin(.name)</code> is always a <code>&lt;div&gt;</code>,
   <code>@begin(&lt;name&gt;)</code> is always an element — or set the document-wide policy with the
   <code>Block elements</code> metadata key (<code>hyphenated</code> (default) · <code>all</code> · <code>none</code>). In
-  LaTeX, every environment renders as <code>\begin{name}[label]…\end{name}</code> regardless,
-  so you supply the matching CSS for the web and the matching <code>\newenvironment</code> for
-  print. JMarkdown invents no meaning for the name — that is your job, which brings
-  us to:
+  LaTeX, every environment renders as <code>\begin{name}[label]…\end{name}</code> regardless.
+  You do <strong>not</strong> have to define the environment to get a compilable document: the
+  assembled preamble automatically provides a guarded no-op definition for any
+  undefined name (deferred with <code>\AtBeginDocument</code>, so a real
+  <code>\newenvironment{name}</code> of yours — from the <code>LaTeX preamble</code> key, a package, or
+  your document class — always wins, wherever it appears). Until you define it,
+  the body typesets as plain paragraphs and a <code>[label]</code> shows literally — the
+  print twin of an unstyled <code>&lt;div&gt;</code> waiting for its CSS.
 </p>
+<p>One naming caveat for print: a name that is already a TeX command — <code>box</code>,
+  <code>outer</code>, <code>middle</code>, <code>frame</code>, … — cannot work as a LaTeX environment at all (TeX
+  runs the existing command when the environment opens), so dual-output documents
+  should avoid such names.
+</p>
+<p>JMarkdown invents no meaning for the name — that is your job, which brings
+  us to:</p>
 <h1 id="toc-defining-your-own-environments">Defining your own environments</h1>
 <p>A definition is a <span class="intense">name</span> plus a <span class="intense">handler</span> — an object that says how the
   environment renders. The one required key is <code>html</code>; everything else is optional:</p>
@@ -93,6 +104,22 @@ custom-element name.
     <tr>
       <td><code>tokenize</code></td>
       <td><code>(body, token) =&gt; …</code> — only for <code>mode: 'custom'</code>, for environments that parse their own body</td>
+    </tr>
+    <tr>
+      <td><code>numbered</code></td>
+      <td><code>true</code> to auto-number the environment and make it cross-referenceable — see <a href="#toc-numbered-environments">Numbered environments</a> below</td>
+    </tr>
+    <tr>
+      <td><code>counter</code></td>
+      <td>the counter group to count in (default: the name; give two environments the same value to share a counter)</td>
+    </tr>
+    <tr>
+      <td><code>refname</code></td>
+      <td>the <code>:cref</code> word, e.g. <code>'exercise'</code> or <code>['exercise','exercises']</code> (default: the name)</td>
+    </tr>
+    <tr>
+      <td><code>title</code></td>
+      <td>the printed/heading word, e.g. <code>'Exercise'</code> (default: the capitalised <code>refname</code>)</td>
     </tr>
   </tbody>
 </table>
@@ -213,6 +240,95 @@ environment — the body is processed as markdown, so
   project. (For environments you want available to <strong>every</strong> project, list the file
   under the <code>Environments</code> key in a global or project <code>.jmarkdown/config.json</code>,
   using an absolute path.)</p>
+<h2 id="toc-declaring-latex-packages-from-a-handler">Declaring LaTeX packages from a handler</h2>
+<p>If your <code>latex</code> renderer relies on a package, declare it the way JMarkdown's
+  own renderers do — call <code>requirePackage('name')</code> inside the renderer (also
+  available: <code>addPreamble(line)</code> for raw preamble lines such as a
+  <code>\newtcolorbox</code>, and <code>addLatePreamble(line)</code> for lines that must follow
+  hyperref/cleveref). The declaration is usage-driven: the full-document preamble
+  gains the <code>\usepackage</code> only when the environment actually renders, and the
+  calls are harmless in HTML output.
+</p>
+<pre><code class="hljs language-js"><span class="hljs-title function_">defineEnvironment</span>(<span class="hljs-string">'shaded'</span>, {
+	<span class="hljs-attr">html</span>:  <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`&lt;div class="shaded"&gt;<span class="hljs-subst">${ctx.inner}</span>&lt;/div&gt;`</span>,
+	<span class="hljs-attr">latex</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> {
+		<span class="hljs-title function_">requirePackage</span>(<span class="hljs-string">'tcolorbox'</span>);
+		<span class="hljs-keyword">return</span> <span class="hljs-string">`\\begin{tcolorbox}\n<span class="hljs-subst">${ctx.inner}</span>\n\\end{tcolorbox}\n\n`</span>;
+	},
+});
+</code></pre>
+<h2 id="toc-numbered-environments">Numbered environments</h2>
+<p>The built-in theorem, figure, and equation environments number themselves and
+  answer to <code>:ref</code> / <code>:cref</code>. Your own environments can do the same — add
+  <code>numbered: true</code> and JMarkdown takes over the counting and cross-referencing,
+  in <strong>both</strong> editions, while you keep control of the box:
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">data-type</span>=<span class="hljs-string">"jmarkdown"</span>&gt;</span></span>
+defineEnvironment('exercise', {
+  numbered: true,
+  html: (ctx) =&gt; <span class="hljs-code">`&lt;aside class="exercise"&gt;${ctx.inner}&lt;/aside&gt;`</span>,
+});
+<span class="language-xml"><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span>
+
+@begin(exercise)[Warm-up]{id=ex:warm}
+Show that the square of an odd number is odd.
+@end(exercise)
+
+@begin(exercise)
+And another, unlabelled.
+@end(exercise)
+
+The first is :cref[ex:warm].</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="jmd-env exercise-env" data-jmd-counter="exercise" data-jmd-kind="exercise" data-jmd-name="Warm-up" id="ex:warm" data-xref-number="1" data-xref-type="exercise">
+      <aside class="exercise">
+        <p><span class="env-label">Exercise 1 (Warm-up).</span> Show that the square of an odd number is odd.</p>
+      </aside>
+    </div>
+    <div class="jmd-env exercise-env" data-jmd-counter="exercise" data-jmd-kind="exercise" data-xref-number="2" data-xref-type="exercise">
+      <aside class="exercise">
+        <p><span class="env-label">Exercise 2.</span> And another, unlabelled.</p>
+      </aside>
+    </div>
+    <p>The first is <a class="xref-cref" href="#ex:warm">exercise&nbsp;1</a>.</p>
+
+  </div>
+</div>
+<p>JMarkdown prepends an "Exercise <strong>N</strong>." label (the optional <code>[text]</code> becomes the
+  parenthetical note, as with theorems), records the <code>{id=…}</code> so <code>:ref</code> → "1",
+  <code>:cref</code> → "exercise 1", <code>:Cref</code> → "Exercise 1", and — because the number is
+  stamped on the environment — a <code>:label</code> placed <strong>inside</strong> the body resolves to it
+  too. The <code>:cref</code> word defaults to the name; override it with <code>refname</code> (and
+  <code>title</code> for the printed word) when the environment name and the reference word
+  should differ.
+</p>
+<p><span class="intense">Sharing a counter.</span> Give two environments the same <code>counter</code> and they number
+  in one interleaved sequence — an <code>exercise</code> followed by its <code>solution</code> becomes
+  "Exercise 1", "Solution 2", "Exercise 3":</p>
+<pre><code class="hljs language-js"><span class="hljs-title function_">defineEnvironment</span>(<span class="hljs-string">'exercise'</span>, { <span class="hljs-attr">numbered</span>: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">html</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`&lt;aside class="exercise"&gt;<span class="hljs-subst">${ctx.inner}</span>&lt;/aside&gt;`</span> });
+<span class="hljs-title function_">defineEnvironment</span>(<span class="hljs-string">'solution'</span>, { <span class="hljs-attr">numbered</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">counter</span>: <span class="hljs-string">'exercise'</span>,
+  <span class="hljs-attr">html</span>: <span class="hljs-function">(<span class="hljs-params">ctx</span>) =&gt;</span> <span class="hljs-string">`&lt;aside class="solution"&gt;<span class="hljs-subst">${ctx.inner}</span>&lt;/aside&gt;`</span> });
+</code></pre>
+<p><span class="intense">What happens in print.</span> With no <code>latex</code> renderer, a numbered environment is
+  emitted as a <code>thmtools</code> theorem-like — the engine numbers it, and <code>cleveref</code>
+  names it to match the web wording. (Shared counters use <code>thmtools</code>' <code>sibling=</code>.)
+  Supply your own <code>latex</code> renderer and you take over the LaTeX side entirely,
+  including its counter. Either way the HTML side is unchanged.</p>
+<div class="markdown-alert markdown-alert-note">
+  <p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
+    </svg>Note</p>
+  <p>For a numbered environment, let JMarkdown own the <code>id</code> — put it in
+    <code>{id=…}</code> on the <code>@begin</code>, not inside your <code>html</code>. (Sharing a counter with a
+    <strong>built-in</strong> theorem is not supported yet; share among your own environments.)
+  </p>
+</div>
 <h2 id="toc-built-in-environments">Built-in environments</h2>
 <p>A handful of names are predefined so that <code>@begin(x)</code> matches its corresponding
   container directive exactly:</p>

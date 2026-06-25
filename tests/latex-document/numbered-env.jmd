@@ -1,0 +1,26 @@
+---
+LaTeX engine: pdflatex
+---
+
+# Numbered environments
+
+<script data-type="jmarkdown">
+defineEnvironment('exercise', {
+  numbered: true,
+  html: (ctx) => `<aside class="exercise">${ctx.inner}</aside>`,
+});
+defineEnvironment('solution', {
+  numbered: true, counter: 'exercise',
+  html: (ctx) => `<aside class="solution">${ctx.inner}</aside>`,
+});
+</script>
+
+See :cref[ex:one].
+
+@begin(exercise)[Warm-up]{id=ex:one}
+First exercise.
+@end(exercise)
+
+@begin(solution)
+Shares the exercise counter.
+@end(solution)

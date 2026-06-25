@@ -121,6 +121,16 @@ if render matter; then
 	want "matter/backmatter"      "$TEX" '\backmatter'
 fi
 
+# --- numbered-env.jmd: a script-defined numbered environment becomes a thmtools
+#     theorem-like (own counter) and a second env shares it via sibling=. ---
+if render numbered-env; then
+	want "numenv/thmtools"   "$TEX" '\usepackage{thmtools}'
+	want "numenv/declare"    "$TEX" '\declaretheorem[name=Exercise, refname={exercise,exercises}, Refname={Exercise,Exercises}]{exercise}'
+	want "numenv/sibling"    "$TEX" 'sibling=exercise]{solution}'
+	want "numenv/begin"      "$TEX" '\begin{exercise}[Warm-up]\label{ex:one}'
+	want "numenv/cref"       "$TEX" '\cref{ex:one}'
+fi
+
 # --- math-macros.jmd: the `Math macros` lines become preamble definitions,
 #     with the amsmath+amssymb vocabulary MathJax's `ams` provides on the web
 #     side (so identical definitions compile in both outputs). ---
