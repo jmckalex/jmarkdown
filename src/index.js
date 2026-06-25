@@ -40,7 +40,7 @@ import { blockFunctions, inlineFunctions } from './inline-function-extension.js'
 import { citations, bibliography } from './citations.js';
 import { indexMark, indexPlacement, resetIndexing, checkIndexPlacements } from './indexing.js';
 import { beginEnd } from './begin-end.js';
-import { registerBlockEnvironment } from './begin-end-core.js';
+import { defineEnvironment } from './numbered-environments.js';
 import { requirePackage, addPreamble, addLatePreamble } from './preamble.js';
 import './floats.js';
 import './theorems.js';
@@ -477,7 +477,10 @@ marked.use({ extensions: [beginEnd] });
 // block, the same way export_to_jmarkdown is exposed for inline functions. The
 // callback receives the full ctx — including ctx.text ([label]) and ctx.attrs
 // ({attributes}). Define an environment before the @begin that uses it.
-global.defineEnvironment = registerBlockEnvironment;
+// defineEnvironment (numbered-environments.js) honours `numbered: true` for
+// auto-numbered, cross-referenceable environments and otherwise delegates to
+// the core registry unchanged.
+global.defineEnvironment = defineEnvironment;
 
 // And let those user-defined handlers declare their LaTeX preamble needs the
 // same way the built-in renderers do (floats → graphicx, game → sgame, …):

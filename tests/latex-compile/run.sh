@@ -73,6 +73,10 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		# math-macros: the definitions live in the (absent) preamble of a
 		# fragment, so the wrapper supplies what a full document auto-provides.
 		math-macros)       extra='\usepackage{amsmath}\usepackage{amssymb}\newcommand{\RR}{\mathbb{R}}\newcommand{\E}[1]{\mathbb{E}\!\left[#1\right]}\DeclareMathOperator{\argmax}{arg\,max}'; needs='amsmath.sty amssymb.sty' ;;
+		# numbered-environments: a numbered user env is a thmtools theorem-like;
+		# the \declaretheorem lines live in the (absent) preamble, so the wrapper
+		# supplies what a full document auto-provides (exercise + sibling solution).
+		numbered-environments) extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem[name=Exercise, refname={exercise,exercises}, Refname={Exercise,Exercises}]{exercise}\declaretheorem[name=Solution, refname={solution,solutions}, Refname={Solution,Solutions}, sibling=exercise]{solution}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
 		# indexing: fragments carry \index + \printindex; the \makeindex
 		# declarations live in the (absent) preamble, so the wrapper supplies
 		# them. Without a makeindex run \printindex just warns (no .ind file)

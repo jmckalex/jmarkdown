@@ -88,6 +88,10 @@ environment renders. The one required key is `html`; everything else is optional
 | `render` | `(ctx) => string` — a single renderer used for *every* output format, when HTML and LaTeX would be identical |
 | `mode` | how the body is read: `'markdown'` (default), `'verbatim'` (kept raw — for code or TeX), or `'custom'` |
 | `tokenize` | `(body, token) => …` — only for `mode: 'custom'`, for environments that parse their own body |
+| `numbered` | `true` to auto-number the environment and make it cross-referenceable — see [Numbered environments](#toc-numbered-environments) below |
+| `counter` | the counter group to count in (default: the name; give two environments the same value to share a counter) |
+| `refname` | the `:cref` word, e.g. `'exercise'` or `['exercise','exercises']` (default: the name) |
+| `title` | the printed/heading word, e.g. `'Exercise'` (default: the capitalised `refname`) |
 
 The renderer receives a single **context** object, `ctx`:
 
@@ -202,6 +206,62 @@ defineEnvironment('shaded', {
 	},
 });
 ```
+
+## Numbered environments
+
+The built-in theorem, figure, and equation environments number themselves and
+answer to `:ref` / `:cref`. Your own environments can do the same — add
+`numbered: true` and JMarkdown takes over the counting and cross-referencing,
+in *both* editions, while you keep control of the box:
+
+:::markdown-demo
+<script data-type="jmarkdown">
+defineEnvironment('exercise', {
+  numbered: true,
+  html: (ctx) => `<aside class="exercise">${ctx.inner}</aside>`,
+});
+</script>
+
+@begin(exercise)[Warm-up]{id=ex:warm}
+Show that the square of an odd number is odd.
+@end(exercise)
+
+@begin(exercise)
+And another, unlabelled.
+@end(exercise)
+
+The first is :cref[ex:warm].
+:::
+
+JMarkdown prepends an "Exercise *N*." label (the optional `[text]` becomes the
+parenthetical note, as with theorems), records the `{id=…}` so `:ref` → "1",
+`:cref` → "exercise 1", `:Cref` → "Exercise 1", and — because the number is
+stamped on the environment — a `:label` placed *inside* the body resolves to it
+too. The `:cref` word defaults to the name; override it with `refname` (and
+`title` for the printed word) when the environment name and the reference word
+should differ.
+
+**Sharing a counter.** Give two environments the same `counter` and they number
+in one interleaved sequence — an `exercise` followed by its `solution` becomes
+"Exercise 1", "Solution 2", "Exercise 3":
+
+```js
+defineEnvironment('exercise', { numbered: true,
+  html: (ctx) => `<aside class="exercise">${ctx.inner}</aside>` });
+defineEnvironment('solution', { numbered: true, counter: 'exercise',
+  html: (ctx) => `<aside class="solution">${ctx.inner}</aside>` });
+```
+
+**What happens in print.** With no `latex` renderer, a numbered environment is
+emitted as a `thmtools` theorem-like — the engine numbers it, and `cleveref`
+names it to match the web wording. (Shared counters use `thmtools`' `sibling=`.)
+Supply your own `latex` renderer and you take over the LaTeX side entirely,
+including its counter. Either way the HTML side is unchanged.
+
+> [!NOTE]
+> For a numbered environment, let JMarkdown own the `id` — put it in
+> `{id=…}` on the `@begin`, not inside your `html`. (Sharing a counter with a
+> *built-in* theorem is not supported yet; share among your own environments.)
 
 ## Built-in environments
 

@@ -1,0 +1,28 @@
+# Numbered user environments
+
+<script data-type="jmarkdown">
+defineEnvironment('exercise', {
+  numbered: true,
+  html: (ctx) => `<aside class="exercise">${ctx.inner}</aside>`,
+});
+defineEnvironment('solution', {
+  numbered: true,
+  counter: 'exercise',
+  html: (ctx) => `<aside class="solution">${ctx.inner}</aside>`,
+});
+</script>
+
+See :ref[ex:one], :cref[ex:one], and :Cref[ex:two].
+
+@begin(exercise)[Warm-up]{id=ex:one}
+First exercise.
+@end(exercise)
+
+@begin(solution)
+A solution, interleaving on the shared counter.
+@end(solution)
+
+@begin(exercise){id=ex:two}
+:label[ex:two-inner]
+Second exercise, with a body label. See :ref[ex:two-inner].
+@end(exercise)

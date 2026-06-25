@@ -151,6 +151,7 @@ function parseOptionalString(optionsString) {
 import { marked } from 'marked';
 import { createDirectives } from './extended-directives.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
+import { defineEnvironment } from './numbered-environments.js';
 export function createMultilevelOptionals(name, default_value) {
 	const directives = [];
 	[3,4,5,6,7,8].forEach(level => {
@@ -403,13 +404,13 @@ async function importEnvironmentSpec(spec, resolve) {
 		const list = names.split(",").map(s => s.trim()).filter(s => s !== '');
 		const mod = await import(resolve(file.trim()));
 		for (const name of list) {
-			registerBlockEnvironment(name, mod[name]);
+			defineEnvironment(name, mod[name]);
 		}
 	}
 	else {
 		const mod = await import(resolve(spec.trim()));
 		for (const [name, handler] of Object.entries(mod.default || {})) {
-			registerBlockEnvironment(name, handler);
+			defineEnvironment(name, handler);
 		}
 	}
 }

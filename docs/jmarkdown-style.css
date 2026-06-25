@@ -706,6 +706,15 @@ figure.table-float figcaption {
   font-weight: 600;
 }
 
+/* User-defined numbered environments (defineEnvironment(..., {numbered:true})). */
+.jmd-env {
+  margin: 16px 0;
+}
+
+.jmd-env .env-label {
+  font-weight: 700;
+}
+
 .proof-env {
   margin: 16px 0;
 }
