@@ -188,13 +188,29 @@ per-call instead (the old block level was inline content + block placement, used
 ~4× in real content). `ctx.text` is the raw bracket (handlers like cross-refs use
 it; others use parsed `ctx.inner`); `ctx.inline`/`ctx.block` flag the form.
 
+**Disambiguation rules (inline form):**
+- A **bracket form** (`@name[…]`/`@name{…}`) is a directive anywhere; a **bare**
+  `@name` (no bracket) is a directive **only if the name is registered** — so
+  prose `@`-words aren't eaten. (Block bare `@name+` needs no registry gate: the
+  `+` and line-anchor already disambiguate.)
+- A `@` **glued to a word char** (`user@host`, `me@x.com`) is never a directive.
+  Enforced in the tokenizer by reading the previous token's trailing char (the
+  `start()` regex is restrictive — `(?<!\w)@` — to avoid splitting a valid email
+  and starving marked's autolinker, but that gate alone is insufficient because
+  other extensions break the text at the `@`; the prev-token check is the
+  backstop).
+- A `@name+[…]` block form that reaches the **inline** pass was not at a line
+  start, so it is **misplaced** → a build warning + a visible `jmd-error` marker
+  (HTML) / nothing (LaTeX). This is detectable precisely because the block pass
+  runs first and would have claimed a correctly-placed one (the inline pass can
+  do the context-sensitive check the block pass can't).
+
 **First slice shipped** (additive — `:`/`::`/`:::` stay fully live): `@span`,
 `@ref`/`@label`/`@cref`/`@Cref`. Cross-refs reuse the EXACT post-processor markers
 / native LaTeX commands, so `@ref[k]` is byte-identical to `:ref[k]` in both
-outputs (verified). Not yet done: bare `@name` (no bracket) is **not** claimed
-inline (a deliberate prose-safety guard — `user@host` etc.); `.name`/`<name>`
-override sigils; porting the remaining directives + a content codemod; deleting
-`extended-directives.js`. Fixture: `tests/features/at-directives/`.
+outputs (verified). Not yet done: `.name`/`<name>` override sigils; porting the
+remaining directives + a content codemod; deleting `extended-directives.js`.
+Fixtures: `tests/features/at-directives/` (`at-forms`, `at-disambiguation`).
 
 ### Named block environments (`@begin(name) … @end(name)`)
 An alternative to the colon-counted container directives. Because the closer *names* what it closes, blocks nest by name — no colon counting, and no renumbering when you wrap or insert a block. Purely **additive**: the `:::name … :::` directives are unchanged. The `@` sigil follows texinfo's `@example … @end example` convention and is otherwise unused in JMarkdown.

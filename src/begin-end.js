@@ -31,6 +31,7 @@ import { createBeginEnd, createAtInline, createAtBlock, registerBlockEnvironment
 import { renderAbstract, renderFeedback } from './additional-directives.js';
 import { configManager } from './config-manager.js';
 import { addPreamble, requirePackage } from './preamble.js';
+import { addWarning } from './warnings.js';
 
 const format = () => (global.isLatex ? 'latex' : 'html');
 
@@ -149,7 +150,13 @@ export const beginEnd = createBeginEnd({
 export const atInline = createAtInline({
 	getFormat: format,
 	blockElements: blockPolicy,
-	fallback: { latex: (ctx) => ctx.inner }
+	fallback: { latex: (ctx) => ctx.inner },
+	// A `@name+[…]` block form used mid-paragraph (it must start its own line):
+	// record a build warning and emit a visible marker (HTML) / nothing (LaTeX).
+	misplaced: (name, fmt) => {
+		addWarning(`@${name}+ used mid-paragraph — a +-block directive must start its own line; it was not rendered`);
+		return fmt === 'latex' ? '' : `<span class="jmd-error">[@${name}+ must start its own line]</span>`;
+	}
 });
 
 export const atBlock = createAtBlock({

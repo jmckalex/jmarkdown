@@ -1,0 +1,13 @@
+\section{At-directive disambiguation}
+
+Bare names are directives only when registered:  renders an (empty) span,
+but @unknown stays literal text.
+
+An \mintinline{text}|@| glued to a word is prose, never a directive — user@span — and a real
+email like \href{mailto:me@host.com}{me@host.com} still autolinks.
+
+A bracket form is a directive anywhere it appears: hi.
+
+A \mintinline{text}|+|-block directive is an error if it does not start its own line:
+a stray  mid-paragraph is flagged.
+

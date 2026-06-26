@@ -1,0 +1,12 @@
+# At-directive disambiguation
+
+Bare names are directives only when registered: @span renders an (empty) span,
+but @unknown stays literal text.
+
+An `@` glued to a word is prose, never a directive — user@span — and a real
+email like me@host.com still autolinks.
+
+A bracket form is a directive anywhere it appears: @span[hi].
+
+A `+`-block directive is an error if it does not start its own line:
+a stray @callout+[oops] mid-paragraph is flagged.

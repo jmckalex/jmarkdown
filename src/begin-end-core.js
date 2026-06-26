@@ -380,19 +380,39 @@ export function createAtInline(options = {}) {
 		html: (ctx) => renderGenericInlineHTML(ctx.name, ctx.attrs, ctx.inner, ctx.override, resolvePolicy()),
 		...(options.fallback || {})
 	};
+	// Handler for a `@name+[…]` block form that reaches the INLINE pass — i.e. one
+	// that was NOT at a line start (a line-start one is claimed by the block pass
+	// first), so it is necessarily misplaced. A host can warn + mark via
+	// options.misplaced(name, format); the default just emits a visible HTML marker.
+	const misplaced = options.misplaced || ((name) => `<span class="jmd-error">[@${name}+ must start its own line]</span>`);
 
 	return {
 		name: 'atInline',
 		level: 'inline',
-		// Inline starts may match anywhere — inline code spans are claimed before
-		// text is cut, so this is safe (unlike block starts). A bracket is required
-		// right after the name, so bare `@x`, `user@host` and the `@name+` block
-		// form are NOT claimed here.
-		start(src) { return src.match(/@[A-Za-z][\w-]*[\[{]/)?.index; },
-		tokenizer(src) {
+		// Restrictive: only an @ NOT preceded by a word char (so `user@host` /
+		// `me@x.com` stay prose and we don't starve marked's email autolinker by
+		// splitting a valid address). Inline starts may otherwise match anywhere —
+		// inline code spans are claimed before text is cut, so this is safe.
+		start(src) { return src.match(/(?<!\w)@[A-Za-z][\w-]*/)?.index; },
+		tokenizer(src, tokens) {
+			// Backstop for the start() gate: when ANOTHER extension (e.g. the email
+			// autolinker) breaks the text at a glued `@`, our tokenizer is still tried
+			// there with the preceding char already sliced off. Read it from the
+			// previous token's raw instead — reject an @ glued to a word char.
+			const prev = tokens && tokens[tokens.length - 1];
+			if (prev && typeof prev.raw === 'string' && /\w$/.test(prev.raw)) return;
+			// A `@name+[…]`/`@name+{…}` here is a misplaced block form (see above).
+			const bad = /^@([A-Za-z][\w-]*)\+(\[[^\]]*\])?(\{[^}]*\})?/.exec(src);
+			if (bad && (bad[2] !== undefined || bad[3] !== undefined)) {
+				return { type: 'atInline', raw: bad[0], misplaced: bad[1] };
+			}
 			const m = /^@([A-Za-z][\w-]*)(?:\[([^\]]*)\])?(?:\{([^}]*)\})?/.exec(src);
-			if (!m || (m[2] === undefined && m[3] === undefined)) return;   // bracket required
+			if (!m) return;
 			const name = m[1], text = m[2] ?? '', attrsRaw = m[3];
+			const hasBracket = m[2] !== undefined || m[3] !== undefined;
+			// A bracket form takes any name (generic fallback); a BARE @name is a
+			// directive only if explicitly registered (so prose @-words aren't eaten).
+			if (!hasBracket && !registry.has(name)) return;
 			let attrs;
 			if (attrsRaw !== undefined) { try { attrs = attributesParser(attrsRaw); } catch { attrs = undefined; } }
 			const mode = (registry.get(name) || {}).mode || 'markdown';
@@ -401,7 +421,10 @@ export function createAtInline(options = {}) {
 				tokens: mode === 'verbatim' ? [] : this.lexer.inlineTokens(text)
 			};
 		},
-		renderer(token) { return renderAtToken(this, token, getFormat, fallback); }
+		renderer(token) {
+			if (token.misplaced !== undefined) return misplaced(token.misplaced, getFormat());
+			return renderAtToken(this, token, getFormat, fallback);
+		}
 	};
 }
 

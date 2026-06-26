@@ -1,0 +1,8 @@
+<h1 id="toc-at-directive-disambiguation">At-directive disambiguation</h1>
+<p>Bare names are directives only when registered: <span></span> renders an (empty) span,
+  but @unknown stays literal text.</p>
+<p>An <code>@</code> glued to a word is prose, never a directive — user@span — and a real
+  email like <a href="mailto:me@host.com">me@host.com</a> still autolinks.</p>
+<p>A bracket form is a directive anywhere it appears: <span>hi</span>.</p>
+<p>A <code>+</code>-block directive is an error if it does not start its own line:
+  a stray <span class="jmd-error">[@callout+ must start its own line]</span> mid-paragraph is flagged.</p>
