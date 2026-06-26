@@ -27,6 +27,11 @@ export const DEFAULT_CONFIG = {
 	"Directives": [],
 	"Extensions": [],
 	"Environments": [],
+	// Extra local files for `jmarkdown watch` to live-track that aren't directly
+	// linked via `CSS`/`Script` (e.g. an @imported CSS partial, or a module a
+	// linked script imports). Classified by extension: .css → live CSS inject,
+	// anything else → full reload. Has no effect outside watch mode.
+	"Watch": [],
 	'Fontawesome': 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/js/all.min.js',
 	'Mermaid': 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js',
 	'Highlight src': 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/{{Highlight_theme}}.min.css',

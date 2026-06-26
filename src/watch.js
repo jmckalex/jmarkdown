@@ -50,6 +50,13 @@ export async function startWatch(file, options) {
 	const serve = options.serve !== false && !isLatex; // live preview is HTML-only in v1
 	const buildOptions = { ...options, to: options.to || 'html', output: outFile };
 
+	// --css / --js gate which asset kinds are live-tracked. Neither flag → both
+	// (zero-config = the full experience); one flag → just that kind (a minimal
+	// watch — e.g. --css alone never force-reloads the page).
+	const wantCss = !!options.css, wantJs = !!options.js;
+	const trackCss = (!wantCss && !wantJs) || wantCss;
+	const trackJs  = (!wantCss && !wantJs) || wantJs;
+
 	// ----- standby manager: keep exactly one warm worker ready -----
 	let standby = null;          // { child, ready: Promise, isReady: bool }
 	let replacementPending = false;
@@ -110,6 +117,29 @@ export async function startWatch(file, options) {
 		}
 	}
 
+	// Live-tracked assets (CSS/JS files declared in metadata). Rebuilt from each
+	// build's report, since the author can edit the CSS/Script/Watch keys
+	// mid-session. A change to one of these never alters the built HTML, so it
+	// takes a fast path (CSS inject / JS reload) instead of a rebuild.
+	const cssAssets = new Map();   // file → { href } (swap that link) | { all:true } (refresh all local sheets)
+	const jsAssets = new Set();    // file → full page reload on change
+	function updateAssetWatchSet(assets) {
+		if (!assets || typeof assets !== 'object') return;
+		cssAssets.clear(); jsAssets.clear();
+		if (trackCss) {
+			for (const a of assets.cssLinked || []) cssAssets.set(a.file, { href: a.href });
+			for (const a of assets.watchExtra || []) if (a.kind === 'css') cssAssets.set(a.file, { all: true });
+		}
+		if (trackJs) {
+			for (const a of assets.jsLinked || []) jsAssets.add(a.file);
+			for (const a of assets.watchExtra || []) if (a.kind !== 'css') jsAssets.add(a.file);
+		}
+		for (const f of [...cssAssets.keys(), ...jsAssets]) {
+			if (f === outFile || watched.has(f)) continue;
+			watcher.add(f); watched.add(f);
+		}
+	}
+
 	// ----- build dispatch (generation-guarded) -----
 	let gen = 0;
 	async function build(reason) {
@@ -126,6 +156,7 @@ export async function startWatch(file, options) {
 				lastError = null;
 				lastWarnings = Array.isArray(m.warnings) ? m.warnings : [];
 				updateWatchSet(m.deps);
+				updateAssetWatchSet(m.assets);
 				console.log(`  ✓ ${path.relative(process.cwd(), outFile)}  (${Date.now() - t0}ms)${reason ? '  · ' + reason : ''}`);
 				for (const w of lastWarnings) console.warn(`  ⚠ ${w}`);
 				// reload first, warnings second: the client clears the old banner
@@ -150,8 +181,34 @@ export async function startWatch(file, options) {
 
 	// debounce + coalesce: editors fire several events per save
 	let timer = null, pendingReason = null;
+	// asset fast-path debounce (CSS inject / JS reload — no rebuild)
+	let assetTimer = null; const pendingCss = new Set(); let pendingJsReload = false;
+	function flushAssets() {
+		if (pendingCss.size) {
+			// '*' (a non-linked partial) or several distinct sheets at once → refresh all.
+			const all = pendingCss.has('*') || pendingCss.size > 1;
+			broadcast('cssupdate', JSON.stringify(all ? { all: true } : { href: [...pendingCss][0] }));
+			console.log(`  ⟳ css ${all ? '(refresh sheets)' : '· ' + [...pendingCss][0]}`);
+			pendingCss.clear();
+		}
+		if (pendingJsReload) { broadcast('jsreload'); console.log('  ⟳ js → full reload'); pendingJsReload = false; }
+	}
 	watcher.on('all', (ev, p) => {
-		if (path.resolve(p) === outFile) return; // ignore our own output (no feedback loop)
+		const abs = path.resolve(p);
+		if (abs === outFile) return; // ignore our own output (no feedback loop)
+		// Asset fast-paths: changing an external CSS/JS file never alters the built
+		// HTML, so skip the rebuild — inject the stylesheet, or full-reload for JS.
+		if (trackCss && cssAssets.has(abs)) {
+			const info = cssAssets.get(abs);
+			pendingCss.add(info.all ? '*' : info.href);
+			clearTimeout(assetTimer); assetTimer = setTimeout(flushAssets, 80);
+			return;
+		}
+		if (trackJs && jsAssets.has(abs)) {
+			pendingJsReload = true;
+			clearTimeout(assetTimer); assetTimer = setTimeout(flushAssets, 80);
+			return;
+		}
 		pendingReason = `${ev} ${path.basename(p)}`;
 		clearTimeout(timer);
 		timer = setTimeout(() => { const r = pendingReason; pendingReason = null; build(r); }, 150);
@@ -253,7 +310,9 @@ function startServer(outDir, outFile, port, sseClients, getError, getWarnings, f
 				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
 				res.end(html);
 			} else {
-				res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+				// no-store: this is a dev preview — a JS full-reload must re-fetch the
+				// changed script (CSS uses a cache-busting query on the <link> instead).
+				res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-store' });
 				res.end(data);
 			}
 		});
@@ -280,13 +339,31 @@ const CLIENT_COMMON = `
   function clearErr(){ var d=document.getElementById('__jmd_err'); if(d) d.remove(); }
   function showErr(msg){ var d=document.getElementById('__jmd_err')||document.createElement('div'); d.id='__jmd_err'; d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#b00020;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3)'; d.textContent='JMarkdown build error:\\n'+msg; document.body.appendChild(d); }
   function clearWarn(){ var d=document.getElementById('__jmd_warn'); if(d) d.remove(); }
-  function showWarn(msgs){ var d=document.getElementById('__jmd_warn')||document.createElement('div'); d.id='__jmd_warn'; d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483646;background:#9a6b00;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3);cursor:pointer'; d.title='Click to dismiss'; d.onclick=function(){ d.remove(); }; d.textContent='JMarkdown build warnings (click to dismiss):\\n'+msgs.join('\\n'); document.body.appendChild(d); }`;
+  function showWarn(msgs){ var d=document.getElementById('__jmd_warn')||document.createElement('div'); d.id='__jmd_warn'; d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:2147483646;background:#9a6b00;color:#fff;font:13px/1.45 ui-monospace,Menlo,monospace;padding:10px 14px;white-space:pre-wrap;box-shadow:0 -2px 8px rgba(0,0,0,.3);cursor:pointer'; d.title='Click to dismiss'; d.onclick=function(){ d.remove(); }; d.textContent='JMarkdown build warnings (click to dismiss):\\n'+msgs.join('\\n'); document.body.appendChild(d); }
+  // A local stylesheet is one served from our own origin (a relative href);
+  // CDN/absolute sheets (highlight.js, MathJax…) are cross-origin and left alone.
+  function jmdLocal(h){ try{ return new URL(h, location.href).origin===location.origin; }catch(e){ return false; } }
+  // Fast CSS swap (browser-sync style): clone the matching <link> with a
+  // cache-busting query, insert it, and drop the stale one once the fresh sheet
+  // loads — no reload, no flash, rendered MathJax/Mermaid and scroll preserved.
+  function jmdSwapCss(d){
+    var links=document.querySelectorAll('link[rel="stylesheet"]'),i,link,raw,base;
+    for(i=0;i<links.length;i++){ link=links[i]; raw=link.getAttribute('href'); if(!raw) continue; base=raw.split('?')[0];
+      if(d.all ? jmdLocal(base) : (base===d.href)){
+        var clone=link.cloneNode(false); clone.setAttribute('href', base+'?__jmdcss='+Date.now());
+        (function(old){ clone.addEventListener('load',function(){ if(old.parentNode) old.parentNode.removeChild(old); }); clone.addEventListener('error',function(){ if(old.parentNode) old.parentNode.removeChild(old); }); })(link);
+        link.parentNode.insertBefore(clone, link.nextSibling);
+      }
+    }
+  }
+  function jmdAttachAssets(es){ es.addEventListener('cssupdate',function(ev){ try{ jmdSwapCss(JSON.parse(ev.data)); }catch(e){} }); es.addEventListener('jsreload',function(){ fullReload(); }); }`;
 
 function liveReloadClient(useFullReload) {
 	if (useFullReload) {
 		return `<script>(function(){
   if (window.__jmdLive) return; window.__jmdLive = true;${CLIENT_COMMON}
   var es = new EventSource('/__livereload');
+  jmdAttachAssets(es);
   es.addEventListener('reload', function(){ fullReload(); });
   es.addEventListener('builderror', function(ev){ try{ showErr(JSON.parse(ev.data)); }catch(e){} });
   es.addEventListener('buildwarnings', function(ev){ try{ showWarn(JSON.parse(ev.data)); }catch(e){} });
@@ -357,6 +434,7 @@ function liveReloadClient(useFullReload) {
   }
 
   var es=new EventSource('/__livereload');
+  jmdAttachAssets(es);
   es.addEventListener('reload', function(){
     clearWarn();  // a fresh 'buildwarnings' event follows immediately if warnings persist
     if(!window.morphdom){ fullReload(); return; }

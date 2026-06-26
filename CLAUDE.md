@@ -126,6 +126,26 @@ standby):
   `--full-reload` forces the old whole-page reload. Bundle served at
   `/__jmd/morphdom.js`. (Browser-side morph/re-render is verified by design +
   fallback, not by an automated test — there's no headless browser in the suite.)
+- **CSS/JS asset live-tracking:** local files referenced by the `CSS:` and
+  `Script:` metadata keys (plus a `Watch:` list for extras that aren't directly
+  linked — an `@import`ed partial, a module a linked script imports) are
+  watched. Because the build only *references* these files (never reads them),
+  they're invisible to the fs dep-tracker and a change to one **never alters the
+  built HTML** — so the watcher **skips the rebuild entirely**: a CSS change is
+  injected (browser-sync style — clone the matching `<link>` with a cache-busting
+  query, swap on load, no reload, scroll/MathJax preserved) via a `cssupdate` SSE
+  event; a JS change triggers a full reload via `jsreload`. The worker reports the
+  local assets in its `done` message (read from the merged config post-build);
+  the watcher classifies a changed path as css-asset / js-asset / build-input and
+  only the last rebuilds. A non-linked `Watch:` `.css` refreshes **all** local
+  sheets (we can't know which sheet imports it); a non-`.css` `Watch:` entry full-
+  reloads. `--css` / `--js` gate which **asset kinds** are tracked (**neither flag
+  → both**; `--css` alone watches CSS only, `--js` only JS) — they do **not** touch
+  the source-document path: a source/`[[include]]`/config/template edit always
+  rebuilds + morphs regardless of the flags. Served assets get
+  `Cache-Control: no-store` so a JS reload re-fetches. Only assets under the
+  output dir (the server's root) get live treatment; CDN/out-of-tree refs are
+  skipped.
 - New deps: `chokidar`, `morphdom`. The four watch files are import-isolated from
   the build path, so they only load on the `watch` command.
 - Author-facing docs: `docs/watch-mode.jmd` (in the docs-snapshot suite and the

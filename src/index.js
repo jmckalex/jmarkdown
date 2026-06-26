@@ -806,6 +806,8 @@ if (isCliEntry) {
 		.option('--open', 'Open the live preview in your browser on start')
 		.option('--no-serve', 'Only rebuild on change; do not start the preview server')
 		.option('--full-reload', 'Reload the whole page on change instead of morphdom DOM-diffing')
+		.option('--css', 'Live-track CSS assets (fast inject, no reload). Omit BOTH --css/--js to track both kinds')
+		.option('--js', 'Live-track JS assets (full page reload). Omit BOTH --css/--js to track both kinds')
 		.action(async (filename, options) => {
 			const { startWatch } = await import('./watch.js');
 			await startWatch(filename, options);
