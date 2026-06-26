@@ -292,6 +292,38 @@ attributes — turning a region into a `section` or `aside`, setting arbitrary
 the better tool; the `{.class #id}` shorthand is the lightweight option for the
 common case of "just put a class on this".
 
+## Smart typography
+
+Polished prose uses real typographic characters — curly quotes, em and en dashes,
+a single-glyph ellipsis — not their ASCII stand-ins. JMarkdown can produce these
+for you, in *both* editions, from the characters you can type directly. It is
+**off by default** (so a document that already contains hand-typed curly quotes
+is never second-guessed); turn it on with a metadata or config key:
+
+```
+Smart typography: true
+```
+
+With it on, plain prose is educated as it renders:
+
+| You type | You get |
+|---|---|
+| `"quoted"` and `'quoted'` | “quoted” and ‘quoted’ (opening/closing chosen by context) |
+| `don't`, `'90s` | don’t, ’90s (apostrophes) |
+| `---` | — (em dash) |
+| `--` | – (en dash) |
+| `...` | … (ellipsis) |
+
+The conversion touches **prose only**. Code spans and fenced code, math
+(`$…$`/`$$…$$`), `:::TeX` blocks, raw HTML, and anything you backslash-escape
+(`\"`, `\-`) are left exactly as written — so a quotation mark you genuinely
+want straight, you escape. Curly quotes and real dashes you typed by hand are
+also left untouched; the feature only ever upgrades the ASCII forms.
+
+Because the result is ordinary Unicode, it works the same in HTML and in LaTeX
+(whose engines typeset `“ ” ‘ ’ – — …` natively) — one source, the right
+typography in both.
+
 ## Reference
 
 ### Inline markers

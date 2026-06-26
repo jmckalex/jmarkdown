@@ -166,7 +166,9 @@ See :ref[tab:results] for the numbers, or more precisely :cref[tab:results].
 The caption sits above the table and is prefixed *Table 1:*; the figure and table
 counters are independent, so a document can have both a "Figure 1" and a "Table 1".
 The LaTeX is a native `table` float, with `\caption` placed before the `tabular`
-(so it prints above) and `\label` after it:
+(so it prints above) and `\label` after it. The table is ruled with booktabs
+(`\toprule`/`\midrule`/`\bottomrule`), the publication style, rather than
+`\hline`:
 
 ```latex
 \begin{table}[htbp]
@@ -174,12 +176,12 @@ The LaTeX is a native `table` float, with `\caption` placed before the `tabular`
 \caption{Results summary}
 \label{tab:results}
 \begin{tabular}{ll}
-\hline
+\toprule
 Method & Score \\
-\hline
+\midrule
 A & 0.9 \\
 B & 0.7 \\
-\hline
+\bottomrule
 \end{tabular}
 \end{table}
 

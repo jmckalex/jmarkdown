@@ -388,6 +388,23 @@
   values concatenated. (This in-body interpolation is documented alongside the rest
   of the header machinery on the <a href="metadata-header.html">metadata header</a> page; it is
   mentioned here because it draws on the very same data object the template uses.)</p>
+<h2 id="toc-a-ready-made-stylesheet">A ready-made stylesheet</h2>
+<p>The default template ships with enough built-in CSS to render a document
+  legibly, but it is intentionally plain. If you want your standalone documents to
+  look like <strong>this documentation</strong> — the warm "paper" palette, the serif body, the
+  ruled headings, the styled tables, floats, theorems, and index — the
+  distribution includes a self-contained stylesheet, <code>jmarkdown-style.css</code> (in the
+  <code>docs/</code> folder). It imports its own fonts and styles the page directly, so a
+  document only has to link it. Copy it next to your document and pull it in from
+  the header:
+</p>
+<pre><code class="hljs">HTML header: &lt;link rel="stylesheet" href="jmarkdown-style.css"&gt;
+Highlight theme: github
+</code></pre>
+<p>It covers the document-preparation constructs as well as the base syntax —
+  captions, theorems, numbered environments, contents lists, and the back-of-book
+  index — so it pairs naturally with the <a href="dual-output.html">print/dual-output</a>
+  features. Treat it as a starting point: it is plain CSS, yours to adapt.</p>
 <h2 id="toc-notes-and-gotchas">Notes and gotchas</h2>
 <ul>
   <li><span class="intense"><code>{{{Content}}}</code> is mandatory.</span> Omit it and your document body vanishes; write

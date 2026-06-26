@@ -366,8 +366,28 @@ template.
   all other kinds are not.
 - **Heading references require `Headings: numeric`**; floats, theorems, and
   equations are always numbered and need no opt-in.
-- **An unresolved reference is visible** (`??` in HTML, an undefined-label warning
-  in LaTeX) and never aborts the build.
+- **An unresolved reference is visible and warned about.** It renders `??` in
+  HTML (and an undefined-label warning in LaTeX), and never aborts the build —
+  but JMarkdown also reports it (see [build warnings](#toc-build-warnings) below)
+  so it cannot slip by unnoticed.
+
+## Build warnings
+
+A `??` deep in a long document is easy to miss, so JMarkdown collects
+cross-reference problems and prints a short summary to standard error at the end
+of the build — much as LaTeX nags about undefined references on its final pass.
+Two situations are reported:
+
+- an **unresolved** `:ref` / `:cref` — a key with no matching `:label`, or a key
+  whose target carries no number (for example a heading reference without
+  `Headings: numeric`);
+- a **duplicate** `:label` — the same key defined twice. The later definition
+  wins (as in LaTeX), but every reference to it would otherwise point at the
+  wrong target silently, so the clash is flagged.
+
+The build still completes. When you are authoring with [watch mode](watch-mode.html),
+the same warnings appear in the browser as an amber, dismissible banner, so you
+see them without watching the terminal.
 
 ## Related pages
 

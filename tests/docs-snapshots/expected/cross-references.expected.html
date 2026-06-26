@@ -492,9 +492,28 @@ Every bounded monotone sequence converges.
     all other kinds are not.</li>
   <li><span class="intense">Heading references require <code>Headings: numeric</code></span>; floats, theorems, and
     equations are always numbered and need no opt-in.</li>
-  <li><span class="intense">An unresolved reference is visible</span> (<code>??</code> in HTML, an undefined-label warning
-    in LaTeX) and never aborts the build.</li>
+  <li><span class="intense">An unresolved reference is visible and warned about.</span> It renders <code>??</code> in
+    HTML (and an undefined-label warning in LaTeX), and never aborts the build —
+    but JMarkdown also reports it (see <a href="#toc-build-warnings">build warnings</a> below)
+    so it cannot slip by unnoticed.</li>
 </ul>
+<h2 id="toc-build-warnings">Build warnings</h2>
+<p>A <code>??</code> deep in a long document is easy to miss, so JMarkdown collects
+  cross-reference problems and prints a short summary to standard error at the end
+  of the build — much as LaTeX nags about undefined references on its final pass.
+  Two situations are reported:</p>
+<ul>
+  <li>an <span class="intense">unresolved</span> <code>:ref</code> / <code>:cref</code> — a key with no matching <code>:label</code>, or a key
+    whose target carries no number (for example a heading reference without
+    <code>Headings: numeric</code>);
+  </li>
+  <li>a <span class="intense">duplicate</span> <code>:label</code> — the same key defined twice. The later definition
+    wins (as in LaTeX), but every reference to it would otherwise point at the
+    wrong target silently, so the clash is flagged.</li>
+</ul>
+<p>The build still completes. When you are authoring with <a href="watch-mode.html">watch mode</a>,
+  the same warnings appear in the browser as an amber, dismissible banner, so you
+  see them without watching the terminal.</p>
 <h2 id="toc-related-pages">Related pages</h2>
 <ul>
   <li><a href="floats.html">Floats</a> — the <code>@begin(figure|table|listing)</code> environments that
