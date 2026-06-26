@@ -68,6 +68,8 @@ jmarkdown watch <filename> [options]
 | `--to <format>` | `html` (default) or `latex` — see "Rebuild-only workflows" below. |
 | `--no-serve` | Only rebuild on change; do not start the preview server. |
 | `--full-reload` | Reload the whole page on change instead of patching it in place. |
+| `--css` | Live-track only stylesheets (see "Editing CSS and JavaScript live"). |
+| `--js` | Live-track only scripts. Omit both `--css`/`--js` to track both kinds. |
 
 Stop watching with `Ctrl-C`.
 
@@ -94,6 +96,68 @@ directives`, `Load extensions`, `Load environments`, or `Load javascript`
 metadata keys are loaded as JavaScript modules rather than read as files, so
 edits to *them* are not detected. After changing one of those, restart the
 watcher (`Ctrl-C`, then the same command again).
+
+## Editing CSS and JavaScript live
+
+A document usually carries its own stylesheet and scripts — named in the `CSS`
+and `Script` metadata keys, which become `<link>` and `<script>` tags in the
+page. Watch mode folds those *local* files into the live loop too, and handles
+each kind the way that gives the tightest feedback:
+
+- *Stylesheets are injected, not reloaded.* Save a `.css` file and the new
+  styling appears at once — the page is **not** reloaded, your scroll position
+  holds, and rendered mathematics and diagrams stay exactly as they are. (The
+  matching `<link>` is quietly swapped for a fresh copy and the old one dropped
+  once the new one has loaded, so there is no flash of unstyled content.)
+- *Scripts trigger a reload.* Save a `.js` file the page loads and watch mode
+  reloads the whole page so the new script runs from a clean slate. JavaScript
+  state cannot be hot-swapped the way a stylesheet can, so a reload is the
+  honest choice — your scroll position is still restored.
+
+Neither kind triggers a document rebuild: changing a stylesheet or a script does
+not change the generated HTML, so watch mode goes straight to the browser. That
+makes a CSS tweak essentially instant.
+
+### Files that are not directly linked
+
+Sometimes the file you are editing is not the one named in `CSS:`/`Script:` — a
+stylesheet that `@import`s a partial, say, or a module that a linked script
+imports. List those extra files under a `Watch:` key and they join the loop,
+each classified by extension (`.css` is injected like a stylesheet; anything
+else triggers a reload):
+
+```
+---
+CSS: site.css
+Script: app.js
+Watch: _typography.css, lib/widgets.js
+---
+```
+
+A change to a non-linked `.css` partial refreshes every local stylesheet — watch
+mode cannot know which sheet imported it — which is still reload-free.
+
+### Choosing what to track
+
+These flags only choose which *assets* are watched alongside the document — the
+document itself is always rebuilt and patched in place on every save, whichever
+flag you pass (or none). By default watch mode tracks *both* stylesheets and
+scripts; `--css` and `--js` narrow that:
+
+| Flags | Listed CSS files | Listed JS files |
+|---|---|---|
+| *(neither)* | injected | page reloads |
+| `--css` | injected | *ignored* |
+| `--js` | *ignored* | page reloads |
+| `--css --js` | injected | page reloads |
+
+So `--css` is useful when you are only touching styling and would rather a stray
+save to a script not reload the page; the document still rebuilds and updates in
+place exactly as always.
+
+Only assets the preview server can reach — files inside the output directory —
+are live-tracked; stylesheets and scripts loaded from a CDN or from outside the
+project are left to the browser as usual.
 
 ## How the page updates
 
@@ -168,6 +232,9 @@ jmarkdown watch book.md --to latex
   in the served copy.
 - *Changed a `Load …` file?* Restart the watcher; those modules are not
   auto-tracked yet.
+- *Edit a stylesheet and it injects instantly* (no reload, scroll and rendered
+  math preserved); *edit a script and the page reloads*. Add non-linked partials
+  or modules under `Watch:`; `--css`/`--js` narrow which kinds are tracked.
 - `--no-serve` for rebuild-only; `--to latex` implies it. `--full-reload` for
   whole-page reloads. `--port` to pin the server port.
 
