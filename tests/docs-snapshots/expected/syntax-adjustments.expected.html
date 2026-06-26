@@ -400,6 +400,54 @@ For longer runs, brace them: H_</span>{2}O and x^{2n+1}.</code></pre>
   the better tool; the <code>{.class #id}</code> shorthand is the lightweight option for the
   common case of "just put a class on this".
 </p>
+<h2 id="toc-smart-typography">Smart typography</h2>
+<p>Polished prose uses real typographic characters — curly quotes, em and en dashes,
+  a single-glyph ellipsis — not their ASCII stand-ins. JMarkdown can produce these
+  for you, in <strong>both</strong> editions, from the characters you can type directly. It is
+  <span class="intense">off by default</span> (so a document that already contains hand-typed curly quotes
+  is never second-guessed); turn it on with a metadata or config key:
+</p>
+<pre><code class="hljs">Smart typography: true
+</code></pre>
+<p>With it on, plain prose is educated as it renders:</p>
+<table>
+  <thead>
+    <tr>
+      <th>You type</th>
+      <th>You get</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>"quoted"</code> and <code>'quoted'</code></td>
+      <td>“quoted” and ‘quoted’ (opening/closing chosen by context)</td>
+    </tr>
+    <tr>
+      <td><code>don't</code>, <code>'90s</code></td>
+      <td>don’t, ’90s (apostrophes)</td>
+    </tr>
+    <tr>
+      <td><code>---</code></td>
+      <td>— (em dash)</td>
+    </tr>
+    <tr>
+      <td><code>--</code></td>
+      <td>– (en dash)</td>
+    </tr>
+    <tr>
+      <td><code>...</code></td>
+      <td>… (ellipsis)</td>
+    </tr>
+  </tbody>
+</table>
+<p>The conversion touches <span class="intense">prose only</span>. Code spans and fenced code, math
+  (<code>$…$</code>/<code>$$…$$</code>), <code>:::TeX</code> blocks, raw HTML, and anything you backslash-escape
+  (<code>\"</code>, <code>\-</code>) are left exactly as written — so a quotation mark you genuinely
+  want straight, you escape. Curly quotes and real dashes you typed by hand are
+  also left untouched; the feature only ever upgrades the ASCII forms.</p>
+<p>Because the result is ordinary Unicode, it works the same in HTML and in LaTeX
+  (whose engines typeset <code>“ ” ‘ ’ – — …</code> natively) — one source, the right
+  typography in both.</p>
 <h2 id="toc-reference">Reference</h2>
 <h3 id="toc-inline-markers">Inline markers</h3>
 <table>

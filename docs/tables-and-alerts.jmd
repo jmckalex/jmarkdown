@@ -171,15 +171,20 @@ backslash, `\|`:
 
 ## Tables in LaTeX
 
-On the LaTeX path each table is emitted as a `tabular` environment. Alignment maps
-to the `l` / `c` / `r` column specifiers, a percentage width becomes a fixed-width
-paragraph column (`p{0.30\textwidth}`), column spanning uses `\multicolumn`, and
-row spanning uses `\multirow`. Because of `\multirow`, any document that uses row
-spanning needs `\usepackage{multirow}` in its preamble.
+On the LaTeX path each table is emitted as a `tabular` environment, ruled with
+**booktabs** — `\toprule` at the top, `\midrule` under the header, `\bottomrule`
+at the foot, the publication style rather than `\hline` (the package is pulled
+in automatically). Alignment maps to the `l` / `c` / `r` column specifiers, a
+percentage width becomes a fixed-width paragraph column (`p{0.30\textwidth}`),
+column spanning uses `\multicolumn`, and row spanning uses `\multirow`. Because
+of `\multirow`, any document that uses row spanning needs `\usepackage{multirow}`
+in its preamble.
 
-Two caveats follow from `tabular` being fixed-height: a `tabular` cannot break
-across pages, so very long tables in a printed book will eventually need
-`longtable` or `tabularx` instead. That substitution is not automatic today.
+A plain `tabular` cannot break across pages, so a long table would overflow a
+printed page. JMarkdown handles this automatically: a table longer than twenty
+body rows is emitted as a `longtable` instead (which still rules with booktabs
+and repeats its header on each page), so very long tables flow across pages with
+no change to your source.
 
 ## Table syntax reference
 

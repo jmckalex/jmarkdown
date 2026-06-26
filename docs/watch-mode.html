@@ -111,6 +111,12 @@
   shows an error overlay with the message from the build, and the last good page
   stays underneath. Fix the source and save: the overlay clears and the page
   updates as usual. The terminal carries the same message, prefixed <code>✗</code>.</p>
+<p>A build that <strong>succeeds</strong> but has <a href="cross-references.html#toc-build-warnings">build warnings</a> —
+  an unresolved cross-reference, a duplicate label — shows them in an amber,
+  click-to-dismiss banner along the bottom of the page (below where an error
+  overlay would sit). The page still updates; the banner just makes the warnings
+  visible without your having to watch the terminal, and it clears on the next
+  clean build.</p>
 <p>The in-place patching is conservative: if it ever cannot apply an update
   cleanly, the client falls back to a plain full reload automatically (restoring
   your scroll position). If you prefer the old-fashioned behaviour always — every
@@ -141,7 +147,8 @@
   <li><strong>Math and diagrams</strong> in unchanged blocks are never re-rendered; edited ones
     are re-rendered alone.</li>
   <li><strong>Build errors</strong> appear as a browser overlay (and <code>✗</code> in the terminal); fix and
-    save to recover.</li>
+    save to recover. <strong>Build warnings</strong> (unresolved references, duplicate labels)
+    appear as a dismissible amber banner.</li>
   <li><strong>The on-disk output is a clean build</strong> — the live-reload machinery exists only
     in the served copy.</li>
   <li><strong>Changed a <code>Load …</code> file?</strong> Restart the watcher; those modules are not

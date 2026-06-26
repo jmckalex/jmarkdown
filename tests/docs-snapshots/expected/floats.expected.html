@@ -194,18 +194,21 @@ See :ref[tab:results] for the numbers, or more precisely :cref[tab:results].</co
 <p>The caption sits above the table and is prefixed <strong>Table 1:</strong>; the figure and table
   counters are independent, so a document can have both a "Figure 1" and a "Table 1".
   The LaTeX is a native <code>table</code> float, with <code>\caption</code> placed before the <code>tabular</code>
-  (so it prints above) and <code>\label</code> after it:</p>
+  (so it prints above) and <code>\label</code> after it. The table is ruled with booktabs
+  (<code>\toprule</code><em><code>\midrule</code></em><code>\bottomrule</code>), the publication style, rather than
+  <code>\hline</code>:
+</p>
 <pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{table}[htbp]
 <span class="hljs-keyword">\centering</span>
 <span class="hljs-keyword">\caption</span>{Results summary}
 <span class="hljs-keyword">\label</span>{tab:results}
 <span class="hljs-keyword">\begin</span>{tabular}{ll}
-<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\toprule</span>
 Method <span class="hljs-built_in">&amp;</span> Score <span class="hljs-keyword">\\</span>
-<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\midrule</span>
 A <span class="hljs-built_in">&amp;</span> 0.9 <span class="hljs-keyword">\\</span>
 B <span class="hljs-built_in">&amp;</span> 0.7 <span class="hljs-keyword">\\</span>
-<span class="hljs-keyword">\hline</span>
+<span class="hljs-keyword">\bottomrule</span>
 <span class="hljs-keyword">\end</span>{tabular}
 <span class="hljs-keyword">\end</span>{table}
 

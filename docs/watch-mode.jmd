@@ -115,6 +115,13 @@ shows an error overlay with the message from the build, and the last good page
 stays underneath. Fix the source and save: the overlay clears and the page
 updates as usual. The terminal carries the same message, prefixed `✗`.
 
+A build that *succeeds* but has [build warnings](cross-references.html#toc-build-warnings) —
+an unresolved cross-reference, a duplicate label — shows them in an amber,
+click-to-dismiss banner along the bottom of the page (below where an error
+overlay would sit). The page still updates; the banner just makes the warnings
+visible without your having to watch the terminal, and it clears on the next
+clean build.
+
 The in-place patching is conservative: if it ever cannot apply an update
 cleanly, the client falls back to a plain full reload automatically (restoring
 your scroll position). If you prefer the old-fashioned behaviour always — every
@@ -155,7 +162,8 @@ jmarkdown watch book.md --to latex
 - *Math and diagrams* in unchanged blocks are never re-rendered; edited ones
   are re-rendered alone.
 - *Build errors* appear as a browser overlay (and `✗` in the terminal); fix and
-  save to recover.
+  save to recover. *Build warnings* (unresolved references, duplicate labels)
+  appear as a dismissible amber banner.
 - *The on-disk output is a clean build* — the live-reload machinery exists only
   in the served copy.
 - *Changed a `Load …` file?* Restart the watcher; those modules are not

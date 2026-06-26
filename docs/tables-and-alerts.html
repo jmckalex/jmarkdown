@@ -369,15 +369,20 @@
   </div>
 </div>
 <h2 id="toc-tables-in-latex">Tables in LaTeX</h2>
-<p>On the LaTeX path each table is emitted as a <code>tabular</code> environment. Alignment maps
-  to the <code>l</code> <em> <code>c</code> </em> <code>r</code> column specifiers, a percentage width becomes a fixed-width
-  paragraph column (<code>p{0.30\textwidth}</code>), column spanning uses <code>\multicolumn</code>, and
-  row spanning uses <code>\multirow</code>. Because of <code>\multirow</code>, any document that uses row
-  spanning needs <code>\usepackage{multirow}</code> in its preamble.</p>
-<p>Two caveats follow from <code>tabular</code> being fixed-height: a <code>tabular</code> cannot break
-  across pages, so very long tables in a printed book will eventually need
-  <code>longtable</code> or <code>tabularx</code> instead. That substitution is not automatic today.
+<p>On the LaTeX path each table is emitted as a <code>tabular</code> environment, ruled with
+  <span class="intense">booktabs</span> — <code>\toprule</code> at the top, <code>\midrule</code> under the header, <code>\bottomrule</code>
+  at the foot, the publication style rather than <code>\hline</code> (the package is pulled
+  in automatically). Alignment maps to the <code>l</code> <em> <code>c</code> </em> <code>r</code> column specifiers, a
+  percentage width becomes a fixed-width paragraph column (<code>p{0.30\textwidth}</code>),
+  column spanning uses <code>\multicolumn</code>, and row spanning uses <code>\multirow</code>. Because
+  of <code>\multirow</code>, any document that uses row spanning needs <code>\usepackage{multirow}</code>
+  in its preamble.
 </p>
+<p>A plain <code>tabular</code> cannot break across pages, so a long table would overflow a
+  printed page. JMarkdown handles this automatically: a table longer than twenty
+  body rows is emitted as a <code>longtable</code> instead (which still rules with booktabs
+  and repeats its header on each page), so very long tables flow across pages with
+  no change to your source.</p>
 <h2 id="toc-table-syntax-reference">Table syntax reference</h2>
 <table>
   <thead>
