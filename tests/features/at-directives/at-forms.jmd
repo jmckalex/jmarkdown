@@ -1,0 +1,22 @@
+---
+Headings: numeric
+---
+
+# Heading :label[a] @label[b]
+
+The `@name[...]` inline and `@name+[...]` block forms share the begin-end
+registry and coexist with the `:`/`::`/`:::` directives.
+
+Cross-reference parity (`@` must resolve identically to `:`):
+ref :ref[a] then @ref[b]; cref :cref[a] then @cref[b]; Cref :Cref[a] then @Cref[b]
+
+Span parity: :span[hello] then @span[hello]
+
+@note+[A block note set with the plus form.]
+
+A paragraph after the block, with an inline @note[note] mid-sentence.
+
+Generic unregistered names show the default flip — inline @thing[x] is a span,
+while the block form is a div:
+
+@thing+[block thing]

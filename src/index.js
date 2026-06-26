@@ -39,7 +39,7 @@ import { math, mathjs } from './mathjs-extension.js';
 import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
 import { citations, bibliography } from './citations.js';
 import { indexMark, indexPlacement, resetIndexing, checkIndexPlacements } from './indexing.js';
-import { beginEnd } from './begin-end.js';
+import { beginEnd, atInline, atBlock } from './begin-end.js';
 import { defineEnvironment } from './numbered-environments.js';
 import { requirePackage, addPreamble, addLatePreamble } from './preamble.js';
 import './floats.js';
@@ -467,6 +467,12 @@ marked.use(createDirectives([titleBox]));
 // `@` is an otherwise-unused sigil, so nothing else matches `@begin(...)` and the
 // registration position doesn't matter; it lives here, after the directive set.
 marked.use({ extensions: [beginEnd] });
+
+// Single-shot @name[…] (inline) / @name+[…] (block) directives — the same registry
+// as @begin/@end, parity with `:name` / `::name` (which stay live alongside). On
+// both instances so markdown re-parsed inside script blocks supports them too.
+marked.use({ extensions: [atBlock, atInline] });
+marked_copy.use({ extensions: [atBlock, atInline] });
 
 // Float environments (@begin(figure) …) register into the block-environment
 // registry at import time; the @begin extension consults it at render time.

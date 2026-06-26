@@ -1,0 +1,23 @@
+\section{Heading \label{a} \label{b}}
+
+The \mintinline{text}|@name[...]| inline and \mintinline{text}|@name+[...]| block forms share the begin-end
+registry and coexist with the \mintinline{text}|:|\emph{\mintinline{text}|::|}\mintinline{text}|:::| directives.
+
+Cross-reference parity (\mintinline{text}|@| must resolve identically to \mintinline{text}|:|):
+ref \ref{a} then \ref{b}; cref \cref{a} then \cref{b}; Cref \Cref{a} then \Cref{b}
+
+Span parity: <span>hello</span> then hello
+
+\begin{note}
+A block note set with the plus form.
+\end{note}
+
+A paragraph after the block, with an inline note mid-sentence.
+
+Generic unregistered names show the default flip — inline x is a span,
+while the block form is a div:
+
+\begin{thing}
+block thing
+\end{thing}
+

@@ -27,10 +27,10 @@
 	    mirror renderTeXEnv / renderHTMLEnv in additional-directives.js.
 */
 
-import { createBeginEnd, registerBlockEnvironment } from './begin-end-core.js';
+import { createBeginEnd, createAtInline, createAtBlock, registerBlockEnvironment } from './begin-end-core.js';
 import { renderAbstract, renderFeedback } from './additional-directives.js';
 import { configManager } from './config-manager.js';
-import { addPreamble } from './preamble.js';
+import { addPreamble, requirePackage } from './preamble.js';
 
 const format = () => (global.isLatex ? 'latex' : 'html');
 
@@ -67,6 +67,51 @@ registerBlockEnvironment('web', {
 	latex: () => ''
 });
 
+/* --- Parity handlers for the new @name[…] / @name+[…] single-shot forms --------
+
+	First slice of retiring the colon-directive framework: these names work via
+	`@name[…]` (inline, parity with `:name`) and `@name+[…]` (block, parity with
+	`::name`), sharing the one registry — and `:`/`::` stay fully live alongside.
+
+	Cross-references reuse the EXACT markers the post-processor (HTML) and the
+	engine (LaTeX) already consume, so `@ref[k]` is byte-identical to `:ref[k]`.
+	They are `verbatim` so a key like `eq:1` is never re-lexed as markdown; the raw
+	key is ctx.text.
+*/
+const escKey = (k) => String(k).replaceAll("'", '&#39;');
+registerBlockEnvironment('label', {
+	mode: 'verbatim',
+	html: (ctx) => `<span class='xref-label' id='xref-${escKey(ctx.text)}' data-key='${escKey(ctx.text)}'></span>`,
+	latex: (ctx) => `\\label{${ctx.text}}`
+});
+registerBlockEnvironment('ref', {
+	mode: 'verbatim',
+	html: (ctx) => `<span class='xref-ref' data-key='${escKey(ctx.text)}'></span>`,
+	latex: (ctx) => `\\ref{${ctx.text}}`
+});
+registerBlockEnvironment('cref', {
+	mode: 'verbatim',
+	html: (ctx) => `<span class='xref-cref' data-key='${escKey(ctx.text)}' data-cap='0'></span>`,
+	latex: (ctx) => { requirePackage('cleveref'); return `\\cref{${ctx.text}}`; }
+});
+registerBlockEnvironment('Cref', {
+	mode: 'verbatim',
+	html: (ctx) => `<span class='xref-cref' data-key='${escKey(ctx.text)}' data-cap='1'></span>`,
+	latex: (ctx) => { requirePackage('cleveref'); return `\\Cref{${ctx.text}}`; }
+});
+// A plain generic span, parity with the old `:span`. A registered handler owns its
+// own output, so `@span` and `@span+` both emit <span> (the `+` still changes DOM
+// placement: inside <p> vs a top-level node). The span↔div DEFAULT flip is shown
+// instead by the generic fallback for UNREGISTERED names (`@foo[…]` → <span class>,
+// `@foo+[…]` → <div class>).
+registerBlockEnvironment('span', {
+	mode: 'markdown',
+	html: (ctx) => `<span${ctx.attrs ? ' ' + String(ctx.attrs).trim() : ''}>${ctx.inner}</span>`,
+	latex: (ctx) => ctx.inner
+});
+
+const blockPolicy = () => configManager.get('Block elements', 'hyphenated');
+
 export const beginEnd = createBeginEnd({
 	getFormat: format,
 	blockElements: () => configManager.get('Block elements', 'hyphenated'),
@@ -94,6 +139,27 @@ export const beginEnd = createBeginEnd({
 	// An orphan opener in LaTeX is emitted as the verbatim line.
 	orphan: {
 		latex: (literal) => literal + '\n'
+	}
+});
+
+// The inline (@name[…]) and block (@name+[…]) single-shot forms, sharing the same
+// registry as @begin/@end. Generic LaTeX fallbacks: an unregistered inline form
+// passes its content through; an unregistered block form becomes \begin{name}…\end
+// with the same guarded no-op definition begin-end uses.
+export const atInline = createAtInline({
+	getFormat: format,
+	blockElements: blockPolicy,
+	fallback: { latex: (ctx) => ctx.inner }
+});
+
+export const atBlock = createAtBlock({
+	getFormat: format,
+	blockElements: blockPolicy,
+	fallback: {
+		latex: (ctx) => {
+			addPreamble(`\\AtBeginDocument{\\ifcsname ${ctx.name}\\endcsname\\else\\newenvironment{${ctx.name}}{}{}\\fi}`);
+			return `\\begin{${ctx.name}}\n${ctx.inner}\n\\end{${ctx.name}}\n\n`;
+		}
 	}
 });
 

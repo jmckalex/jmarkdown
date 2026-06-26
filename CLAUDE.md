@@ -167,6 +167,35 @@ New directives go through `createDirectives()` in `extended-directives.js`. Thre
 - **Custom tokenizers** suppress marked's lexer on the directive's content. Use this only when needed — e.g. `:::TeX` uses an empty custom tokenizer so raw LaTeX (with `$`, `_`, `\`) is preserved verbatim. `:::HTML` deliberately omits one so markdown prose gets processed.
 - The asymmetry between `:::TeX` (no markdown processing) and `:::HTML` (markdown processing) is **intentional**. Don't try to unify it.
 
+#### Successor syntax: `@name[…]` / `@name+[…]` (single-shot directives)
+A migration is **in progress** to retire the colon framework in favour of the `@`
+sigil, unifying directives and named environments onto **one registry** (the
+begin-end `registerBlockEnvironment`). New single-shot forms parallel the colon
+levels, decided by a trailing `+`:
+
+- `@name[text]{attrs}` — **inline** (parity with `:name`; a marked inline
+  extension → placed inside the enclosing `<p>`, default `<span>`).
+- `@name+[text]{attrs}` — **block** (parity with `::name`; a *line-anchored* marked
+  block extension → a top-level element, never in `<p>`, default `<div>`). The
+  `+` is the only difference; a `+`-form mid-sentence is left literal (block
+  placement only works at a line start — marked fixes paragraph boundaries before
+  inline runs). `@begin(name)…@end` remains the container form.
+
+`createAtInline`/`createAtBlock` live in `begin-end-core.js` (generic, sharing the
+registry); the JMarkdown layer (`begin-end.js`) registers the handlers. The
+**block-level `::` distinction is dropped** — the `+` recovers block placement
+per-call instead (the old block level was inline content + block placement, used
+~4× in real content). `ctx.text` is the raw bracket (handlers like cross-refs use
+it; others use parsed `ctx.inner`); `ctx.inline`/`ctx.block` flag the form.
+
+**First slice shipped** (additive — `:`/`::`/`:::` stay fully live): `@span`,
+`@ref`/`@label`/`@cref`/`@Cref`. Cross-refs reuse the EXACT post-processor markers
+/ native LaTeX commands, so `@ref[k]` is byte-identical to `:ref[k]` in both
+outputs (verified). Not yet done: bare `@name` (no bracket) is **not** claimed
+inline (a deliberate prose-safety guard — `user@host` etc.); `.name`/`<name>`
+override sigils; porting the remaining directives + a content codemod; deleting
+`extended-directives.js`. Fixture: `tests/features/at-directives/`.
+
 ### Named block environments (`@begin(name) … @end(name)`)
 An alternative to the colon-counted container directives. Because the closer *names* what it closes, blocks nest by name — no colon counting, and no renumbering when you wrap or insert a block. Purely **additive**: the `:::name … :::` directives are unchanged. The `@` sigil follows texinfo's `@example … @end example` convention and is otherwise unused in JMarkdown.
 
