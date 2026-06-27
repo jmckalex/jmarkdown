@@ -313,4 +313,155 @@ export function createBeginEnd(options = {}) {
 	};
 }
 
+/* --- Inline / block single-shot forms: @name[text]{attrs} and @name+[…] -------
+
+	The same named-environment registry, reached through two more call-shapes that
+	parallel the old colon directives:
+
+		@name[text]{attrs}    inline   (parity with the old `:name`  — default <span>)
+		@name+[text]{attrs}   block    (parity with the old `::name` — default <div>)
+
+	A trailing `+` on the name is the ONLY difference between the two: it flips the
+	construct from an inline marked extension (placed inside the enclosing <p>) to a
+	block one (a top-level element, never wrapped in <p>).  The block form is
+	line-anchored — it is recognised only at the start of its own line, the one
+	place a block extension can intercept a line before marked folds it into a
+	paragraph; a `+`-form buried mid-sentence is left literal.
+
+	Both dispatch to the SAME handler a name is registered with (registerBlock-
+	Environment), so one definition serves `@name[…]`, `@name+[…]` and
+	`@begin(name)…@end(name)`.  The ctx mirrors the @begin one, with `inline`/`block`
+	flags and `text` carrying the raw bracket content (handlers that want a raw key,
+	e.g. cross-references, read ctx.text; handlers that want formatted content read
+	ctx.inner).
+*/
+
+// Generic inline fallback for an unregistered @name[…]: a hyphenated name becomes
+// a custom element (valid inline), otherwise <span class="name"> — the inline
+// twin of renderGenericHTML's div/element rule.
+function renderGenericInlineHTML(name, attrs, inner, override, policy) {
+	const tag = resolveTag(name, override, policy);   // 'div' marks the class case
+	const attrStr = attrs ? String(attrs).trim() : '';
+	const a = attrStr ? ' ' + attrStr : '';
+	if (tag === 'div') return `<span class="${name}"${a}>${inner}</span>`;
+	return `<${tag}${a}>${inner}</${tag}>`;
+}
+
+// Shared renderer: build the ctx and dispatch to handler[format]/html/render. The
+// caller passes `this` (marked's renderer context) so handlers get this.parser.
+function renderAtToken(self, token, getFormat, fallback) {
+	const format = getFormat();
+	const inner = token.mode === 'verbatim'
+		? token.text
+		: self.parser.parseInline(token.tokens);
+	const handler = registry.get(token.name) || fallback;
+	const ctx = {
+		name: token.name,
+		attrs: token.attrs,
+		text: token.text,
+		inner,
+		rawText: token.text,
+		override: token.override,
+		format,
+		parser: self.parser,
+		token,
+		inline: token.type === 'atInline',
+		block: token.type === 'atBlock'
+	};
+	const render = handler[format] || handler.html || handler.render;
+	return render.call(self, ctx);
+}
+
+export function createAtInline(options = {}) {
+	const getFormat = options.getFormat || (() => 'html');
+	const policy = options.blockElements || 'hyphenated';
+	const resolvePolicy = typeof policy === 'function' ? policy : () => policy;
+	const fallback = {
+		html: (ctx) => renderGenericInlineHTML(ctx.name, ctx.attrs, ctx.inner, ctx.override, resolvePolicy()),
+		...(options.fallback || {})
+	};
+	// Handler for a `@name+[…]` block form that reaches the INLINE pass — i.e. one
+	// that was NOT at a line start (a line-start one is claimed by the block pass
+	// first), so it is necessarily misplaced. A host can warn + mark via
+	// options.misplaced(name, format); the default just emits a visible HTML marker.
+	const misplaced = options.misplaced || ((name) => `<span class="jmd-error">[@${name}+ must start its own line]</span>`);
+
+	return {
+		name: 'atInline',
+		level: 'inline',
+		// Restrictive: only an @ NOT preceded by a word char (so `user@host` /
+		// `me@x.com` stay prose and we don't starve marked's email autolinker by
+		// splitting a valid address). Inline starts may otherwise match anywhere —
+		// inline code spans are claimed before text is cut, so this is safe.
+		start(src) { return src.match(/(?<!\w)@[A-Za-z][\w-]*/)?.index; },
+		tokenizer(src, tokens) {
+			// Backstop for the start() gate: when ANOTHER extension (e.g. the email
+			// autolinker) breaks the text at a glued `@`, our tokenizer is still tried
+			// there with the preceding char already sliced off. Read it from the
+			// previous token's raw instead — reject an @ glued to a word char.
+			const prev = tokens && tokens[tokens.length - 1];
+			if (prev && typeof prev.raw === 'string' && /\w$/.test(prev.raw)) return;
+			// A `@name+[…]`/`@name+{…}` here is a misplaced block form (see above).
+			const bad = /^@([A-Za-z][\w-]*)\+(\[[^\]]*\])?(\{[^}]*\})?/.exec(src);
+			if (bad && (bad[2] !== undefined || bad[3] !== undefined)) {
+				return { type: 'atInline', raw: bad[0], misplaced: bad[1] };
+			}
+			const m = /^@([A-Za-z][\w-]*)(?:\[([^\]]*)\])?(?:\{([^}]*)\})?/.exec(src);
+			if (!m) return;
+			const name = m[1], text = m[2] ?? '', attrsRaw = m[3];
+			const hasBracket = m[2] !== undefined || m[3] !== undefined;
+			// A bracket form takes any name (generic fallback); a BARE @name is a
+			// directive only if explicitly registered (so prose @-words aren't eaten).
+			if (!hasBracket && !registry.has(name)) return;
+			let attrs;
+			if (attrsRaw !== undefined) { try { attrs = attributesParser(attrsRaw); } catch { attrs = undefined; } }
+			const mode = (registry.get(name) || {}).mode || 'markdown';
+			return {
+				type: 'atInline', raw: m[0], name, text, attrs, mode,
+				tokens: mode === 'verbatim' ? [] : this.lexer.inlineTokens(text)
+			};
+		},
+		renderer(token) {
+			if (token.misplaced !== undefined) return misplaced(token.misplaced, getFormat());
+			return renderAtToken(this, token, getFormat, fallback);
+		}
+	};
+}
+
+export function createAtBlock(options = {}) {
+	const getFormat = options.getFormat || (() => 'html');
+	const policy = options.blockElements || 'hyphenated';
+	const resolvePolicy = typeof policy === 'function' ? policy : () => policy;
+	const fallback = {
+		// Block: the bracket content is the body; no separate [label], so no data-label.
+		html: (ctx) => renderGenericHTML(ctx.name, ctx.attrs, undefined, ctx.inner, ctx.override, resolvePolicy()),
+		...(options.fallback || {})
+	};
+
+	return {
+		name: 'atBlock',
+		level: 'block',
+		// Only ever report a line start its tokenizer can match (the anti-shredding
+		// rule): an `@name+[` / `@name+{` at the beginning of a line.
+		start(src) {
+			const m = src.match(/(?:^|\n)[ \t]*@[A-Za-z][\w-]*\+[\[{]/);
+			if (!m) return undefined;
+			return m.index + (src[m.index] === '\n' ? 1 : 0);
+		},
+		tokenizer(src) {
+			const m = /^[ \t]*@([A-Za-z][\w-]*)\+(?:\[([^\]]*)\])?(?:\{([^}]*)\})?[ \t]*(?:\n|$)/.exec(src);
+			if (!m) return;
+			const name = m[1], text = m[2] ?? '', attrsRaw = m[3];
+			let attrs;
+			if (attrsRaw !== undefined) { try { attrs = attributesParser(attrsRaw); } catch { attrs = undefined; } }
+			const mode = (registry.get(name) || {}).mode || 'markdown';
+			return {
+				type: 'atBlock', raw: m[0], name, text, attrs, mode,
+				tokens: mode === 'verbatim' ? [] : this.lexer.inlineTokens(text)
+			};
+		},
+		renderer(token) { return renderAtToken(this, token, getFormat, fallback); }
+	};
+}
+
 export default createBeginEnd;

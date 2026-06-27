@@ -1,0 +1,2 @@
+jmarkdown: 1 warning:
+  - @callout+ used mid-paragraph — a +-block directive must start its own line; it was not rendered

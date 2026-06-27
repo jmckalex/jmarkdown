@@ -1,0 +1,15 @@
+<h1 id="toc-heading--"><a href="#toc"><span class="header-label h1-label xref">1.</span> Heading <span class="xref-label" id="xref-a" data-key="a"></span> <span class="xref-label" id="xref-b" data-key="b"></span></a></h1>
+<p>The <code>@name[...]</code> inline and <code>@name+[...]</code> block forms share the begin-end
+  registry and coexist with the <code>:</code><em><code>::</code></em><code>:::</code> directives.</p>
+<p>Cross-reference parity (<code>@</code> must resolve identically to <code>:</code>):
+  ref <a class="xref-ref" href="#xref-a">1</a> then <a class="xref-ref" href="#xref-b">1</a>; cref <a class="xref-cref" href="#xref-a">section&nbsp;1</a> then <a class="xref-cref" href="#xref-b">section&nbsp;1</a>; Cref <a class="xref-cref" href="#xref-a">Section&nbsp;1</a> then <a class="xref-cref" href="#xref-b">Section&nbsp;1</a></p>
+<p>Span parity: <span>hello</span> then <span>hello</span></p>
+<div class="note">
+  A block note set with the plus form.
+</div>
+<p>A paragraph after the block, with an inline <span class="note">note</span> mid-sentence.</p>
+<p>Generic unregistered names show the default flip — inline <span class="thing">x</span> is a span,
+  while the block form is a div:</p>
+<div class="thing">
+  block thing
+</div>
