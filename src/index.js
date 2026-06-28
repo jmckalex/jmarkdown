@@ -814,6 +814,7 @@ if (isCliEntry) {
 		.option('--full-reload', 'Reload the whole page on change instead of morphdom DOM-diffing')
 		.option('--css', 'Live-track CSS assets (fast inject, no reload). Omit BOTH --css/--js to track both kinds')
 		.option('--js', 'Live-track JS assets (full page reload). Omit BOTH --css/--js to track both kinds')
+		.option('--no-sync', 'Do not inject the editor preview-sync bridge (forward/inverse search when embedded)')
 		.action(async (filename, options) => {
 			const { startWatch } = await import('./watch.js');
 			await startWatch(filename, options);

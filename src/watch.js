@@ -217,7 +217,7 @@ export async function startWatch(file, options) {
 	// ----- preview server + SSE injection -----
 	let serverPort = null;
 	if (serve) {
-		serverPort = await startServer(outDir, outFile, parseInt(options.port, 10) || 3000, sseClients, () => lastError, () => lastWarnings, !!options.fullReload);
+		serverPort = await startServer(outDir, outFile, parseInt(options.port, 10) || 3000, sseClients, () => lastError, () => lastWarnings, !!options.fullReload, options.sync !== false);
 	}
 
 	// ----- run -----
@@ -246,18 +246,130 @@ export async function startWatch(file, options) {
 	process.on('SIGTERM', shutdown);
 }
 
+// The editor preview-sync bridge, served at /__jmd/sync.js and injected into the
+// served page. It enables forward search (editor cursor → scroll preview) and
+// inverse search (⌘/Ctrl-click in preview → move editor cursor) when the preview
+// is embedded in an editor's <iframe> (a different origin, so all sync goes over
+// window.postMessage). Reference implementation per the JMARKDOWN-PREVIEW-SYNC
+// spec — kept verbatim so the editor side, built to the mirror contract, stays in
+// step; the only local addition is the __jmdSync double-init guard. It is inert
+// unless embedded (returns early when window.parent === window.self), uses the
+// page's data-source-line stamps for the line↔element mapping, and survives
+// morphdom live updates via document-level event delegation + fresh DOM queries.
+const SYNC_CLIENT = `(function () {
+  'use strict';
+  // Engage only when embedded (an editor's preview iframe). Standalone → dormant.
+  if (window.parent === window.self) return;
+  if (window.__jmdSync) return; window.__jmdSync = true;
+
+  var SOURCE = 'jmarkdown-sync', VERSION = 1, ATTR = 'data-source-line';
+
+  function post(msg) {
+    msg.source = SOURCE; msg.version = VERSION;
+    window.parent.postMessage(msg, '*'); // line numbers only; '*' is fine
+  }
+  function mapped() {
+    // Fresh each call → robust to morphdom in-place updates.
+    return Array.prototype.slice.call(document.querySelectorAll('[' + ATTR + ']'));
+  }
+  function lineOf(el) { var n = parseInt(el.getAttribute(ATTR), 10); return isNaN(n) ? null : n; }
+
+  // --- forward: scroll the block for a source line into view ---------------
+  var lastLine = null, lastFlashed = null;
+  function elForLine(line) {
+    var els = mapped(), best = null, bestLine = -Infinity;
+    for (var i = 0; i < els.length; i++) {
+      var n = lineOf(els[i]);
+      if (n != null && n <= line && n > bestLine) { best = els[i]; bestLine = n; }
+    }
+    return best || els[0] || null;
+  }
+  function flash(el) {
+    if (lastFlashed) lastFlashed.classList.remove('jmarkdown-sync-flash');
+    if (el) { el.classList.add('jmarkdown-sync-flash'); lastFlashed = el; }
+  }
+  function scrollToLine(line, behavior, align) {
+    lastLine = line;
+    var el = elForLine(line);
+    if (!el) return;
+    el.scrollIntoView({
+      block: align === 'top' ? 'start' : 'center',
+      behavior: behavior === 'smooth' ? 'smooth' : 'auto',
+    });
+    flash(el);
+  }
+
+  // --- inverse: ⌘/Ctrl-click → the source line clicked ---------------------
+  function lineForClick(target, clientY) {
+    for (var a = target; a; a = a.parentElement) {
+      if (a.nodeType === 1 && a.hasAttribute && a.hasAttribute(ATTR)) {
+        var n = lineOf(a); if (n != null) return n;
+      }
+    }
+    var els = mapped(), best = null, bestTop = -Infinity; // nearest block above
+    for (var i = 0; i < els.length; i++) {
+      var top = els[i].getBoundingClientRect().top;
+      if (top <= clientY && top > bestTop) { best = els[i]; bestTop = top; }
+    }
+    return best ? lineOf(best) : null;
+  }
+  document.addEventListener('click', function (e) {
+    if (!(e.metaKey || e.ctrlKey)) return;      // only the modified click
+    var line = lineForClick(e.target, e.clientY);
+    if (line == null) return;
+    e.preventDefault();
+    post({ type: 'source-line-click', line: line });
+  }, true);
+
+  // --- inbound: forward-search requests from the editor --------------------
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.source !== SOURCE) return;
+    if (d.type === 'scroll-to-line' && typeof d.line === 'number') {
+      scrollToLine(d.line, d.behavior, d.align);
+    }
+  });
+
+  // --- re-flash the last target after a live (morphdom) reload -------------
+  try {
+    var t = null;
+    new MutationObserver(function () {
+      if (lastLine == null) return;
+      clearTimeout(t);
+      t = setTimeout(function () { flash(elForLine(lastLine)); }, 50);
+    }).observe(document.body, { childList: true, subtree: true });
+  } catch (e) { /* no body yet / unsupported — non-fatal */ }
+
+  // --- inject the flash style + announce readiness -------------------------
+  var css = '.jmarkdown-sync-flash{animation:jmarkdown-sync-flash 1s ease-out}'
+    + '@keyframes jmarkdown-sync-flash{from{background:rgba(255,221,87,.55)}to{background:transparent}}';
+  var style = document.createElement('style'); style.textContent = css;
+  (document.head || document.documentElement).appendChild(style);
+
+  function ready() { post({ type: 'ready' }); }
+  if (document.readyState !== 'loading') ready();
+  else document.addEventListener('DOMContentLoaded', ready);
+})();
+`;
+
 // A tiny static server rooted at the output directory. Serves the build with an
 // injected live-reload client (the on-disk file stays a clean build — injection
-// is on the fly), plus three control endpoints under /__jmd/:
+// is on the fly), plus four control endpoints under /__jmd/:
 //   /__livereload   — SSE stream (reload / builderror / buildwarnings events)
 //   /__jmd/src      — the raw built HTML (no injection): the morph target
 //   /__jmd/morphdom.js — the morphdom UMD bundle
+//   /__jmd/sync.js  — the editor preview-sync bridge (forward/inverse search)
 // Live updates use morphdom to patch only changed blocks (preserving rendered
 // MathJax/Mermaid in unchanged ones); --full-reload (or a missing morphdom)
 // falls back to a plain location.reload().
-function startServer(outDir, outFile, port, sseClients, getError, getWarnings, fullReload) {
+function startServer(outDir, outFile, port, sseClients, getError, getWarnings, fullReload, sync) {
 	const morphAvailable = !fullReload && fs.existsSync(MORPHDOM);
-	const client = liveReloadClient(!morphAvailable);
+	const client = liveReloadClient(!morphAvailable)
+		// The preview-sync bridge: inert standalone (it returns early unless embedded
+		// in an editor's iframe), so injecting it always is safe. Served as its own
+		// file (a real, debuggable URL — mirrors /__jmd/morphdom.js) rather than
+		// inlined. Kept across morphdom reloads by onBeforeNodeDiscarded (SCRIPT).
+		+ (sync ? '<script src="/__jmd/sync.js"></script>' : '');
 
 	const server = http.createServer((req, res) => {
 		const u = new URL(req.url, 'http://localhost');
@@ -292,6 +404,12 @@ function startServer(outDir, outFile, port, sseClients, getError, getWarnings, f
 				res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' });
 				res.end(data);
 			});
+			return;
+		}
+
+		if (u.pathname === '/__jmd/sync.js') {
+			res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' });
+			res.end(SYNC_CLIENT);
 			return;
 		}
 

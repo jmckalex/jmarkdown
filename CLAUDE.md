@@ -146,6 +146,30 @@ standby):
   `Cache-Control: no-store` so a JS reload re-fetches. Only assets under the
   output dir (the server's root) get live treatment; CDN/out-of-tree refs are
   skipped.
+- **Editor preview-sync bridge (`/__jmd/sync.js`):** a small script injected into
+  the served page (alongside the live-reload client) that enables **forward
+  search** (editor cursor → scroll+flash the matching preview block) and **inverse
+  search** (⌘/Ctrl-click in the preview → move the editor cursor) when the preview
+  is embedded in an editor's `<iframe>`. Because the editor (e.g. Godot, served
+  from `app://`) is a different origin, all sync goes over `window.postMessage`
+  with a fixed envelope (`{ source:'jmarkdown-sync', version:1, type, …}`); the
+  preview side owns the line↔element mapping using the page's `data-source-line`
+  stamps (floor-match for forward, nearest-ancestor-then-Y-fallback for inverse).
+  The bridge is **inert unless embedded** (returns early when
+  `window.parent === window.self`), so standalone browser preview is unaffected
+  and it needs no flag; `--no-sync` opts out of injection. It survives morphdom
+  live updates via document-level event delegation + fresh DOM queries (and the
+  injected `<script>` is kept by `onBeforeNodeDiscarded`; its flash `<style>` lands
+  in `<head>`, never morphed). The body is the verbatim reference impl from the
+  `JMARKDOWN-PREVIEW-SYNC` spec (kept byte-faithful so the separately-built editor
+  side stays in step), held as the `SYNC_CLIENT` constant in `watch.js`. **Stamp
+  convention:** `data-source-line` is **1-based for files with a YAML/metadata
+  header** (the common case — `header_length` shifts the 0-based offset back to the
+  original file's coordinates) but **0-based for a headerless file** (`header_length`
+  stays 0); the bridge uses the raw value, identical to the existing Sublime
+  inverse-search handler in `index.js`, so any fix belongs at the stamp
+  (`source-positions.js`), not per-consumer. Verified by design + the fallbacks
+  (no headless browser in the suite).
 - New deps: `chokidar`, `morphdom`. The four watch files are import-isolated from
   the build path, so they only load on the `watch` command.
 - Author-facing docs: `docs/watch-mode.jmd` (in the docs-snapshot suite and the
