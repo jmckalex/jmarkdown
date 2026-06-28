@@ -160,9 +160,17 @@ standby):
   and it needs no flag; `--no-sync` opts out of injection. It survives morphdom
   live updates via document-level event delegation + fresh DOM queries (and the
   injected `<script>` is kept by `onBeforeNodeDiscarded`; its flash `<style>` lands
-  in `<head>`, never morphed). The body is the verbatim reference impl from the
-  `JMARKDOWN-PREVIEW-SYNC` spec (kept byte-faithful so the separately-built editor
-  side stays in step), held as the `SYNC_CLIENT` constant in `watch.js`. **Stamp
+  in `<head>`, never morphed). When embedded it **fully claims** the modifier-click
+  (`preventDefault` + `stopImmediatePropagation` in the capture phase) so the
+  page's own `kmtrigger://` edit-link handler (the legacy Sublime inverse-search,
+  injected by `index.js`) never runs — that navigation is CSP-blocked in Godot and
+  blanks the preview. The flash is reserved for an
+  **explicit** forward-search (`scroll-to-line` with `flash:true`); auto-follow
+  sends `flash:false` and scrolls silently, and a save-driven morphdom reload never
+  re-flashes (else every save would flash the editing spot). The body is the
+  verbatim reference impl from the `JMARKDOWN-PREVIEW-SYNC` spec (kept byte-faithful
+  so the separately-built editor side stays in step), held as the `SYNC_CLIENT`
+  constant in `watch.js`. **Stamp
   convention:** `data-source-line` is **1-based for files with a YAML/metadata
   header** (the common case — `header_length` shifts the 0-based offset back to the
   original file's coordinates) but **0-based for a headerless file** (`header_length`

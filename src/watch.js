@@ -288,7 +288,7 @@ const SYNC_CLIENT = `(function () {
     if (lastFlashed) lastFlashed.classList.remove('jmarkdown-sync-flash');
     if (el) { el.classList.add('jmarkdown-sync-flash'); lastFlashed = el; }
   }
-  function scrollToLine(line, behavior, align) {
+  function scrollToLine(line, behavior, align, doFlash) {
     lastLine = line;
     var el = elForLine(line);
     if (!el) return;
@@ -296,7 +296,7 @@ const SYNC_CLIENT = `(function () {
       block: align === 'top' ? 'start' : 'center',
       behavior: behavior === 'smooth' ? 'smooth' : 'auto',
     });
-    flash(el);
+    if (doFlash) flash(el); // ONLY on an explicit (flash:true) request
   }
 
   // --- inverse: ⌘/Ctrl-click → the source line clicked ---------------------
@@ -317,7 +317,10 @@ const SYNC_CLIENT = `(function () {
     if (!(e.metaKey || e.ctrlKey)) return;      // only the modified click
     var line = lineForClick(e.target, e.clientY);
     if (line == null) return;
+    // Fully claim the click so the page's own kmtrigger/edit-link handler never
+    // runs (that navigation is CSP-blocked in Godot and blanks the preview).
     e.preventDefault();
+    e.stopImmediatePropagation();
     post({ type: 'source-line-click', line: line });
   }, true);
 
@@ -326,19 +329,13 @@ const SYNC_CLIENT = `(function () {
     var d = e.data;
     if (!d || d.source !== SOURCE) return;
     if (d.type === 'scroll-to-line' && typeof d.line === 'number') {
-      scrollToLine(d.line, d.behavior, d.align);
+      scrollToLine(d.line, d.behavior, d.align, !!d.flash);
     }
   });
 
-  // --- re-flash the last target after a live (morphdom) reload -------------
-  try {
-    var t = null;
-    new MutationObserver(function () {
-      if (lastLine == null) return;
-      clearTimeout(t);
-      t = setTimeout(function () { flash(elForLine(lastLine)); }, 50);
-    }).observe(document.body, { childList: true, subtree: true });
-  } catch (e) { /* no body yet / unsupported — non-fatal */ }
+  // NB: do NOT re-flash on a live (morphdom) reload. The flash is reserved for an
+  // EXPLICIT forward-search (the editor's sync command sends flash:true); auto-follow
+  // and save-driven reloads must not flash, or every save flashes the editing spot.
 
   // --- inject the flash style + announce readiness -------------------------
   var css = '.jmarkdown-sync-flash{animation:jmarkdown-sync-flash 1s ease-out}'
