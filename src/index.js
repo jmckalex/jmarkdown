@@ -119,9 +119,12 @@ if (writingToStdout) {
 
 // --- Inverse search utilities ---
 // Stamp data-source-line onto the first HTML opening tag in a rendered fragment.
+// The tag-name class allows hyphens so custom-element wrappers (e.g. the
+// `@begin(call-out)` → `<call-out>` form) are stamped correctly rather than split
+// mid-name; leading whitespace is tolerated for handlers that emit a newline first.
 function addSourceLineAttr(html, token) {
   if (token.sourceLine !== undefined) {
-    return html.replace(/^(<[a-zA-Z][a-zA-Z0-9]*)/, `$1 data-source-line="${token.sourceLine}"`);
+    return html.replace(/^(\s*<[a-zA-Z][a-zA-Z0-9-]*)/, `$1 data-source-line="${token.sourceLine}"`);
   }
   return html;
 }
@@ -462,6 +465,21 @@ configManager.loadOptionals();
 
 // For some reason, this has to be installed here or it doesn't work
 marked.use(createDirectives([titleBox]));
+
+// Stamp data-source-line on the @begin(...) environment wrappers and @name+ block
+// wrappers, so inverse search resolves a click on an env's chrome (not just its
+// inner prose). beginEnd's one renderer dispatches EVERY registered environment —
+// theorems, floats, equations, generic and parity envs — so wrapping it covers
+// them all; atBlock covers the @name+ block form. Done before registration (the
+// wrap mutates the extension's renderer in place), and only in full HTML mode —
+// fragment/LaTeX carry no source positions. atInline is intentionally left
+// unwrapped: an inline @name already sits inside an already-stamped <p>, and
+// stamping the cross-ref markers (@ref/@cref…) would diverge from their
+// byte-identical :ref/:cref colon twins.
+if (!options.fragment && !isLatex) {
+	wrapRendererWithSourceLine(beginEnd);
+	wrapRendererWithSourceLine(atBlock);
+}
 
 // Named-scope block environments: @begin(name) … @end(name) (see begin-end.js).
 // `@` is an otherwise-unused sigil, so nothing else matches `@begin(...)` and the

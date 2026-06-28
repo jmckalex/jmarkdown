@@ -169,7 +169,19 @@ standby):
   stays 0); the bridge uses the raw value, identical to the existing Sublime
   inverse-search handler in `index.js`, so any fix belongs at the stamp
   (`source-positions.js`), not per-consumer. Verified by design + the fallbacks
-  (no headless browser in the suite).
+  (no headless browser in the suite). **Stamp coverage:** built-in block tokens
+  (paragraph/heading/list-item/table/blockquote/code) and inline JMarkdown
+  extensions were always stamped; the `@begin(name)…@end` **environment wrappers**
+  (theorems, floats, equations, generic + parity envs — all via the one wrapped
+  `beginEnd` renderer) and the `@name+` **block wrappers** (`atBlock`) are now
+  stamped too, so inverse search resolves a click on an env's chrome, not just its
+  inner prose. `addSourceLineAttr`'s tag regex allows hyphens so custom-element
+  wrappers (`@begin(call-out)` → `<call-out>`) aren't split mid-name. Inline
+  `@name` (`atInline`) is deliberately left unstamped — it already sits inside a
+  stamped `<p>`, and stamping the cross-ref markers would diverge from their
+  byte-identical `:ref`/`:cref` colon twins. Stamping is full-HTML only
+  (fragment/LaTeX skip it), so the `--fragment`-only feature suite can't exercise
+  it — verified with full-HTML builds.
 - New deps: `chokidar`, `morphdom`. The four watch files are import-isolated from
   the build path, so they only load on the `watch` command.
 - Author-facing docs: `docs/watch-mode.jmd` (in the docs-snapshot suite and the
