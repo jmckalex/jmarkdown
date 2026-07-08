@@ -396,6 +396,26 @@ function liveReloadClient(useFullReload) {
     if(window.mermaid){ var mer=[],i,j; for(i=0;i<nodes.length;i++){ var n=nodes[i]; if(n.classList&&n.classList.contains('mermaid')) mer.push(n); if(n.querySelectorAll){ var inner=n.querySelectorAll('.mermaid'); for(j=0;j<inner.length;j++) mer.push(inner[j]); } } if(mer.length){ for(i=0;i<mer.length;i++){ mer[i].removeAttribute('data-processed'); } try{ mermaid.run({nodes:mer}); }catch(e){ try{ mermaid.init(undefined,mer); }catch(_){} } } }
   }
 
+  // Inline <style> blocks are relocated to <head> at build time
+  // (moveBodyStylesToHead), but morphdom only diffs <body> — so a changed
+  // <style> would never reach the live page. We track the build's head styles
+  // and reconcile them on each morph. The snapshot is taken NOW, during body
+  // parse, BEFORE MathJax/Mermaid/the sync bridge inject their own runtime
+  // <style>s, so the tracked list is build styles only; runtime styles are
+  // never in it and never touched. (Belt-and-braces: MathJax's own style
+  // carries an MJX id, excluded too.)
+  function headStyles(root){ var out=[],ss=(root?root.querySelectorAll('style'):[]),i; for(i=0;i<ss.length;i++){ if(!/^MJX/i.test(ss[i].id||'')) out.push(ss[i]); } return out; }
+  var trackedStyles=headStyles(document.head);
+  function syncStyles(doc){
+    var neu=doc.head?doc.head.querySelectorAll('style'):[], i, live, cur;
+    for(i=0;i<neu.length;i++){ cur=neu[i]; live=trackedStyles[i];
+      if(live){ if(live.textContent!==cur.textContent) live.textContent=cur.textContent; }
+      else { var s=document.createElement('style'); var t=cur.getAttribute('type'); if(t) s.setAttribute('type',t); s.textContent=cur.textContent; document.head.appendChild(s); trackedStyles[i]=s; } }
+    // Surplus tracked styles no longer in the build were deleted → drop them.
+    for(i=neu.length;i<trackedStyles.length;i++){ if(trackedStyles[i]&&trackedStyles[i].parentNode) trackedStyles[i].parentNode.removeChild(trackedStyles[i]); }
+    trackedStyles.length=neu.length;
+  }
+
   function morph(){
     return fetch('/__jmd/src',{cache:'no-store'}).then(function(r){return r.text();}).then(function(html){
       var doc=new DOMParser().parseFromString(html,'text/html');
@@ -429,6 +449,7 @@ function liveReloadClient(useFullReload) {
         }
       });
       clearErr();
+      syncStyles(doc);
       reRender(changed);
     });
   }
