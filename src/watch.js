@@ -324,7 +324,12 @@ function startServer(outDir, outFile, port, sseClients, getError, getWarnings, f
 				if (e.code === 'EADDRINUSE' && attempts > 0) { tryListen(p + 1, attempts - 1); }
 				else { console.error(`watch server error: ${e.message}`); resolve(null); }
 			});
-			server.listen(p, () => resolve(p));
+			// Resolve with the ACTUALLY-bound port, not the attempted `p`: on an
+			// EADDRINUSE walk each failed listen() leaves its callback registered on
+			// 'listening', so when a later port finally binds they ALL fire and the
+			// first (lowest, wrong port) would win a `resolve(p)`. server.address()
+			// reads the real bound port regardless of which callback fires first.
+			server.listen(p, () => resolve(server.address().port));
 		};
 		tryListen(port, 20);
 	});
