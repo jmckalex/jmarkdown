@@ -126,6 +126,20 @@ standby):
   `--full-reload` forces the old whole-page reload. Bundle served at
   `/__jmd/morphdom.js`. (Browser-side morph/re-render is verified by design +
   fallback, not by an automated test — there's no headless browser in the suite.)
+  **Re-render dedupe (morphdom recursion gotcha):** the changed-block list handed
+  to `MathJax.typesetPromise`/`mermaid.run` is built from two morphdom callbacks —
+  `onBeforeElUpdated` (blocks morphed in place) and `onNodeAdded` (blocks in a
+  newly-added subtree). `onNodeAdded` pushes the node **and** sweeps its tagged
+  descendants, but morphdom's `handleNodeAdded` is **recursive** (fires
+  `onNodeAdded` on the subtree root AND every descendant), so each tagged block in
+  an added subtree was pushed **twice** — and MathJax's `findMath` over a list
+  containing the same element twice inserts **two** rendered copies (duplicated
+  math; Mermaid double-renders the same way). `reRender` therefore **dedupes the
+  node list first** (identity, `indexOf`); only leaf blocks are tagged so there are
+  no ancestor/descendant pairs to fold. Don't "simplify" by trusting either
+  callback to be hit once. Symptom was intermittent — an in-place edit
+  (`onBeforeElUpdated`) is single-push and fine; doubling needed morphdom to treat
+  the surrounding subtree as added (e.g. adding/removing a list item).
   **Inline `<style>` sync:** morphdom diffs only `<body>`, but a body `<style>`
   block is relocated to `<head>` at build time (`moveBodyStylesToHead`), so an
   edited inline style would otherwise never reach the live page (the CSS-asset
