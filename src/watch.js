@@ -512,6 +512,16 @@ function liveReloadClient(useFullReload) {
 
   function reRender(nodes){
     if(!nodes.length) return;
+    // morphdom's handleNodeAdded recurses — it calls onNodeAdded on an added
+    // subtree's root AND on every descendant — so onNodeAdded's own
+    // querySelectorAll('[data-jmdsrc]') sweep pushes each tagged block a SECOND
+    // time. Handing MathJax the same element twice makes findMath discover the
+    // same $…$ on each pass and insert two rendered containers (duplicated math);
+    // mermaid double-renders identically. Dedupe here — one guard for every
+    // producer path — rather than depend on morphdom's traversal internals. Only
+    // leaf blocks are tagged, so there are no ancestor/descendant pairs to fold.
+    var uniq=[],di; for(di=0;di<nodes.length;di++){ if(uniq.indexOf(nodes[di])<0) uniq.push(nodes[di]); }
+    nodes=uniq;
     if(window.MathJax && MathJax.typesetPromise){ try{ if(MathJax.typesetClear) MathJax.typesetClear(nodes); }catch(e){} MathJax.typesetPromise(nodes).catch(function(){}); }
     if(window.mermaid){ var mer=[],i,j; for(i=0;i<nodes.length;i++){ var n=nodes[i]; if(n.classList&&n.classList.contains('mermaid')) mer.push(n); if(n.querySelectorAll){ var inner=n.querySelectorAll('.mermaid'); for(j=0;j<inner.length;j++) mer.push(inner[j]); } } if(mer.length){ for(i=0;i<mer.length;i++){ mer[i].removeAttribute('data-processed'); } try{ mermaid.run({nodes:mer}); }catch(e){ try{ mermaid.init(undefined,mer); }catch(_){} } } }
   }
