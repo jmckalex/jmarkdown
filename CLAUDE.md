@@ -126,6 +126,20 @@ standby):
   `--full-reload` forces the old whole-page reload. Bundle served at
   `/__jmd/morphdom.js`. (Browser-side morph/re-render is verified by design +
   fallback, not by an automated test — there's no headless browser in the suite.)
+  **Inline `<style>` sync:** morphdom diffs only `<body>`, but a body `<style>`
+  block is relocated to `<head>` at build time (`moveBodyStylesToHead`), so an
+  edited inline style would otherwise never reach the live page (the CSS-asset
+  swap only covers *linked* `CSS:` sheets). The morph therefore also
+  reconciles the head's inline `<style>`s (`syncStyles`): the client snapshots
+  the build's head styles at init — during body parse, **before**
+  MathJax/Mermaid/the sync bridge inject their own runtime `<style>`s — so the
+  tracked list is build styles only; on each morph it patches changed ones in
+  place (node reused → scroll/MathJax preserved, like the `<link>` swap), and
+  adds/removes to match the new build by index (final DOM order = build order, so
+  cascade is preserved). Runtime styles are never in the tracked list (MathJax's
+  `MJX`-id style is also filtered as belt-and-braces) and never touched. Verified
+  by a fake-DOM unit test over the shipped `syncStyles` + a live `/__jmd/src`
+  rebuild check (no headless browser in the suite).
 - **CSS/JS asset live-tracking:** local files referenced by the `CSS:` and
   `Script:` metadata keys (plus a `Watch:` list for extras that aren't directly
   linked — an `@import`ed partial, a module a linked script imports) are
