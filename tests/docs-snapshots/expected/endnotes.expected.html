@@ -1,0 +1,264 @@
+<h1 id="toc-grouped-endnotes">Grouped endnotes</h1>
+<p>By default every inline footnote in a document collects into a single <strong>Endnotes</strong>
+  section appended at the very end — see <a href="footnotes.html">Footnotes</a> for the note
+  syntax itself. That is the right behaviour for a short piece, but a longer
+  document often wants its notes <span class="intense">organised</span> and <span class="intense">placed</span>: a separate list of
+  notes after each section, endnotes gathered per chapter, a "Sources" list in one
+  spot and an "Editorial notes" list in another.</p>
+<p>Grouped endnotes add exactly that, on top of the ordinary footnote syntax. You
+  give notes a <span class="intense">group</span> and then decide <span class="intense">where</span> each group's list appears. Two
+  small additions do the whole job — a way to label a note's group, and a marker
+  that says "put this group's list here". Everything on the <a href="footnotes.html">Footnotes</a>
+  page still applies: anonymous versus labelled notes, multi-paragraph bodies, the
+  bracket-aware body scanner. This page only adds grouping and placement, and it is
+  purely additive — a document that uses none of it renders exactly as before.</p>
+<h2 id="toc-assigning-a-note-to-a-group">Assigning a note to a group</h2>
+<p>There are two ways to put a note in a group, and a note's group is resolved from
+  the <span class="intense">most specific</span> one that applies.</p>
+<p>The direct way is to name the group <span class="intense">in the note</span>, in parentheses between the
+  marker and the colon. This works for both the labelled and the anonymous forms:</p>
+<pre><code class="hljs">…a claim[^src: from Descartes]…            — default group (ungrouped)
+…a claim[^src(refs): from Descartes]…      — labelled note in group "refs"
+…a claim[fn(refs): from Descartes]…        — anonymous note in group "refs"
+</code></pre>
+<p>The declarative way is to set an <span class="intense">ambient group</span> with <code>@endnoteGroup(name)</code> on
+  a line of its own. Every note after it joins that group — you do not repeat the
+  group on each note — until the next <code>@endnoteGroup</code> changes it. Writing
+  <code>@endnoteGroup()</code> with empty parentheses resets to the default (ungrouped):
+</p>
+<pre><code class="hljs">@endnoteGroup(chapter1)
+
+Text with a note[fn: joins chapter1] and another[fn: also chapter1].
+
+@endnoteGroup(chapter2)
+
+More text[fn: joins chapter2].
+
+@endnoteGroup()
+
+Back to ungrouped notes[fn: in the default group].
+</code></pre>
+<p>The <code>@endnoteGroup</code> line produces no output; it simply changes the group that
+  following notes fall into. When both apply, a per-note <code>(group)</code> <span class="intense">overrides</span> the
+  ambient one, so you can drop a single note into another group without disturbing
+  the surrounding <code>@endnoteGroup</code>:</p>
+<pre><code class="hljs">@endnoteGroup(main)
+
+A main note[fn: goes to "main"], but this one[fn(aside): jumps to "aside"]
+does not.
+</code></pre>
+<h2 id="toc-placing-a-groups-list">Placing a group's list</h2>
+<p>A group's notes do not appear until you place them, with an <code>@endnotes</code> marker on
+  its own line. Name a group to place just that group:</p>
+<pre><code class="hljs">@endnotes(refs)
+</code></pre>
+<p>or write a bare <code>@endnotes</code> to place <span class="intense">every</span> group that no named <code>@endnotes</code>
+  has already claimed:</p>
+<pre><code class="hljs">@endnotes
+</code></pre>
+<p>Either form takes an optional <code>{title="…"}</code> attribute, which becomes a heading
+  above the list. Without it the list has no heading, so you are free to write your
+  own with an ordinary Markdown heading just before the marker:</p>
+<pre><code class="hljs">## Notes to the Introduction
+
+@endnotes(intro){title="Notes to the Introduction"}
+</code></pre>
+<p>Because placement is resolved after the whole document is parsed, an <code>@endnotes</code>
+  marker may appear <span class="intense">before</span> the notes it collects — handy when you want a
+  section's note list at the section's <strong>start</strong>, or a running list that gathers notes
+  introduced later.</p>
+<h2 id="toc-numbering-restarts-for-each-group">Numbering restarts for each group</h2>
+<p>Each group numbers its notes independently, restarting at <span class="intense">1</span>. This is the
+  convention readers expect from per-section or per-chapter endnotes: the third note
+  of Chapter 2 is "3", not "17". The superscript reference in the text carries the
+  per-group number, and the placed list matches it.</p>
+<p>One consequence is worth stating plainly. Because numbering restarts, a <span class="intense">bare</span>
+  <code>@endnotes</code> that gathers several groups cannot show them as one flat list — two
+  groups would each contain a "1". So a bare <code>@endnotes</code> renders <span class="intense">one list per
+    group</span>: the default (ungrouped) group first with no label, then each named group
+  under its own <code>&lt;h2 class="endnote-group-heading"&gt;</code> so the numbering is never
+  ambiguous. A single named <code>@endnotes(name)</code> needs no such label and gets none.
+</p>
+<h2 id="toc-notes-you-do-not-place">Notes you do not place</h2>
+<p>Nothing is ever silently dropped. If a group has notes but no <code>@endnotes</code> marker
+  ever places it, its list is appended at the end of the document (just like the
+  historical single-section behaviour) and a build warning names the unplaced group.
+  Conversely, an <code>@endnotes(name)</code> for a group that has no notes renders nothing and
+  warns. Both warnings surface on stderr at the end of the build and, in watch mode,
+  as the amber banner.</p>
+<h2 id="toc-a-worked-example">A worked example</h2>
+<p>The source below groups notes two ways — an ambient <code>@endnoteGroup</code> for the body
+  of each section, and a per-note override — then places each list under its own
+  heading:</p>
+<pre><code class="hljs">@endnoteGroup(intro)
+
+The framework rests on an idealisation[fn: agents are perfectly rational]
+that the literature treats as harmless[fn: though see Simon 1955].
+
+@endnoteGroup(methods)
+
+We estimate the model by maximum likelihood[fn: full derivation in the
+appendix], with one robustness check[fn(data): the 2019 sample is excluded].
+
+## Notes — Introduction
+
+@endnotes(intro){title="Notes — Introduction"}
+
+## Notes — Methods
+
+@endnotes(methods){title="Notes — Methods"}
+
+## Data notes
+
+@endnotes(data){title="Data notes"}
+</code></pre>
+<p>The two introduction notes number 1–2 under "Notes — Introduction"; the two
+  methods notes number 1–2 under "Notes — Methods"; and the single <code>(data)</code>
+  override note is a fresh "1" under "Data notes".</p>
+<h2 id="toc-seeing-it-in-action">Seeing it in action</h2>
+<p>The passage that follows contains real grouped notes — two in a <code>principles</code>
+  group and one in a <code>sources</code> group — and the two lists below it are placed live
+  on this page, each under its own title.</p>
+<blockquote>
+  <p>Cooperation can be rational even among self-interested
+    agents<sup class="footnote-ref"><a href="#fn-p1" id="fnref-p1">1</a></sup>.
+    The classic treatment predicts defection<sup class="footnote-ref"><a href="#fn-p2" id="fnref-p2">2</a></sup>, a result later editions
+    revisit<sup class="footnote-ref"><a href="#fn-s1" id="fnref-s1">1</a></sup>.</p>
+</blockquote>
+<h3 id="toc-notes-on-the-principles">Notes on the principles</h3>
+
+<section class="footnotes" data-endnote-group="principles">
+  <h1 class="endnotes-heading">Notes on the principles</h1>
+  <ol>
+    <li id="fn-p1">
+      <p>given the right correlation between their choices <a href="#fnref-p1" class="footnote-backref">↩</a></p>
+    </li>
+    <li id="fn-p2">
+      <p>in the one-shot
+        game with common knowledge of rationality <a href="#fnref-p2" class="footnote-backref">↩</a></p>
+    </li>
+  </ol>
+</section>
+
+<h3 id="toc-sources">Sources</h3>
+
+<section class="footnotes" data-endnote-group="sources">
+  <h1 class="endnotes-heading">Sources</h1>
+  <ol>
+    <li id="fn-s1">
+      <p>see the 2018 revision, chapter 4 <a href="#fnref-s1" class="footnote-backref">↩</a></p>
+    </li>
+  </ol>
+</section>
+
+<p>Notice that each list numbers from 1 independently, and that the superscripts in
+  the quotation point into the matching list.</p>
+<h2 id="toc-latex-output">LaTeX output</h2>
+<p>Grouped endnotes are, by nature, an arrangement of collected notes — a shape that
+  plain page footnotes do not have. So the LaTeX behaviour follows what the document
+  actually asks for:</p>
+<ul>
+  <li>If the document uses <span class="intense">no</span> grouping or placement at all, every note renders as
+    an ordinary inline <code>\footnote{…}</code>, exactly as on the <a href="footnotes.html">Footnotes</a>
+    page. Nothing changes for existing documents.</li>
+  <li>As soon as any grouping or <code>@endnotes</code> placement appears, notes become
+    <span class="intense">endnotes</span>: the reference is a <code>\textsuperscript{n}</code> mark, and each <code>@endnotes</code>
+    marker emits that group's list — an optional bold title, then the numbered note
+    bodies, with a bold sub-heading per group under a bare <code>@endnotes</code>. JMarkdown
+    owns the numbering, so the print output matches the web without relying on any
+    particular LaTeX endnotes package.
+  </li>
+</ul>
+<h2 id="toc-reference">Reference</h2>
+<h3 id="toc-syntax">Syntax</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Form</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>[fn(g): body]</code></td>
+      <td>Anonymous note in group <code>g</code></td>
+    </tr>
+    <tr>
+      <td><code>[^label(g): body]</code></td>
+      <td>Labelled note in group <code>g</code></td>
+    </tr>
+    <tr>
+      <td><code>@endnoteGroup(name)</code></td>
+      <td>Set the ambient group for following notes</td>
+    </tr>
+    <tr>
+      <td><code>@endnoteGroup()</code></td>
+      <td>Reset the ambient group to the default</td>
+    </tr>
+    <tr>
+      <td><code>@endnotes(name)</code></td>
+      <td>Place group <code>name</code>'s list here</td>
+    </tr>
+    <tr>
+      <td><code>@endnotes</code></td>
+      <td>Place every group not claimed by a named <code>@endnotes</code></td>
+    </tr>
+    <tr>
+      <td><code>@endnotes(name){title="…"}</code></td>
+      <td>Place a list with a heading</td>
+    </tr>
+  </tbody>
+</table>
+<p>Group precedence, most specific first: a per-note <code>(group)</code>, then the ambient
+  <code>@endnoteGroup</code>, then the default (ungrouped) group.
+</p>
+<h3 id="toc-html-classes-and-ids">HTML classes and ids</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Selector</th>
+      <th>Where it appears</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>sup.footnote-ref</code></td>
+      <td>The superscript reference marker</td>
+    </tr>
+    <tr>
+      <td><code>section.footnotes</code></td>
+      <td>A placed (or trailing) endnote list</td>
+    </tr>
+    <tr>
+      <td><code>section.footnotes[data-endnote-group]</code></td>
+      <td>A single-group list, carrying its group name</td>
+    </tr>
+    <tr>
+      <td><code>h1.endnotes-heading</code></td>
+      <td>The <code>{title="…"}</code> heading of a list</td>
+    </tr>
+    <tr>
+      <td><code>h2.endnote-group-heading</code></td>
+      <td>A group's sub-heading within a bare <code>@endnotes</code> list</td>
+    </tr>
+    <tr>
+      <td><code>li#fn-LABEL</code></td>
+      <td>One note in the list</td>
+    </tr>
+    <tr>
+      <td><code>a.footnote-backref</code></td>
+      <td>The <code>↩</code> link from a note back to its reference</td>
+    </tr>
+  </tbody>
+</table>
+<p>JMarkdown ships no default styling for these classes; supply the CSS in your
+  template or stylesheet.</p>
+<h2 id="toc-related-pages">Related pages</h2>
+<ul>
+  <li><a href="footnotes.html">Footnotes</a> — the note syntax these groups build on: anonymous
+    versus labelled, multi-paragraph bodies, and the LaTeX <code>\footnote{…}</code> default.</li>
+  <li><a href="cross-references.html">Cross-references</a> — another document-wide construct that
+    is collected during the build and resolved at a chosen spot.</li>
+  <li><a href="book-structure.html">Book structure</a> — front, main, and back matter, and the
+    sectioning that per-section endnotes naturally accompany.</li>
+</ul>

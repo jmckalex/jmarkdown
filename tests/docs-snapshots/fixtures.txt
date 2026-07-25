@@ -19,6 +19,7 @@ configuration-files
 description-lists
 directives-syntax
 disabled-syntax
+endnotes
 enhanced-lists
 extensions-complex
 extensions-simple
