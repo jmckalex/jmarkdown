@@ -52,7 +52,7 @@ All source lives in `src/`. Key files:
 | `numbered-environments.js` | `defineEnvironment` honouring `numbered: true`: auto-numbered, cross-referenceable user environments (HTML via the `number_environments` post-processor pass over `.jmd-env` markers; LaTeX via an auto thmtools theorem-like). All env-registration routes funnel through here; `getNumberedSpecs()` feeds the post-processor |
 | `equations.js` | `@begin(equation)` — numbered, referenceable display math |
 | `alerts.js` | LaTeX rendering of GFM alerts (`> [!NOTE]`) as `tcolorbox` |
-| `inline-footnotes.js` | `[^label: body]` syntax with multi-paragraph support |
+| `inline-footnotes.js` | `[^label: body]` / `[fn: body]` inline footnotes with multi-paragraph support, plus **grouped endnotes**: per-note `(group)` (`[fn(g): …]`), the ambient `@endnoteGroup(name)` directive, and `@endnotes` / `@endnotes(name)` placement. See "Grouped endnotes" |
 | `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc) |
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
 | `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
@@ -66,7 +66,7 @@ All source lives in `src/`. Key files:
 3. Extension and directive registration on both `marked` and `marked_copy`.
 4. YAML metadata header parsed and stripped; may trigger dynamic loading.
 5. `processFileInclusions()` expands `<<include>>` directives.
-6. `preprocessFootnotes()` extracts multi-paragraph inline footnotes.
+6. `preprocessFootnotes()` resolves ambient endnote groups (`@endnoteGroup`) and extracts multi-paragraph inline footnotes.
 7. (HTML, non-fragment only) source-position stamping for inverse search.
 8. (LaTeX only) `marked.use({ renderer: latexRenderer })`.
 9. `marked.parse()` — the main parse/render pass.
@@ -259,8 +259,47 @@ An alternative to the colon-counted container directives. Because the closer *na
 - **Generic LaTeX & orphans:** the JMarkdown layer supplies the generic `\begin{name}[label]…\end{name}` fallback and the LaTeX form of an orphan opener via `createBeginEnd`'s `fallback`/`orphan` options (merged over the core's HTML defaults). The `Block elements` policy is injected via the `blockElements` option reading `configManager`. The fallback also **auto-provides a guarded no-op definition** per generic name via `addPreamble` — `\AtBeginDocument{\ifcsname name\endcsname\else\newenvironment{name}{}{}\fi}` — so full documents compile before the author defines the environment (graceful degradation = the print twin of an unstyled div; `\AtBeginDocument` defers past the whole preamble so an author definition always wins). Caveat: names that are already TeX commands (`box`, `outer`, `middle`, `frame`, …) can't work as LaTeX environments at all — the guard sees them "defined" and `\begin{name}` runs the primitive; avoid such names in dual-output fixtures/docs.
 - Fixtures: `tests/features/begin-end/`.
 
+### Grouped endnotes (`inline-footnotes.js`)
+Footnotes can be collected into named **groups** and each group **placed** at a
+chosen spot, on top of the existing `[fn: …]` / `[^label: …]` inline footnotes.
+Additive — a document that uses none of this behaves exactly as before (the
+docs `footnotes` snapshot and the three `footnotes` fixtures are byte-identical).
+
+- **Assign a group** (most-specific wins): a per-note `(group)` —
+  `[fn(g): …]` / `[^label(g): …]`; or the ambient `@endnoteGroup(name)` directive
+  on its own line, which groups every following note until the next
+  `@endnoteGroup` (`@endnoteGroup()` resets to the default/unnamed group); else the
+  default group.
+- **Place a list:** `@endnotes(name)` renders that group here; bare `@endnotes`
+  renders every group **not** claimed by a specific `@endnotes(name)`;
+  `{title="…"}` adds a heading (none otherwise). A group with a placement but no
+  notes, or notes in a group never placed, both warn (`warnings.js`) — unplaced
+  notes are appended at the end rather than dropped.
+- **Numbering is per-group, restarting at 1.** So a bare `@endnotes` renders one
+  sub-list **per** group (the default group first, unlabelled; named groups under
+  an `<h2 class="endnote-group-heading">`), because a single merged list would
+  repeat "1". A single-group `@endnotes(name)` gets no such label.
+- **Architecture — why the split.** marked tokenises **all** block tokens before
+  **any** inline tokenising, so an ambient `@endnoteGroup` handled as a block
+  extension would always read as the *last* group by the time footnotes lex.
+  Ambient resolution therefore lives in the **preprocess** pass
+  (`resolveAmbientGroups`, the only place with true document order): it injects the
+  ambient `(group)` into each note opener and blanks `@endnoteGroup` lines (keeping
+  the newline, so inverse-search line numbers don't shift). `@endnotes` is a block
+  extension that emits a **placeholder**; `fillEndnotes(content, format)` (called
+  from `index.js` after parse, for HTML and LaTeX alike) replaces the placeholders
+  and appends any unplaced notes — so a placement marker may appear *before* the
+  notes it gathers (the `::Bibliography` pattern). This replaces the old
+  end-of-document `getFootnotesHTML()` append (now a deprecated no-op shim).
+- **LaTeX.** With no grouping/placement anywhere, each note is a plain inline
+  `\footnote{…}` (unchanged). The moment any grouping/placement is used
+  (`endnotesMode`), notes become endnotes: a `\textsuperscript{n}` mark inline and
+  JMarkdown-built per-group lists at the placements (JMarkdown owns the numbering,
+  so this leans on no `endnotes`/`enotez` package semantics).
+- Fixtures: `tests/features/endnotes/` (`grouped`, `ambient`).
+
 ### Extension registration order matters
-Inline extensions registered **later** are checked first in marked.js. The inline footnote extension is registered after `marked-footnote` for this reason. Document any ordering dependencies you introduce.
+Inline extensions registered **later** are checked first in marked.js. The inline footnote extension is registered after `marked-footnote` for this reason. Document any ordering dependencies you introduce. The `@endnotes` placement extension is a **block** extension on the main parser only (like the footnote extensions), line-anchored so it never competes with the `@name`/`@begin` sigil forms.
 
 ### Block extension `start()` must only report positions its tokenizer can match
 marked truncates the paragraph being built at the smallest index any block

@@ -51,7 +51,7 @@ import { metadata, processYAMLheader } from './metadata-header.js';
 import processFileInclusions from './file-inclusion.js';
 import { processTemplate } from './html-template.js';
 import { processLatexTemplate } from './latex-template.js';
-import { preprocessFootnotes, inlineFootnote, getFootnotesHTML, resetFootnotes } from './inline-footnotes.js';
+import { preprocessFootnotes, inlineFootnote, endnotesPlacement, fillEndnotes, resetFootnotes } from './inline-footnotes.js';
 import { Renderer } from 'marked';
 import { header_length } from './metadata-header.js';
 import { sourcePositions } from './source-positions.js';
@@ -224,8 +224,13 @@ marked.use(markedFootnote({
 // the brackets) is checked before marked-footnote's [^label] reference syntax.
 registerExtension(inlineFootnote);
 
+// The @endnotes / @endnotes(name) placement block extension. Like the footnote
+// extensions it belongs to the main parser only (marked_copy renders script-block
+// markdown, which never carries document-level endnote placement).
+marked.use({ extensions: [endnotesPlacement] });
 
-registerExtensions([ 
+
+registerExtensions([
 	jmarkdownSyntaxEnhancements.latex,
 	jmarkdownSyntaxEnhancements.moustache
 ]);
@@ -684,7 +689,10 @@ if (isLatex) {
 	// compilable document (\documentclass + assembled preamble + frontmatter +
 	// body + \end{document}); --fragment emits the body alone, which is also
 	// what the feature/compile test harnesses consume.
-	const latex = options.fragment ? content : processLatexTemplate(content);
+	// fillEndnotes resolves @endnotes placement markers (a no-op unless the
+	// document uses grouping/placement — otherwise notes were plain \footnote{}s).
+	const latexBody = fillEndnotes(content, 'latex');
+	const latex = options.fragment ? latexBody : processLatexTemplate(latexBody);
 	writeOutput(latex);
 } else {
 	// HTML output: full pipeline with post-processing, template, and inverse search.
@@ -702,8 +710,11 @@ if (isLatex) {
 		}\n\\)</div>\n`
 		: '';
 
-	// Append the collected inline footnotes section, if any.
-	const contentWithFootnotes = macrosHTML + content + getFootnotesHTML();
+	// Resolve @endnotes placement markers and append any unplaced endnotes (or,
+	// with no markers at all, the historical trailing "Endnotes" section). Done
+	// on the parsed body BEFORE the template/post-processor so cross-references
+	// inside note bodies still resolve.
+	const contentWithFootnotes = macrosHTML + fillEndnotes(content, 'html');
 
 	let html = options.fragment ? contentWithFootnotes : processTemplate(contentWithFootnotes);
 
