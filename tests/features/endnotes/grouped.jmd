@@ -1,0 +1,10 @@
+Title: grouped
+------------------------------------
+
+An introduction point[^a(intro): first intro note] and a second[^b(intro): second intro note].
+
+A methods detail[^c(methods): a methods note].
+
+@endnotes(intro){title="Introduction notes"}
+
+@endnotes(methods){title="Methods notes"}

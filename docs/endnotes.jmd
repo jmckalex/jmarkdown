@@ -1,0 +1,233 @@
+---
+Title: Grouped endnotes
+---
+
+# Grouped endnotes
+
+By default every inline footnote in a document collects into a single *Endnotes*
+section appended at the very end — see [Footnotes](footnotes.html) for the note
+syntax itself. That is the right behaviour for a short piece, but a longer
+document often wants its notes **organised** and **placed**: a separate list of
+notes after each section, endnotes gathered per chapter, a "Sources" list in one
+spot and an "Editorial notes" list in another.
+
+Grouped endnotes add exactly that, on top of the ordinary footnote syntax. You
+give notes a **group** and then decide **where** each group's list appears. Two
+small additions do the whole job — a way to label a note's group, and a marker
+that says "put this group's list here". Everything on the [Footnotes](footnotes.html)
+page still applies: anonymous versus labelled notes, multi-paragraph bodies, the
+bracket-aware body scanner. This page only adds grouping and placement, and it is
+purely additive — a document that uses none of it renders exactly as before.
+
+## Assigning a note to a group
+
+There are two ways to put a note in a group, and a note's group is resolved from
+the **most specific** one that applies.
+
+The direct way is to name the group **in the note**, in parentheses between the
+marker and the colon. This works for both the labelled and the anonymous forms:
+
+```
+…a claim[^src: from Descartes]…            — default group (ungrouped)
+…a claim[^src(refs): from Descartes]…      — labelled note in group "refs"
+…a claim[fn(refs): from Descartes]…        — anonymous note in group "refs"
+```
+
+The declarative way is to set an **ambient group** with `@endnoteGroup(name)` on
+a line of its own. Every note after it joins that group — you do not repeat the
+group on each note — until the next `@endnoteGroup` changes it. Writing
+`@endnoteGroup()` with empty parentheses resets to the default (ungrouped):
+
+```
+@endnoteGroup(chapter1)
+
+Text with a note[fn: joins chapter1] and another[fn: also chapter1].
+
+@endnoteGroup(chapter2)
+
+More text[fn: joins chapter2].
+
+@endnoteGroup()
+
+Back to ungrouped notes[fn: in the default group].
+```
+
+The `@endnoteGroup` line produces no output; it simply changes the group that
+following notes fall into. When both apply, a per-note `(group)` **overrides** the
+ambient one, so you can drop a single note into another group without disturbing
+the surrounding `@endnoteGroup`:
+
+```
+@endnoteGroup(main)
+
+A main note[fn: goes to "main"], but this one[fn(aside): jumps to "aside"]
+does not.
+```
+
+## Placing a group's list
+
+A group's notes do not appear until you place them, with an `@endnotes` marker on
+its own line. Name a group to place just that group:
+
+```
+@endnotes(refs)
+```
+
+or write a bare `@endnotes` to place **every** group that no named `@endnotes`
+has already claimed:
+
+```
+@endnotes
+```
+
+Either form takes an optional `{title="…"}` attribute, which becomes a heading
+above the list. Without it the list has no heading, so you are free to write your
+own with an ordinary Markdown heading just before the marker:
+
+```
+## Notes to the Introduction
+
+@endnotes(intro){title="Notes to the Introduction"}
+```
+
+Because placement is resolved after the whole document is parsed, an `@endnotes`
+marker may appear **before** the notes it collects — handy when you want a
+section's note list at the section's *start*, or a running list that gathers notes
+introduced later.
+
+## Numbering restarts for each group
+
+Each group numbers its notes independently, restarting at **1**. This is the
+convention readers expect from per-section or per-chapter endnotes: the third note
+of Chapter 2 is "3", not "17". The superscript reference in the text carries the
+per-group number, and the placed list matches it.
+
+One consequence is worth stating plainly. Because numbering restarts, a **bare**
+`@endnotes` that gathers several groups cannot show them as one flat list — two
+groups would each contain a "1". So a bare `@endnotes` renders **one list per
+group**: the default (ungrouped) group first with no label, then each named group
+under its own `<h2 class="endnote-group-heading">` so the numbering is never
+ambiguous. A single named `@endnotes(name)` needs no such label and gets none.
+
+## Notes you do not place
+
+Nothing is ever silently dropped. If a group has notes but no `@endnotes` marker
+ever places it, its list is appended at the end of the document (just like the
+historical single-section behaviour) and a build warning names the unplaced group.
+Conversely, an `@endnotes(name)` for a group that has no notes renders nothing and
+warns. Both warnings surface on stderr at the end of the build and, in watch mode,
+as the amber banner.
+
+## A worked example
+
+The source below groups notes two ways — an ambient `@endnoteGroup` for the body
+of each section, and a per-note override — then places each list under its own
+heading:
+
+```
+@endnoteGroup(intro)
+
+The framework rests on an idealisation[fn: agents are perfectly rational]
+that the literature treats as harmless[fn: though see Simon 1955].
+
+@endnoteGroup(methods)
+
+We estimate the model by maximum likelihood[fn: full derivation in the
+appendix], with one robustness check[fn(data): the 2019 sample is excluded].
+
+## Notes — Introduction
+
+@endnotes(intro){title="Notes — Introduction"}
+
+## Notes — Methods
+
+@endnotes(methods){title="Notes — Methods"}
+
+## Data notes
+
+@endnotes(data){title="Data notes"}
+```
+
+The two introduction notes number 1–2 under "Notes — Introduction"; the two
+methods notes number 1–2 under "Notes — Methods"; and the single `(data)`
+override note is a fresh "1" under "Data notes".
+
+## Seeing it in action
+
+The passage that follows contains real grouped notes — two in a `principles`
+group and one in a `sources` group — and the two lists below it are placed live
+on this page, each under its own title.
+
+> Cooperation can be rational even among self-interested
+> agents[^p1(principles): given the right correlation between their choices].
+> The classic treatment predicts defection[^p2(principles): in the one-shot
+> game with common knowledge of rationality], a result later editions
+> revisit[^s1(sources): see the 2018 revision, chapter 4].
+
+### Notes on the principles
+
+@endnotes(principles){title="Notes on the principles"}
+
+### Sources
+
+@endnotes(sources){title="Sources"}
+
+Notice that each list numbers from 1 independently, and that the superscripts in
+the quotation point into the matching list.
+
+## LaTeX output
+
+Grouped endnotes are, by nature, an arrangement of collected notes — a shape that
+plain page footnotes do not have. So the LaTeX behaviour follows what the document
+actually asks for:
+
+- If the document uses **no** grouping or placement at all, every note renders as
+  an ordinary inline `\footnote{…}`, exactly as on the [Footnotes](footnotes.html)
+  page. Nothing changes for existing documents.
+- As soon as any grouping or `@endnotes` placement appears, notes become
+  **endnotes**: the reference is a `\textsuperscript{n}` mark, and each `@endnotes`
+  marker emits that group's list — an optional bold title, then the numbered note
+  bodies, with a bold sub-heading per group under a bare `@endnotes`. JMarkdown
+  owns the numbering, so the print output matches the web without relying on any
+  particular LaTeX endnotes package.
+
+## Reference
+
+### Syntax
+
+| Form | Meaning |
+|---|---|
+| `[fn(g): body]` | Anonymous note in group `g` |
+| `[^label(g): body]` | Labelled note in group `g` |
+| `@endnoteGroup(name)` | Set the ambient group for following notes |
+| `@endnoteGroup()` | Reset the ambient group to the default |
+| `@endnotes(name)` | Place group `name`'s list here |
+| `@endnotes` | Place every group not claimed by a named `@endnotes` |
+| `@endnotes(name){title="…"}` | Place a list with a heading |
+
+Group precedence, most specific first: a per-note `(group)`, then the ambient
+`@endnoteGroup`, then the default (ungrouped) group.
+
+### HTML classes and ids
+
+| Selector | Where it appears |
+|---|---|
+| `sup.footnote-ref` | The superscript reference marker |
+| `section.footnotes` | A placed (or trailing) endnote list |
+| `section.footnotes[data-endnote-group]` | A single-group list, carrying its group name |
+| `h1.endnotes-heading` | The `{title="…"}` heading of a list |
+| `h2.endnote-group-heading` | A group's sub-heading within a bare `@endnotes` list |
+| `li#fn-LABEL` | One note in the list |
+| `a.footnote-backref` | The `↩` link from a note back to its reference |
+
+JMarkdown ships no default styling for these classes; supply the CSS in your
+template or stylesheet.
+
+## Related pages
+
+- [Footnotes](footnotes.html) — the note syntax these groups build on: anonymous
+  versus labelled, multi-paragraph bodies, and the LaTeX `\footnote{…}` default.
+- [Cross-references](cross-references.html) — another document-wide construct that
+  is collected during the build and resolved at a chosen spot.
+- [Book structure](book-structure.html) — front, main, and back matter, and the
+  sectioning that per-section endnotes naturally accompany.

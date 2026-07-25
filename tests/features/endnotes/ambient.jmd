@@ -1,0 +1,16 @@
+Title: ambient
+------------------------------------
+
+A default-group note[^d: ungrouped one].
+
+@endnoteGroup(ch1)
+
+A chapter-one claim[^e: ch1 first].
+An override[^f(ch2): jumps to ch2].
+Back in chapter one[^g: ch1 second].
+
+@endnoteGroup()
+
+A tail default note[^h: ungrouped two].
+
+@endnotes
