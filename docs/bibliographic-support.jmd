@@ -26,7 +26,7 @@ one you get depends on the output format and one metadata key:
   slide-deck use case — so there is nothing to resolve until the browser builds
   it.
 - **LaTeX (native natbib).** With `--to latex`, the citation commands pass
-  through verbatim to `natbib` and `::Bibliography` emits `\bibliographystyle`
+  through verbatim to `natbib` and `@bibliography` emits `\bibliographystyle`
   and `\bibliography`. Real `bibtex`/`biber` does the work when you compile the
   `.tex`.
 
@@ -58,7 +58,7 @@ Bibliography style: chicago
 
 As argued in \cite{Lewis:1969}, …
 
-::Bibliography
+@bibliography
 ```
 
 | Metadata key | Purpose |
@@ -74,7 +74,7 @@ involved:
 2. A post-pass formats every citation with [citation.js](https://citation.js.org/)
    and the [Citation Style Language](https://citationstyles.org/) (CSL), replacing
    each `\cite{…}` with a finished inline citation.
-3. The `::Bibliography` directive is replaced by the assembled reference list, in
+3. The `@bibliography` marker is replaced by the assembled reference list, in
    citation.js's standard `div.csl-bib-body` structure.
 4. The runtime client scripts are **suppressed** — there is nothing left for the
    browser to do, so the page carries no Biblify JavaScript at all.
@@ -84,36 +84,58 @@ compiled output matches what the browser would have produced. Because everything
 is resolved in the file, a compile-time document opens correctly offline and does
 not depend on the `.bib` being reachable at view time.
 
-### Where the bibliography goes: `::Bibliography`
+### Where the bibliography goes: `@bibliography`
 
 In the compile-time path you say **where** the reference list belongs with a
-`::Bibliography` directive on a line of its own. (The runtime path appends the
+`@bibliography` marker on a line of its own. (The runtime path appends the
 bibliography to the end of the document automatically; the compile-time path puts
 you in control of placement.)
 
+It is the same shape as the [`@endnotes`](endnotes.html) marker — a line-anchored
+`@name` naming a place where a generated list belongs, with an optional
+`{title="…"}` — so the two placement constructs read alike.
+
 ```
-::Bibliography
+@bibliography
 ```
 
 It takes an optional attribute block:
 
 ```
-::Bibliography{style="apa" scope="#sec-history" all}
+@bibliography{title="References" style="apa" scope="#sec-history" all}
 ```
 
 | Attribute | Effect |
 |---|---|
+| `title` | A heading for this reference list. Omitted, the list carries no heading. |
 | `style` | Format *this* bibliography (and the inline citations that feed it) with a different style from the document default. |
 | `scope` | A CSS selector; the list is built from only the citations inside that element — a **sectional** bibliography. |
-| `all` | List every cited work in the whole document, regardless of where the directive sits. |
+| `all` | List every cited work in the whole document, regardless of where the marker sits. |
 
-By default each `::Bibliography` lists the citations that have appeared **since
+The `title` becomes an `<h2 class="bibliography-title">` in HTML. In LaTeX it
+redefines the class's own bibliography-heading macro — `\refname` in `article`,
+`\bibname` in `book` and `report` — so the engine still draws the heading and it
+still reaches the table of contents. A titled list that turns out to have no
+entries prints nothing at all, heading included, rather than leaving a stranded
+heading behind.
+
+`title` is a **compile-time and LaTeX** feature. On the runtime path the marker
+emits nothing (the browser client places the list itself), so there is nothing
+for a title to attach to; write the heading as an ordinary `##` instead.
+
+By default each `@bibliography` lists the citations that have appeared **since
 the previous one**, so several directives partition a document into per-section
 reference lists. A `scope` selector instead gathers the citations within a named
 element, and `all` gathers the entire document. Per-section style switching (via
 `style`) and `scope`-based sectional bibliographies are **HTML-only**
 conveniences; the LaTeX path emits a single `\bibliography` for the whole
 document.
+
+> [!NOTE]
+> Earlier versions spelled this marker `::Bibliography`. That spelling still
+> works exactly as before, so existing documents keep building, but it is no
+> longer documented and takes no `title`. New documents should use
+> `@bibliography`.
 
 The **Vancouver** style is a whole-document numeric mode: citations become
 collapsed bracketed numbers (e.g. `[1,3-5]`) and a single numbered reference list
@@ -277,7 +299,7 @@ work to LaTeX:
 - The `\cite`-family commands pass through **verbatim** as native `natbib`
   commands. The one exception is `\fullcite`, which natbib lacks: it is
   translated to `\bibentry` (from the `bibentry` package).
-- The `::Bibliography` directive emits `\bibliographystyle{…}` followed by
+- The `@bibliography` marker emits `\bibliographystyle{…}` followed by
   `\bibliography{…}`, pointing at the basename of your `Bibliography` database.
 - Real `bibtex`/`biber` resolves the citations and builds the reference list when
   you compile the resulting `.tex`.
@@ -292,7 +314,7 @@ style` by default; override it explicitly with the `LaTeX bib style` key:
 |---|---|
 | `LaTeX bib style` | The natbib `.bst` name for `\bibliographystyle` in LaTeX output (e.g. `apalike`, `plainnat`). Overrides the default derived from `Bibliography style`. |
 
-So a single source — `\cite{…}` commands plus a `::Bibliography` directive,
+So a single source — `\cite{…}` commands plus an `@bibliography` marker,
 `Bibliography` and `Bibliography style` in the header — yields a resolved HTML
 bibliography under `Resolve citations`, and a `bibtex`-ready `.tex` under
 `--to latex`.
@@ -322,12 +344,12 @@ related thread \citep[see][]{Axelrod/Hamilton:1981}.
 
 # References
 
-::Bibliography
+@bibliography
 ```
 
 When this file is processed to HTML, JMarkdown reads `references.bib`, turns the
 three citations into formatted Chicago references, silently folds `Lewis:2002`
-into the list via `\nocite`, and replaces `::Bibliography` with the four-work
+into the list via `\nocite`, and replaces `@bibliography` with the four-work
 reference list — all in the output file, no browser required. Render the same
 source with `--to latex` and you get the `\cite` commands and a
 `\bibliographystyle`/`\bibliography` pair for `bibtex` to resolve instead.
@@ -346,7 +368,7 @@ source with `--to latex` and you get the `\cite` commands and a
   relative URL resolved against the **output HTML** file, so for the runtime path
   the `.bib` must be served from somewhere the browser can reach.
 - **One database, one default style per document.** A single `.bib` and one
-  document-wide style apply; in compile-time HTML a per-`::Bibliography` `style`
+  document-wide style apply; in compile-time HTML a per-`@bibliography` `style`
   override and `scope`-based sectional lists are available, but the LaTeX path
   emits one `\bibliography` for the whole document.
 - **Vancouver is whole-document.** It produces a single numbered reference list

@@ -1,0 +1,12 @@
+Title: legacy-alias
+Bibliography: refs.bib
+Bibliography style: chicago
+Resolve citations: true
+------------------------------------
+
+The pre-`@` spelling `::Bibliography` is still accepted, untitled, so
+existing documents keep building.
+
+A citation \citep{Quine:1948}.
+
+::Bibliography

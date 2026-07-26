@@ -21,7 +21,7 @@
     it.
   </li>
   <li><span class="intense">LaTeX (native natbib).</span> With <code>--to latex</code>, the citation commands pass
-    through verbatim to <code>natbib</code> and <code>::Bibliography</code> emits <code>\bibliographystyle</code>
+    through verbatim to <code>natbib</code> and <code>@bibliography</code> emits <code>\bibliographystyle</code>
     and <code>\bibliography</code>. Real <code>bibtex</code>/<code>biber</code> does the work when you compile the
     <code>.tex</code>.
   </li>
@@ -52,7 +52,7 @@ Bibliography style: chicago
 
 As argued in \cite{Lewis:1969}, …
 
-::Bibliography
+@bibliography
 </code></pre>
 <table>
   <thead>
@@ -83,7 +83,7 @@ As argued in \cite{Lewis:1969}, …
   <li>A post-pass formats every citation with <a href="https://citation.js.org/">citation.js</a>
     and the <a href="https://citationstyles.org/">Citation Style Language</a> (CSL), replacing
     each <code>\cite{…}</code> with a finished inline citation.</li>
-  <li>The <code>::Bibliography</code> directive is replaced by the assembled reference list, in
+  <li>The <code>@bibliography</code> marker is replaced by the assembled reference list, in
     citation.js's standard <code>div.csl-bib-body</code> structure.</li>
   <li>The runtime client scripts are <span class="intense">suppressed</span> — there is nothing left for the
     browser to do, so the page carries no Biblify JavaScript at all.</li>
@@ -92,16 +92,20 @@ As argued in \cite{Lewis:1969}, …
   compiled output matches what the browser would have produced. Because everything
   is resolved in the file, a compile-time document opens correctly offline and does
   not depend on the <code>.bib</code> being reachable at view time.</p>
-<h3 id="toc-where-the-bibliography-goes-bibliography">Where the bibliography goes: <code>::Bibliography</code></h3>
+<h3 id="toc-where-the-bibliography-goes-bibliography">Where the bibliography goes: <code>@bibliography</code></h3>
 <p>In the compile-time path you say <span class="intense">where</span> the reference list belongs with a
-  <code>::Bibliography</code> directive on a line of its own. (The runtime path appends the
+  <code>@bibliography</code> marker on a line of its own. (The runtime path appends the
   bibliography to the end of the document automatically; the compile-time path puts
   you in control of placement.)
 </p>
-<pre><code class="hljs">::Bibliography
+<p>It is the same shape as the <a href="endnotes.html"><code>@endnotes</code></a> marker — a line-anchored
+  <code>@name</code> naming a place where a generated list belongs, with an optional
+  <code>{title="…"}</code> — so the two placement constructs read alike.
+</p>
+<pre><code class="hljs">@bibliography
 </code></pre>
 <p>It takes an optional attribute block:</p>
-<pre><code class="hljs">::Bibliography{style="apa" scope="#sec-history" all}
+<pre><code class="hljs">@bibliography{title="References" style="apa" scope="#sec-history" all}
 </code></pre>
 <table>
   <thead>
@@ -112,6 +116,10 @@ As argued in \cite{Lewis:1969}, …
   </thead>
   <tbody>
     <tr>
+      <td><code>title</code></td>
+      <td>A heading for this reference list. Omitted, the list carries no heading.</td>
+    </tr>
+    <tr>
       <td><code>style</code></td>
       <td>Format <strong>this</strong> bibliography (and the inline citations that feed it) with a different style from the document default.</td>
     </tr>
@@ -121,11 +129,21 @@ As argued in \cite{Lewis:1969}, …
     </tr>
     <tr>
       <td><code>all</code></td>
-      <td>List every cited work in the whole document, regardless of where the directive sits.</td>
+      <td>List every cited work in the whole document, regardless of where the marker sits.</td>
     </tr>
   </tbody>
 </table>
-<p>By default each <code>::Bibliography</code> lists the citations that have appeared <span class="intense">since
+<p>The <code>title</code> becomes an <code>&lt;h2 class="bibliography-title"&gt;</code> in HTML. In LaTeX it
+  redefines the class's own bibliography-heading macro — <code>\refname</code> in <code>article</code>,
+  <code>\bibname</code> in <code>book</code> and <code>report</code> — so the engine still draws the heading and it
+  still reaches the table of contents. A titled list that turns out to have no
+  entries prints nothing at all, heading included, rather than leaving a stranded
+  heading behind.
+</p>
+<p><code>title</code> is a <span class="intense">compile-time and LaTeX</span> feature. On the runtime path the marker
+  emits nothing (the browser client places the list itself), so there is nothing
+  for a title to attach to; write the heading as an ordinary <code>##</code> instead.</p>
+<p>By default each <code>@bibliography</code> lists the citations that have appeared <span class="intense">since
     the previous one</span>, so several directives partition a document into per-section
   reference lists. A <code>scope</code> selector instead gathers the citations within a named
   element, and <code>all</code> gathers the entire document. Per-section style switching (via
@@ -133,6 +151,16 @@ As argued in \cite{Lewis:1969}, …
   conveniences; the LaTeX path emits a single <code>\bibliography</code> for the whole
   document.
 </p>
+<div class="markdown-alert markdown-alert-note">
+  <p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
+    </svg>Note</p>
+  <p>Earlier versions spelled this marker <code>::Bibliography</code>. That spelling still
+    works exactly as before, so existing documents keep building, but it is no
+    longer documented and takes no <code>title</code>. New documents should use
+    <code>@bibliography</code>.
+  </p>
+</div>
 <p>The <span class="intense">Vancouver</span> style is a whole-document numeric mode: citations become
   collapsed bracketed numbers (e.g. <code>[1,3-5]</code>) and a single numbered reference list
   is produced, so per-section partitioning does not apply to it.</p>
@@ -396,7 +424,7 @@ As argued in \cite{Lewis:1969}, …
   <li>The <code>\cite</code>-family commands pass through <span class="intense">verbatim</span> as native <code>natbib</code>
     commands. The one exception is <code>\fullcite</code>, which natbib lacks: it is
     translated to <code>\bibentry</code> (from the <code>bibentry</code> package).</li>
-  <li>The <code>::Bibliography</code> directive emits <code>\bibliographystyle{…}</code> followed by
+  <li>The <code>@bibliography</code> marker emits <code>\bibliographystyle{…}</code> followed by
     <code>\bibliography{…}</code>, pointing at the basename of your <code>Bibliography</code> database.
   </li>
   <li>Real <code>bibtex</code>/<code>biber</code> resolves the citations and builds the reference list when
@@ -421,7 +449,7 @@ As argued in \cite{Lewis:1969}, …
     </tr>
   </tbody>
 </table>
-<p>So a single source — <code>\cite{…}</code> commands plus a <code>::Bibliography</code> directive,
+<p>So a single source — <code>\cite{…}</code> commands plus an <code>@bibliography</code> marker,
   <code>Bibliography</code> and <code>Bibliography style</code> in the header — yields a resolved HTML
   bibliography under <code>Resolve citations</code>, and a <code>bibtex</code>-ready <code>.tex</code> under
   <code>--to latex</code>.
@@ -448,11 +476,11 @@ related thread \citep[see][]{Axelrod/Hamilton:1981}.
 
 # References
 
-::Bibliography
+@bibliography
 </code></pre>
 <p>When this file is processed to HTML, JMarkdown reads <code>references.bib</code>, turns the
   three citations into formatted Chicago references, silently folds <code>Lewis:2002</code>
-  into the list via <code>\nocite</code>, and replaces <code>::Bibliography</code> with the four-work
+  into the list via <code>\nocite</code>, and replaces <code>@bibliography</code> with the four-work
   reference list — all in the output file, no browser required. Render the same
   source with <code>--to latex</code> and you get the <code>\cite</code> commands and a
   <code>\bibliographystyle</code>/<code>\bibliography</code> pair for <code>bibtex</code> to resolve instead.
@@ -470,7 +498,7 @@ related thread \citep[see][]{Axelrod/Hamilton:1981}.
     relative URL resolved against the <span class="intense">output HTML</span> file, so for the runtime path
     the <code>.bib</code> must be served from somewhere the browser can reach.</li>
   <li><span class="intense">One database, one default style per document.</span> A single <code>.bib</code> and one
-    document-wide style apply; in compile-time HTML a per-<code>::Bibliography</code> <code>style</code>
+    document-wide style apply; in compile-time HTML a per-<code>@bibliography</code> <code>style</code>
     override and <code>scope</code>-based sectional lists are available, but the LaTeX path
     emits one <code>\bibliography</code> for the whole document.</li>
   <li><span class="intense">Vancouver is whole-document.</span> It produces a single numbered reference list

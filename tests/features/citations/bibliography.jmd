@@ -1,0 +1,13 @@
+Title: bibliography
+Bibliography: refs.bib
+Bibliography style: chicago
+Resolve citations: true
+------------------------------------
+
+A textual citation \citet{Quine:1948} and a parenthetical one
+\citep{Skyrms:1996}.
+
+Prose mentioning @bibliography mid-sentence stays literal, as does
+`@bibliography{title="x"}` in a code span.
+
+@bibliography{title="References"}

@@ -474,6 +474,20 @@ function collectScope($, scope) {
 	return set.values();
 }
 
+// Swap a bibliography placeholder for its rendered list, prepending the optional
+// `{title="…"}` heading. Mirrors ::Index's data-title → <h2 class="index-title">
+// in indexing.js, so both placement markers label their output the same way.
+// Note the callers below drop the placeholder entirely when a bibliography would
+// be empty — so an empty list never leaves a stranded heading behind.
+function replaceBibPlaceholder($, $placeholder, $out) {
+	const title = $placeholder.attr('data-title');
+	if (title) {
+		// .text() escapes; the title is author prose, not markup.
+		$placeholder.before($('<h2 class="bibliography-title"></h2>').text(title));
+	}
+	$placeholder.replaceWith($out);
+}
+
 function renderBibliography($, $placeholder, keys, style, ctx) {
 	if (!keys.length) { $placeholder.remove(); return; }
 	const entries = keys.map(k => ctx.bibfileMap[k]).filter(Boolean);
@@ -483,7 +497,7 @@ function renderBibliography($, $placeholder, keys, style, ctx) {
 	});
 	const $out = $(html);
 	$out.addClass(`biblify-${style}-template`);
-	$placeholder.replaceWith($out);
+	replaceBibPlaceholder($, $placeholder, $out);
 }
 
 // --- Vancouver (numeric) — whole-document path -------------------------------
@@ -532,7 +546,7 @@ function resolveVancouver($, ctx) {
 	if (bibTargets.length === 0) {
 		// No ::Bibliography directive — still number the inline citations.
 	} else {
-		bibTargets.forEach(bt => $(bt).replaceWith($bib.clone()));
+		bibTargets.forEach(bt => replaceBibPlaceholder($, $(bt), $bib.clone()));
 	}
 
 	// 3. Replace each inline placeholder with its collapsed numeric reference.

@@ -16,15 +16,21 @@
 	   inside fenced code or code spans, so literal \cite examples in code blocks
 	   are left alone for free.
 
-	2. `bibliography` — a block extension implementing the `::Bibliography`
-	   directive that marks where a bibliography is inserted. (A dedicated block
-	   extension rather than a labelled directive because the directive framework
-	   in extended-directives.js requires trailing content, so a bare
-	   `::Bibliography` on its own line would not tokenize.)
+	2. `bibliography` — a block extension implementing the `@bibliography`
+	   placement marker. (A dedicated block extension rather than a labelled
+	   directive because the directive framework in extended-directives.js
+	   requires trailing content, so a bare marker on its own line would not
+	   tokenize.)
+
+	   Spelled `@bibliography{…}`, mirroring `@endnotes{…}` in
+	   inline-footnotes.js: both are line-anchored block markers naming a place
+	   where a generated list belongs, and both take an optional `{title="…"}`.
+	   The older `::Bibliography` spelling remains accepted as a silent alias so
+	   existing documents keep building.
 
 	Output dispatch:
 	  - LaTeX            → commands pass through verbatim (native natbib), and
-	                       `::Bibliography` emits \bibliographystyle + \bibliography.
+	                       `@bibliography` emits \bibliographystyle + \bibliography.
 	  - HTML, resolve on → emit placeholder elements for the post-pass to resolve.
 	  - HTML, resolve off→ leave the commands literal so the *runtime* Biblify
 	                       client can process them in the browser.
@@ -37,6 +43,8 @@
 import attributesParser from 'attributes-parser';
 import path from 'path';
 import { configManager } from './config-manager.js';
+import { isChapterClass } from './sectioning.js';
+import { escapeLatexText } from './latex-escape.js';
 
 // The canonical \cite-family grammar, shared with the post-pass. Anchored so it
 // can be used to re-parse a single stored command.
@@ -97,9 +105,10 @@ export const citations = {
 	}
 };
 
-// Parse the optional `{style="…" scope="…" all}` argument of ::Bibliography.
+// Parse the optional `{title="…" style="…" scope="…" all}` argument of
+// @bibliography.
 function parseBibAttrs(raw) {
-	const result = { style: '', scope: '', all: false };
+	const result = { title: '', style: '', scope: '', all: false };
 	if (!raw) return result;
 	const inside = raw.trim().replace(/^\{/, '').replace(/\}$/, '');
 	let attrs = {};
@@ -108,6 +117,7 @@ function parseBibAttrs(raw) {
 	} catch {
 		attrs = {};
 	}
+	if (attrs.title != null) result.title = String(attrs.title).trim();
 	if (attrs.style) result.style = String(attrs.style).trim();
 	if (attrs.scope) result.scope = String(attrs.scope).trim();
 	if ('all' in attrs) {
@@ -136,12 +146,15 @@ function styleToBst(style) {
 export const bibliography = {
 	name: 'bibliography',
 	level: 'block',
+	// Line-anchored, exactly like @endnotes: a block `start()` must only report a
+	// position its own tokenizer can claim, or it shreds the paragraph being
+	// built (see the note in CLAUDE.md). `::Bibliography` is the legacy alias.
 	start(src) {
-		const m = src.match(/(?:^|\n)::Bibliography\b/);
+		const m = src.match(/(?:^|\n)(?:@bibliography|::Bibliography)\b/);
 		return m ? (m.index + (m[0].startsWith('\n') ? 1 : 0)) : undefined;
 	},
 	tokenizer(src) {
-		const match = /^::Bibliography[ \t]*(\{[^}]*\})?[ \t]*(?:\n|$)/.exec(src);
+		const match = /^(?:@bibliography|::Bibliography)[ \t]*(\{[^}]*\})?[ \t]*(?:\n|$)/.exec(src);
 		if (match) {
 			return {
 				type: 'bibliography',
@@ -152,7 +165,7 @@ export const bibliography = {
 		}
 	},
 	renderer(token) {
-		const { style, scope, all } = parseBibAttrs(token.attrsRaw);
+		const { title, style, scope, all } = parseBibAttrs(token.attrsRaw);
 
 		if (global.isLatex) {
 			const bibStyle =
@@ -162,16 +175,26 @@ export const bibliography = {
 			const bibBase = bibPath
 				? path.basename(bibPath, path.extname(bibPath))
 				: 'references';
-			return `\n\\bibliographystyle{${bibStyle}}\n\\bibliography{${bibBase}}\n`;
+			// A `title` retitles the list the standard LaTeX way, by redefining the
+			// class's heading macro — \bibname in chapter-bearing classes,
+			// \refname in article and friends. The engine still draws the heading,
+			// so it stays in the ToC and keeps the class's own formatting.
+			const heading = title
+				? `\\renewcommand{\\${isChapterClass() ? 'bibname' : 'refname'}}{${escapeLatexText(title)}}\n`
+				: '';
+			return `\n${heading}\\bibliographystyle{${bibStyle}}\n\\bibliography{${bibBase}}\n`;
 		}
 
 		if (!global.resolveCitations) {
 			// Runtime mode: the browser Biblify client places the bibliography
-			// itself, so there's nothing for this directive to emit here.
+			// itself, so there's nothing for this marker to emit here — including
+			// no `title`, which has nothing to attach to. Documented as
+			// compile-time/LaTeX only.
 			return '';
 		}
 
 		let attrs = '';
+		if (title) attrs += ` data-title="${escapeAttr(title)}"`;
 		if (style) attrs += ` data-style="${escapeAttr(style)}"`;
 		if (scope) attrs += ` data-scope="${escapeAttr(scope)}"`;
 		if (all) attrs += ` data-all="true"`;

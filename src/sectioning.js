@@ -32,6 +32,14 @@ export function headingBaseIndex() {
 	return SECTIONING.indexOf(CHAPTER_CLASSES.includes(cls) ? 'chapter' : 'section');
 }
 
+// Whether the document class is chapter-bearing. Exported because LaTeX splits
+// other things on the same distinction — notably the bibliography heading, which
+// is \bibname in book/report and \refname in article (see citations.js) — and
+// this module is the one place the class list is allowed to live.
+export function isChapterClass() {
+	return CHAPTER_CLASSES.includes(metaWord('Document class') || 'article');
+}
+
 // The sectioning command / type word for a heading of the given depth (1-based):
 // e.g. depth 1 → 'section' (article) or 'chapter' (book); depth 2 → 'subsection'
 // or 'section'; clamped at 'subparagraph'.
