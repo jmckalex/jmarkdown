@@ -244,7 +244,7 @@ Document class: book
 
 # Introduction
 
-Body text of the first chapter, marking a term:index[body text] for the index.
+Body text of the first chapter, marking a term@index[body text] for the index.
 
 {{appendix}}
 
@@ -254,7 +254,7 @@ More material here.
 
 {{backmatter}}
 
-::Index
+@index
 </code></pre>
 <p>Run through <code>--to latex</code>, this assembles a full, compilable document — the
   <a href="dual-output.html">dual-output model</a> builds the <code>\documentclass</code> wrapper and
@@ -298,7 +298,7 @@ More material here.
 </code></pre>
 <p>Notice that <code>#</code> became <code>\chapter</code> (because the class is <code>book</code>), <code>{{TOC}}</code> sits
   inside the front matter as <code>\tableofcontents</code>, and the appendix chapter follows
-  <code>\appendix</code> so the class will letter it. The single <code>::Index</code> pulled in the
+  <code>\appendix</code> so the class will letter it. The single <code>@index</code> pulled in the
   <code>imakeidx</code> package and its <code>\makeindex</code> declaration (placed before <code>hyperref</code>,
   as that package requires) and became <code>\printindex</code> in the back matter. That
   <code>.tex</code> compiles to a properly structured PDF with no further hand-editing —
@@ -557,7 +557,7 @@ Compare <span class="hljs-keyword">\cref</span>{fig:flow} with <span class="hljs
       <td>generated <code>&lt;nav class="list-of-listings"&gt;</code></td>
     </tr>
     <tr>
-      <td><code>::Index</code></td>
+      <td><code>@index</code></td>
       <td><code>\printindex</code> (pulls in imakeidx + <code>\makeindex</code>)</td>
       <td>generated <code>&lt;nav class="index"&gt;</code> — see <a href="indexing.html">Back-of-book index</a></td>
     </tr>
@@ -622,7 +622,7 @@ Compare <span class="hljs-keyword">\cref</span>{fig:flow} with <span class="hljs
   <li><a href="floats.html">Floats</a> — the <code>@begin(figure|table|listing)</code> environments that
     <code>{{LOF}}</code> and <code>{{LOT}}</code> collect.
   </li>
-  <li><a href="indexing.html">Back-of-book index</a> — <code>:index[…]</code> marks and the <code>::Index</code>
+  <li><a href="indexing.html">Back-of-book index</a> — <code>@index[…]</code> marks and the <code>@index</code>
     placement: the back-matter counterpart of the front-of-book lists above.</li>
   <li><a href="metadata-header.html">Metadata header</a> — the header syntax, and keys like
     <code>Author</code> and <code>Headings: numeric</code>.

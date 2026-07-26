@@ -44,7 +44,7 @@ All source lives in `src/`. Key files:
 | `sectioning.js` | Sectioning ladder + `Heading base`/`Document class` resolution (shared by the LaTeX heading renderer and the HTML cref word) |
 | `crossref.js` | HTML cross-reference registry: per-run label table + `typedRefText` (the `:cref` wording) |
 | `warnings.js` | Build-warning collector (reset per run from `processFile`): unresolved `:ref`/`:cref` and duplicate labels still render/overwrite as before, but are collected and summarised on stderr at end of build; watch mode shows them as an amber dismissible banner (`buildwarnings` SSE event, replayed to fresh connections) |
-| `indexing.js` | Back-of-book index: inline `:index[entry]{name=…}` marks (raw-claimed; full makeindex grammar passes to LaTeX verbatim) + `::Index{title name intoc}` placement (the `@bibliography` pattern). LaTeX → imakeidx (`\index`/`\makeindex`/`\printindex`); HTML → post-pass `buildIndexes` builds letter-grouped linked indexes with §-number locators (`Headings: numeric`) or ordinals. `resetIndexing`/`checkIndexPlacements` called from `processFile` |
+| `indexing.js` | Back-of-book index: inline `@index[entry]{name=…}` marks (raw-claimed; full makeindex grammar passes to LaTeX verbatim) + `@index{title name intoc}` placement (the `@bibliography` pattern; legacy aliases `:index[…]` / `::Index`). LaTeX → imakeidx (`\index`/`\makeindex`/`\printindex`); HTML → post-pass `buildIndexes` builds letter-grouped linked indexes with §-number locators (`Headings: numeric`) or ordinals. `resetIndexing`/`checkIndexPlacements` called from `processFile` |
 | `begin-end-core.js` | Generic, publishable `@begin(name)…@end(name)` extension: tokenizer, block-environment registry (`registerBlockEnvironment`), and the `createBeginEnd(options)` factory. **No LaTeX, no JMarkdown coupling.** |
 | `begin-end.js` | Thin JMarkdown layer over `begin-end-core.js`: injects the generic LaTeX fallback, the `Block elements` policy, and the parity environments (`abstract`/`feedback`/`TeX`/`HTML`) |
 | `floats.js` | `@begin(figure|table|subfigure|listing)` — captioned, numbered, referenceable floats |
@@ -466,10 +466,26 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   resolve at build time. `:cref` → "equation (2)".
 - **Conditional content**: `:::print`/`:::web` (+ inline `:print[…]`/`:web[…]` and
   `@begin(print)`/`@begin(web)`) — markdown emitted in one output only.
-- **Back-of-book index** (`indexing.js`): `:index[entry]` invisible marks (the
+- **Back-of-book index** (`indexing.js`): `@index[entry]` invisible marks (the
   full makeindex grammar — `!` subentries, `sort@display`, `|see{…}`/`|seealso`,
   `|(`/`|)` ranges, `|textbf`, `"`-escapes — passes through verbatim) +
-  `::Index{title="…" intoc name=…}` placement. LaTeX → `imakeidx` (auto-loaded,
+  `@index{title="…" intoc name=…}` placement. **Mark and placement share the
+  name**, told apart by the bracket: `@index[…]` marks, a line-start bare
+  `@index` places. The block `start()` therefore carries a `(?!\[)` so it can't
+  report a position its tokenizer would refuse (the paragraph-shredding rule).
+  Legacy `:index[…]` / `::Index` stay accepted as silent aliases.
+  **Registration order is load-bearing:** `indexMark` must be registered AFTER
+  `atInline` (`index.js`), because `atInline` claims ANY `@name[…]` bracket form
+  and marked tries the last-registered extension first — registered earlier,
+  `@index[Turing|see{…}]` renders as a visible `<span class="index">` instead of
+  an invisible mark. It must win rather than be ported onto the registry because
+  it claims its bracket RAW with a **balanced** scan; `atInline`'s `[^\]]*`
+  truncates a display form like `[$f[x]$]` at the first `]`. It is also the one
+  `@` form that deliberately **skips** the "an `@` glued to a word char is never
+  a directive" rule — a mark is attached to the word it indexes
+  (`recursion@index[recursion]`), so gluing is the primary idiom; the risk that
+  rule guards doesn't carry over, since this tokenizer only claims the literal
+  7-char prefix `@index[`. LaTeX → `imakeidx` (auto-loaded,
   before hyperref by insertion order) with `\makeindex[…]` per index and
   `\printindex[…]`; multiple named indexes via `{name=…}`. HTML → post-pass
   builds a letter-grouped `<nav class="index">`; locators are linked §-numbers
@@ -477,6 +493,9 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   hyperlink to their target entry. Warnings: marks without a placement
   (`checkIndexPlacements`, both formats), missing see-targets, unbalanced
   ranges, >3 levels. Docs: `docs/indexing.jmd` (live demo index on the page).
+  Fixtures: `features/indexing/` (`at-forms` covers the `@` spellings + the
+  nested-bracket display form; `marks` is the legacy spelling, so it now doubles
+  as the alias regression).
 - **Contents & matter** (parse hook in `index.js`): `{{TOC}}`/`{{LOF}}`/`{{LOT}}`/
   `{{LOL}}` (LaTeX `\tableofcontents`/`\listoffigures`/`\listoftables`/
   `\listoflistings` — the last requires minted, which the marker pulls in even

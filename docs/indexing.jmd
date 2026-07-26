@@ -23,12 +23,12 @@ right in the page.
 
 ## Marking a term
 
-Write `:index[entry]` next to the word it indexes. The mark is *invisible* in
+Write `@index[entry]` next to the word it indexes. The mark is *invisible* in
 both outputs — it only records "this spot discusses *entry*":
 
 ```
-The halting problem:index[halting problem] was posed by
-Turing:index[Turing, Alan] in 1936.
+The halting problem@index[halting problem] was posed by
+Turing@index[Turing, Alan] in 1936.
 ```
 
 Because the mark is invisible, you still write the word itself in the prose;
@@ -42,16 +42,16 @@ verbatim — so everything `makeindex` can do, JMarkdown can do:
 
 | You write | Meaning |
 |---|---|
-| `:index[recursion]` | plain entry |
-| `:index[recursion!tail calls]` | subentry — `!` nests, up to three levels |
-| `:index[alpha@$\alpha$-conversion]` | sort key `@` display form: sorted as "alpha", shown as *α-conversion* |
-| `:index[lambda calculus\|see{$\alpha$-conversion}]` | cross-reference — no locator, just "*see* α-conversion" |
-| `:index[fixed points\|seealso{recursion}]` | "*see also*", appended after any locators |
-| `:index[induction\|(]` … `:index[induction\|)]` | a locator *range* — open at the first mark, close at the second |
-| `:index[currying\|textbf]` | emphasized locator, conventionally "the main discussion" (`textbf`, `textit`, `emph`) |
-| `:index[Oh"!]` | `"` quotes a literal `!`, `@`, `\|`, or `"` |
+| `@index[recursion]` | plain entry |
+| `@index[recursion!tail calls]` | subentry — `!` nests, up to three levels |
+| `@index[alpha@$\alpha$-conversion]` | sort key `@` display form: sorted as "alpha", shown as *α-conversion* |
+| `@index[lambda calculus\|see{$\alpha$-conversion}]` | cross-reference — no locator, just "*see* α-conversion" |
+| `@index[fixed points\|seealso{recursion}]` | "*see also*", appended after any locators |
+| `@index[induction\|(]` … `@index[induction\|)]` | a locator *range* — open at the first mark, close at the second |
+| `@index[currying\|textbf]` | emphasized locator, conventionally "the main discussion" (`textbf`, `textit`, `emph`) |
+| `@index[Oh"!]` | `"` quotes a literal `!`, `@`, `\|`, or `"` |
 
-Entries merge by their text: every `:index[recursion]` in the document
+Entries merge by their text: every `@index[recursion]` in the document
 contributes a locator to the single *recursion* entry. (A sort-key form is
 its own entry — `alpha@$\alpha$-conversion` and a bare `$\alpha$-conversion`
 would not merge — so pick one spelling and stick to it.)
@@ -61,17 +61,19 @@ and in HTML the generated index leaves `$…$` for MathJax.
 
 ## Printing the index
 
-Put `::Index` on a line of its own where the index should appear — by
-convention, at the very end:
+Put `@index` on a line of its own where the index should appear — by
+convention, at the very end. The **bracket** is what tells the two apart:
+`@index[…]` *marks* a term wherever it appears in your prose, while a bare
+`@index` at the start of a line *places* the finished index.
 
 ```
-::Index
+@index
 ```
 
 It takes optional attributes:
 
 ```
-::Index{title="Subject Index" intoc}
+@index{title="Subject Index" intoc}
 ```
 
 - `title` — the heading. Defaults to "Index".
@@ -82,8 +84,13 @@ emits `\printindex`. If you compile with `latexmk`, the `makeindex` runs
 happen automatically; compiling by hand, run `makeindex` on the `.idx` file
 between two LaTeX passes, as usual.
 
-If you mark terms but never place an `::Index`, the marks are silently
+If you mark terms but never place an `@index`, the marks are silently
 useless in both editions — so JMarkdown's end-of-build summary warns you.
+
+> [!NOTE]
+> Earlier versions spelled these `:index[entry]` and `::Index`. Both still
+> work exactly as before, so existing documents keep building, but they are
+> no longer documented. New documents should use `@index`.
 
 ## What the web edition shows instead of page numbers
 
@@ -108,11 +115,11 @@ author index, say. Give a mark a `name` attribute and give each named index
 its own placement:
 
 ```
-Alonzo Church:index[Church, Alonzo]{name=authors} proved this.
+Alonzo Church@index[Church, Alonzo]{name=authors} proved this.
 
-::Index{title="Subject Index"}
+@index{title="Subject Index"}
 
-::Index{name=authors title="Author Index"}
+@index{name=authors title="Author Index"}
 ```
 
 Unnamed marks go to the default index; named marks go to theirs. In LaTeX
@@ -128,10 +135,10 @@ entries, unbalanced ranges, a `see` target that doesn't exist).
 
 ## A live example
 
-The marks scattered through this section:index[live example] demonstrate the
-machinery:index[machinery!demonstration] — including a Greek
-entry:index[alpha@$\alpha$-conversion], a bold locator:index[live example|textbf],
-and a cross-reference:index[demo|see{live example}]. Here is the index they
+The marks scattered through this section@index[live example] demonstrate the
+machinery@index[machinery!demonstration] — including a Greek
+entry@index[alpha@$\alpha$-conversion], a bold locator@index[live example|textbf],
+and a cross-reference@index[demo|see{live example}]. Here is the index they
 produce:
 
-::Index{title="Index of this page"}
+@index{title="Index of this page"}

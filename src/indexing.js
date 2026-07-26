@@ -1,11 +1,11 @@
 /*
-	Back-of-book index — `:index[entry]` marks + `::Index` placement.
+	Back-of-book index — `@index[entry]` marks + `@index` placement.
 
 	The architecture is the standard JMarkdown split: LaTeX emits native
 	commands and lets the engine do the work; HTML resolves everything itself
 	in the post-processor.
 
-	  - `:index[entry]` / `:index[entry]{name=authors}` — an invisible mark.
+	  - `@index[entry]` / `@index[entry]{name=authors}` — an invisible mark.
 	    The bracket content is passed to LaTeX *verbatim* as `\index{entry}`
 	    (`\index[authors]{entry}` for a named index), so the FULL makeindex
 	    grammar is supported by construction:
@@ -22,10 +22,12 @@
 	    pattern as the \cite tokenizer in citations.js), so $math$, \commands,
 	    and the grammar characters survive marked untouched.
 
-	  - `::Index` / `::Index{name=authors title="Author Index" intoc}` — where
-	    an index prints. A dedicated block extension (the ::Bibliography
+	  - `@index` / `@index{name=authors title="Author Index" intoc}` — where
+	    an index prints. A dedicated block extension (the @bibliography
 	    pattern: the directive framework needs trailing content, so a bare
-	    `::Index` would not tokenize). LaTeX: requires imakeidx (which must
+	    marker would not tokenize). The mark and the placement share the name
+	    `@index` and are told apart by the bracket: `@index[…]` marks, bare
+	    `@index` at a line start places. LaTeX: requires imakeidx (which must
 	    precede hyperref — requirePackage's insertion order guarantees that,
 	    hyperref being forced last), registers `\makeindex[…]` in the preamble
 	    and emits `\printindex[…]`; the author's latexmk run drives makeindex
@@ -39,7 +41,7 @@
 	numbers; |textbf / |textit style the locator; see/seealso render as
 	italic cross-references, hyperlinked to their target entry when it exists.
 
-	Build warnings (warnings.js): marks with no matching ::Index placement
+	Build warnings (warnings.js): marks with no matching @index placement
 	(checked after the parse, both formats — call checkIndexPlacements() from
 	processFile), a see/seealso target that doesn't exist, an unbalanced
 	range, and entries deeper than makeindex's 3-level limit.
@@ -68,7 +70,7 @@ function escapeText(s) {
 // processFile (like resetWarnings); checked after the parse pass.
 // ---------------------------------------------------------------------------
 let markCounts = new Map();      // index name ('' = default) -> mark count
-let placedNames = new Set();     // index names with a ::Index placement
+let placedNames = new Set();     // index names with an @index placement
 
 export function resetIndexing() {
 	markCounts = new Map();
@@ -81,29 +83,47 @@ export function resetIndexing() {
 export function checkIndexPlacements() {
 	for (const [name, count] of markCounts) {
 		if (placedNames.has(name)) continue;
-		const where = name ? `::Index{name=${name}}` : '::Index';
+		const where = name ? `@index{name=${name}}` : '@index';
 		const which = name ? ` for index '${name}'` : '';
 		addWarning(`${count} index mark${count === 1 ? '' : 's'}${which} but no ${where} placement — the index will not appear`);
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Inline extension: :index[entry]{attrs}
+// Inline extension: @index[entry]{attrs}  (legacy alias :index[…])
 // ---------------------------------------------------------------------------
+
+// The modern `@index[…]` spelling and the legacy `:index[…]` one. Longest-first
+// is irrelevant here (neither is a prefix of the other), but keep them in one
+// place so start() and tokenizer() can never disagree about what they accept.
+const MARK_PREFIXES = ['@index[', ':index['];
 
 export const indexMark = {
 	name: 'indexMark',
 	level: 'inline',
 	start(src) {
-		const i = src.indexOf(':index[');
-		return i < 0 ? undefined : i;
+		let best = -1;
+		for (const p of MARK_PREFIXES) {
+			const i = src.indexOf(p);
+			if (i >= 0 && (best < 0 || i < best)) best = i;
+		}
+		return best < 0 ? undefined : best;
 	},
 	tokenizer(src) {
-		if (!src.startsWith(':index[')) return undefined;
+		// NOTE: indexMark deliberately does NOT apply atInline's "an @ glued to a
+		// word char is never a directive" rule. A mark is attached to the word it
+		// indexes — `recursion@index[recursion]` — so gluing is the primary idiom
+		// here, exactly as it was for `:index[…]`. The rule exists to protect
+		// email addresses from the GENERIC `@name` tokenizer; the risk does not
+		// carry over, because this tokenizer only ever claims the literal 7-char
+		// prefix `@index[` (and marked claims code spans before text is cut, so
+		// documentation examples are safe).
+		const prefix = MARK_PREFIXES.find(p => src.startsWith(p));
+		if (!prefix) return undefined;
 		// Balanced-bracket scan so display forms like [$f[x]$] survive; an
 		// entry is single-line (a newline before the close means this isn't
 		// a mark, so the text is left for other tokenizers).
-		const open = ':index['.length;
+		const open = prefix.length;
 		let depth = 1;
 		let i = open;
 		for (; i < src.length; i++) {
@@ -143,7 +163,7 @@ export const indexMark = {
 };
 
 // ---------------------------------------------------------------------------
-// Block extension: ::Index{name=… title="…" intoc}
+// Block extension: @index{name=… title="…" intoc}  (legacy alias ::Index)
 // ---------------------------------------------------------------------------
 
 function parseIndexAttrs(raw) {
@@ -168,12 +188,18 @@ function parseIndexAttrs(raw) {
 export const indexPlacement = {
 	name: 'indexPlacement',
 	level: 'block',
+	// `@index` and `@index[…]` differ only by the bracket, so the placement must
+	// refuse the bracket form or it would swallow an index MARK that happens to
+	// begin a line. The tokenizer already can't match one (`[` satisfies neither
+	// the optional `{attrs}` nor the line end), so the (?!\[) in start() is what
+	// keeps the two in step — a block start() that reports a position its own
+	// tokenizer can't claim shreds the paragraph (see CLAUDE.md).
 	start(src) {
-		const m = src.match(/(?:^|\n)::Index\b/);
+		const m = src.match(/(?:^|\n)(?:@index\b(?!\[)|::Index\b)/);
 		return m ? (m.index + (m[0].startsWith('\n') ? 1 : 0)) : undefined;
 	},
 	tokenizer(src) {
-		const match = /^::Index[ \t]*(\{[^}\n]*\})?[ \t]*(?:\n|$)/.exec(src);
+		const match = /^(?:@index|::Index)[ \t]*(\{[^}\n]*\})?[ \t]*(?:\n|$)/.exec(src);
 		if (!match) return undefined;
 		return { type: 'indexPlacement', raw: match[0], ...parseIndexAttrs(match[1]) };
 	},

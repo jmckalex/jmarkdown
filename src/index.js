@@ -450,14 +450,12 @@ registerExtensions([ inlineFunctions, blockFunctions ]);
 
 // Compile-time citation support. Registered late so the inline \cite-family
 // tokenizer is checked before the markdown inline rules (links, emphasis), and
-// so the ::Bibliography block extension wins over the generic `::` directive.
+// so the @bibliography block extension (and its ::Bibliography legacy alias)
+// wins over the generic `::` directive.
 registerExtensions([ citations, bibliography ]);
 
-// Back-of-book index (indexing.js): the inline :index[…] mark + the ::Index
-// placement block. Registered HERE — after the directive framework — so the
-// raw-claiming :index tokenizer beats any generic inline directive (marked
-// tries the last-registered extension first).
-registerExtensions([ indexMark, indexPlacement ]);
+// (Back-of-book index registration moved below, after the @name directives —
+// see the note there.)
 
 // Load extensions and directives from the configuration file(s).
 // This should happen before the metadata header is processed.
@@ -496,6 +494,19 @@ marked.use({ extensions: [beginEnd] });
 // both instances so markdown re-parsed inside script blocks supports them too.
 marked.use({ extensions: [atBlock, atInline] });
 marked_copy.use({ extensions: [atBlock, atInline] });
+
+// Back-of-book index (indexing.js): the inline @index[…] mark + the @index
+// placement block (legacy :index[…] / ::Index still accepted).
+//
+// Registered HERE — AFTER atInline — and the ordering is load-bearing: marked
+// tries the last-registered extension first, and atInline claims ANY bracket
+// form `@name[…]`, so registered earlier the generic tokenizer would win and
+// `@index[Turing|see{…}]` would render as a visible <span class="index">
+// instead of an invisible mark. indexMark has to win because it claims its
+// bracket RAW with a balanced scan — atInline's `[^\]]*` would truncate a
+// display form like [$f[x]$] at the first ] and mangle the makeindex grammar.
+// (The same reason it already had to sit after the `:` directive framework.)
+registerExtensions([ indexMark, indexPlacement ]);
 
 // Float environments (@begin(figure) …) register into the block-environment
 // registry at import time; the @begin extension consults it at render time.

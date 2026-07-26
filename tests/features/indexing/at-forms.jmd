@@ -1,0 +1,25 @@
+Headings: numeric
+------------------------------------
+
+# Computability
+
+The modern spelling of the mark@index[Turing, Alan] and of a
+subentry@index[computability!decidability], plus a sorted display form
+whose entry contains brackets@index[alpha@$f[x]$] — the raw balanced
+scan has to survive the generic `@name[…]` directive tokenizer.
+
+A named index@index[Church, Alonzo]{name=authors} still works, and the
+legacy spelling:index[legacy mark] is still accepted.
+
+## Disambiguation
+
+Marks are glued to the word they index, which is why this is the one `@`
+form that may follow a word character directly.
+
+A bare `@index` is the placement, not a mark: only the bracket tells them
+apart. Both forms are shown literally here — `@index[entry]` and
+`@index{title="…"}` — inside code spans, so neither is claimed.
+
+@index{title="Subject Index" intoc}
+
+@index{name=authors title="Author Index"}

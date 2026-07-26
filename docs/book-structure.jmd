@@ -238,7 +238,7 @@ Document class: book
 
 # Introduction
 
-Body text of the first chapter, marking a term:index[body text] for the index.
+Body text of the first chapter, marking a term@index[body text] for the index.
 
 {{appendix}}
 
@@ -248,7 +248,7 @@ More material here.
 
 {{backmatter}}
 
-::Index
+@index
 ```
 
 Run through `--to latex`, this assembles a full, compilable document — the
@@ -295,7 +295,7 @@ More material here.
 
 Notice that `#` became `\chapter` (because the class is `book`), `{{TOC}}` sits
 inside the front matter as `\tableofcontents`, and the appendix chapter follows
-`\appendix` so the class will letter it. The single `::Index` pulled in the
+`\appendix` so the class will letter it. The single `@index` pulled in the
 `imakeidx` package and its `\makeindex` declaration (placed before `hyperref`,
 as that package requires) and became `\printindex` in the back matter. That
 `.tex` compiles to a properly structured PDF with no further hand-editing —
@@ -531,7 +531,7 @@ numbering to letters.
 | `{{LOF}}` | `\listoffigures` | generated `<nav class="list-of-figures">` |
 | `{{LOT}}` | `\listoftables` | generated `<nav class="list-of-tables">` |
 | `{{LOL}}` | `\listoflistings` (pulls in minted) | generated `<nav class="list-of-listings">` |
-| `::Index` | `\printindex` (pulls in imakeidx + `\makeindex`) | generated `<nav class="index">` — see [Back-of-book index](indexing.html) |
+| `@index` | `\printindex` (pulls in imakeidx + `\makeindex`) | generated `<nav class="index">` — see [Back-of-book index](indexing.html) |
 | `{{frontmatter}}` | `\frontmatter` | stripped (book and report only in LaTeX) |
 | `{{mainmatter}}` | `\mainmatter` | stripped (book and report only in LaTeX) |
 | `{{appendix}}` | `\appendix` | stripped (lettering TODO in HTML) |
@@ -568,7 +568,7 @@ numbering to letters.
   `:Cref` commands, and how forward references resolve.
 - [Floats](floats.html) — the `@begin(figure|table|listing)` environments that
   `{{LOF}}` and `{{LOT}}` collect.
-- [Back-of-book index](indexing.html) — `:index[…]` marks and the `::Index`
+- [Back-of-book index](indexing.html) — `@index[…]` marks and the `@index`
   placement: the back-matter counterpart of the front-of-book lists above.
 - [Metadata header](metadata-header.html) — the header syntax, and keys like
   `Author` and `Headings: numeric`.
