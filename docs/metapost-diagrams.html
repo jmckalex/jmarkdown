@@ -1,0 +1,339 @@
+<h1 id="toc-metapost-diagrams-the-beginmetapost-environment">MetaPost diagrams (the <code>@begin(metapost)</code> environment)</h1>
+<p><a href="https://www.tug.org/metapost.html">MetaPost</a> is a small, elegant programming
+  language for producing precise vector graphics. A descendant of Knuth's Metafont,
+  it excels at exactly the figures a technical or scholarly document wants — geometric
+  constructions, labelled diagrams, function plots, anything you can describe with
+  coordinates, paths, and a little arithmetic. JMarkdown's <code>metapost</code> environment lets
+  you write that drawing code directly in your document. When the file is processed,
+  JMarkdown compiles the diagram with the real MetaPost engine and drops the result
+  into the page where the environment stood.</p>
+<p>Like the <a href="tikz-diagrams.html">TiKZ</a> directive, MetaPost is compiled at authoring
+  time rather than shipped to the reader's browser — so the same source serves the
+  flagship JMarkdown use case of one document producing both a polished web page and a
+  typeset book. On the <span class="intense">web</span> the diagram becomes a clean, resolution-independent
+  <span class="intense">SVG</span>; in <span class="intense">print</span> (<code>--to latex</code>) it becomes a <span class="intense">PDF</span> included with
+  <code>\includegraphics</code>. Unlike TiKZ (which emits nothing in LaTeX), MetaPost figures
+  appear in <strong>both</strong> outputs — see <a href="#latex-output">LaTeX output</a>.
+</p>
+<p>This page covers the environment, the toolchain it drives, the caching that keeps
+  re-processing cheap, the optional attributes that control sizing and embedding, and
+  how errors surface. It does <span class="intense">not</span> teach MetaPost itself — that is a language in its
+  own right, with an excellent <a href="https://www.tug.org/docs/metapost/mpman.pdf">manual</a>.
+  Everything inside the environment is MetaPost's; everything around it is JMarkdown's.</p>
+<h2 id="toc-prerequisites">Prerequisites</h2>
+<p>Like TiKZ and Mermaid-for-print, the <code>metapost</code> environment shells out to external
+  programs, so it works only on a machine that has them installed — both ship with
+  <span class="intense">TeX Live</span> and <span class="intense">MacTeX</span>, so if you have a TeX distribution you almost certainly
+  have them already:
+</p>
+<ul>
+  <li><span class="intense"><code>mpost</code></span>, the MetaPost compiler, used for the web SVG.</li>
+  <li><span class="intense"><code>mptopdf</code></span>, MetaPost's PDF converter, used for the LaTeX/print PDF.</li>
+</ul>
+<p>If a required program is missing, the environment reports an error in place of the
+  diagram (HTML) or drops it with a build warning (LaTeX) rather than failing the whole
+  build — see <a href="#when-compilation-fails">When compilation fails</a>. On a machine that has
+  them, nothing more is needed; you do not run MetaPost yourself.</p>
+<h2 id="toc-the-basics">The basics</h2>
+<p>A MetaPost diagram is a <a href="block-environments.html">block environment</a>: open it with
+  <code>@begin(metapost)</code>, write the drawing code as the body, then close it with
+  <code>@end(metapost)</code>. The body is taken <span class="intense">verbatim</span> — the Markdown lexer never touches
+  it, so <code>;</code>, <code>:=</code>, <code>--</code>, <code>*</code>, <code>#</code>, and every other character MetaPost needs survive
+  intact.
+</p>
+<pre><code class="hljs">@begin(metapost)
+draw (0,0)--(100,0)--(50,80)--cycle withpen pencircle scaled 1.5;
+fill fullcircle scaled 24 shifted (50,30) withcolor (0.85,0.2,0.2);
+@end(metapost)
+</code></pre>
+<p>The live demo below shows that same source on the left and the compiled diagram on
+  the right, so the two can never drift apart:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(metapost){embed=true}
+draw (0,0)--(100,0)--(50,80)--cycle withpen pencircle scaled 1.5;
+fill fullcircle scaled 24 shifted (50,30) withcolor (0.85,0.2,0.2);
+@end(metapost)</code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIj8+CjwhLS0gQ3JlYXRlZCBieSBNZXRhUG9zdCAyLjExIG9uIDIwMjYuMDcuMjg6MTYxMCAtLT4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSIxMDEuNTAwMDAwIiBoZWlnaHQ9IjgxLjUwMDAwMCIgdmlld0JveD0iMCAwIDEwMS41MDAwMDAgODEuNTAwMDAwIj4KPCEtLSBPcmlnaW5hbCBCb3VuZGluZ0JveDogLTAuNzUwMDAwIC0wLjc1MDAwMCAxMDAuNzUwMDAwIDgwLjc1MDAwMCAtLT4KICA8cGF0aCBkPSJNMC43NTAwMDAgODAuNzUwMDAwTDEwMC43NTAwMDAgODAuNzUwMDAwTDUwLjc1MDAwMCAwLjc1MDAwMFoiIHN0eWxlPSJzdHJva2U6cmdiKDAuMDAwMDAwJSwwLjAwMDAwMCUsMC4wMDAwMDAlKTsgc3Ryb2tlLXdpZHRoOiAxLjUwMDAwMDtzdHJva2UtbGluZWNhcDogcm91bmQ7c3Ryb2tlLWxpbmVqb2luOiByb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDogMTAuMDAwMDAwO2ZpbGw6IG5vbmU7Ij48L3BhdGg+CiAgPHBhdGggZD0iTTYyLjc1MDAwMCA1MC43NTAwMDBDNjIuNzUwMDAwIDQ3LjU2NzI2MSw2MS40ODU0NzQgNDQuNTE1MjU5LDU5LjIzNTEwNyA0Mi4yNjQ4OTNDNTYuOTg0NzQxIDQwLjAxNDUyNiw1My45MzI3MzkgMzguNzUwMDAwLDUwLjc1MDAwMCAzOC43NTAwMDBDNDcuNTY3MjYxIDM4Ljc1MDAwMCw0NC41MTUyNTkgNDAuMDE0NTI2LDQyLjI2NDg5MyA0Mi4yNjQ4OTNDNDAuMDE0NTI2IDQ0LjUxNTI1OSwzOC43NTAwMDAgNDcuNTY3MjYxLDM4Ljc1MDAwMCA1MC43NTAwMDBDMzguNzUwMDAwIDUzLjkzMjczOSw0MC4wMTQ1MjYgNTYuOTg0NzQxLDQyLjI2NDg5MyA1OS4yMzUxMDdDNDQuNTE1MjU5IDYxLjQ4NTQ3NCw0Ny41NjcyNjEgNjIuNzUwMDAwLDUwLjc1MDAwMCA2Mi43NTAwMDBDNTMuOTMyNzM5IDYyLjc1MDAwMCw1Ni45ODQ3NDEgNjEuNDg1NDc0LDU5LjIzNTEwNyA1OS4yMzUxMDdDNjEuNDg1NDc0IDU2Ljk4NDc0MSw2Mi43NTAwMDAgNTMuOTMyNzM5LDYyLjc1MDAwMCA1MC43NTAwMDBaIiBzdHlsZT0iZmlsbDogcmdiKDg1LjAwMDYxMCUsMTkuOTk5Njk1JSwxOS45OTk2OTUlKTtzdHJva2U6IG5vbmU7Ij48L3BhdGg+Cjwvc3ZnPgo=">
+  </div>
+</div>
+<p>Note what you did <strong>not</strong> write. You did not open a <code>beginfig</code>, declare an <code>end</code>, or
+  set up a figure — the environment supplies that scaffolding for you (see
+  <a href="#what-gets-compiled">What gets compiled</a>); you write only the drawing commands.
+</p>
+<h3 id="toc-demoing-a-diagram-needs-a-wrapper">Demoing a diagram needs a wrapper</h3>
+<p>Every example on this page shows a <code>metapost</code> block <strong>inside</strong> a <code>markdown-demo</code>
+  container so you can see source and output together. In your own documents you will
+  normally write a plain <code>@begin(metapost) … @end(metapost)</code> block on its own, with no
+  surrounding demo.</p>
+<h2 id="toc-what-gets-compiled">What gets compiled</h2>
+<p>Around your body, JMarkdown assembles a minimal, complete MetaPost program before
+  handing it to the engine:</p>
+<ul>
+  <li><span class="intense">The body is wrapped in a figure when needed.</span> If your body does not already
+    contain a <code>beginfig</code>, JMarkdown wraps it in <code>beginfig(1); … endfig;</code> for you —
+    which is why the example above could start straight in with <code>draw</code>. If you <strong>do</strong>
+    write your own <code>beginfig(n); … endfig;</code>, that is honoured untouched, so you keep
+    full control (and can define several figures — see
+    <a href="#multiple-figures">Multiple figures</a>).
+  </li>
+  <li><span class="intense">A trailing <code>end.</code> is added</span> if the program does not already finish with one, so
+    MetaPost always sees a well-formed program.</li>
+</ul>
+<p>Because MetaPost is a full language, the body can do real work — loops, arithmetic,
+  variables, definitions. This programmability is its great strength:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(metapost){embed=true}
+numeric n; n = 12;
+for i=0 upto n-1:
+  draw (0,0)--(40,0) rotated (360i/n) withpen pencircle scaled 1
+<span class="hljs-code">       withcolor (i/n, 0.3, 1-i/n);
+endfor
+draw fullcircle scaled 80 dashed evenly;
+@end(metapost)</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIj8+CjwhLS0gQ3JlYXRlZCBieSBNZXRhUG9zdCAyLjExIG9uIDIwMjYuMDcuMjg6MTYxMCAtLT4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSI4MS4wMDAwMDAiIGhlaWdodD0iODEuMDAwMDAwIiB2aWV3Qm94PSIwIDAgODEuMDAwMDAwIDgxLjAwMDAwMCI+CjwhLS0gT3JpZ2luYWwgQm91bmRpbmdCb3g6IC00MC41MDAwMDAgLTQwLjUwMDAwMCA0MC41MDAwMDAgNDAuNTAwMDAwIC0tPgogIDxwYXRoIGQ9Ik00MC41MDAwMDAgNDAuNTAwMDAwTDgwLjUwMDAwMCA0MC41MDAwMDAiIHN0eWxlPSJzdHJva2U6cmdiKDAuMDAwMDAwJSwzMC4wMDAzMDUlLDEwMC4wMDAwMDAlKTsgc3Ryb2tlLXdpZHRoOiAxLjAwMDAwMDtzdHJva2UtbGluZWNhcDogcm91bmQ7c3Ryb2tlLWxpbmVqb2luOiByb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDogMTAuMDAwMDAwO2ZpbGw6IG5vbmU7Ij48L3BhdGg+CiAgPHBhdGggZD0iTTQwLjUwMDAwMCA0MC41MDAwMDBMNzUuMTQxMTEzIDIwLjUwMDAwMCIgc3R5bGU9InN0cm9rZTpyZ2IoOC4zMzI4MjUlLDMwLjAwMDMwNSUsOTEuNjY3MTc1JSk7IHN0cm9rZS13aWR0aDogMS4wMDAwMDA7c3Ryb2tlLWxpbmVjYXA6IHJvdW5kO3N0cm9rZS1saW5lam9pbjogcm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6IDEwLjAwMDAwMDtmaWxsOiBub25lOyI+PC9wYXRoPgogIDxwYXRoIGQ9Ik00MC41MDAwMDAgNDAuNTAwMDAwTDYwLjUwMDAwMCA1Ljg1ODg4NyIgc3R5bGU9InN0cm9rZTpyZ2IoMTYuNjY3MTc1JSwzMC4wMDAzMDUlLDgzLjMzMjgyNSUpOyBzdHJva2Utd2lkdGg6IDEuMDAwMDAwO3N0cm9rZS1saW5lY2FwOiByb3VuZDtzdHJva2UtbGluZWpvaW46IHJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OiAxMC4wMDAwMDA7ZmlsbDogbm9uZTsiPjwvcGF0aD4KICA8cGF0aCBkPSJNNDAuNTAwMDAwIDQwLjUwMDAwMEw0MC41MDAwMDAgMC41MDAwMDAiIHN0eWxlPSJzdHJva2U6cmdiKDI1LjAwMDAwMCUsMzAuMDAwMzA1JSw3NS4wMDAwMDAlKTsgc3Ryb2tlLXdpZHRoOiAxLjAwMDAwMDtzdHJva2UtbGluZWNhcDogcm91bmQ7c3Ryb2tlLWxpbmVqb2luOiByb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDogMTAuMDAwMDAwO2ZpbGw6IG5vbmU7Ij48L3BhdGg+CiAgPHBhdGggZD0iTTQwLjUwMDAwMCA0MC41MDAwMDBMMjAuNTAwMDAwIDUuODU4ODg3IiBzdHlsZT0ic3Ryb2tlOnJnYigzMy4zMzI4MjUlLDMwLjAwMDMwNSUsNjYuNjY3MTc1JSk7IHN0cm9rZS13aWR0aDogMS4wMDAwMDA7c3Ryb2tlLWxpbmVjYXA6IHJvdW5kO3N0cm9rZS1saW5lam9pbjogcm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6IDEwLjAwMDAwMDtmaWxsOiBub25lOyI+PC9wYXRoPgogIDxwYXRoIGQ9Ik00MC41MDAwMDAgNDAuNTAwMDAwTDUuODU4ODg3IDIwLjUwMDAwMCIgc3R5bGU9InN0cm9rZTpyZ2IoNDEuNjY3MTc1JSwzMC4wMDAzMDUlLDU4LjMzMjgyNSUpOyBzdHJva2Utd2lkdGg6IDEuMDAwMDAwO3N0cm9rZS1saW5lY2FwOiByb3VuZDtzdHJva2UtbGluZWpvaW46IHJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OiAxMC4wMDAwMDA7ZmlsbDogbm9uZTsiPjwvcGF0aD4KICA8cGF0aCBkPSJNNDAuNTAwMDAwIDQwLjUwMDAwMEwwLjUwMDAwMCA0MC41MDAwMDAiIHN0eWxlPSJzdHJva2U6cmdiKDUwLjAwMDAwMCUsMzAuMDAwMzA1JSw1MC4wMDAwMDAlKTsgc3Ryb2tlLXdpZHRoOiAxLjAwMDAwMDtzdHJva2UtbGluZWNhcDogcm91bmQ7c3Ryb2tlLWxpbmVqb2luOiByb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDogMTAuMDAwMDAwO2ZpbGw6IG5vbmU7Ij48L3BhdGg+CiAgPHBhdGggZD0iTTQwLjUwMDAwMCA0MC41MDAwMDBMNS44NTg4ODcgNjAuNTAwMDAwIiBzdHlsZT0ic3Ryb2tlOnJnYig1OC4zMzI4MjUlLDMwLjAwMDMwNSUsNDEuNjY3MTc1JSk7IHN0cm9rZS13aWR0aDogMS4wMDAwMDA7c3Ryb2tlLWxpbmVjYXA6IHJvdW5kO3N0cm9rZS1saW5lam9pbjogcm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6IDEwLjAwMDAwMDtmaWxsOiBub25lOyI+PC9wYXRoPgogIDxwYXRoIGQ9Ik00MC41MDAwMDAgNDAuNTAwMDAwTDIwLjUwMDAwMCA3NS4xNDExMTMiIHN0eWxlPSJzdHJva2U6cmdiKDY2LjY2NzE3NSUsMzAuMDAwMzA1JSwzMy4zMzI4MjUlKTsgc3Ryb2tlLXdpZHRoOiAxLjAwMDAwMDtzdHJva2UtbGluZWNhcDogcm91bmQ7c3Ryb2tlLWxpbmVqb2luOiByb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDogMTAuMDAwMDAwO2ZpbGw6IG5vbmU7Ij48L3BhdGg+CiAgPHBhdGggZD0iTTQwLjUwMDAwMCA0MC41MDAwMDBMNDAuNTAwMDAwIDgwLjUwMDAwMCIgc3R5bGU9InN0cm9rZTpyZ2IoNzUuMDAwMDAwJSwzMC4wMDAzMDUlLDI1LjAwMDAwMCUpOyBzdHJva2Utd2lkdGg6IDEuMDAwMDAwO3N0cm9rZS1saW5lY2FwOiByb3VuZDtzdHJva2UtbGluZWpvaW46IHJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OiAxMC4wMDAwMDA7ZmlsbDogbm9uZTsiPjwvcGF0aD4KICA8cGF0aCBkPSJNNDAuNTAwMDAwIDQwLjUwMDAwMEw2MC41MDAwMDAgNzUuMTQxMTEzIiBzdHlsZT0ic3Ryb2tlOnJnYig4My4zMzI4MjUlLDMwLjAwMDMwNSUsMTYuNjY3MTc1JSk7IHN0cm9rZS13aWR0aDogMS4wMDAwMDA7c3Ryb2tlLWxpbmVjYXA6IHJvdW5kO3N0cm9rZS1saW5lam9pbjogcm91bmQ7c3Ryb2tlLW1pdGVybGltaXQ6IDEwLjAwMDAwMDtmaWxsOiBub25lOyI+PC9wYXRoPgogIDxwYXRoIGQ9Ik00MC41MDAwMDAgNDAuNTAwMDAwTDc1LjE0MTExMyA2MC41MDAwMDAiIHN0eWxlPSJzdHJva2U6cmdiKDkxLjY2NzE3NSUsMzAuMDAwMzA1JSw4LjMzMjgyNSUpOyBzdHJva2Utd2lkdGg6IDEuMDAwMDAwO3N0cm9rZS1saW5lY2FwOiByb3VuZDtzdHJva2UtbGluZWpvaW46IHJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OiAxMC4wMDAwMDA7ZmlsbDogbm9uZTsiPjwvcGF0aD4KICA8cGF0aCBkPSJNODAuNTAwMDAwIDQwLjUwMDAwMEM4MC41MDAwMDAgMjkuODkwODY5LDc2LjI4NDkxMiAxOS43MTc1MjksNjguNzgzNjkxIDEyLjIxNjMwOUM2MS4yODI0NzEgNC43MTUwODgsNTEuMTA5MTMxIDAuNTAwMDAwLDQwLjUwMDAwMCAwLjUwMDAwMEMyOS44OTA4NjkgMC41MDAwMDAsMTkuNzE3NTI5IDQuNzE1MDg4LDEyLjIxNjMwOSAxMi4yMTYzMDlDNC43MTUwODggMTkuNzE3NTI5LDAuNTAwMDAwIDI5Ljg5MDg2OSwwLjUwMDAwMCA0MC41MDAwMDBDMC41MDAwMDAgNTEuMTA5MTMxLDQuNzE1MDg4IDYxLjI4MjQ3MSwxMi4yMTYzMDkgNjguNzgzNjkxQzE5LjcxNzUyOSA3Ni4yODQ5MTIsMjkuODkwODY5IDgwLjUwMDAwMCw0MC41MDAwMDAgODAuNTAwMDAwQzUxLjEwOTEzMSA4MC41MDAwMDAsNjEuMjgyNDcxIDc2LjI4NDkxMiw2OC43ODM2OTEgNjguNzgzNjkxQzc2LjI4NDkxMiA2MS4yODI0NzEsODAuNTAwMDAwIDUxLjEwOTEzMSw4MC41MDAwMDAgNDAuNTAwMDAwWiIgc3R5bGU9InN0cm9rZTpyZ2IoMC4wMDAwMDAlLDAuMDAwMDAwJSwwLjAwMDAwMCUpOyBzdHJva2Utd2lkdGg6IDAuNTAwMDAwO3N0cm9rZS1saW5lY2FwOiByb3VuZDtzdHJva2UtZGFzaGFycmF5OiAzLjAwMDAwMCAzLjAwMDAwMCA7c3Ryb2tlLWxpbmVqb2luOiByb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDogMTAuMDAwMDAwO2ZpbGw6IG5vbmU7Ij48L3BhdGg+Cjwvc3ZnPgo=">
+  </div>
+</div>
+<p>Labels come in two forms, and the difference matters. A <span class="intense">plain string</span> —
+  <code>"origin"</code> — is set <strong>literally</strong> in MetaPost's default font, so it is right for
+  ordinary words but shows mathematics verbatim, dollar signs and all. To <strong>typeset</strong>
+  mathematics (or any TeX), wrap the snippet in <code>btex … etex</code>: MetaPost hands it to TeX
+  during compilation and embeds the typeset result in the figure. Note that <code>btex … etex</code>
+  uses <span class="intense">plain TeX</span>, so plain-TeX math such as <code>$P_1$</code> or <code>$x^2+y^2$</code> works out of the
+  box; LaTeX-only constructs (e.g. <code>\frac</code>) would need a <code>verbatimtex %&amp;latex … etex</code>
+  preamble.
+</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">@begin(metapost){embed=true}
+z0 = (0,0); z1 = (80,0); z2 = (80,50); z3 = (0,50);
+draw z0--z1--z2--z3--cycle;
+label.bot("origin", z0);               % a plain string — literal text
+label.top(btex $P<span class="hljs-emphasis">_1$ etex, z2);        % btex … etex — typeset by TeX
+dotlabel.rt(btex $x^2 + y^2$ etex, (40,25));
+@end(metapost)</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIj8+CjwhLS0gQ3JlYXRlZCBieSBNZXRhUG9zdCAyLjExIG9uIDIwMjYuMDcuMjg6MTYyNCAtLT4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHdpZHRoPSI5Ny44OTk5MzMiIGhlaWdodD0iNzIuODkzMDM2IiB2aWV3Qm94PSIwIDAgOTcuODk5OTMzIDcyLjg5MzAzNiI+CjwhLS0gT3JpZ2luYWwgQm91bmRpbmdCb3g6IC0xMi40NjcxOTQgLTExLjU5MDgyMCA4NS40MzI3MzkgNjEuMzAyMjE2IC0tPgogIDxwYXRoIGQ9Ik0xMi40NjcxOTQgNjEuMzAyMjE2TDkyLjQ2NzE5NCA2MS4zMDIyMTZMOTIuNDY3MTk0IDExLjMwMjIxNkwxMi40NjcxOTQgMTEuMzAyMjE2WiIgc3R5bGU9InN0cm9rZTpyZ2IoMC4wMDAwMDAlLDAuMDAwMDAwJSwwLjAwMDAwMCUpOyBzdHJva2Utd2lkdGg6IDAuNTAwMDAwO3N0cm9rZS1saW5lY2FwOiByb3VuZDtzdHJva2UtbGluZWpvaW46IHJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OiAxMC4wMDAwMDA7ZmlsbDogbm9uZTsiPjwvcGF0aD4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjAwMDAwMCA3MC45NTU4NTYpIiBzdHlsZT0iZmlsbDogcmdiKDAuMDAwMDAwJSwwLjAwMDAwMCUsMC4wMDAwMDAlKTsiPgogICAgPHRleHQgZm9udC1zaXplPSI5Ljk2MjY0NiI+b3JpZ2luPC90ZXh0PgogIDwvZz4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4Ny4wMzQ0MzkgNi44MDc4MDApIiBzdHlsZT0iZmlsbDogcmdiKDAuMDAwMDAwJSwwLjAwMDAwMCUsMC4wMDAwMDAlKTsiPgogICAgPHRleHQgZm9udC1zaXplPSI5Ljk2MjY0NiI+UDwvdGV4dD4KICA8L2c+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoOTMuNDMwNTQyIDguMzAyMjAwKSIgc3R5bGU9ImZpbGw6IHJnYigwLjAwMDAwMCUsMC4wMDAwMDAlLDAuMDAwMDAwJSk7Ij4KICAgIDx0ZXh0IGZvbnQtc2l6ZT0iNi45NzM4NDYiPjE8L3RleHQ+CiAgPC9nPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDU1LjQ2NzE5NCAzOS4zODg0MjgpIiBzdHlsZT0iZmlsbDogcmdiKDAuMDAwMDAwJSwwLjAwMDAwMCUsMC4wMDAwMDAlKTsiPgogICAgPHRleHQgZm9udC1zaXplPSI5Ljk2MjY0NiI+eDwvdGV4dD4KICA8L2c+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNjEuMTYxMDg3IDM1Ljc3MzAyNikiIHN0eWxlPSJmaWxsOiByZ2IoMC4wMDAwMDAlLDAuMDAwMDAwJSwwLjAwMDAwMCUpOyI+CiAgICA8dGV4dCBmb250LXNpemU9IjYuOTczODQ2Ij4yPC90ZXh0PgogIDwvZz4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2Ny44NDQzOTEgMzkuMzg4NDI4KSIgc3R5bGU9ImZpbGw6IHJnYigwLjAwMDAwMCUsMC4wMDAwMDAlLDAuMDAwMDAwJSk7Ij4KICAgIDx0ZXh0IGZvbnQtc2l6ZT0iOS45NjI2NDYiPis8L3RleHQ+CiAgPC9nPgogIDxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDc3LjgwNjk5MiAzOS4zODg0MjgpIiBzdHlsZT0iZmlsbDogcmdiKDAuMDAwMDAwJSwwLjAwMDAwMCUsMC4wMDAwMDAlKTsiPgogICAgPHRleHQgZm9udC1zaXplPSI5Ljk2MjY0NiI+eTwvdGV4dD4KICA8L2c+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoODMuMDQ4ODg5IDM1Ljc3MzAyNikiIHN0eWxlPSJmaWxsOiByZ2IoMC4wMDAwMDAlLDAuMDAwMDAwJSwwLjAwMDAwMCUpOyI+CiAgICA8dGV4dCBmb250LXNpemU9IjYuOTczODQ2Ij4yPC90ZXh0PgogIDwvZz4KICA8cGF0aCBkPSJNNTIuNDY3MTk0IDM2LjMwMjIxNmwwIDAiIHN0eWxlPSJzdHJva2U6cmdiKDAuMDAwMDAwJSwwLjAwMDAwMCUsMC4wMDAwMDAlKTsgc3Ryb2tlLXdpZHRoOiAzLjAwMDAwMDtzdHJva2UtbGluZWNhcDogcm91bmQ7c3Ryb2tlLWxpbmVqb2luOiByb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDogMTAuMDAwMDAwO2ZpbGw6IG5vbmU7Ij48L3BhdGg+Cjwvc3ZnPgo=">
+  </div>
+</div>
+<h2 id="toc-how-the-diagram-becomes-an-image">How the diagram becomes an image</h2>
+<p>When JMarkdown meets a <code>metapost</code> block, it runs a small, deterministic pipeline. The
+  working directory for all of it is a folder named <code>MetaPost/</code>, created automatically
+  <span class="intense">beside the Markdown file being processed</span> (not the directory you ran the command
+  from). The steps, for the <span class="intense">web/SVG</span> path, are:
+</p>
+<ol>
+  <li>
+    <p><span class="intense">Assemble the program</span> described above, prefixed with the two lines that tell
+      MetaPost to emit SVG:</p>
+    <pre><code class="hljs">outputformat := "svg";
+outputtemplate := "%j-%c.svg";
+</code></pre>
+    <p>and compute an MD5 <span class="intense">hash</span> of the complete contents. That hash is the diagram's
+      identity: change a single character and the hash changes; leave it alone and the
+      hash is stable across runs.</p>
+  </li>
+  <li>
+    <p><span class="intense">Check the cache.</span> The compiled SVG is stored as <code>MetaPost/{hash}-1.svg</code>. If it
+      already exists, the diagram is unchanged since last time, so compilation is
+      skipped and the file reused. This is what makes re-processing a document with many
+      diagrams fast — only diagrams you have edited are recompiled.</p>
+  </li>
+  <li>
+    <p><span class="intense">Compile, if needed.</span> On a cache miss, JMarkdown writes <code>MetaPost/{hash}.mp</code> and
+      runs <code>mpost</code> on it in the <code>MetaPost/</code> directory.</p>
+  </li>
+  <li>
+    <p><span class="intense">Clean up.</span> The intermediate <code>.mp</code>, <code>.log</code>, and other working files are deleted,
+      leaving just the <code>MetaPost/{hash}-N.svg</code> output(s) in the cache.</p>
+  </li>
+  <li>
+    <p><span class="intense">Emit the image.</span> The environment renders an <code>&lt;img&gt;</code> pointing at (or embedding)
+      that SVG (see <a href="#sizing-and-embedding">Sizing and embedding</a>).</p>
+  </li>
+</ol>
+<p>The upshot: the <code>MetaPost/</code> folder is a build cache. You can safely delete it — the
+  diagrams will simply recompile on the next run — and you can commit it to keep
+  diagrams reproducible without requiring every collaborator to have a TeX
+  installation. To force a clean rebuild of <strong>every</strong> diagram, see the <code>empty-cache</code>
+  attribute below.</p>
+<h2 id="toc-sizing-and-embedding">Sizing and embedding</h2>
+<p>A <code>metapost</code> block takes its options as an attribute block, <code>{…}</code>, on the opening
+  line — the same <code>key="value"</code> attribute syntax used throughout JMarkdown. Three
+  control the web output, plus a cache-control attribute. (These mirror the
+  <a href="tikz-diagrams.html#sizing-and-embedding">TiKZ</a> attributes exactly.)
+</p>
+<h3 id="toc-scale--visually-scale-the-rendered-svg"><code>scale</code> — visually scale the rendered SVG</h3>
+<p><code>scale</code> takes a number and scales the <strong>displayed</strong> image with a CSS transform
+  (<code>transform: scale(N)</code>, anchored at the top-left). It does not re-typeset the
+  diagram; it stretches or shrinks the finished SVG in the browser.</p>
+<pre><code class="hljs">@begin(metapost){scale=1.5}
+draw fullcircle scaled 60;
+@end(metapost)
+</code></pre>
+<p>For sharper results at a fixed size, scale <strong>inside</strong> MetaPost instead (multiply your
+  coordinates, or draw into a <code>picture</code> and <code>scale</code> it), and reserve the <code>scale</code>
+  attribute for quick visual nudges.</p>
+<h3 id="toc-width--set-a-css-width"><code>width</code> — set a CSS width</h3>
+<p><code>width</code> takes any CSS length and is applied as <code>style="width: …"</code>. Use a normal unit
+  such as <code>6cm</code>, or a percentage to make the figure responsive to its container:</p>
+<pre><code class="hljs">@begin(metapost){width='100%'}
+draw (0,0)--(4cm,0)--(2cm,3cm)--cycle;
+@end(metapost)
+</code></pre>
+<p><code>scale</code> and <code>width</code> are mutually exclusive: if you supply both, <code>scale</code> takes effect
+  and <code>width</code> is ignored.</p>
+<h3 id="toc-embed--inline-the-svg-as-a-data-uri"><code>embed</code> — inline the SVG as a data URI</h3>
+<p>By default the <code>&lt;img&gt;</code> <strong>links</strong> to the SVG file: <code>&lt;img src='MetaPost/{hash}-1.svg'&gt;</code>.
+  That keeps the HTML small but means the page needs the <code>MetaPost/</code> folder alongside it
+  to display. Set <code>embed=true</code> (or simply <code>embed</code>) and the environment instead inlines
+  the SVG as a base64 <code>data:</code> URI:</p>
+<pre><code class="hljs">@begin(metapost){embed=true}
+draw unitsquare scaled 50;
+@end(metapost)
+</code></pre>
+<p>Use <code>embed</code> when you want a single, self-contained HTML file with no external image
+  dependencies — which is exactly why the side-by-side demos on this page embed. The
+  trade-off is a larger HTML file, since the image travels inside it.</p>
+<h3 id="toc-empty-cache--force-a-full-rebuild"><code>empty-cache</code> — force a full rebuild</h3>
+<p><code>empty-cache=true</code> (or bare <code>empty-cache</code>) deletes <span class="intense">every</span> file in the <code>MetaPost/</code>
+  folder before processing, forcing all diagrams in the run to recompile from scratch.
+  Reach for it when something outside the diagram's own source has changed that the
+  per-diagram hash cannot detect — a new MetaPost version, a corrupted cache. For
+  everyday editing the content hash already rebuilds exactly the diagrams you changed,
+  so you will rarely need it.</p>
+<h2 id="toc-latex-output">LaTeX output</h2>
+<p>In the LaTeX pipeline (<code>--to latex</code>) the <code>metapost</code> environment produces a genuine
+  figure — this is the key difference from the <a href="tikz-diagrams.html#latex-output">TiKZ</a>
+  directive, which emits nothing in LaTeX. JMarkdown converts the same MetaPost source
+  to a cached <span class="intense">PDF</span> with <code>mptopdf</code> and includes it:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{center}
+<span class="hljs-keyword">\includegraphics</span>[max width=<span class="hljs-keyword">\linewidth</span>]{…/MetaPost/{hash}-1.pdf}
+<span class="hljs-keyword">\end</span>{center}
+</code></pre>
+<p>The PDF route is deliberately <span class="intense">engine-agnostic</span>: it works with the default
+  <code>pdflatex</code> (as well as <code>xelatex</code> / <code>lualatex</code>) with no extra packages beyond
+  <code>adjustbox</code>, which JMarkdown loads for you to provide <code>max width</code>. You do <span class="intense">not</span> need
+  LuaLaTeX or <code>luamplib</code>. The <code>scale</code> and <code>width</code> attributes are HTML-only; in LaTeX the
+  figure is sized to <code>max width=\linewidth</code>.
+</p>
+<p>The PDFs are cached under <code>MetaPost/{hash}-N.pdf</code> on the same content-hash basis as
+  the SVGs (the LaTeX and web caches are kept separate, so switching output formats
+  never clobbers the other's files).</p>
+<h2 id="toc-multiple-figures">Multiple figures</h2>
+<p>A single <code>metapost</code> block usually contains one figure. If you write your own
+  <code>beginfig(n)</code> blocks, though, each one becomes its own image, emitted in figure order
+  — so a block with <code>beginfig(1) … endfig; beginfig(2) … endfig;</code> produces two images.
+  The auto-wrapping in <a href="#what-gets-compiled">What gets compiled</a> only applies when your
+  body contains <strong>no</strong> <code>beginfig</code> at all.
+</p>
+<h2 id="toc-when-compilation-fails">When compilation fails</h2>
+<p>If MetaPost exits with an error — a syntax mistake, an undefined variable, or the
+  tool not being installed — JMarkdown does <span class="intense">not</span> abort the whole build:</p>
+<ul>
+  <li>In <span class="intense">HTML</span>, in place of the diagram it emits a small error box reading <strong>"Error
+      processing MetaPost diagram"</strong> with a <span class="intense">Show log</span> disclosure; expand it to read the
+    captured MetaPost log and fix your source.</li>
+  <li>In <span class="intense">LaTeX</span>, the figure is dropped and a build warning is recorded (it appears in
+    the stderr summary at the end of the build, and in <a href="watch-mode.html">watch mode</a> as
+    an amber banner).</li>
+</ul>
+<p>Either way, any half-written output from the failed run is swept away — MetaPost can
+  emit a partial figure <strong>and</strong> still report an error, so cleaning up guarantees the next
+  run starts fresh rather than caching a broken image.</p>
+<h2 id="toc-reference">Reference</h2>
+<h3 id="toc-environment">Environment</h3>
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Syntax</td>
+      <td><code>@begin(metapost)</code> … MetaPost body … <code>@end(metapost)</code></td>
+    </tr>
+    <tr>
+      <td>Kind</td>
+      <td><a href="block-environments.html">Block environment</a> (<code>@begin … @end</code>)</td>
+    </tr>
+    <tr>
+      <td>Body processing</td>
+      <td>Verbatim — the body is <span class="intense">not</span> run through the Markdown lexer</td>
+    </tr>
+    <tr>
+      <td>Auto-wrapping</td>
+      <td>A body with no <code>beginfig</code> is wrapped in <code>beginfig(1); … endfig;</code>; a trailing <code>end.</code> is added if absent</td>
+    </tr>
+    <tr>
+      <td>HTML output</td>
+      <td><code>&lt;img&gt;</code> referencing or embedding the compiled SVG</td>
+    </tr>
+    <tr>
+      <td>LaTeX output</td>
+      <td><code>\includegraphics[max width=\linewidth]</code> of a <code>mptopdf</code>-generated PDF, centred</td>
+    </tr>
+    <tr>
+      <td>Toolchain</td>
+      <td><code>mpost</code> (SVG, web) · <code>mptopdf</code> (PDF, print) — both from TeX Live / MacTeX</td>
+    </tr>
+    <tr>
+      <td>Cache</td>
+      <td><code>MetaPost/{md5-hash}-N.{svg,pdf}</code>, beside the source file; reused on an exact-content hit</td>
+    </tr>
+  </tbody>
+</table>
+<h3 id="toc-attributes">Attributes</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Attribute</th>
+      <th>Value</th>
+      <th>Effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>scale</code></td>
+      <td>number</td>
+      <td>Scales the displayed SVG via <code>transform: scale(N)</code> (origin top-left). Overrides <code>width</code>. HTML only.</td>
+    </tr>
+    <tr>
+      <td><code>width</code></td>
+      <td>CSS length</td>
+      <td>Sets <code>style="width: …"</code> (e.g. <code>6cm</code>, <code>100%</code>). Ignored if <code>scale</code> is also given. HTML only.</td>
+    </tr>
+    <tr>
+      <td><code>embed</code></td>
+      <td><code>true</code> / bare</td>
+      <td>Inlines the SVG as a base64 <code>data:</code> URI for a self-contained page; otherwise the <code>&lt;img&gt;</code> links to <code>MetaPost/{hash}-1.svg</code>. HTML only.</td>
+    </tr>
+    <tr>
+      <td><code>empty-cache</code></td>
+      <td><code>true</code> / bare</td>
+      <td>Deletes the entire <code>MetaPost/</code> cache before processing, forcing every diagram to recompile.</td>
+    </tr>
+  </tbody>
+</table>
+<h2 id="toc-see-also">See also</h2>
+<ul>
+  <li><a href="tikz-diagrams.html">TiKZ Diagrams</a> — the other compile-time vector-graphics environment; native LaTeX, SVG on the web.</li>
+  <li><a href="mermaid-diagrams.html">Mermaid Diagrams</a> — quick, browser-rendered diagrams for web-only output.</li>
+  <li><a href="block-environments.html">Block Environments</a> — the <code>@begin … @end</code> mechanism this environment is built on.</li>
+  <li><a href="math-support.html">Math Support</a> — typeset mathematics in prose, alongside your figures.</li>
+  <li><a href="metadata-header.html">Metadata Header</a> and <a href="configuration-files.html">Configuration Files</a> — document- and project-level settings.</li>
+</ul>

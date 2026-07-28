@@ -6,6 +6,7 @@
 #   introduction        :today directive (date-dependent)
 #   bibliographic-support  external BibTeX, network resources
 #   tikz-diagrams       requires lualatex + dvisvgm toolchain
+#   metapost-diagrams   requires mpost + mptopdf toolchain (writes a MetaPost/ cache dir)
 #   inline-scripts      embedImage('./nature.jpg') resolves relative to cwd; brittle
 #
 # Each fixture is rendered with --fragment so template chrome (CDN URLs,

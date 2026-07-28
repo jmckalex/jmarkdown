@@ -1,0 +1,307 @@
+---
+Title: MetaPost Diagrams
+---
+
+# MetaPost diagrams (the `@begin(metapost)` environment)
+
+[MetaPost](https://www.tug.org/metapost.html) is a small, elegant programming
+language for producing precise vector graphics. A descendant of Knuth's Metafont,
+it excels at exactly the figures a technical or scholarly document wants — geometric
+constructions, labelled diagrams, function plots, anything you can describe with
+coordinates, paths, and a little arithmetic. JMarkdown's `metapost` environment lets
+you write that drawing code directly in your document. When the file is processed,
+JMarkdown compiles the diagram with the real MetaPost engine and drops the result
+into the page where the environment stood.
+
+Like the [TiKZ](tikz-diagrams.html) directive, MetaPost is compiled at authoring
+time rather than shipped to the reader's browser — so the same source serves the
+flagship JMarkdown use case of one document producing both a polished web page and a
+typeset book. On the **web** the diagram becomes a clean, resolution-independent
+**SVG**; in **print** (`--to latex`) it becomes a **PDF** included with
+`\includegraphics`. Unlike TiKZ (which emits nothing in LaTeX), MetaPost figures
+appear in *both* outputs — see [LaTeX output](#latex-output).
+
+This page covers the environment, the toolchain it drives, the caching that keeps
+re-processing cheap, the optional attributes that control sizing and embedding, and
+how errors surface. It does **not** teach MetaPost itself — that is a language in its
+own right, with an excellent [manual](https://www.tug.org/docs/metapost/mpman.pdf).
+Everything inside the environment is MetaPost's; everything around it is JMarkdown's.
+
+## Prerequisites
+
+Like TiKZ and Mermaid-for-print, the `metapost` environment shells out to external
+programs, so it works only on a machine that has them installed — both ship with
+**TeX Live** and **MacTeX**, so if you have a TeX distribution you almost certainly
+have them already:
+
+- **`mpost`**, the MetaPost compiler, used for the web SVG.
+- **`mptopdf`**, MetaPost's PDF converter, used for the LaTeX/print PDF.
+
+If a required program is missing, the environment reports an error in place of the
+diagram (HTML) or drops it with a build warning (LaTeX) rather than failing the whole
+build — see [When compilation fails](#when-compilation-fails). On a machine that has
+them, nothing more is needed; you do not run MetaPost yourself.
+
+## The basics
+
+A MetaPost diagram is a [block environment](block-environments.html): open it with
+`@begin(metapost)`, write the drawing code as the body, then close it with
+`@end(metapost)`. The body is taken **verbatim** — the Markdown lexer never touches
+it, so `;`, `:=`, `--`, `*`, `#`, and every other character MetaPost needs survive
+intact.
+
+```
+@begin(metapost)
+draw (0,0)--(100,0)--(50,80)--cycle withpen pencircle scaled 1.5;
+fill fullcircle scaled 24 shifted (50,30) withcolor (0.85,0.2,0.2);
+@end(metapost)
+```
+
+The live demo below shows that same source on the left and the compiled diagram on
+the right, so the two can never drift apart:
+
+::::markdown-demo
+@begin(metapost){embed=true}
+draw (0,0)--(100,0)--(50,80)--cycle withpen pencircle scaled 1.5;
+fill fullcircle scaled 24 shifted (50,30) withcolor (0.85,0.2,0.2);
+@end(metapost)
+::::
+
+Note what you did *not* write. You did not open a `beginfig`, declare an `end`, or
+set up a figure — the environment supplies that scaffolding for you (see
+[What gets compiled](#what-gets-compiled)); you write only the drawing commands.
+
+### Demoing a diagram needs a wrapper
+
+Every example on this page shows a `metapost` block *inside* a `markdown-demo`
+container so you can see source and output together. In your own documents you will
+normally write a plain `@begin(metapost) … @end(metapost)` block on its own, with no
+surrounding demo.
+
+## What gets compiled
+
+Around your body, JMarkdown assembles a minimal, complete MetaPost program before
+handing it to the engine:
+
+- **The body is wrapped in a figure when needed.** If your body does not already
+  contain a `beginfig`, JMarkdown wraps it in `beginfig(1); … endfig;` for you —
+  which is why the example above could start straight in with `draw`. If you *do*
+  write your own `beginfig(n); … endfig;`, that is honoured untouched, so you keep
+  full control (and can define several figures — see
+  [Multiple figures](#multiple-figures)).
+- **A trailing `end.` is added** if the program does not already finish with one, so
+  MetaPost always sees a well-formed program.
+
+Because MetaPost is a full language, the body can do real work — loops, arithmetic,
+variables, definitions. This programmability is its great strength:
+
+::::markdown-demo
+@begin(metapost){embed=true}
+numeric n; n = 12;
+for i=0 upto n-1:
+  draw (0,0)--(40,0) rotated (360i/n) withpen pencircle scaled 1
+       withcolor (i/n, 0.3, 1-i/n);
+endfor
+draw fullcircle scaled 80 dashed evenly;
+@end(metapost)
+::::
+
+Labels come in two forms, and the difference matters. A **plain string** —
+`"origin"` — is set *literally* in MetaPost's default font, so it is right for
+ordinary words but shows mathematics verbatim, dollar signs and all. To *typeset*
+mathematics (or any TeX), wrap the snippet in `btex … etex`: MetaPost hands it to TeX
+during compilation and embeds the typeset result in the figure. Note that `btex … etex`
+uses **plain TeX**, so plain-TeX math such as `$P_1$` or `$x^2+y^2$` works out of the
+box; LaTeX-only constructs (e.g. `\frac`) would need a `verbatimtex %&latex … etex`
+preamble.
+
+::::markdown-demo
+@begin(metapost){embed=true}
+z0 = (0,0); z1 = (80,0); z2 = (80,50); z3 = (0,50);
+draw z0--z1--z2--z3--cycle;
+label.bot("origin", z0);               % a plain string — literal text
+label.top(btex $P_1$ etex, z2);        % btex … etex — typeset by TeX
+dotlabel.rt(btex $x^2 + y^2$ etex, (40,25));
+@end(metapost)
+::::
+
+## How the diagram becomes an image
+
+When JMarkdown meets a `metapost` block, it runs a small, deterministic pipeline. The
+working directory for all of it is a folder named `MetaPost/`, created automatically
+**beside the Markdown file being processed** (not the directory you ran the command
+from). The steps, for the **web/SVG** path, are:
+
+1. **Assemble the program** described above, prefixed with the two lines that tell
+   MetaPost to emit SVG:
+
+   ```
+   outputformat := "svg";
+   outputtemplate := "%j-%c.svg";
+   ```
+
+   and compute an MD5 **hash** of the complete contents. That hash is the diagram's
+   identity: change a single character and the hash changes; leave it alone and the
+   hash is stable across runs.
+
+2. **Check the cache.** The compiled SVG is stored as `MetaPost/{hash}-1.svg`. If it
+   already exists, the diagram is unchanged since last time, so compilation is
+   skipped and the file reused. This is what makes re-processing a document with many
+   diagrams fast — only diagrams you have edited are recompiled.
+
+3. **Compile, if needed.** On a cache miss, JMarkdown writes `MetaPost/{hash}.mp` and
+   runs `mpost` on it in the `MetaPost/` directory.
+
+4. **Clean up.** The intermediate `.mp`, `.log`, and other working files are deleted,
+   leaving just the `MetaPost/{hash}-N.svg` output(s) in the cache.
+
+5. **Emit the image.** The environment renders an `<img>` pointing at (or embedding)
+   that SVG (see [Sizing and embedding](#sizing-and-embedding)).
+
+The upshot: the `MetaPost/` folder is a build cache. You can safely delete it — the
+diagrams will simply recompile on the next run — and you can commit it to keep
+diagrams reproducible without requiring every collaborator to have a TeX
+installation. To force a clean rebuild of *every* diagram, see the `empty-cache`
+attribute below.
+
+## Sizing and embedding
+
+A `metapost` block takes its options as an attribute block, `{…}`, on the opening
+line — the same `key="value"` attribute syntax used throughout JMarkdown. Three
+control the web output, plus a cache-control attribute. (These mirror the
+[TiKZ](tikz-diagrams.html#sizing-and-embedding) attributes exactly.)
+
+### `scale` — visually scale the rendered SVG
+
+`scale` takes a number and scales the *displayed* image with a CSS transform
+(`transform: scale(N)`, anchored at the top-left). It does not re-typeset the
+diagram; it stretches or shrinks the finished SVG in the browser.
+
+```
+@begin(metapost){scale=1.5}
+draw fullcircle scaled 60;
+@end(metapost)
+```
+
+For sharper results at a fixed size, scale *inside* MetaPost instead (multiply your
+coordinates, or draw into a `picture` and `scale` it), and reserve the `scale`
+attribute for quick visual nudges.
+
+### `width` — set a CSS width
+
+`width` takes any CSS length and is applied as `style="width: …"`. Use a normal unit
+such as `6cm`, or a percentage to make the figure responsive to its container:
+
+```
+@begin(metapost){width='100%'}
+draw (0,0)--(4cm,0)--(2cm,3cm)--cycle;
+@end(metapost)
+```
+
+`scale` and `width` are mutually exclusive: if you supply both, `scale` takes effect
+and `width` is ignored.
+
+### `embed` — inline the SVG as a data URI
+
+By default the `<img>` *links* to the SVG file: `<img src='MetaPost/{hash}-1.svg'>`.
+That keeps the HTML small but means the page needs the `MetaPost/` folder alongside it
+to display. Set `embed=true` (or simply `embed`) and the environment instead inlines
+the SVG as a base64 `data:` URI:
+
+```
+@begin(metapost){embed=true}
+draw unitsquare scaled 50;
+@end(metapost)
+```
+
+Use `embed` when you want a single, self-contained HTML file with no external image
+dependencies — which is exactly why the side-by-side demos on this page embed. The
+trade-off is a larger HTML file, since the image travels inside it.
+
+### `empty-cache` — force a full rebuild
+
+`empty-cache=true` (or bare `empty-cache`) deletes **every** file in the `MetaPost/`
+folder before processing, forcing all diagrams in the run to recompile from scratch.
+Reach for it when something outside the diagram's own source has changed that the
+per-diagram hash cannot detect — a new MetaPost version, a corrupted cache. For
+everyday editing the content hash already rebuilds exactly the diagrams you changed,
+so you will rarely need it.
+
+## LaTeX output
+
+In the LaTeX pipeline (`--to latex`) the `metapost` environment produces a genuine
+figure — this is the key difference from the [TiKZ](tikz-diagrams.html#latex-output)
+directive, which emits nothing in LaTeX. JMarkdown converts the same MetaPost source
+to a cached **PDF** with `mptopdf` and includes it:
+
+```latex
+\begin{center}
+\includegraphics[max width=\linewidth]{…/MetaPost/{hash}-1.pdf}
+\end{center}
+```
+
+The PDF route is deliberately **engine-agnostic**: it works with the default
+`pdflatex` (as well as `xelatex` / `lualatex`) with no extra packages beyond
+`adjustbox`, which JMarkdown loads for you to provide `max width`. You do **not** need
+LuaLaTeX or `luamplib`. The `scale` and `width` attributes are HTML-only; in LaTeX the
+figure is sized to `max width=\linewidth`.
+
+The PDFs are cached under `MetaPost/{hash}-N.pdf` on the same content-hash basis as
+the SVGs (the LaTeX and web caches are kept separate, so switching output formats
+never clobbers the other's files).
+
+## Multiple figures
+
+A single `metapost` block usually contains one figure. If you write your own
+`beginfig(n)` blocks, though, each one becomes its own image, emitted in figure order
+— so a block with `beginfig(1) … endfig; beginfig(2) … endfig;` produces two images.
+The auto-wrapping in [What gets compiled](#what-gets-compiled) only applies when your
+body contains *no* `beginfig` at all.
+
+## When compilation fails
+
+If MetaPost exits with an error — a syntax mistake, an undefined variable, or the
+tool not being installed — JMarkdown does **not** abort the whole build:
+
+- In **HTML**, in place of the diagram it emits a small error box reading *"Error
+  processing MetaPost diagram"* with a **Show log** disclosure; expand it to read the
+  captured MetaPost log and fix your source.
+- In **LaTeX**, the figure is dropped and a build warning is recorded (it appears in
+  the stderr summary at the end of the build, and in [watch mode](watch-mode.html) as
+  an amber banner).
+
+Either way, any half-written output from the failed run is swept away — MetaPost can
+emit a partial figure *and* still report an error, so cleaning up guarantees the next
+run starts fresh rather than caching a broken image.
+
+## Reference
+
+### Environment
+
+| | |
+|---|---|
+| Syntax | `@begin(metapost)` … MetaPost body … `@end(metapost)` |
+| Kind | [Block environment](block-environments.html) (`@begin … @end`) |
+| Body processing | Verbatim — the body is **not** run through the Markdown lexer |
+| Auto-wrapping | A body with no `beginfig` is wrapped in `beginfig(1); … endfig;`; a trailing `end.` is added if absent |
+| HTML output | `<img>` referencing or embedding the compiled SVG |
+| LaTeX output | `\includegraphics[max width=\linewidth]` of a `mptopdf`-generated PDF, centred |
+| Toolchain | `mpost` (SVG, web) · `mptopdf` (PDF, print) — both from TeX Live / MacTeX |
+| Cache | `MetaPost/{md5-hash}-N.{svg,pdf}`, beside the source file; reused on an exact-content hit |
+
+### Attributes
+
+| Attribute | Value | Effect |
+|---|---|---|
+| `scale` | number | Scales the displayed SVG via `transform: scale(N)` (origin top-left). Overrides `width`. HTML only. |
+| `width` | CSS length | Sets `style="width: …"` (e.g. `6cm`, `100%`). Ignored if `scale` is also given. HTML only. |
+| `embed` | `true` / bare | Inlines the SVG as a base64 `data:` URI for a self-contained page; otherwise the `<img>` links to `MetaPost/{hash}-1.svg`. HTML only. |
+| `empty-cache` | `true` / bare | Deletes the entire `MetaPost/` cache before processing, forcing every diagram to recompile. |
+
+## See also
+
+- [TiKZ Diagrams](tikz-diagrams.html) — the other compile-time vector-graphics environment; native LaTeX, SVG on the web.
+- [Mermaid Diagrams](mermaid-diagrams.html) — quick, browser-rendered diagrams for web-only output.
+- [Block Environments](block-environments.html) — the `@begin … @end` mechanism this environment is built on.
+- [Math Support](math-support.html) — typeset mathematics in prose, alongside your figures.
+- [Metadata Header](metadata-header.html) and [Configuration Files](configuration-files.html) — document- and project-level settings.
