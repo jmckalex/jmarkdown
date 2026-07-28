@@ -1,0 +1,5 @@
+Inline class @.hi[hello] and inline element @<my-el>[hi there].
+
+@.myblock+[a block by class]
+
+@<my-block>+[a block element]

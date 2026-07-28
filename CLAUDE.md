@@ -278,12 +278,35 @@ it; others use parsed `ctx.inner`); `ctx.inline`/`ctx.block` flag the form.
   runs first and would have claimed a correctly-placed one (the inline pass can
   do the context-sensitive check the block pass can't).
 
-**First slice shipped** (additive — `:`/`::`/`:::` stay fully live): `@span`,
-`@ref`/`@label`/`@cref`/`@Cref`. Cross-refs reuse the EXACT post-processor markers
-/ native LaTeX commands, so `@ref[k]` is byte-identical to `:ref[k]` in both
-outputs (verified). Not yet done: `.name`/`<name>` override sigils; porting the
-remaining directives + a content codemod; deleting `extended-directives.js`.
-Fixtures: `tests/features/at-directives/` (`at-forms`, `at-disambiguation`).
+**Additive migration — status.** The `@` forms are now a **complete superset** of
+the colon framework; `:`/`::`/`:::` stay fully live alongside. Shipped, all verified
+byte-identical to their colon twins where one exists:
+- Cross-refs `@span`, `@ref`/`@label`/`@cref`/`@Cref` (reuse the EXACT post-processor
+  markers / native LaTeX commands).
+- All container parity envs (`@begin(TeX|HTML|abstract|feedback|print|web)`), graphics
+  (`@begin(TiKZ|mermaid|Mathematica|metapost)`), floats/theorems/equations/numbered
+  envs, comment/optionals; the inline `@TeX/@HTML/@print/@web` forms.
+- **Slice A (this pass):** the `.name`/`<name>` **override sigils** now work on the
+  single-shot forms too — `@.name[…]`/`@<name>[…]` (inline) and `@.name+[…]`/
+  `@<name>+[…]` (block), parity with `@begin(.name)`/`@begin(<name>)` (only the
+  `createAtInline`/`createAtBlock` tokenizers changed; `renderGeneric*HTML` already
+  honoured `override`). Ported the last colon-only directives:
+  `@begin(markdown-demo)` (reuses the demo tokenizer/renderer verbatim, `'\n'`+body
+  shim so the renderer's leading-blank `shift()` lands right), `@begin(source)` +
+  inline `@target[…]` (HTML-only, like their colon twins), `@begin(title-box)` (reuses
+  its tokenizer/renderer verbatim), and the six title-page directives —
+  `@title+/@subtitle+/@author+/@institution+/@date+` (block `<div>`s) and inline
+  `@today` (`institution` does `\n`→`<br>` on the raw bracket; the others match the
+  colon output). All registered at module scope in their existing files, so **no
+  `index.js` edit** and — being `@`-dispatched — order-independent.
+
+  **Still to do:** the `:`→`@` **content codemod** + converting docs/fixtures (Slice B);
+  **deleting `extended-directives.js`** and all colon wiring (Slice C — needs the book
+  converted first; also drops the dead, uninstalled `plaintext`/`pass_through`).
+  `classAndId` is not a colon directive and stays.
+
+Fixtures: `tests/features/at-directives/` (`at-forms`, `at-disambiguation`,
+`at-sigils`, `at-markdown-demo`, `at-sources-targets`, `at-title-box`, `at-title-page`).
 
 ### Named block environments (`@begin(name) … @end(name)`)
 An alternative to the colon-counted container directives. Because the closer *names* what it closes, blocks nest by name — no colon counting, and no renumbering when you wrap or insert a block. Purely **additive**: the `:::name … :::` directives are unchanged. The `@` sigil follows texinfo's `@example … @end example` convention and is otherwise unused in JMarkdown.

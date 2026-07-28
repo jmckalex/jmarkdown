@@ -393,7 +393,8 @@ export function createAtInline(options = {}) {
 		// `me@x.com` stay prose and we don't starve marked's email autolinker by
 		// splitting a valid address). Inline starts may otherwise match anywhere —
 		// inline code spans are claimed before text is cut, so this is safe.
-		start(src) { return src.match(/(?<!\w)@[A-Za-z][\w-]*/)?.index; },
+		// The optional `.`/`<` override sigil is allowed after the @ (see below).
+		start(src) { return src.match(/(?<!\w)@[.<]?[A-Za-z][\w-]*/)?.index; },
 		tokenizer(src, tokens) {
 			// Backstop for the start() gate: when ANOTHER extension (e.g. the email
 			// autolinker) breaks the text at a glued `@`, our tokenizer is still tried
@@ -401,23 +402,31 @@ export function createAtInline(options = {}) {
 			// previous token's raw instead — reject an @ glued to a word char.
 			const prev = tokens && tokens[tokens.length - 1];
 			if (prev && typeof prev.raw === 'string' && /\w$/.test(prev.raw)) return;
-			// A `@name+[…]`/`@name+{…}` here is a misplaced block form (see above).
-			const bad = /^@([A-Za-z][\w-]*)\+(\[[^\]]*\])?(\{[^}]*\})?/.exec(src);
+			// A `@name+[…]`/`@name+{…}` here is a misplaced block form (see above);
+			// the optional `.`/`<…>` override sigil is tolerated on the name.
+			const bad = /^@(?:\.|<)?([A-Za-z][\w-]*)>?\+(\[[^\]]*\])?(\{[^}]*\})?/.exec(src);
 			if (bad && (bad[2] !== undefined || bad[3] !== undefined)) {
 				return { type: 'atInline', raw: bad[0], misplaced: bad[1] };
 			}
-			const m = /^@([A-Za-z][\w-]*)(?:\[([^\]]*)\])?(?:\{([^}]*)\})?/.exec(src);
+			// Optional override sigil, parity with @begin(.name)/@begin(<name>):
+			// `@.name[…]` forces a class (<span class="name">), `@<name>[…]` forces a
+			// custom element (<name>). The sigil only affects the generic fallback —
+			// a registered handler owns its own output.
+			const m = /^@(\.|<)?([A-Za-z][\w-]*)>?(?:\[([^\]]*)\])?(?:\{([^}]*)\})?/.exec(src);
 			if (!m) return;
-			const name = m[1], text = m[2] ?? '', attrsRaw = m[3];
-			const hasBracket = m[2] !== undefined || m[3] !== undefined;
+			const sigil = m[1], name = m[2], text = m[3] ?? '', attrsRaw = m[4];
+			const hasBracket = m[3] !== undefined || m[4] !== undefined;
 			// A bracket form takes any name (generic fallback); a BARE @name is a
 			// directive only if explicitly registered (so prose @-words aren't eaten).
-			if (!hasBracket && !registry.has(name)) return;
+			// A sigil form always needs a bracket for its content, so a bare `@.foo`
+			// in prose is left alone.
+			if (!hasBracket && (sigil || !registry.has(name))) return;
+			const override = sigil === '.' ? 'class' : sigil === '<' ? 'element' : undefined;
 			let attrs;
 			if (attrsRaw !== undefined) { try { attrs = attributesParser(attrsRaw); } catch { attrs = undefined; } }
 			const mode = (registry.get(name) || {}).mode || 'markdown';
 			return {
-				type: 'atInline', raw: m[0], name, text, attrs, mode,
+				type: 'atInline', raw: m[0], name, text, attrs, override, mode,
 				tokens: mode === 'verbatim' ? [] : this.lexer.inlineTokens(text)
 			};
 		},
@@ -444,19 +453,22 @@ export function createAtBlock(options = {}) {
 		// Only ever report a line start its tokenizer can match (the anti-shredding
 		// rule): an `@name+[` / `@name+{` at the beginning of a line.
 		start(src) {
-			const m = src.match(/(?:^|\n)[ \t]*@[A-Za-z][\w-]*\+[\[{]/);
+			const m = src.match(/(?:^|\n)[ \t]*@[.<]?[A-Za-z][\w-]*>?\+[\[{]/);
 			if (!m) return undefined;
 			return m.index + (src[m.index] === '\n' ? 1 : 0);
 		},
 		tokenizer(src) {
-			const m = /^[ \t]*@([A-Za-z][\w-]*)\+(?:\[([^\]]*)\])?(?:\{([^}]*)\})?[ \t]*(?:\n|$)/.exec(src);
+			// Optional `.`/`<…>` override sigil, parity with @begin(.name)/@begin(<name>):
+			// `@.name+[…]` forces <div class="name">, `@<name>+[…]` forces a <name> element.
+			const m = /^[ \t]*@(\.|<)?([A-Za-z][\w-]*)>?\+(?:\[([^\]]*)\])?(?:\{([^}]*)\})?[ \t]*(?:\n|$)/.exec(src);
 			if (!m) return;
-			const name = m[1], text = m[2] ?? '', attrsRaw = m[3];
+			const sigil = m[1], name = m[2], text = m[3] ?? '', attrsRaw = m[4];
+			const override = sigil === '.' ? 'class' : sigil === '<' ? 'element' : undefined;
 			let attrs;
 			if (attrsRaw !== undefined) { try { attrs = attributesParser(attrsRaw); } catch { attrs = undefined; } }
 			const mode = (registry.get(name) || {}).mode || 'markdown';
 			return {
-				type: 'atBlock', raw: m[0], name, text, attrs, mode,
+				type: 'atBlock', raw: m[0], name, text, attrs, override, mode,
 				tokens: mode === 'verbatim' ? [] : this.lexer.inlineTokens(text)
 			};
 		},

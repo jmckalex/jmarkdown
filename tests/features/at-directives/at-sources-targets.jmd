@@ -1,0 +1,7 @@
+# sources and targets
+
+Insert here: @target[foo]
+
+@begin(source){target=foo}
+This is **sourced** content with a [link](https://example.com).
+@end(source)

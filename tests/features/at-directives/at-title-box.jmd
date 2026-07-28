@@ -1,0 +1,5 @@
+@begin(title-box)
+# My Title
+***
+Body **content** here.
+@end(title-box)

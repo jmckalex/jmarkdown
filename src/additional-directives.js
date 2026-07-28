@@ -17,6 +17,7 @@
 	the branch keeps them in parity automatically.
 */
 import { requirePackage } from './preamble.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
 
 export function renderAbstract(inner) {
 	if (global.isLatex) return `\\begin{abstract}\n${inner.trim()}\n\\end{abstract}\n\n`;
@@ -406,6 +407,44 @@ const pass_through = {
 
 // And here's how you would install it.
 //marked.use( createDirectives([pass_through]) );
+
+
+/*
+	@-sigil ports of the title-box container and the six title-page directives,
+	sharing the begin-end registry (the ':'/'::'/'::' colon forms stay live).
+
+	title-box reuses the directive's own tokenizer + renderer verbatim (the game/TiKZ
+	no-drift pattern). The title-page group are block forms `@name+[…]` (they emit
+	block <div>s) except @today, which is inline (a <span>, used bare). Output matches
+	the colon twins: title/subtitle/date use the parsed inner (inline-parsed here — the
+	<p>-stripped equivalent of the originals' block parse); author uses the raw bracket
+	text; institution turns newlines into <br>; today regenerates the date. Like the
+	colon originals none of these branch on global.isLatex (the metadata header +
+	\maketitle is the real LaTeX title path), so the html renderer serves both formats.
+*/
+registerBlockEnvironment('title',     { html: (ctx) => `<div class="title">${ctx.inner}</div>` });
+registerBlockEnvironment('subtitle',  { html: (ctx) => `<div class="subtitle">${ctx.inner}</div>` });
+registerBlockEnvironment('author',    { html: (ctx) => `<div class="author">${ctx.text}</div>` });
+registerBlockEnvironment('institution', {
+	html: (ctx) => `<div class="institution">${ctx.text.trim().replaceAll('\n', '<br>')}</div>`
+});
+registerBlockEnvironment('date',      { html: (ctx) => `<div class="date">${ctx.inner}</div>` });
+registerBlockEnvironment('today', {
+	html: () => {
+		const months = ['January', 'February', 'March', 'April', 'May', 'June',
+			'July', 'August', 'September', 'October', 'November', 'December'];
+		const today = new Date();
+		return `<span class="date">${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}</span>`;
+	}
+});
+registerBlockEnvironment('title-box', {
+	mode: 'custom',
+	tokenize(body, token) {
+		token.meta = { name: 'title-box' };
+		titleBox.tokenizer.call(this, '\n' + body.replace(/\n+$/, ''), token);
+	},
+	render: (ctx) => titleBox.renderer.call({ parser: ctx.parser }, ctx.token)
+});
 
 
 export default additionalDirectives;

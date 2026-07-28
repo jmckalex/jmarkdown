@@ -5,6 +5,7 @@
 */
 import hljs from 'highlight.js';
 import { marked_copy } from './utils.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
 
 function createMarkdownDemo(marker) {
 	return {
@@ -48,5 +49,26 @@ function createMarkdownDemo(marker) {
 		}
 	}
 }
+
+/*
+	Mirror ::::markdown-demo as @begin(markdown-demo), reusing the directive's own
+	tokenizer + renderer verbatim (the game/TiKZ no-drift pattern). The renderer does
+	token.text.split('\n') then t.shift() to drop the container's leading blank line,
+	so the dedented @begin body is prepended with '\n' to reproduce that; token.text
+	and the block-token pass both see the same normalised body. mode:'custom' hands the
+	body raw to the demo tokenizer (which block-lexes it into token.tokens) rather than
+	re-lexing it as inline markdown. {type=…} still selects the highlight language via
+	ctx.attrs (set by begin-end-core before tokenize).
+*/
+const markdownDemoEnvInstance = createMarkdownDemo();   // marker arg unused by tokenizer/renderer
+registerBlockEnvironment('markdown-demo', {
+	mode: 'custom',
+	tokenize(body, token) {
+		token.meta = { name: 'markdown-demo' };
+		token.text = '\n' + body.replace(/\n+$/, '');
+		markdownDemoEnvInstance.tokenizer.call(this, token.text, token);
+	},
+	render: (ctx) => markdownDemoEnvInstance.renderer.call({ parser: ctx.parser }, ctx.token)
+});
 
 export default createMarkdownDemo;

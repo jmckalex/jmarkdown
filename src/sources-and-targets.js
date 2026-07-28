@@ -1,3 +1,5 @@
+import { registerBlockEnvironment } from './begin-end-core.js';
+
 export const targets = {
 	level: 'inline',
 	label: 'target',
@@ -47,6 +49,26 @@ export const inlineTarget = {
 		return `<span data-target-id='${token.text}'></span>`;
 	}
 };
+
+
+/*
+	@-sigil ports of the colon forms, sharing the begin-end registry (the ':::source'
+	container and ':target' inline stay live alongside). Both are HTML-only — the colon
+	renderers never branch on global.isLatex, so an `html`-only handler reproduces them
+	in both output formats. The emoji `🎯` inlineTarget is not a colon directive and is
+	untouched.
+
+	  @begin(source){target=X} … @end(source)   ≡  :::source{target=X} … :::
+	  @target[X]                                 ≡  :target[X]
+*/
+registerBlockEnvironment('source', {
+	mode: 'markdown',
+	html: (ctx) => `<div data-target='${(ctx.attrs?.target ?? '').trim()}'>${ctx.inner}</div>`
+});
+registerBlockEnvironment('target', {
+	mode: 'verbatim',
+	html: (ctx) => `<span data-target-id='${ctx.text.trim()}'></span>`
+});
 
 
 export function replaceTargetsBySources($) {
