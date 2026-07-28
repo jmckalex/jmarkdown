@@ -31,6 +31,7 @@ import { renderAlertLatex } from './alerts.js';
 import createMarkdownDemo from './markdown-demo.js';
 import strategicFormGame from './strategic-form-games.js';
 import createTiKZ from './tikz.js';
+import './metapost.js';   // side-effect: registers the @begin(metapost) block environment
 import { inlineMathematica, createMathematica } from './mathematica.js';
 import markedMoreLists from 'marked-more-lists';
 import { jmarkdownScriptExtensions } from './script-blocks.js';
