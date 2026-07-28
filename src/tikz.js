@@ -11,6 +11,7 @@ import { execSync } from 'child_process';
 import crypto from 'crypto';
 import { configManager } from './config-manager.js';
 import { requirePackage, addPreamble } from './preamble.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
 import Mustache from 'mustache';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -224,5 +225,37 @@ function createTiKZ(marker) {
 	}
 }
 
+
+/*
+	Mirror :::TiKZ as @begin(TiKZ), reusing the directive's own tokenizer and
+	renderer verbatim (the strongest no-drift guarantee — same functions, not
+	copies), exactly as strategic-form-games.js does for @begin(game). One boundary
+	adaptation is needed:
+
+	  • Shape the body like a container directive's content. @begin hands us the
+	    dedented body without the leading '\n' the tokenizer expects, and with a
+	    trailing newline before @end. Prepending '\n' and trimming trailing newlines
+	    makes the tokenizer input byte-identical to the :::TiKZ case (verified against
+	    the tikz-diagrams/diagram golden — the [>=latex]\n\n…{T};\n\end spacing needs
+	    exactly a leading \n and stripped trailing newline).
+
+	The directive renderer keys off token.meta.name and reads this.parser, so we set
+	meta.name and call it with the active parser as `this`. It already branches on
+	global.isLatex, so one format-independent `render` covers both outputs. attrs
+	(scale/width/embed/empty-cache) arrive via token.attrs, which begin-end-core
+	parses with the same attributes-parser and sets before calling tokenize.
+
+	mode 'custom' hands the body raw to the directive tokenizer (which owns the
+	lualatex/dvisvgm compile + cache) rather than re-lexing it as markdown.
+*/
+const tikzEnvInstance = createTiKZ();   // marker arg unused by tokenizer/renderer
+registerBlockEnvironment('TiKZ', {
+	mode: 'custom',
+	tokenize(body, token) {
+		token.meta = { name: 'TiKZ' };
+		tikzEnvInstance.tokenizer.call(this, '\n' + body.replace(/\n+$/, ''), token);
+	},
+	render: (ctx) => tikzEnvInstance.renderer.call({ parser: ctx.parser }, ctx.token)
+});
 
 export default createTiKZ;

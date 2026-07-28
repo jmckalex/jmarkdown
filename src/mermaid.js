@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { execSync } from 'child_process';
 import { configManager } from './config-manager.js';
 import { requirePackage } from './preamble.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
 
 // Locate mmdc once: a locally-installed mermaid-cli first, then one on PATH.
 // null means "not available" (skip mermaid in LaTeX).
@@ -57,6 +58,33 @@ function renderMermaidLatex(source) {
 	requirePackage('adjustbox'); // for max width (also loads graphicx)
 	return `\\begin{center}\n\\includegraphics[max width=\\linewidth]{${pdf}}\n\\end{center}\n\n`;
 }
+
+/*
+	Mirror :::mermaid as @begin(mermaid), reusing the directive's own renderer
+	verbatim (same no-drift pattern as @begin(game) / @begin(TiKZ)). One subtlety is
+	specific to mermaid: the :::mermaid path never actually invokes this tokenizer —
+	createToken (extended-directives.js) files a container body as a 'text' token that
+	only sets `header text`, so :::mermaid's token.text keeps its leading '\n'
+	(unstripped) with no trailing newline, and js-beautify then indents that leading
+	newline inside the <div class="mermaid">. The @begin path DOES call the tokenizer
+	(which strips exactly one leading '\n'), so we pre-pad with '\n\n' and strip
+	trailing newlines: after the single strip, token.text is '\n'+body — byte-identical
+	to :::mermaid (verified against the mermaid/diagram golden on the HTML path).
+
+	The renderer keys off token.meta.name and branches on global.isLatex, so one
+	format-independent `render` covers both outputs. mode 'custom' hands the body raw
+	to the mermaid tokenizer (which, for LaTeX, rasterises via mmdc) rather than
+	re-lexing it as markdown.
+*/
+const mermaidEnvInstance = createMermaid();   // marker arg unused by tokenizer/renderer
+registerBlockEnvironment('mermaid', {
+	mode: 'custom',
+	tokenize(body, token) {
+		token.meta = { name: 'mermaid' };
+		mermaidEnvInstance.tokenizer.call(this, '\n\n' + body.replace(/\n+$/, ''), token);
+	},
+	render: (ctx) => mermaidEnvInstance.renderer.call({ parser: ctx.parser }, ctx.token)
+});
 
 export function createMermaid(marker) {
 	return {

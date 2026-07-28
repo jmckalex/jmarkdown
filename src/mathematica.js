@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import crypto from 'crypto';
 import { configManager } from './config-manager.js';
+import { registerBlockEnvironment } from './begin-end-core.js';
 import Mustache from 'mustache';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -498,5 +499,35 @@ export const inlineMathematica = {
 
 // Start a profile so that all the sessions can be shared
 //execSync(`wolframscript -wstpserver -startprofile -c '2+2'`);
+
+/*
+	Mirror :::Mathematica as @begin(Mathematica), reusing the directive's own
+	tokenizer and renderer verbatim (same no-drift pattern as @begin(game) /
+	@begin(TiKZ)). The tokenizer hashes its input (mathematica_code_header + text) to
+	name the cache file that the rendered <img> then references, so the body MUST be
+	shaped exactly like the :::Mathematica container's text or the emitted filename
+	would diverge. Both are createDirectives ':::' containers, so the game shim
+	('\n' + body with trailing newlines stripped) reproduces the container input —
+	the same shim @begin(TiKZ) is verified against. (Every Mathematica path invokes
+	wolframscript even for LaTeX, so this parity is verified by inspection + a manual
+	smoke test rather than a golden fixture.)
+
+	The renderer keys off token.meta.name and reads this.parser; it branches on
+	global.isLatex (LaTeX suppresses the <img>), so one format-independent `render`
+	covers both outputs. The inline ⟦…⟧ Mathematica extension is intentionally left
+	untouched — it is not a colon directive.
+
+	mode 'custom' hands the body raw to the tokenizer (which owns the wolframscript
+	run + cache) rather than re-lexing it as markdown.
+*/
+const mathematicaEnvInstance = createMathematica();   // marker arg unused by tokenizer/renderer
+registerBlockEnvironment('Mathematica', {
+	mode: 'custom',
+	tokenize(body, token) {
+		token.meta = { name: 'Mathematica' };
+		mathematicaEnvInstance.tokenizer.call(this, '\n' + body.replace(/\n+$/, ''), token);
+	},
+	render: (ctx) => mathematicaEnvInstance.renderer.call({ parser: ctx.parser }, ctx.token)
+});
 
 export default createMathematica;
