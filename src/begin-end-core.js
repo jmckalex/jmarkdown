@@ -18,16 +18,24 @@
 	HTML output — the name becomes either a `<div class="name">` or a custom
 	element `<name>`:
 
-		@begin(name)    → <div class="name">…</div>   (no hyphen → class)
+		@begin(aside)   → <aside>…</aside>            (a known HTML element → itself)
+		@begin(name)    → <div class="name">…</div>   (unknown, no hyphen → class)
 		@begin(na-me)   → <na-me>…</na-me>            (hyphen → custom element)
 		@begin(.name)   → <div class="name">…</div>   (`.` forces a class)
 		@begin(<name>)  → <name>…</name>             (`<…>` forces an element)
 
-	The hyphen default follows the HTML spec: a *valid* custom-element name must
-	contain a hyphen.  It is overridable per block with the `.` / `<…>` sigils
-	above, and document-wide with the `blockElements` option — `hyphenated`
-	(default), `all` (always an element) or `none` (always a class).  The
-	per-block sigils always win over the policy.
+	Under the default policy a name that is a real HTML block-container element
+	(`aside`, `section`, `figure`, …) renders as that element, so an author never
+	has to remember the `<…>` sigil for the semantic containers.  Otherwise the
+	hyphen rule applies, following the HTML spec: a *valid* custom-element name
+	must contain a hyphen, so a hyphenated name is an element and anything else is
+	a `div.class`.  Both defaults are overridable per block with the `.` / `<…>`
+	sigils above, and document-wide with the `blockElements` option — `hyphenated`
+	(default: known elements + hyphenated names → element), `all` (always an
+	element) or `none` (always a class).  The per-block sigils always win over the
+	policy.  The known-element list is consulted only for *block* forms — an inline
+	`@name[…]` can't hold a block element inside its `<p>`, so it keeps the plain
+	hyphen rule.
 
 	Nesting: differently-named blocks nest for free (the inner block is just part
 	of the outer block's markdown content and is re-lexed normally).  Only
@@ -113,16 +121,34 @@ function dedent(text) {
 	return lines.map(l => l.startsWith(prefix) ? l.slice(prefix.length) : l).join('\n');
 }
 
+// Curated list of HTML elements that legitimately contain block/flow content, so
+// a bare @begin(aside) can render as <aside> rather than <div class="aside">
+// without the author having to remember the <…> element sigil. Sectioning +
+// grouping flow-content containers only (list/table internals and <p> are left
+// out — markdown produces those natively and they have strict content models).
+// Compared case-insensitively.
+const BLOCK_CONTAINER_ELEMENTS = new Set([
+	'address', 'article', 'aside', 'blockquote', 'details', 'dialog', 'div',
+	'fieldset', 'figcaption', 'figure', 'footer', 'form', 'header', 'hgroup',
+	'main', 'nav', 'search', 'section', 'summary'
+]);
+
 // Decide the HTML tag for a generic environment: 'div' (name as a CSS class) or
-// the name itself (a custom element). The per-block override ('class'/'element')
-// always wins; otherwise the policy ('hyphenated' | 'all' | 'none') decides.
-function resolveTag(name, override, policy) {
+// the name itself (a custom or known-HTML element). The per-block override
+// ('class'/'element') always wins; otherwise the policy ('hyphenated' | 'all' |
+// 'none') decides. `isBlock` is false for the inline @name[…] form, which skips
+// the known-block-element list (a block element can't sit inside its <p>).
+function resolveTag(name, override, policy, isBlock = true) {
 	if (override === 'class') return 'div';
 	if (override === 'element') return name;
 	const p = String(policy || 'hyphenated').toLowerCase();
 	if (p === 'all') return name;     // everything is a custom element
 	if (p === 'none') return 'div';   // everything is a div.class
-	return name.includes('-') ? name : 'div';  // 'hyphenated' (default)
+	// 'hyphenated' (default): a known HTML block-container element (aside,
+	// section, …) or a hyphenated custom-element name renders as itself; anything
+	// else is a div.class.
+	if (isBlock && BLOCK_CONTAINER_ELEMENTS.has(name.toLowerCase())) return name;
+	return name.includes('-') ? name : 'div';
 }
 
 // Render a generic environment to HTML as either <div class="name"> or a custom
@@ -340,7 +366,7 @@ export function createBeginEnd(options = {}) {
 // a custom element (valid inline), otherwise <span class="name"> — the inline
 // twin of renderGenericHTML's div/element rule.
 function renderGenericInlineHTML(name, attrs, inner, override, policy) {
-	const tag = resolveTag(name, override, policy);   // 'div' marks the class case
+	const tag = resolveTag(name, override, policy, false);   // 'div' marks the class case; inline skips the block-element list
 	const attrStr = attrs ? String(attrs).trim() : '';
 	const a = attrStr ? ' ' + attrStr : '';
 	if (tag === 'div') return `<span class="${name}"${a}>${inner}</span>`;

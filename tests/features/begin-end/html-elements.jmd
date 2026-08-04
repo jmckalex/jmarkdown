@@ -1,0 +1,19 @@
+@begin(aside)
+A known HTML block element renders as itself.
+@end(aside)
+
+@begin(section)[Intro]{id="s1"}
+Another known element; the label becomes a data attribute.
+@end(section)
+
+@begin(.aside)
+A leading dot forces the class form even for a known element.
+@end(.aside)
+
+@begin(sidebar)
+An unknown one-word name stays a div with the name as its class.
+@end(sidebar)
+
+@begin(<sidebar>)
+The angle-bracket sigil forces an element even for an unknown name.
+@end(sidebar)

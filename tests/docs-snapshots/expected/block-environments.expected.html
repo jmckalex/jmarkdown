@@ -33,8 +33,13 @@
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
   <div class="markdown-demo-markdown">
-    <pre><code class="hljs language-markdown">@begin(warning)
-A plain name becomes a <span class="hljs-code">`&lt;div&gt;`</span> whose class is the name.
+    <pre><code class="hljs language-markdown">@begin(aside)
+A <span class="hljs-emphasis">*known*</span> HTML block element — like <span class="hljs-code">`aside`</span>,
+<span class="hljs-code">`nav`</span> or <span class="hljs-code">`header`</span> — renders as itself.
+@end(aside)
+
+@begin(warning)
+Any other plain name becomes a <span class="hljs-code">`&lt;div&gt;`</span> whose class is the name.
 @end(warning)
 
 @begin(pull-quote)
@@ -44,8 +49,13 @@ custom-element name.
 @end(pull-quote)</code></pre>
   </div>
   <div class="markdown-demo-parsed">
+    <aside>
+      <p>A <strong>known</strong> HTML block element — like <code>aside</code>,
+        <code>nav</code> or <code>header</code> — renders as itself.
+      </p>
+    </aside>
     <div class="warning">
-      <p>A plain name becomes a <code>&lt;div&gt;</code> whose class is the name.</p>
+      <p>Any other plain name becomes a <code>&lt;div&gt;</code> whose class is the name.</p>
     </div>
     <pull-quote>
       <p>A <strong>hyphenated</strong> name becomes a custom element instead,
@@ -55,10 +65,14 @@ custom-element name.
 
   </div>
 </div>
-<p>You can force either form with a sigil — <code>@begin(.name)</code> is always a <code>&lt;div&gt;</code>,
-  <code>@begin(&lt;name&gt;)</code> is always an element — or set the document-wide policy with the
-  <code>Block elements</code> metadata key (<code>hyphenated</code> (default) · <code>all</code> · <code>none</code>). In
-  LaTeX, every environment renders as <code>\begin{name}[label]…\end{name}</code> regardless.
+<p>So the rule for a name you have not defined is: a real HTML block-container
+  element renders as itself, a hyphenated name becomes a custom element, and any
+  other plain name becomes a <code>&lt;div&gt;</code> with the name as its class. You can force
+  either form with a sigil — <code>@begin(.name)</code> is always a <code>&lt;div&gt;</code>, <code>@begin(&lt;name&gt;)</code>
+  is always an element — or set the document-wide policy with the <code>Block elements</code>
+  metadata key (<code>hyphenated</code> (default) · <code>all</code> · <code>none</code>; <code>all</code>/<code>none</code> ignore the
+  known-element list). In LaTeX, every environment renders as
+  <code>\begin{name}[label]…\end{name}</code> regardless.
   You do <strong>not</strong> have to define the environment to get a compilable document: the
   assembled preamble automatically provides a guarded no-op definition for any
   undefined name (deferred with <code>\AtBeginDocument</code>, so a real

@@ -45,8 +45,13 @@ If you use a name you have *not* defined, JMarkdown still does something sensibl
 so the environment is useful out of the box:
 
 :::markdown-demo
+@begin(aside)
+A *known* HTML block element — like `aside`,
+`nav` or `header` — renders as itself.
+@end(aside)
+
 @begin(warning)
-A plain name becomes a `<div>` whose class is the name.
+Any other plain name becomes a `<div>` whose class is the name.
 @end(warning)
 
 @begin(pull-quote)
@@ -56,10 +61,14 @@ custom-element name.
 @end(pull-quote)
 :::
 
-You can force either form with a sigil — `@begin(.name)` is always a `<div>`,
-`@begin(<name>)` is always an element — or set the document-wide policy with the
-`Block elements` metadata key (`hyphenated` (default) · `all` · `none`). In
-LaTeX, every environment renders as `\begin{name}[label]…\end{name}` regardless.
+So the rule for a name you have not defined is: a real HTML block-container
+element renders as itself, a hyphenated name becomes a custom element, and any
+other plain name becomes a `<div>` with the name as its class. You can force
+either form with a sigil — `@begin(.name)` is always a `<div>`, `@begin(<name>)`
+is always an element — or set the document-wide policy with the `Block elements`
+metadata key (`hyphenated` (default) · `all` · `none`; `all`/`none` ignore the
+known-element list). In LaTeX, every environment renders as
+`\begin{name}[label]…\end{name}` regardless.
 You do *not* have to define the environment to get a compilable document: the
 assembled preamble automatically provides a guarded no-op definition for any
 undefined name (deferred with `\AtBeginDocument`, so a real
