@@ -59,8 +59,14 @@ export function processTemplate(content) {
 		html = Mustache.render(default_template, config);
 	}
 	else {
+		// Relative template names resolve against the note's directory; an
+		// absolute path is used as-is, so one project-wide template (set in
+		// .jmarkdown/config.json) can serve notes at any folder depth.
 		let markdown_directory = configManager.get("Markdown file directory");
-		const template = fs.readFileSync( path.join(markdown_directory, template_name), 'utf8');
+		const template_path = path.isAbsolute(template_name)
+			? template_name
+			: path.join(markdown_directory, template_name);
+		const template = fs.readFileSync(template_path, 'utf8');
 		html = Mustache.render(template, config);
 	}
 	// These are temporary files so that I can inspect how the templating

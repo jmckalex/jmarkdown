@@ -30,7 +30,13 @@ export async function processYAMLheader(markdown) {
 	const stripped = yaml_opener ? markdown.slice(yaml_opener[0].length) : markdown;
 	const yaml_fence_lines = yaml_opener ? 1 : 0;
 
-	let has_header = /^[-a-zA-Z0-9 ]+:/.test(stripped);
+	// `Header style: fenced` (config) recognises ONLY `---`-fenced headers.
+	// Hosts rendering arbitrary notes (e.g. Clew's Obsidian-style vaults) set
+	// this so ordinary prose starting with `word: …` can't swallow a document
+	// as a bare-key header; fenced frontmatter still works for metadata.
+	const fenced_only = configManager.get('Header style') === 'fenced';
+
+	let has_header = /^[-a-zA-Z0-9 ]+:/.test(stripped) && !(fenced_only && !yaml_opener);
 	if (has_header) {
 		markdown = stripped;
 		// Split off ONLY the first terminator line: everything before it is the

@@ -199,11 +199,16 @@ global.require = customRequire;
 
 global.cheerio = cheerio;
 
-const globalNodeModulesPath = execSync('npm root -g').toString().trim();
+// Resolved lazily on first requireGlobal() call: shelling out to npm costs
+// hundreds of ms and fails outright where npm isn't on PATH (e.g. a packaged
+// Electron host), which would otherwise break import of this module for
+// documents that never use requireGlobal. JMARKDOWN_GLOBAL_MODULES overrides.
+let globalNodeModulesPath = process.env.JMARKDOWN_GLOBAL_MODULES || null;
 
 function requireGlobal(the_package) {
-	//console.log(the_package);
-	//console.log(path.join(globalNodeModulesPath, the_package));
+	if (globalNodeModulesPath === null) {
+		globalNodeModulesPath = execSync('npm root -g').toString().trim();
+	}
 	return require(path.join(globalNodeModulesPath, the_package));
 }
 
@@ -613,7 +618,11 @@ const markdown_no_metadata = await processYAMLheader(input);
 // been merged, so a `Resolve citations:` key in the header takes effect.
 global.resolveCitations = !!configManager.get('Biblify.resolve');
 
-const text_no_inclusions = processFileInclusions(markdown_no_metadata, markdownFileDirectory);
+// `File inclusion: false` (config/metadata) skips the [[file.md]] pre-parse
+// splice entirely — for hosts that give [[…]] other semantics (wikilinks).
+const text_no_inclusions = configManager.get('File inclusion') === false
+	? markdown_no_metadata
+	: processFileInclusions(markdown_no_metadata, markdownFileDirectory);
 
 // Collapse multi-paragraph inline footnotes so they stay within a single
 // paragraph block for the inline tokenizer.

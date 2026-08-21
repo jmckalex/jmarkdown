@@ -27,6 +27,17 @@ export const DEFAULT_CONFIG = {
 	"Directives": [],
 	"Extensions": [],
 	"Environments": [],
+	// Pre-parse [[file.md]] file-inclusion splicing (src/file-inclusion.js).
+	// Hosts that give [[…]] other semantics (e.g. Clew's Obsidian-style
+	// wikilinks) set this to false so the pre-parse pass can't swallow a
+	// [[link]] that happens to sit alone on a line.
+	"File inclusion": true,
+	// 'bare' (default) recognises JMarkdown's native `Key: value` header at
+	// the top of a file; 'fenced' recognises ONLY `---`-fenced headers, so
+	// prose that happens to start with `word: …` stays body text (see
+	// processYAMLheader in metadata-header.js). Hosts rendering arbitrary
+	// notes (Clew) set 'fenced'.
+	"Header style": "bare",
 	// Extra local files for `jmarkdown watch` to live-track that aren't directly
 	// linked via `CSS`/`Script` (e.g. an @imported CSS partial, or a module a
 	// linked script imports). Classified by extension: .css → live CSS inject,
