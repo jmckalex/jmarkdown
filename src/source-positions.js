@@ -124,6 +124,11 @@ function resolveSourceLines(tokens, parentLine, text, offsetToLine, headerLength
  * @param {number} headerLength - Number of lines in the YAML header (to offset back to the original file)
  */
 export function sourcePositions(text, headerLength = 0) {
+	// Honour the 1-based contract documented above in the headerless case too:
+	// offsetToLine() is 0-based, and a file with a metadata header passes a
+	// headerLength that already lands in 1-based original-file coordinates —
+	// so a headerless file needs the +1 explicitly.
+	if (headerLength === 0) headerLength = 1;
 	const offsetToLine = buildLineMap(text);
 
 	return {
