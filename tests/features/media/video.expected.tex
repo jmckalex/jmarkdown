@@ -1,0 +1,36 @@
+\section{Video}
+
+A \mintinline{text}|<video>| gets controls unless the author asks for something else, and its
+fallback content is a link — \href{run:tiny.mp4}{a tiny clip} even
+inline.
+
+% video: A run of the model
+\href{run:tiny.mp4}{\includegraphics[width=0.6\linewidth]{frame.png}}
+
+% video: Muted and looping
+\href{run:tiny.mp4}{\includegraphics[width=0.4\linewidth]{frame.png}}
+
+In LaTeX a video degrades under \mintinline{text}|Video mode|, per-video via \mintinline{text}|{tex-mode=…}|.
+
+% video: Embedded
+\includemedia[
+  width=8cm, height=6cm,
+  activate=onclick, deactivate=pageclose,
+  addresource=tiny.mp4,
+  flashvars={source=tiny.mp4}
+]{\includegraphics[width=8cm,height=6cm]{frame.png}}{VPlayer.swf}
+
+% video: Attached
+\textattachfile{tiny.mp4}{\includegraphics[width=0.4\linewidth]{frame.png}}
+
+% video: Poster only
+\includegraphics[width=0.4\linewidth]{frame.png}
+
+% video: Linked
+\href{run:tiny.mp4}{\includegraphics[width=0.4\linewidth]{frame.png}}
+
+A remote clip cannot be embedded in a PDF, so it falls back to a link.
+
+% video: Remote
+\href{https://example.com/clip.mp4}{Remote}
+

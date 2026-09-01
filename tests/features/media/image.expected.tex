@@ -1,0 +1,44 @@
+\section{Images}
+
+An inline \includegraphics[width=1em]{figs/icon.png} sits inside its paragraph,
+while the block form is a top-level element of its own.
+
+% alt: A small-world graph
+\begin{center}
+\includegraphics[width=0.6\linewidth]{figs/network.png}
+\end{center}
+
+Dimensions may be a fraction of the text width, a quoted percentage, a bare unit,
+a pair of units, or pixels — each translated for the format being written.
+
+% alt: Percentage
+\includegraphics[width=0.6\linewidth]{figs/a.png}
+
+% alt: Bare units
+\includegraphics[width=8cm,height=5cm]{figs/b.png}
+
+% alt: Pixels
+\includegraphics[width=300bp]{figs/c.png}
+
+% alt: Scaled
+\includegraphics[scale=1.5]{figs/d.png}
+
+A \mintinline{text}|tex-| or \mintinline{text}|web-| prefix confines a key to one output and beats the unprefixed
+key there; anything untranslated passes through to the HTML as written.
+
+% alt: Scoped
+\includegraphics[width=0.8\linewidth,trim=0 0 0 1cm, clip]{figs/e.png}
+
+% alt: Right-aligned
+\begin{flushright}
+\includegraphics[width=0.3\linewidth]{figs/f.png}
+\end{flushright}
+
+\includegraphics[width=0.3\linewidth]{figs/g.png}
+
+% alt: Remote
+\href{https://example.com/remote.png}{Remote}
+
+% alt: Vector art
+\includegraphics[width=0.4\linewidth]{figs/vector.svg}
+

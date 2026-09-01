@@ -1,0 +1,3 @@
+jmarkdown: 2 warnings:
+  - @image: no source given — the path goes in parentheses, @image(path/to/file)
+  - @image+ used mid-paragraph — a +-block directive must start its own line; it was not rendered

@@ -1,0 +1,13 @@
+<h1 id="toc-the-argument-slot">The argument slot</h1>
+<p>A handler that declares <code>arg: true</code> takes a leading parenthesis:
+  <img src="figs/a.png" alt="with an argument" style="width: 20%"> — and the block form puts the
+  <code>+</code> on the name, before the argument.
+</p>
+<img src="figs/b.png" alt="block form" style="width: 30%; display: block">
+<p>Every other name leaves parentheses to prose. A registered name that did not ask
+  for an argument keeps its parenthetical — <span class="k">styled</span>(like this one) — and
+  an unregistered @note(aside) is not a directive at all. An address such as
+  <a href="mailto:me@example.com">me@example.com</a> is untouched, as is a bare <span class="jmd-error">[@image: no source]</span> with no argument of any kind.
+</p>
+<p>A block form buried mid-sentence — <span class="jmd-error">[@image+ must start its own line]</span> — is misplaced, and
+  says so.</p>

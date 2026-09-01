@@ -1,0 +1,28 @@
+---
+Title: Video
+Video poster: none
+---
+
+# Video
+
+A `<video>` gets controls unless the author asks for something else, and its
+fallback content is a link — @video(tiny.mp4)[a tiny clip]{width=0.2} even
+inline.
+
+@video+(tiny.mp4)[A run of the model]{width=0.6 poster=frame.png}
+
+@video+(tiny.mp4)[Muted and looping]{width=0.4 poster=frame.png loop muted controls=false}
+
+In LaTeX a video degrades under `Video mode`, per-video via `{tex-mode=…}`.
+
+@video+(tiny.mp4)[Embedded]{width=8cm height=6cm poster=frame.png tex-mode=embed}
+
+@video+(tiny.mp4)[Attached]{width=0.4 poster=frame.png tex-mode=attach}
+
+@video+(tiny.mp4)[Poster only]{width=0.4 poster=frame.png tex-mode=poster}
+
+@video+(tiny.mp4)[Linked]{width=0.4 poster=frame.png tex-mode=link}
+
+A remote clip cannot be embedded in a PDF, so it falls back to a link.
+
+@video+(https://example.com/clip.mp4)[Remote]{width=0.4 tex-mode=embed}

@@ -1,0 +1,34 @@
+---
+Title: Images
+---
+
+# Images
+
+An inline @image(figs/icon.png)[a small icon]{width=1em} sits inside its paragraph,
+while the block form is a top-level element of its own.
+
+@image+(figs/network.png)[A small-world graph]{width=0.6 align=center}
+
+Dimensions may be a fraction of the text width, a quoted percentage, a bare unit,
+a pair of units, or pixels — each translated for the format being written.
+
+@image+(figs/a.png)[Percentage]{width="60%"}
+
+@image+(figs/b.png)[Bare units]{width=8cm height=5cm}
+
+@image+(figs/c.png)[Pixels]{width=400px}
+
+@image+(figs/d.png)[Scaled]{scale=1.5}
+
+A `tex-` or `web-` prefix confines a key to one output and beats the unprefixed
+key there; anything untranslated passes through to the HTML as written.
+
+@image+(figs/e.png)[Scoped]{width=0.5 tex-width=0.8 web-loading=lazy tex-options="trim=0 0 0 1cm, clip" class=plate id=fig-e}
+
+@image+(figs/f.png)[Right-aligned]{width=0.3 align=right}
+
+@image+(figs/g.png){width=0.3}
+
+@image+(https://example.com/remote.png)[Remote]{width=0.4}
+
+@image+(figs/vector.svg)[Vector art]{width=0.4}

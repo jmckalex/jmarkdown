@@ -5,6 +5,8 @@ philsci.csl
 src/dt-parser.js
 TiKZ/
 MetaPost/
+# @video poster-frame cache (src/media.js)
+Video/
 config.json
 foo.html
 my-directives.js

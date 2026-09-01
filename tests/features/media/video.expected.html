@@ -1,0 +1,13 @@
+<h1 id="toc-video">Video</h1>
+<p>A <code>&lt;video&gt;</code> gets controls unless the author asks for something else, and its
+  fallback content is a link — <video src="tiny.mp4" controls="" aria-label="a tiny clip" style="width: 20%"><a href="tiny.mp4">a tiny clip</a></video> even
+  inline.</p>
+<video src="tiny.mp4" controls="" poster="frame.png" aria-label="A run of the model" style="width: 60%; display: block"><a href="tiny.mp4">A run of the model</a></video>
+<video src="tiny.mp4" poster="frame.png" loop="loop" muted="muted" aria-label="Muted and looping" style="width: 40%; display: block"><a href="tiny.mp4">Muted and looping</a></video>
+<p>In LaTeX a video degrades under <code>Video mode</code>, per-video via <code>{tex-mode=…}</code>.</p>
+<video src="tiny.mp4" controls="" poster="frame.png" aria-label="Embedded" style="width: 8cm; height: 6cm; display: block"><a href="tiny.mp4">Embedded</a></video>
+<video src="tiny.mp4" controls="" poster="frame.png" aria-label="Attached" style="width: 40%; display: block"><a href="tiny.mp4">Attached</a></video>
+<video src="tiny.mp4" controls="" poster="frame.png" aria-label="Poster only" style="width: 40%; display: block"><a href="tiny.mp4">Poster only</a></video>
+<video src="tiny.mp4" controls="" poster="frame.png" aria-label="Linked" style="width: 40%; display: block"><a href="tiny.mp4">Linked</a></video>
+<p>A remote clip cannot be embedded in a PDF, so it falls back to a link.</p>
+<video src="https://example.com/clip.mp4" controls="" aria-label="Remote" style="width: 40%; display: block"><a href="https://example.com/clip.mp4">Remote</a></video>

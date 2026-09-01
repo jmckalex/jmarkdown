@@ -55,6 +55,7 @@ All source lives in `src/`. Key files:
 | `inline-footnotes.js` | `[^label: body]` / `[fn: body]` inline footnotes with multi-paragraph support, plus **grouped endnotes**: per-note `(group)` (`[fn(g): …]`), the ambient `@endnoteGroup(name)` directive, and `@endnotes` / `@endnotes(name)` placement. See "Grouped endnotes" |
 | `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc). Each also registers a `@begin(name)` parity handler (byte-identical to its `:::` twin — see "graphics parity" under begin-end); the inline `⟦…⟧` Mathematica form is unchanged |
 | `metapost.js` | `@begin(metapost)…@end(metapost)` block environment (registry-only, no `:::` form). Verbatim MetaPost source, compiled once and cached by content hash under a `MetaPost/` dir next to the source. HTML → `mpost` (`outputformat:="svg"`) → `<img src='MetaPost/<hash>-N.svg'>` (same `{scale/width/embed/empty-cache}` attrs as TiKZ); LaTeX → `mptopdf` → cached PDF via `\includegraphics[max width=\linewidth]` (mermaid's engine-agnostic model — works with the default pdflatex, no luamplib). Compile happens at RENDER time (not tokenize); failures → inline error box (HTML) / dropped + warning (LaTeX), and the error path deletes any partial figure so it never caches. No fixture (needs `mpost`/`mptopdf` + would write a cache dir into the tree) |
+| `media.js` | `@image(path)[alt]{attrs}` / `@video(path)[alt]{attrs}` — images and video in both formats. One semantic attribute vocabulary (`width`/`height`/`scale`/`align`) translated per format, `tex-`/`web-` scoped overrides, everything else passed through as HTML attributes. Video degrades in LaTeX under `Video mode` (link · embed · attach · poster) |
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
 | `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
 | `citations.js` | Compile-time citations (`Resolve citations`): parse-time `\cite`-family inline tokenizer + `@bibliography` block extension (legacy alias `::Bibliography`) |
@@ -109,6 +110,18 @@ levels, decided by a trailing `+`:
   `+` is the only difference; a `+`-form mid-sentence is left literal (block
   placement only works at a line start — marked fixes paragraph boundaries before
   inline runs). `@begin(name)…@end` remains the container form.
+
+A third call-shape adds a **mandatory argument slot**, opt-in per handler
+(`arg: true` in its registry entry): `@name(arg)[text]{attrs}` and
+`@name+(arg)[text]{attrs}`, reaching the handler as `ctx.arg` (raw, unparsed). It
+is for the one operand a directive can't do without — `@image(path)`,
+`@video(path)` — so the call reads as a call rather than as a `{src=…}` attribute
+among optional ones, and it matches the `@endnotes(name)` / `@endnoteGroup(name)`
+parenthesis already in the language. Opt-in because a parenthesis is ordinary
+prose: an unregistered name, or a registered one that didn't ask, still leaves
+`(an aside)` alone (`@begin(name)` has no arg slot — its parentheses name the
+environment). The block `start()` checks the registry before reporting a `(`
+opener, keeping the anti-shredding rule.
 
 `createAtInline`/`createAtBlock` live in `begin-end-core.js` (generic, sharing the
 registry); the JMarkdown layer (`begin-end.js`) registers the handlers. The
@@ -184,6 +197,69 @@ An alternative to the colon-counted container directives. Because the closer *na
 - **Registration:** `index.js` imports the configured `beginEnd` from `begin-end.js` and does `marked.use({ extensions: [beginEnd] })`. Because `@` is an unused sigil, nothing competes for `@begin(...)`, so — unlike the `:::` directives — its registration order doesn't matter.
 - **Generic LaTeX & orphans:** the JMarkdown layer supplies the generic `\begin{name}[label]…\end{name}` fallback and the LaTeX form of an orphan opener via `createBeginEnd`'s `fallback`/`orphan` options (merged over the core's HTML defaults). The `Block elements` policy is injected via the `blockElements` option reading `configManager`. The fallback also **auto-provides a guarded no-op definition** per generic name via `addPreamble` — `\AtBeginDocument{\ifcsname name\endcsname\else\newenvironment{name}{}{}\fi}` — so full documents compile before the author defines the environment (graceful degradation = the print twin of an unstyled div; `\AtBeginDocument` defers past the whole preamble so an author definition always wins). Caveat: names that are already TeX commands (`box`, `outer`, `middle`, `frame`, …) can't work as LaTeX environments at all — the guard sees them "defined" and `\begin{name}` runs the primitive; avoid such names in dual-output fixtures/docs.
 - Fixtures: `tests/features/begin-end/`.
+
+### Images and video (`media.js`)
+
+`@image(path)[alt]{attrs}` and `@video(path)[alt]{attrs}`, in both the inline and
+block (`+`) forms, on the shared registry. The path takes the argument slot above;
+the bracket is alt text (`mode: 'verbatim'` — alt is plain text by definition); the
+braces are HTML attributes, with two additions that let one source serve both
+outputs. A bare `![alt](src)` is unchanged; `@begin(figure)` still owns captions
+and numbering, and the two compose.
+
+- **Four translated keys** — `width`, `height`, `scale`, `align` — are interpreted
+  by both renderers: a fraction `0.6` or a percentage `"60%"` → `0.6\linewidth` /
+  `60%`; a physical unit (`8cm`, `3in`, `24pt`) → **verbatim in both** (CSS and
+  LaTeX share those units); `400px` → `300bp` (96→72 dpi) / `400px`; a bare number
+  > 1 is pixels. Height fractions are relative to `\textheight`, widths to
+  `\linewidth` (so they behave inside a minipage/subfigure). `align` is a
+  block-form notion — an inline image sits in the text flow — and becomes
+  margins (HTML) / `center`/`flushleft`/`flushright` (LaTeX).
+- **`tex-` / `web-` prefixes** scope a key to one output and beat the unprefixed
+  key there (`{width=0.5 tex-width=0.8 web-loading=lazy}`). `tex-options` is the
+  raw-`\includegraphics`-keys hatch (`tex-options="trim=0 0 0 1cm, clip"`).
+- **Everything else** passes through verbatim as an HTML attribute and is ignored
+  by LaTeX. `alt=""` is preserved (it means *decorative*); `<video>` gets
+  `controls` unless the author passes `autoplay` or `controls=false`, and its
+  fallback content is a link carrying the alt text (`<video>` has no `alt`).
+- **`{…}` cannot contain a backslash.** attributes-parser rejects the whole string
+  and the entire attribute set is lost — which is why widths are semantic keys and
+  not raw LaTeX. That failure is now a **build warning** rather than silence: the
+  core takes an `onAttrsError` hook (`begin-end-core.js`), wired to `warnings.js`
+  in `begin-end.js` for all three call-shapes. For arbitrary LaTeX, use
+  `@begin(TeX)`.
+- **Units are re-joined from the token stream.** attributes-parser reads
+  `width=8cm` as `width=8` plus a bare attribute `cm` (and `50%` as `50` + `%`), so
+  `normaliseUnits` walks `getTokens()` and re-attaches a unit that starts exactly
+  where the numeric value ended. It must come from the tokens, not the parsed
+  object: `width=8cm height=5cm` collide on the one `cm` key and the second is
+  lost. Quoted (`width="8cm"`) works too.
+- **Video in LaTeX degrades rather than translates**, under `Video mode`
+  (per-video `{tex-mode=…}`): `link` (default — the poster hyperlinked, `run:` for
+  a local file; works in every viewer) · `embed` (media9 RichMedia; **only Acrobat
+  plays it**, ~480KB of player per document, not per video) · `attach`
+  (attachfile2) · `poster` (the still alone). `embed`/`attach` need a local file
+  that exists — a remote or missing one falls back to `link` with a warning.
+  Verified empirically against TeX Live 2025: media9 v1.30 compiles under **both**
+  pdflatex and xelatex and emits `/Subtype/RichMedia` with `/Subtype/Video` assets;
+  beamer's `multimedia` `\movie` **fails under xelatex** (`\ifpdf` guard) and emits
+  the obsolete PDF 1.2 `/Movie` annotation, so it is not used. media9 picks the
+  asset subtype from the **basename of its last argument** — `VPlayer.swf` is what
+  makes it `Video` rather than `Flash`, so passing a bare `.mp4` there compiles but
+  declares the video as Flash content.
+- **Posters** are auto-extracted from frame 1 with ffmpeg where one is needed and
+  none was given, cached by a source stamp (path+size+mtime — video files are too
+  big to hash per build) under `Video/` next to the source; `Video poster: none`
+  turns it off, and a missing ffmpeg degrades with a warning. `ffprobe` supplies
+  the aspect ratio when `embed` needs a height it wasn't given (16:9 fallback).
+- **Remote images in LaTeX** can't be fetched at build time, so they become
+  `\href{url}{alt}` with a warning rather than vanishing; an `.svg` prefers a
+  sibling `.pdf`/`.png` if one exists (warning if not — `\includegraphics` can't
+  read SVG).
+- Fixtures: `tests/features/media/` (`image`, `video` — with a 1.5KB `tiny.mp4` and
+  a 98-byte `frame.png` so the `embed`/`attach` paths are really exercised; the
+  video fixture pins `Video poster: none` and explicit dimensions so no external
+  tool runs during the suite) and `tests/features/at-directives/at-arg-slot`.
 
 ### Grouped endnotes (`inline-footnotes.js`)
 Footnotes can be collected into named **groups** and each group **placed** at a

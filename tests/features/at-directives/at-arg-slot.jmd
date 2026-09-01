@@ -1,0 +1,19 @@
+---
+Title: The (…) argument slot
+---
+
+# The argument slot
+
+A handler that declares `arg: true` takes a leading parenthesis:
+@image(figs/a.png)[with an argument]{width=0.2} — and the block form puts the
+`+` on the name, before the argument.
+
+@image+(figs/b.png)[block form]{width=0.3}
+
+Every other name leaves parentheses to prose. A registered name that did not ask
+for an argument keeps its parenthetical — @span[styled]{.k}(like this one) — and
+an unregistered @note(aside) is not a directive at all. An address such as
+me@example.com is untouched, as is a bare @image with no argument of any kind.
+
+A block form buried mid-sentence — @image+(figs/c.png)[oops] — is misplaced, and
+says so.
