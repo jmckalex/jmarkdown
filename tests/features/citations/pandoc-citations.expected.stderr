@@ -1,0 +1,2 @@
+jmarkdown: 1 warning:
+  - Pandoc citation [see @Quine:1948, p. 1; also @Skyrms:1996, p. 2] mixes per-item locators (or a suppressed author) in a group, which has no \cite equivalent — left as written

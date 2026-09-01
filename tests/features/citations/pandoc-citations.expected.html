@@ -1,0 +1,71 @@
+<style>
+  /* JMarkdown compile-time citations */
+  div.csl-bib-body {
+    line-height: 1.4;
+  }
+
+  div.csl-bib-body div.csl-entry {
+    margin-bottom: 6pt;
+  }
+
+  span.biblify-vancouver {
+    font-weight: bold;
+    vertical-align: super;
+  }
+
+  div.biblify-vancouver-template div.csl-entry {
+    display: grid;
+    grid-template-columns: 18pt 1fr;
+    column-gap: 8pt;
+  }
+
+  div.biblify-vancouver-template div.csl-entry div.csl-right-inline {
+    width: auto;
+  }
+
+  span.biblify-tooltip-host {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dashed gray;
+  }
+
+  span.biblify-tooltip-host>span.biblify-tooltip {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 1.4em;
+    z-index: 50;
+    width: max-content;
+    max-width: 32em;
+    padding: 6pt 8pt;
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-weight: normal;
+    font-size: 0.85em;
+    white-space: normal;
+  }
+
+  span.biblify-tooltip-host:hover>span.biblify-tooltip {
+    display: block;
+  }
+</style>
+<p>In-text <span class="biblify-cite-ref" data-bibtex="Quine:1948" data-bib-member="section">Quine (1948)</span> and with a locator <span class="biblify-cite-ref" data-bibtex="Quine:1948" data-bib-member="section">Quine (1948, p. 33)</span>.</p>
+<p>Parenthetical <span class="biblify-cite-ref" data-bibtex="Quine:1948" data-bib-member="section">(Quine 1948)</span>, with a locator <span class="biblify-cite-ref" data-bibtex="Quine:1948" data-bib-member="section">(Quine 1948, p. 33)</span>, with a prefix
+  <span class="biblify-cite-ref" data-bibtex="Quine:1948" data-bib-member="section">(see Quine 1948, p. 33)</span>, author suppressed <span class="biblify-cite-year" data-bibtex="Quine:1948" data-bib-member="section">(1948)</span>, and in text <span class="biblify-cite-year" data-bibtex="Quine:1948" data-bib-member="section">1948</span>.
+</p>
+<p>Several at once <span class="biblify-cite-ref" data-bibtex="Quine:1948,Skyrms:1996" data-bib-member="section">(Quine 1948; Skyrms 1996)</span>, and a group whose prefix and suffix
+  sit where natbib can hold them <span class="biblify-cite-ref" data-bibtex="Quine:1948,Skyrms:1996" data-bib-member="section">(see Quine 1948; Skyrms 1996, pp. 3-5)</span>.</p>
+<p>A braced key <span class="biblify-cite-ref" data-bibtex="Quine:1948" data-bib-member="section">Quine (1948)</span> and <span class="biblify-cite-ref" data-bibtex="Skyrms:1996" data-bib-member="section">(Skyrms 1996, chap. 2)</span>.</p>
+<p>A group with per-item locators has no natbib equivalent, so it is left exactly as
+  written and warns: [see @Quine:1948, p. 1; also @Skyrms:1996, p. 2]</p>
+<p>Directives keep their names: <span class="k">a directive</span>, not a citation key. A link
+  <a href="http://example.com">text</a>, an address <a href="mailto:me@example.com">me@example.com</a> and an escaped @word are
+  untouched, and natbib <span class="biblify-cite-ref" data-bibtex="Quine:1948" data-bib-member="section">(cf. Quine 1948, p. 9)</span> still works.
+</p>
+<h2 class="bibliography-title">References</h2>
+<div class="csl-bib-body biblify-chicago-template">
+  <div data-csl-entry-id="Quine:1948" class="csl-entry">Quine, Willard Van Orman. 1948. “On What There Is.” <i>The Review of Metaphysics</i> 2 (5): 21–38.</div>
+  <div data-csl-entry-id="Skyrms:1996" class="csl-entry">Skyrms, Brian. 1996. <i>Evolution of the Social Contract</i>. Cambridge University Press.</div>
+</div>

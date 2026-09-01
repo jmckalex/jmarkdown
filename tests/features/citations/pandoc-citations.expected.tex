@@ -1,0 +1,21 @@
+In-text \citet{Quine:1948} and with a locator \citet[p. 33]{Quine:1948}.
+
+Parenthetical \citep{Quine:1948}, with a locator \citep[p. 33]{Quine:1948}, with a prefix
+\citep[see][p. 33]{Quine:1948}, author suppressed \citeyearpar{Quine:1948}, and in text \citeyear{Quine:1948}.
+
+Several at once \citep{Quine:1948,Skyrms:1996}, and a group whose prefix and suffix
+sit where natbib can hold them \citep[see][pp. 3-5]{Quine:1948,Skyrms:1996}.
+
+A braced key \citet{Quine:1948} and \citep[chap. 2]{Skyrms:1996}.
+
+A group with per-item locators has no natbib equivalent, so it is left exactly as
+written and warns: [see @Quine:1948, p. 1; also @Skyrms:1996, p. 2]
+
+Directives keep their names: a directive, not a citation key. A link
+\href{http://example.com}{text}, an address \href{mailto:me@example.com}{me@example.com} and an escaped @word are
+untouched, and natbib \citep[cf.][p. 9]{Quine:1948} still works.
+
+
+\renewcommand{\refname}{References}
+\bibliographystyle{plainnat}
+\bibliography{refs}

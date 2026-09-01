@@ -59,9 +59,13 @@ import { requirePackage } from './preamble.js';
 
 // The canonical \cite-family grammar, shared with the post-pass. Anchored so it
 // can be used to re-parse a single stored command.
-//   1:full  2:no  3:author  4:t|p  5:*  6:[opt]  7:[opt]  8:keys
+//   1:full  2:no  3:author  4:year  5:t|p|par  6:*  7:[opt]  8:[opt]  9:keys
+//
+// `year` (\citeyear, \citeyearpar) is the author-suppressed form — natbib has
+// both, and it is what pandoc's [-@key] / -@key translate to. `par` must precede
+// `p` in the alternation so \citeyearpar isn't read as \citeyear + "ar".
 export const CITE_RE =
-	/^\\(full)?(no)?cite(author)?(t|p)?(\*)?(\[[^\]]*\])?(\[[^\]]*\])?\{([^}]*)\}/i;
+	/^\\(full)?(no)?cite(author)?(year)?(t|par|p)?(\*)?(\[[^\]]*\])?(\[[^\]]*\])?\{([^}]*)\}/i;
 
 // Locate where the next cite command could begin (a backslash followed by an
 // optional full/no prefix and "cite").
@@ -94,8 +98,19 @@ export const citations = {
 		}
 	},
 	renderer(token) {
-		const cmd = token.text;
+		return renderCiteCommand(token.text);
+	}
+};
 
+/*
+	Render one \cite-family command, in whichever of the three modes is active.
+	Shared with pandoc-citations.js, which translates [@key] / @key into exactly
+	these commands and hands them here — so all three back-ends (native natbib in
+	LaTeX, the compile-time CSL pass, the runtime Biblify client) serve both
+	syntaxes with no further work.
+*/
+export function renderCiteCommand(cmd) {
+	{
 		if (global.isLatex) {
 			// Native natbib: hand the command through unchanged. natbib has no
 			// \fullcite, so translate it to \bibentry (the bibentry package).
@@ -114,21 +129,8 @@ export const citations = {
 		// Compile-time HTML: emit a placeholder for the post-pass to resolve.
 		return `<span class="biblify-cite" data-cite-cmd="${escapeAttr(cmd)}"></span>`;
 	}
-};
+}
 
-// Parse the optional `{title="…" style="…" scope="…" all}` argument of
-// @bibliography.
-function parseBibAttrs(raw) {
-	const result = { title: '', style: '', scope: '', all: false };
-	if (!raw) return result;
-	const inside = raw.trim().replace(/^\{/, '').replace(/\}$/, '');
-	let attrs = {};
-	try {
-		attrs = attributesParser(inside) || {};
-	} catch {
-		attrs = {};
-	}
-	if (attrs.title != null) result.title = String(attrs.title).trim();
 /* --- \citefile[…]{key} — a link to the reference's file on disk ---------------
 
 	\citefile{key}                          the first attachment, labelled with its
@@ -276,6 +278,21 @@ export const citefile = {
 		}
 		return `<a class="citation-file" href="${escapeAttr(fileURL(attachment.path))}" title="${escapeAttr(attachment.path)}">${escapeAttr(label)}</a>`;
 	}
+};
+
+// Parse the optional `{title="…" style="…" scope="…" all}` argument of
+// @bibliography.
+function parseBibAttrs(raw) {
+	const result = { title: '', style: '', scope: '', all: false };
+	if (!raw) return result;
+	const inside = raw.trim().replace(/^\{/, '').replace(/\}$/, '');
+	let attrs = {};
+	try {
+		attrs = attributesParser(inside) || {};
+	} catch {
+		attrs = {};
+	}
+	if (attrs.title != null) result.title = String(attrs.title).trim();
 	if (attrs.style) result.style = String(attrs.style).trim();
 	if (attrs.scope) result.scope = String(attrs.scope).trim();
 	if ('all' in attrs) {

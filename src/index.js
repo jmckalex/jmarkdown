@@ -40,6 +40,7 @@ import export_to_jmarkdown from './function-extensions.js';
 import { math, mathjs } from './mathjs-extension.js';
 import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
 import { citations, bibliography, citefile } from './citations.js';
+import { pandocCitations } from './pandoc-citations.js';
 import { indexMark, indexPlacement, resetIndexing, checkIndexPlacements } from './indexing.js';
 import { beginEnd, atInline, atBlock } from './begin-end.js';
 import { defineEnvironment } from './numbered-environments.js';
@@ -463,6 +464,12 @@ registerExtensions([ inlineFunctions, blockFunctions ]);
 // inline extension first, and \citefile must be claimed before the \cite-family
 // tokenizer is offered the same backslash.
 registerExtensions([ citations, bibliography, citefile ]);
+
+// Pandoc-style [@key] / @key, translated to the commands above (opt-in via
+// `Pandoc citations`). Registered HERE, before the @-directive extensions below:
+// marked offers the most recently registered inline extension first, so a
+// registered directive name is always claimed as a directive, never as a key.
+registerExtensions([ pandocCitations ]);
 
 // (Back-of-book index registration moved below, after the @name directives —
 // see the note there.)

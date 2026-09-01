@@ -59,6 +59,7 @@ All source lives in `src/`. Key files:
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
 | `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
 | `citations.js` | Compile-time citations (`Resolve citations`): parse-time `\cite`-family inline tokenizer + `@bibliography` block extension (legacy alias `::Bibliography`) |
+| `pandoc-citations.js` | **Opt-in** (`Pandoc citations: true`) pandoc citation syntax — `[@key]` / `@key` / `[-@key]` — as a second front end: the tokenizer *translates* to the equivalent `\cite` command and reuses `renderCiteCommand`, so all three back-ends serve both syntaxes unchanged |
 | `bib-attachments.js` | Reads the raw `.bib` for a reference's **attachments** (BibDesk `Bdsk-File-N` — base64 → binary plist → `relativePath` + macOS bookmark — and the JabRef/Zotero `file` field), resolving each to an absolute path. Consumed only by `\citefile`; includes a minimal `bplist00` reader (no new dependency) |
 | `biblify-compile.js` | Compile-time citation resolver: cheerio post-pass (HTML only) porting the runtime Biblify client — indexes `.bib`, resolves placeholders via `citation-js` + CSL, assembles bibliographies |
 
@@ -333,6 +334,50 @@ Two independent paths share the `\cite`-family syntax (`\cite`, `\citet`, `\cite
   - `biblify-compile.js` — a cheerio post-pass (HTML only, called from `post-processor.js`) that is a faithful port of the runtime client: it indexes the `.bib`, resolves the placeholders with `citation-js` + CSL, and assembles bibliographies. The inline formatters (`generic_paren_processor`, `bjps_processor`) and Vancouver range-collapsing are ported from Biblify so output matches.
 
 Output split: **LaTeX emits native natbib** — the `\cite` commands pass through verbatim (`\fullcite`→`\bibentry`) and `@bibliography` emits `\bibliographystyle`+`\bibliography`; real bibtex/biber does the work (author supplies `\usepackage{natbib}`, and `bibentry` if using `\fullcite`, in their surrounding document — LaTeX output is body-only). **HTML uses the CSL engine.** When `Resolve citations` is on, the runtime client scripts are suppressed (`{{^Biblify.resolve}}` in `default-template.html.mustache`).
+
+#### Pandoc citation syntax (`pandoc-citations.js`)
+A second notation for the same machinery, **off by default** (`Pandoc citations:
+true`). The tokenizer resolves nothing: it **translates** to the natbib command and
+hands it to `renderCiteCommand` (exported from `citations.js`), so LaTeX output,
+the compile-time CSL pass and the runtime Biblify client all serve it with no
+further work, and the two notations mix freely in one document.
+
+| pandoc | → | command |
+|---|---|---|
+| `@key` | | `\citet{key}` |
+| `@key [p. 33]` | | `\citet[p. 33]{key}` |
+| `-@key` | | `\citeyear{key}` |
+| `[@key]` | | `\citep{key}` |
+| `[@key, p. 33]` | | `\citep[p. 33]{key}` |
+| `[see @key, p. 33]` | | `\citep[see][p. 33]{key}` |
+| `[-@key]` | | `\citeyearpar{key}` |
+| `[@a; @b]` | | `\citep{a,b}` |
+| `[see @a; @b, p. 33]` | | `\citep[see][p. 33]{a,b}` |
+| `@{key}` | | braced key, either form |
+
+- **Why opt-in:** `@` is the directive sigil. With this on, a bare `@word` that
+  isn't a registered directive is read as a citation key — a real change to how an
+  existing document reads. Same rationale (and same lazy config read at tokenize
+  time) as `Smart typography`.
+- **Directives always win.** `pandoc-citations` is registered *before* `atBlock`/
+  `atInline`, and marked offers the most recently registered inline extension
+  first, so a registered name is claimed as a directive; the tokenizer also
+  declines any name in the block-environment registry (plus `begin`/`end`). The
+  glued-`@` (email) and preceding-backslash guards mirror the directive tokenizer's.
+- **`CITE_RE` gained `\citeyear`/`\citeyearpar`** (group 4 = `year`, group 5 =
+  `t|par|p`; the indices in `biblify-compile.js` shifted accordingly). natbib has
+  both natively, so LaTeX is free; the compile-time pass renders the year from the
+  entry data (`issued`), as natbib does, rather than through the CSL template. Note
+  the **runtime** Biblify client (`../biblify/src/parsing.js`) has its own copy of
+  the grammar and does *not* know `\citeyear` — so `[-@key]` needs
+  `Resolve citations: true` (or a matching update to Biblify) to render in HTML.
+- **What doesn't translate:** natbib gives a group ONE prenote and ONE postnote,
+  pandoc gives every item its own. A group with per-item locators
+  (`[see @a, p. 1; also @b, p. 2]`) or a suppressed author mixed into a group is
+  **claimed as literal text and warned about** — claimed, not declined, because
+  declining would let the in-text form pick the keys out of it one at a time.
+- Fixture: `tests/features/citations/pandoc-citations` (compile-time resolved, so
+  the golden shows the real rendered citations).
 
 #### `\citefile[…]{key}` — link to a reference's file on disk
 An inline command (registered in `citations.js`, backed by `bib-attachments.js`)

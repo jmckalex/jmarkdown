@@ -1,0 +1,25 @@
+Title: pandoc citations
+Bibliography: refs.bib
+Bibliography style: chicago
+Resolve citations: true
+Pandoc citations: true
+------------------------------------
+
+In-text @Quine:1948 and with a locator @Quine:1948 [p. 33].
+
+Parenthetical [@Quine:1948], with a locator [@Quine:1948, p. 33], with a prefix
+[see @Quine:1948, p. 33], author suppressed [-@Quine:1948], and in text -@Quine:1948.
+
+Several at once [@Quine:1948; @Skyrms:1996], and a group whose prefix and suffix
+sit where natbib can hold them [see @Quine:1948; @Skyrms:1996, pp. 3-5].
+
+A braced key @{Quine:1948} and [@{Skyrms:1996}, chap. 2].
+
+A group with per-item locators has no natbib equivalent, so it is left exactly as
+written and warns: [see @Quine:1948, p. 1; also @Skyrms:1996, p. 2]
+
+Directives keep their names: @span[a directive]{.k}, not a citation key. A link
+[text](http://example.com), an address me@example.com and an escaped \@word are
+untouched, and natbib \citep[cf.][p. 9]{Quine:1948} still works.
+
+@bibliography{title="References"}
