@@ -8,3 +8,6 @@ MetaPost/
 config.json
 foo.html
 my-directives.js
+
+# Local Claude Code permission grants, not project configuration
+.claude/settings.local.json
