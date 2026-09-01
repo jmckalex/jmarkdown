@@ -39,7 +39,7 @@ import { jmarkdownScriptExtensions } from './script-blocks.js';
 import export_to_jmarkdown from './function-extensions.js';
 import { math, mathjs } from './mathjs-extension.js';
 import { blockFunctions, inlineFunctions } from './inline-function-extension.js';
-import { citations, bibliography } from './citations.js';
+import { citations, bibliography, citefile } from './citations.js';
 import { indexMark, indexPlacement, resetIndexing, checkIndexPlacements } from './indexing.js';
 import { beginEnd, atInline, atBlock } from './begin-end.js';
 import { defineEnvironment } from './numbered-environments.js';
@@ -459,7 +459,10 @@ registerExtensions([ inlineFunctions, blockFunctions ]);
 // tokenizer is checked before the markdown inline rules (links, emphasis), and
 // so the @bibliography block extension (and its ::Bibliography legacy alias)
 // wins over the generic `::` directive.
-registerExtensions([ citations, bibliography ]);
+// \citefile last of the three: marked checks the most recently registered
+// inline extension first, and \citefile must be claimed before the \cite-family
+// tokenizer is offered the same backslash.
+registerExtensions([ citations, bibliography, citefile ]);
 
 // (Back-of-book index registration moved below, after the @name directives —
 // see the note there.)

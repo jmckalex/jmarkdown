@@ -59,6 +59,7 @@ All source lives in `src/`. Key files:
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
 | `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
 | `citations.js` | Compile-time citations (`Resolve citations`): parse-time `\cite`-family inline tokenizer + `@bibliography` block extension (legacy alias `::Bibliography`) |
+| `bib-attachments.js` | Reads the raw `.bib` for a reference's **attachments** (BibDesk `Bdsk-File-N` — base64 → binary plist → `relativePath` + macOS bookmark — and the JabRef/Zotero `file` field), resolving each to an absolute path. Consumed only by `\citefile`; includes a minimal `bplist00` reader (no new dependency) |
 | `biblify-compile.js` | Compile-time citation resolver: cheerio post-pass (HTML only) porting the runtime Biblify client — indexes `.bib`, resolves placeholders via `citation-js` + CSL, assembles bibliographies |
 
 ## Processing pipeline (in order)
@@ -332,6 +333,48 @@ Two independent paths share the `\cite`-family syntax (`\cite`, `\citet`, `\cite
   - `biblify-compile.js` — a cheerio post-pass (HTML only, called from `post-processor.js`) that is a faithful port of the runtime client: it indexes the `.bib`, resolves the placeholders with `citation-js` + CSL, and assembles bibliographies. The inline formatters (`generic_paren_processor`, `bjps_processor`) and Vancouver range-collapsing are ported from Biblify so output matches.
 
 Output split: **LaTeX emits native natbib** — the `\cite` commands pass through verbatim (`\fullcite`→`\bibentry`) and `@bibliography` emits `\bibliographystyle`+`\bibliography`; real bibtex/biber does the work (author supplies `\usepackage{natbib}`, and `bibentry` if using `\fullcite`, in their surrounding document — LaTeX output is body-only). **HTML uses the CSL engine.** When `Resolve citations` is on, the runtime client scripts are suppressed (`{{^Biblify.resolve}}` in `default-template.html.mustache`).
+
+#### `\citefile[…]{key}` — link to a reference's file on disk
+An inline command (registered in `citations.js`, backed by `bib-attachments.js`)
+that emits a link to the attachment recorded in the `.bib` entry — and **nothing
+at all** when the entry has none, so it is safe to drop into prose. Unlike the
+`\cite` family it is resolved at **build time in both formats**, whether or not
+`Resolve citations` is on: a file path is a static fact with no CSL in it, so the
+runtime Biblify client never sees it.
+
+- **Syntax:** `\citefile{key}` · `\citefile[file=2]{key}` ·
+  `\citefile[text="the preprint"]{key}` · `\citefile[file=2, text="…"]{key}` ·
+  `\citefile[2]{key}` (bare-number shorthand for `file=`). The optional argument is
+  **LaTeX keyval** — comma-separated, values optionally quoted with straight *or
+  curly* quotes — not the `{…}` attribute syntax used elsewhere. Default link text
+  is the file's basename.
+- **BibDesk numbering is sparse.** It doesn't renumber when an attachment is
+  removed, so an entry's only attachment is routinely `Bdsk-File-2` with no
+  `-1` (true of every attachment in the author's own bibliography). Attachments
+  are collapsed to a **dense list in ascending field order**, and `file=n` indexes
+  that — `file=1` is the first attachment present, whatever it is numbered.
+- **Path resolution**, first hit wins: the plist's `relativePath` against the
+  `.bib`'s own directory (right when `Bibliography` points at the live BibDesk
+  file), then the bookmark's path components — which is what rescues a `.bib` that
+  has been *copied* away from the tree its relative paths were written against.
+  The bookmark records the volume's components after the file's own, so the
+  candidates are tried longest-first with `fs.existsSync` as the oracle rather than
+  reverse-engineering its table of contents.
+- **A recorded-but-missing file still emits its link**, plus a build warning — a
+  visible broken link beats a silent omission. An unknown key, an out-of-range
+  index, or no `Bibliography` at all emit nothing and warn.
+- **The two formats encode the path differently, deliberately.** HTML gets a
+  percent-encoded `file://` URL (what a browser needs). LaTeX must NOT: hyperref
+  turns a `file:`/`run:` target into a PDF *file action* whose `/F` is a **path**,
+  where `%20` would be taken literally — raw spaces are correct and compile
+  cleanly. A `.pdf` uses `file://` (hyperref emits `/GoToR`, so the viewer opens it
+  as a document); anything else uses `run:` (`/Launch`, handing the file to its
+  application). Only `%` and `#` are escaped, for TeX itself.
+- Fixtures: `tests/features/citations/citefile` covers the deterministic
+  emits-nothing cases; the resolved-path cases can't be goldens (the absolute path
+  depends on the checkout location), so they live in **`tests/citefile/run.sh`** — a
+  self-checking suite that builds in a temp directory and asserts against paths it
+  computes at run time. It is wired into `tests/run-all.sh` as a gating suite.
 
 Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path), `Bibliography style` (apa/harvard1/vancouver/bjps/chicago/ajp/econometrica/ergo, or a custom `foo.csl`), `Resolve citations`, `Citation tooltips`, `Minimal bibliography` (writes `<out>.cited.bib`), `LaTeX bib style` (natbib `.bst`). Bundled CSL files live in `src/csl/`. `citation-js` is a dependency, loaded via `createRequire` (it's CJS; `require('citation-js')` returns the `Cite` constructor with `Cite.plugins` static). Vancouver is a whole-document mode; per-section style switching and scoped/sectional bibliographies are HTML-only. Fixtures: `tests/features/citations/` (`bibliography`, `legacy-alias`) — they **must** pin `Bibliography style` in the header, since a global `~/.jmarkdown/config.json` can otherwise supply a machine-specific default and make the goldens non-reproducible. `docs/bibliographic-support.jmd` is deliberately **excluded** from docs-snapshots (external BibTeX), so those fixtures are the only automated cover.
 

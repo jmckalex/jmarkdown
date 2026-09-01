@@ -1,0 +1,17 @@
+---
+Title: citefile
+Bibliography: citefile.bib
+---
+
+# Attachments
+
+An entry with nothing attached emits nothing at all, so the sentence reads
+normally either way: \citefile{Empty:2020}right up to the full stop.
+
+An unknown key emits nothing and warns: \citefile{Nobody:1999}
+
+Asking for an attachment the entry hasn't got emits nothing and warns —
+BibDesk numbers sparsely, so `Sparse:2021`'s only attachment is `bdsk-file-3`
+and is therefore `file=1`: \citefile[file=2]{Sparse:2021}
+
+A bare number is shorthand for the same thing: \citefile[3]{Sparse:2021}

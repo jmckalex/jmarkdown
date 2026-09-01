@@ -1,0 +1,4 @@
+jmarkdown: 3 warnings:
+  - \citefile{Nobody:1999}: no bibliography entry with that key
+  - \citefile[file=2]{Sparse:2021}: the entry has 1 attachment
+  - \citefile[file=3]{Sparse:2021}: the entry has 1 attachment

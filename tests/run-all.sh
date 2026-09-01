@@ -41,7 +41,14 @@ sh "$REPO/tests/latex-document/run.sh"
 latex_document_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ]; then
+# 5. citefile — \citefile's resolved-path cases, which can't be goldens because
+#    the absolute path depends on where the repo is checked out. Gates CI.
+echo "------ citefile ------"
+sh "$REPO/tests/citefile/run.sh"
+citefile_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi

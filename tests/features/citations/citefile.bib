@@ -1,0 +1,17 @@
+% A cut-down bibliography for the \citefile fixture. No attachment here
+% exists on disk: every case in citefile.jmd is one that emits NO link, so the
+% goldens stay free of machine-specific absolute paths. The linking itself is
+% covered by tests/citefile/run.sh, which builds in a temp directory.
+
+@Book{  Empty:2020,
+  author  = {A. Author},
+  title   = {A Book With No Attachment},
+  year    = {2020}
+}
+
+@Article{  Sparse:2021,
+  author  = {B. Writer},
+  title   = {One Attachment, Numbered Three},
+  year    = {2021},
+  bdsk-file-3 = {YnBsaXN0MDDSAQIDBFhib29rbWFya1xyZWxhdGl2ZVBhdGhAXxATbm93aGVyZS9taXNzaW5nLnBkZggNFiMkAAAAAAAAAQEAAAAAAAAABQAAAAAAAAAAAAAAAAAAADo=}
+}

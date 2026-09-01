@@ -1,0 +1,39 @@
+% Fixture bibliography for tests/citefile/run.sh. The attachment paths are
+% RELATIVE to this file, so the suite copies this .bib and attachment.pdf into a
+% temp directory together and the resolved absolute paths are known at run time.
+
+@Book{  One:2020,
+  author  = {A. Author},
+  title   = {A Book With One Attachment},
+  year    = {2020},
+  bdsk-file-2 = {YnBsaXN0MDDSAQIDBFhib29rbWFya1xyZWxhdGl2ZVBhdGhAXmF0dGFjaG1lbnQucGRmCA0WIyQAAAAAAAABAQAAAAAAAAAFAAAAAAAAAAAAAAAAAAAAMw==}
+}
+
+@Article{  Two:2021,
+  author  = {B. Writer},
+  title   = {Two Attachments, Sparsely Numbered},
+  year    = {2021},
+  bdsk-file-2 = {YnBsaXN0MDDSAQIDBFhib29rbWFya1xyZWxhdGl2ZVBhdGhAXmF0dGFjaG1lbnQucGRmCA0WIyQAAAAAAAABAQAAAAAAAAAFAAAAAAAAAAAAAAAAAAAAMw==},
+  bdsk-file-5 = {YnBsaXN0MDDSAQIDBFhib29rbWFya1xyZWxhdGl2ZVBhdGhAXxAXYSBzcGFjZSBpbiB0aGUgbmFtZS5wZGYIDRYjJAAAAAAAAAEBAAAAAAAAAAUAAAAAAAAAAAAAAAAAAAA+}
+}
+
+@Article{  Gone:2022,
+  author  = {C. Scholar},
+  title   = {An Attachment That Has Been Moved Away},
+  year    = {2022},
+  bdsk-file-1 = {YnBsaXN0MDDSAQIDBFhib29rbWFya1xyZWxhdGl2ZVBhdGhAXHZhbmlzaGVkLnBkZggNFiMkAAAAAAAAAQEAAAAAAAAABQAAAAAAAAAAAAAAAAAAADE=}
+}
+
+@InProceedings{  Jabref:2023,
+  author  = {D. Researcher},
+  title   = {Recorded The JabRef Way},
+  year    = {2023},
+  file    = {Full text:attachment.pdf:PDF}
+}
+
+@Misc{  Other:2024,
+  author  = {E. Maker},
+  title   = {A Non-PDF Attachment},
+  year    = {2024},
+  file    = {Dataset:data.csv:CSV}
+}
