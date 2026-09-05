@@ -333,6 +333,23 @@ Two independent paths share the `\cite`-family syntax (`\cite`, `\citet`, `\cite
   - `citations.js` — the parse-time extensions. The inline `\cite`-family tokenizer claims each raw command **before** marked's inline rules can mangle the `[...]` args / `*` / keys (and never fires inside code spans, so literal examples are safe). The `@bibliography` block extension marks where a bibliography goes (`@bibliography{title="References" style="apa" scope="#sec" all}`); it's a dedicated block extension, not a labelled directive, because the directive framework requires trailing content so a bare marker wouldn't tokenize. It is deliberately shaped like `@endnotes` (line-anchored `@name` + optional `{title="…"}`) — the two placement markers should stay in step. `::Bibliography` remains accepted as a **silent legacy alias** (one branch in the opener regex, no warning, no `title`); it is no longer documented. `title` → `<h2 class="bibliography-title">` in HTML and `\renewcommand{\refname|\bibname}` in LaTeX (the class split comes from `isChapterClass()` in `sectioning.js` — the one place the class list lives); an empty bibliography drops its heading with it, and on the **runtime** path the marker emits nothing at all, so `title` is compile-time/LaTeX only.
   - `biblify-compile.js` — a cheerio post-pass (HTML only, called from `post-processor.js`) that is a faithful port of the runtime client: it indexes the `.bib`, resolves the placeholders with `citation-js` + CSL, and assembles bibliographies. The inline formatters (`generic_paren_processor`, `bjps_processor`) and Vancouver range-collapsing are ported from Biblify so output matches.
 
+#### `\fullcite` renders inline (`span.fullcite`)
+An inline `\fullcite{key}` lands wherever the author wrote it — usually
+mid-paragraph — so on the compile-time HTML path its rendered entry is emitted as
+**`<span class="csl-bib-body fullcite …">` wrapping `<span class="csl-entry">`**,
+not citation-js's native `<div>`s (`retagAsSpans` in `biblify-compile.js` re-tags
+the subtree in place; classes are untouched, so `.fullcite` / `.csl-entry` style
+it). This is not cosmetic: an HTML parser closes an open `<p>` the moment it meets
+a `<div>`, so the div form tore the paragraph in two and orphaned any prose after
+the citation — no CSS could recover it, because the damage was done at parse time.
+The **bibliography proper** (`renderBibliography`) keeps its `<div>`s, being a
+block by nature, and so keeps the bundled `div.csl-bib-body` styling; the inline
+form deliberately matches none of those rules. The `fullcite` class is the CSS
+handle for the inline form. LaTeX is unaffected (`\bibentry` is already inline).
+Fixture: `tests/features/citations/fullcite`. **The runtime Biblify client
+(`../biblify/src/biblify.js`) still emits the div form** and has no `fullcite`
+class — a matching change in that repo if the runtime path matters.
+
 Output split: **LaTeX emits native natbib** — the `\cite` commands pass through verbatim (`\fullcite`→`\bibentry`) and `@bibliography` emits `\bibliographystyle`+`\bibliography`; real bibtex/biber does the work (author supplies `\usepackage{natbib}`, and `bibentry` if using `\fullcite`, in their surrounding document — LaTeX output is body-only). **HTML uses the CSL engine.** When `Resolve citations` is on, the runtime client scripts are suppressed (`{{^Biblify.resolve}}` in `default-template.html.mustache`).
 
 #### Pandoc citation syntax (`pandoc-citations.js`)

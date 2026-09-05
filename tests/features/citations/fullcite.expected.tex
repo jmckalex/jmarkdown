@@ -1,0 +1,12 @@
+An inline \bibentry{Quine:1948} sits inside its paragraph, with prose
+following it — so the outer element must be a \mintinline{text}|span.fullcite|, not a div
+(a div would close the \mintinline{text}|<p>| in the browser and orphan this text).
+
+Two keys at once: \bibentry{Quine:1948}; \bibentry{Skyrms:1996}, one \mintinline{text}|.csl-entry| each.
+
+\bibentry{NoSuchKey} emits nothing at all.
+
+
+\renewcommand{\refname}{References}
+\bibliographystyle{plainnat}
+\bibliography{refs}

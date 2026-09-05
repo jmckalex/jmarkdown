@@ -170,6 +170,22 @@ commas.
 | `\nocite{key}` | Adds the entry to the bibliography but prints nothing inline. Accepts several comma-separated keys at once. |
 | `\fullcite{key}` | Inserts the entry's complete bibliography-style reference inline, at that spot. |
 
+`\fullcite` is genuinely **inline**: the reference is emitted as a `<span>`,
+inside whatever paragraph you wrote it in, so prose can follow it in the same
+sentence. The outer span carries the class `fullcite`, which is the handle to
+style it with:
+
+```css
+.fullcite { font-style: italic; }
+```
+
+Inside it there is one `<span class="csl-entry">` per key, so `\fullcite{a,b}`
+gives you two of them to separate or style individually.
+
+A `@bibliography` list, by contrast, stays a block of `<div>`s — so a rule
+written for one will not accidentally catch the other. In LaTeX output
+`\fullcite` becomes `\bibentry`, which is inline already.
+
 Two **optional arguments** in square brackets, *before* the brace, work exactly
 as in `natbib`: a lone `[postnote]` is appended inside the citation, and a
 `[prenote][postnote]` pair brackets it on both sides. They are most useful with

@@ -229,6 +229,18 @@ As argued in \cite{Lewis:1969}, …
     </tr>
   </tbody>
 </table>
+<p><code>\fullcite</code> is genuinely <span class="intense">inline</span>: the reference is emitted as a <code>&lt;span&gt;</code>,
+  inside whatever paragraph you wrote it in, so prose can follow it in the same
+  sentence. The outer span carries the class <code>fullcite</code>, which is the handle to
+  style it with:</p>
+<pre><code class="hljs language-css"><span class="hljs-selector-class">.fullcite</span> { <span class="hljs-attribute">font-style</span>: italic; }
+</code></pre>
+<p>Inside it there is one <code>&lt;span class="csl-entry"&gt;</code> per key, so <code>\fullcite{a,b}</code>
+  gives you two of them to separate or style individually.</p>
+<p>A <code>@bibliography</code> list, by contrast, stays a block of <code>&lt;div&gt;</code>s — so a rule
+  written for one will not accidentally catch the other. In LaTeX output
+  <code>\fullcite</code> becomes <code>\bibentry</code>, which is inline already.
+</p>
 <p>Two <span class="intense">optional arguments</span> in square brackets, <strong>before</strong> the brace, work exactly
   as in <code>natbib</code>: a lone <code>[postnote]</code> is appended inside the citation, and a
   <code>[prenote][postnote]</code> pair brackets it on both sides. They are most useful with

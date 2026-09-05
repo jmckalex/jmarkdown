@@ -1,0 +1,15 @@
+Title: fullcite
+Bibliography: refs.bib
+Bibliography style: chicago
+Resolve citations: true
+------------------------------------
+
+An inline \fullcite{Quine:1948} sits inside its paragraph, with prose
+following it — so the outer element must be a `span.fullcite`, not a div
+(a div would close the `<p>` in the browser and orphan this text).
+
+Two keys at once: \fullcite{Quine:1948,Skyrms:1996}, one `.csl-entry` each.
+
+\fullcite{NoSuchKey} emits nothing at all.
+
+@bibliography{title="References"}
