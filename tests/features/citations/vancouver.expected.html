@@ -1,0 +1,66 @@
+<style>
+  /* JMarkdown compile-time citations */
+  div.csl-bib-body {
+    line-height: 1.4;
+  }
+
+  div.csl-bib-body div.csl-entry {
+    margin-bottom: 6pt;
+  }
+
+  span.biblify-vancouver {
+    font-weight: bold;
+    vertical-align: super;
+  }
+
+  div.biblify-vancouver-template div.csl-entry {
+    display: grid;
+    grid-template-columns: 18pt 1fr;
+    column-gap: 8pt;
+  }
+
+  div.biblify-vancouver-template div.csl-entry div.csl-right-inline {
+    width: auto;
+  }
+
+  span.biblify-tooltip-host {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dashed gray;
+  }
+
+  span.biblify-tooltip-host>span.biblify-tooltip {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 1.4em;
+    z-index: 50;
+    width: max-content;
+    max-width: 32em;
+    padding: 6pt 8pt;
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-weight: normal;
+    font-size: 0.85em;
+    white-space: normal;
+  }
+
+  span.biblify-tooltip-host:hover>span.biblify-tooltip {
+    display: block;
+  }
+</style>
+<p>Numeric citations <span class="biblify-vancouver" data-bibtex="Quine:1948">[1]</span> and <span class="biblify-vancouver" data-bibtex="Skyrms:1996">[2]</span>, collapsed
+  when repeated <span class="biblify-vancouver" data-bibtex="Quine:1948,Skyrms:1996">[1,2]</span>.</p>
+<h2 class="bibliography-title">References</h2>
+<div class="csl-bib-body biblify-vancouver-template">
+  <div data-csl-entry-id="Quine:1948" class="csl-entry">
+    <div class="csl-left-margin">[1]</div>
+    <div class="csl-right-inline">Quine WVO. On What There Is. The Review of Metaphysics. 1948;2(5):21–38.</div>
+  </div>
+  <div data-csl-entry-id="Skyrms:1996" class="csl-entry">
+    <div class="csl-left-margin">[2]</div>
+    <div class="csl-right-inline">Skyrms B. Evolution of the Social Contract. Cambridge University Press; 1996.</div>
+  </div>
+</div>

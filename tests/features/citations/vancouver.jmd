@@ -1,0 +1,10 @@
+Title: vancouver
+Bibliography: refs.bib
+Bibliography style: vancouver
+Resolve citations: true
+------------------------------------
+
+Numeric citations \citep{Quine:1948} and \citet{Skyrms:1996}, collapsed
+when repeated \citep{Quine:1948,Skyrms:1996}.
+
+@bibliography{title="References"}

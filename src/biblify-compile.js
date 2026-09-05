@@ -538,7 +538,7 @@ function resolveVancouver($, ctx) {
 	for (const el of placeholders) {
 		const m = CITE_RE.exec($(el).attr('data-cite-cmd') || '');
 		if (!m) continue;
-		for (const k of parseKeys(m[8])) {
+		for (const k of parseKeys(m[9])) {
 			if (!seen.has(k)) { seen.add(k); orderedKeys.push(k); }
 		}
 	}
@@ -580,7 +580,7 @@ function resolveVancouver($, ctx) {
 	for (const el of placeholders) {
 		const m = CITE_RE.exec($(el).attr('data-cite-cmd') || '');
 		if (!m) { $(el).remove(); continue; }
-		const keys = parseKeys(m[8]);
+		const keys = parseKeys(m[9]);
 		const keyString = keys.join(',');
 		const indexes = keys.map(k => keyIndexMap[k]).filter(n => n !== undefined);
 		const sorted = Array.from(new Set(indexes)).sort((a, b) => a - b);
