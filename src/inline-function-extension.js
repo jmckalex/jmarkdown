@@ -1,5 +1,18 @@
 import * as acorn from 'acorn';
 import { runInThisContext } from './utils.js';
+import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
+
+// Under `Run note code: false` (note-code.js): the expression at the start of
+// `src`, parsed but never run, or null when there is none to claim.
+function unrunExpression(src) {
+    try {
+        const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
+        return src.slice(0, exp.end);
+    }
+    catch {
+        return null;
+    }
+}
 
 export const blockFunctions = {
     name: 'blockFunction',
@@ -13,6 +26,17 @@ export const blockFunctions = {
     tokenizer(src, tokens) {
         const match = /^function\(/.exec(src);
         if (match) {
+            if (!noteCodeAllowed()) {
+                const expression = unrunExpression(src);
+                if (expression === null) return false;
+                return {
+                    type: 'blockFunction',
+                    raw: expression,
+                    text: refuseNoteCode('function(…) block', { block: true }),
+                    block: true,
+                    tokens: []
+                };
+            }
             const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
             //console.log(exp);
             const expression = src.slice(0, exp.end);
@@ -63,6 +87,16 @@ export const inlineFunctions = {
     tokenizer(src, tokens) {
         const match = /^func\(/.exec(src);
         if (match) {
+            if (!noteCodeAllowed()) {
+                const expression = unrunExpression(src);
+                if (expression === null) return false;
+                return {
+                    type: 'inlineFunction',
+                    raw: expression,
+                    text: refuseNoteCode('func(…)'),
+                    block: true
+                };
+            }
             const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
             //console.log(exp);
             const expression = src.slice(0, exp.end);

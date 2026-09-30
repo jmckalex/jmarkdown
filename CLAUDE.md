@@ -31,6 +31,7 @@ All source lives in `src/`. Key files:
 | `syntax-modifications.js` | Inline syntax: `/italics/`, `*strong*`, `==highlight==`, `__underline__`, sub/sup |
 | `syntax-enhancements.js` | Further inline/block syntax |
 | `smart-typography.js` | **Opt-in** (`Smart typography: true`, default off) typographic educator: straight quotes → curly, `---`/`--` → em/en dash, `...` → ellipsis. A `walkTokens` hook on both marked instances mutating only **leaf inline `text` tokens** (code/math/`:::TeX`/escapes never produce those, so protection is free); emits raw **Unicode** so one implementation serves both outputs. Reads the config key lazily at walk time — registration happens before the metadata header is parsed |
+| `note-code.js` | `Run note code`: the one switch over every path by which a document makes the build run code, and the by-name refusal each path emits when it is off (see below) |
 | `script-blocks.js` | `<script type="jmarkdown">` and `jmarkdown-postprocess` blocks |
 | `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown` |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |
@@ -301,6 +302,59 @@ docs `footnotes` snapshot and the three `footnotes` fixtures are byte-identical)
   JMarkdown-built per-group lists at the placements (JMarkdown owns the numbering,
   so this leans on no `endnotes`/`enotez` package semantics).
 - Fixtures: `tests/features/endnotes/` (`grouped`, `ambient`).
+
+### `Run note code` — a document's code, and a host that did not write it (`note-code.js`)
+
+A document can make the BUILD run code: `<script data-type="jmarkdown">` and
+`jmarkdown-postprocess` blocks, the exported function calls in prose (`Math.…`,
+`Date.…`, `String.…`, `MathJS.…`, `Algebra.…`, `calc(…)`, and anything a script
+exports with `export_to_jmarkdown`), `function(…) { … }` blocks, `func(…)`,
+`math.…(` expressions, Mathematica (`:::Mathematica`, `@begin(Mathematica)`,
+`⟦…⟧` — Wolfram Language is code), and the header keys that load files beside
+it (`Load javascript`, `Load extensions`, `Load directives`, `Load
+environments`) or define tokenizers from its own text (`Extension …`). For an
+author that is the point; for a host rendering documents someone else wrote
+(Clew opening a shared vault) it means a note runs with the host's rights the
+first time it renders.
+
+- **One config switch, `Run note code`, default `true`** — today's behaviour, so
+  the CLI and the book builds are unchanged. A host sets it `false` and every
+  path above refuses **by name, in place**: `<span|div class="jmd-error
+  jmd-refused" data-jmd-refused="NAME">` in HTML (NAME as written — the header
+  key, `Math`, `math.sqrt`, `jmarkdown script`, `Mathematica`, …, so a host can
+  say what was held back and offer to trust the document), nothing in LaTeX, and
+  a build warning in both. Header keys have no place in the body, so their
+  markers stand at its top (`headerRefusalsHTML()`, placed in index.js beside
+  `Math macros`). Expressions are claimed by parsing them with acorn and never
+  evaluating them; text that is no expression stays text.
+- **Config only.** `mergeMetadata` drops a header's `Run note code` key: a
+  document that could set it would switch its own code back on.
+- **Not covered, by design:** external programs the engine runs over a
+  document's content (lualatex for TiKZ, mpost, mmdc, ffmpeg) — TeX is a
+  language too, but restricting it is those programs' business (their flags)
+  and a separate question; and `<script>` passed through to the page, which runs
+  wherever the page is shown.
+- **No shell strings.** Every external program the engine runs with a
+  document-influenced argument is called through `execFileSync` with an
+  argument array (tikz, metapost, mermaid, media, mathematica): cache paths sit
+  under the document's own folder, and a folder name holding `$(…)` or a
+  backtick ran as a command inside a double-quoted shell string. Two calls stay
+  shell strings on purpose: `mptopdf` (a Perl script with no `#!` line that
+  starts only through the shell's fallback; its one argument is a hex hash), and
+  mmdc on Windows (an npm `.cmd` shim; cmd.exe's quotes make `& | < >` literal
+  and a Windows file name cannot hold `"`). Mathematica's
+  `> file` redirects became a descriptor handed to the child as its stdout, so
+  the file is created and filled exactly as before. Its `-c` argument keeps the
+  string the shell used to hand over, `SetOptions[, PageWidth->100]` — the old
+  double quotes let the shell expand `$Output` to nothing, and restoring it
+  would change cached output (the owner's call, not a security fix's).
+- **Known, separate:** inline `func(…)` cannot run as written — acorn ends the
+  expression at `func(…)`, and `(function(…))()` is a SyntaxError that aborts
+  the build — so any `func(` in prose fails the build with the switch on. With
+  it off, the construct is refused and the build completes.
+- Suite: `tests/note-code/run.sh` (gating; in run-all.sh) — every construct
+  prints a sentinel when it runs; off, none may appear and each is refused by
+  name (HTML and LaTeX); on, every one must appear.
 
 ### Extension registration order matters
 Inline extensions registered **later** are checked first in marked.js. The inline footnote extension is registered after `marked-footnote` for this reason. Document any ordering dependencies you introduce. The `@endnotes` placement extension is a **block** extension on the main parser only (like the footnote extensions), line-anchored so it never competes with the `@name`/`@begin` sigil forms.

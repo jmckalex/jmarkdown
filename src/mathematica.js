@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import { configManager } from './config-manager.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import Mustache from 'mustache';
+import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,12 @@ export function createMathematica(marker) {
 		marker: marker,
 		label: "Mathematica",
 		tokenizer: function(text, token) {
+			// `Run note code: false` (note-code.js): Wolfram Language is code,
+			// so nothing is written and wolframscript is never asked.
+			if (!noteCodeAllowed()) {
+				token['refused'] = true;
+				return token;
+			}
 			if (text.includes("DisplayMath")) {
 				token['DisplayMath'] = true;
 			}
@@ -146,6 +153,7 @@ export function createMathematica(marker) {
 		},
 		renderer(token) {
 			if (token.meta.name === "Mathematica") {
+				if (token['refused']) return refuseNoteCode('Mathematica', { block: true });
 				// The Mathematica directive emits an SVG <img>/<div>; suppress
 				// it in LaTeX mode rather than leaking raw HTML into the .tex.
 				if (global.isLatex) return '';
@@ -321,6 +329,17 @@ export const inlineMathematica = {
 	tokenizer(src, tokens) {
 		const match = /^⟦([\s\S]*?)⟧/.exec(src);
 		if (match) {
+			// `Run note code: false` (note-code.js): refused, even where a cached
+			// result exists — the rule is about the construct, not the cache.
+			if (!noteCodeAllowed()) {
+				return {
+					type: 'inlineMathematica',
+					raw: match[0],
+					code: match[1],
+					refused: true,
+					text: ''
+				};
+			}
 			const home_directory = configManager.get('Markdown file directory');
 			const mathematica_directory = path.join(home_directory, "Mathematica");
 			const opts = { cwd: mathematica_directory };
@@ -382,6 +401,7 @@ export const inlineMathematica = {
 		}
 	},
 	renderer(token) {
+		if (token.refused) return refuseNoteCode('Mathematica');
 		if (token.code.includes("InlineMath")) {
 			return "$" + fs.readFileSync(token.include, 'utf8') + "$";	
 		}

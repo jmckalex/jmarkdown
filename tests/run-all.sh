@@ -48,7 +48,15 @@ sh "$REPO/tests/citefile/run.sh"
 citefile_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ]; then
+# 6. note-code — `Run note code`: every path by which a document runs code is
+#    refused by name with the switch off, and runs with it on. A suite because
+#    it watches the build's stdout for code that ran. Gates CI.
+echo "------ note-code ------"
+sh "$REPO/tests/note-code/run.sh"
+note_code_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi

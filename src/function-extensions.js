@@ -6,6 +6,7 @@
 */
 
 import { runInThisContext, marked, registerExtension } from './utils.js';
+import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
 
 export default function export_to_jmarkdown(name, options = {}) {
 	const defaultOptions ={
@@ -54,6 +55,16 @@ function construct_simple_function_extension(name, options) {
 		tokenizer(src) {
 			const match = tokenizer_regexp.exec(src);
 			if (match) {
+				// `Run note code: false` (note-code.js): claimed, not run.
+				if (!noteCodeAllowed()) {
+					return {
+						type: `${name}`,
+						raw: match[0],
+						success: true,
+						text: refuseNoteCode(name, { block: extension_level === 'block' }),
+						tokens: []
+					};
+				}
 				let script = `${name}("${match[1]}")`;
 				script = script.replaceAll('\n', '\\n'); 
 				let output = runInThisContext(script);
@@ -165,6 +176,20 @@ function construct_complex_function_extension(name, options) {
 		tokenizer(src) {
 			const regexp = new RegExp("^" + name + delimiter)
 			if (src.match(regexp)) {
+				// `Run note code: false` (note-code.js): the expression that would
+				// have run is claimed whole and refused; text that is no
+				// expression at all stays text.
+				if (!noteCodeAllowed()) {
+					const source = expressionSource(src);
+					if (source === null) return;
+					return {
+						type: `${name}`,
+						raw: source,
+						success: true,
+						text: refuseNoteCode(name),
+						tokens: []
+					};
+				}
 				try {
 					let exp;
 					try {
@@ -461,30 +486,57 @@ function handleMemberExpression(exp, src, name) {
 //
 // In all these cases, the solution is to find the character which generates the error, extract the substring up to
 // but not including that character, and then checking to see if that is a valid JavaScript expression.
-function handlePossibleIrrelevantEndCharacter(error, src, name) {
+//
+// The candidate substring, by the parse error's message; null when none of the
+// cases applies. Shared with expressionSource, below.
+function trailingCharacterCandidate(error, src) {
 	const substring = src.slice(0, error.raisedAt).trimRight();
 	// Now handle three cases based on the message...
-	let substring_to_check = '';
 	if (error.message.startsWith("Unexpected token")) {
 		// This is typically triggered by the inline JavaScript occuring right before a final . indicating
 		// a sentence end - so try removing that.
 		const i = substring.lastIndexOf('.');
-		substring_to_check = substring.slice(0, i);
+		return substring.slice(0, i);
 	}
 	else if (error.message.startsWith("Unexpected character")) {
 		// In this case, the raisedAt index correctly indicates the end of the possible valid
 		// expression, so the string to check is just the original substring extracted
-		substring_to_check = substring;
-
+		return substring;
 	}
 	else if (error.message.startsWith("Unterminated string constant")) {
 		const match = error.message.match(/\(\d+:(\d+)\)/);
-		substring_to_check = substring.slice(0, match[1]);
+		return substring.slice(0, match[1]);
 	}
-	else {
-		// We've exhausted all the possible cases I can think of...
-		return false;
+	// We've exhausted all the possible cases I can think of...
+	return null;
+}
+
+// The source of the expression at the start of `src`, found WITHOUT running
+// it — acorn parses, nothing evaluates — with the same forgiveness for a
+// sentence's closing punctuation as handlePossibleIrrelevantEndCharacter.
+// null when there is no expression to be had. The refusal path under
+// `Run note code: false` (note-code.js) claims exactly this much.
+function expressionSource(src) {
+	try {
+		const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
+		return src.slice(0, exp.end);
 	}
+	catch (error) {
+		try {
+			const candidate = trailingCharacterCandidate(error, src);
+			if (candidate === null) return null;
+			const exp = acorn.parseExpressionAt(candidate, 0, { ecmaVersion: 2022 });
+			return candidate.slice(exp.start, exp.end);
+		}
+		catch {
+			return null;
+		}
+	}
+}
+
+function handlePossibleIrrelevantEndCharacter(error, src, name) {
+	const substring_to_check = trailingCharacterCandidate(error, src);
+	if (substring_to_check === null) return false;
 
 	let exp;
 	let code_to_run;

@@ -1,5 +1,6 @@
 import * as acorn from 'acorn';
 import { runInThisContext } from './utils.js';
+import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
 import { create, all } from 'mathjs';
 export const math = create(all, {});
 global.math = math;
@@ -15,6 +16,21 @@ export const mathjs = {
         // Match block LaTeX first (since it's more specific)
         const match = /^math\.[a-zA-Z]+\(/.exec(src);
         if (match) {
+            // `Run note code: false` (note-code.js): the expression is claimed
+            // and refused rather than run (with the switch on it runs, and the
+            // text is left in place — which is why the renderer below is only
+            // ever reached by a refusal).
+            if (!noteCodeAllowed()) {
+                let expression;
+                try {
+                    const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
+                    expression = src.slice(0, exp.end);
+                }
+                catch {
+                    return false;
+                }
+                return { type: 'mathjs', raw: expression, text: refuseNoteCode(match[0].slice(0, -1)) };
+            }
             const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
             //console.log(exp);
             const expression = src.slice(0, exp.end);
@@ -34,6 +50,6 @@ export const mathjs = {
         return false;
     },
     renderer(token) {
-        return '';
+        return token.text ?? '';
     }       
 };
