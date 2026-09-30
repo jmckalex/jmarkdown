@@ -10,9 +10,7 @@
 #
 # On (the default): the same constructs run — every sentinel appears — so a
 # refusal above can't be passing because the fixture never ran anything.
-# Mathematica and inline func(…) are left out of this half: the first needs
-# wolframscript, and the second aborts the build with a SyntaxError on its own
-# (a pre-existing bug, see CLAUDE.md), so neither can show the switch working.
+# Mathematica is left out of this half: it needs wolframscript.
 #
 # A suite rather than golden fixtures because it has to watch stdout for code
 # that ran, and needs a project config beside the document.
@@ -85,6 +83,8 @@ A calc("1+1") call.
 
 function() { console.log('SENTINEL-FUNCBLOCK'); return 'FUNCBLOCK-OUTPUT'; }
 
+Inline func() { console.log('SENTINEL-FUNC'); return 'FUNC-OUTPUT'; } here.
+
 A mathjs math.sqrt((() => { console.log('SENTINEL-MATHJS'); return 4; })()) call.
 
 Shouting <<loud>> here.
@@ -96,8 +96,6 @@ EOF
 OFF="$SCRATCH/off"
 make_fixture "$OFF"
 cat >> "$OFF/doc.md" <<'EOF'
-
-Inline func() { console.log('SENTINEL-FUNC'); return 'FUNC-OUTPUT'; } here.
 
 :::Mathematica
 Print["SENTINEL-MMA-BLOCK"]
@@ -129,6 +127,9 @@ assert_count "off/html/refused: Mathematica (block, @begin, inline)" out.html 'd
 assert_absent "off/html/nothing-ran" html.log "SENTINEL"
 assert_absent "off/html/no-script-output" out.html "SCRIPT-OUTPUT"
 assert_absent "off/html/no-function-output" out.html "FUNCBLOCK-OUTPUT"
+# A refused func(…) takes its body with it: none of the source is left as prose.
+assert_absent "off/html/func-body-claimed" out.html "SENTINEL-FUNC"
+assert_absent "off/html/no-func-output" out.html "FUNC-OUTPUT"
 assert_absent "off/html/no-extension" out.html 'class="shout"'
 assert_contains "off/html/warns" html.log 'not run — "Run note code" is off'
 if [ -d "$OFF/Mathematica" ]; then fail "off/no-wolframscript-cache" "a Mathematica/ cache folder was written"; else pass "off/no-wolframscript-cache"; fi
@@ -147,11 +148,12 @@ cd "$ON" || exit 1
 node "$JMD" process doc.md --fragment -o out.html >html.log 2>&1 || {
 	echo "FAIL  note-code: jmarkdown exited non-zero (on, html)"; sed 's/^/    | /' html.log; exit 1
 }
-for s in LOADJS LOADEXT LOADDIR LOADENV SCRIPT POSTPROCESS MATH FUNCBLOCK MATHJS; do
+for s in LOADJS LOADEXT LOADDIR LOADENV SCRIPT POSTPROCESS MATH FUNCBLOCK FUNC MATHJS; do
 	assert_contains "on/ran: $s" html.log "SENTINEL-$s"
 done
 assert_contains "on/script-output" out.html "SCRIPT-OUTPUT"
 assert_contains "on/function-output" out.html "FUNCBLOCK-OUTPUT"
+assert_contains "on/func-output" out.html "Inline FUNC-OUTPUT here."
 assert_contains "on/extension" out.html 'class="shout"'
 assert_absent "on/no-marker" out.html "jmd-refused"
 

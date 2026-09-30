@@ -1,0 +1,17 @@
+---
+Title: Inline functions
+---
+
+# Inline `func(…)`
+
+The answer is func() { return 6*7 } today.
+
+A function may return markdown, func() { return { inline: '*strong* and /italic/' } }, lexed inline.
+
+Trailing prose is not part of it: func() { return 'one' } (see above), and a brace
+inside a string does not end it: func() { return '}' } here.
+
+Prose that merely mentions the func(x) notation stays prose.
+
+A function that throws leaves a named error, func() { throw new Error('boom') }, and
+the build carries on.

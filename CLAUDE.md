@@ -31,9 +31,10 @@ All source lives in `src/`. Key files:
 | `syntax-modifications.js` | Inline syntax: `/italics/`, `*strong*`, `==highlight==`, `__underline__`, sub/sup |
 | `syntax-enhancements.js` | Further inline/block syntax |
 | `smart-typography.js` | **Opt-in** (`Smart typography: true`, default off) typographic educator: straight quotes → curly, `---`/`--` → em/en dash, `...` → ellipsis. A `walkTokens` hook on both marked instances mutating only **leaf inline `text` tokens** (code/math/`:::TeX`/escapes never produce those, so protection is free); emits raw **Unicode** so one implementation serves both outputs. Reads the config key lazily at walk time — registration happens before the metadata header is parsed |
-| `note-code.js` | `Run note code`: the one switch over every path by which a document makes the build run code, and the by-name refusal each path emits when it is off (see below) |
+| `note-code.js` | `Run note code`: the one switch over every path by which a document makes the build run code, and the by-name refusal each path emits when it is off; also `noteCodeError`, the in-place marker for code that ran and threw (see below) |
 | `script-blocks.js` | `<script type="jmarkdown">` and `jmarkdown-postprocess` blocks |
 | `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown` |
+| `inline-function-extension.js` | `function(…) { … }` blocks (at a line start) and inline `func(…) { … }`: run an anonymous function in place. Claims only a complete function WITH A BODY (`functionSource`), so prose that mentions `func(x)` stays prose; a throw becomes a `noteCodeError` marker |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |
 | `post-processor.js` | Cheerio DOM manipulation, cross-reference resolution, beautification |
 | `latex-renderer.js` | LaTeX renderer for marked's built-in tokens (paragraphs, headings → class-aware sectioning, lists, code → minted, links, images → plain `\includegraphics`, …) |
@@ -348,10 +349,24 @@ first time it renders.
   string the shell used to hand over, `SetOptions[, PageWidth->100]` — the old
   double quotes let the shell expand `$Output` to nothing, and restoring it
   would change cached output (the owner's call, not a security fix's).
-- **Known, separate:** inline `func(…)` cannot run as written — acorn ends the
-  expression at `func(…)`, and `(function(…))()` is a SyntaxError that aborts
-  the build — so any `func(` in prose fails the build with the switch on. With
-  it off, the construct is refused and the build completes.
+- **Code that throws doesn't take the build down.** `noteCodeError(name, error)`
+  (beside `refuseNoteCode`) is the failure twin of a refusal: `<span|div
+  class="jmd-error" data-jmd-error="NAME">[NAME failed: message]` in HTML,
+  nothing in LaTeX, a build warning in both. A note's broken function is the
+  note's problem; the rest of the document still renders.
+- **`function(…)` / `func(…)` claim only a whole function with a body**
+  (`inline-function-extension.js`): the SHORTEST prefix ending in `}` that
+  acorn accepts as a `FunctionExpression` (`functionSource`). So `the func(x)
+  notation` and a line-initial `function(x) is our notation` stay prose — the
+  block `start()` runs the same check, so it never cuts a paragraph at such a
+  line — and trailing prose never attaches (`… } (see above)` is not a call).
+  `func` is parsed as the `function` it stands for: as written, `func(x)` is
+  already a complete call, which is why the inline form used to abort the build
+  with a SyntaxError on any `func(` in prose, and had never run at all. With the
+  switch off, the refusal claims the whole function, body included. Return
+  values follow the exported-function convention: a string or number as it
+  stands, `{inline}`/`{block}` lexed as markdown, null/undefined → nothing.
+  Fixtures: `tests/features/scripting/` (`func`, `function-block`).
 - Suite: `tests/note-code/run.sh` (gating; in run-all.sh) — every construct
   prints a sentinel when it runs; off, none may appear and each is refused by
   name (HTML and LaTeX); on, every one must appear.

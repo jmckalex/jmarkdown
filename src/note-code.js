@@ -53,6 +53,21 @@ export function refuseNoteCode(name, { block = false } = {}) {
 	return `<${tag} class="jmd-error jmd-refused" data-jmd-refused="${label}">[${label} not run: note code is off]</${tag}>${block ? '\n' : ''}`;
 }
 
+// The marker that stands where a document's code RAN AND THREW. A note's
+// broken function is the note's problem, not the build's: the error is shown
+// in place and the rest of the document still renders — what a script
+// block's parse error has always done. Same shape as a refusal (a `jmd-error`
+// span or div, nothing in LaTeX, a build warning either way), with
+// `data-jmd-error` naming the construct.
+export function noteCodeError(name, error, { block = false } = {}) {
+	const message = error?.message ?? String(error);
+	addWarning(`${name} failed: ${message}`);
+	if (global.isLatex) return '';
+	const label = escapeHTML(name);
+	const tag = block ? 'div' : 'span';
+	return `<${tag} class="jmd-error" data-jmd-error="${label}">[${label} failed: ${escapeHTML(message)}]</${tag}>${block ? '\n' : ''}`;
+}
+
 // Header keys have no place in the body to stand in, so their markers are
 // collected while the header is read and placed at the top of the body
 // (index.js), the way `Math macros` places its block.
