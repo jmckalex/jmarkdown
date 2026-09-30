@@ -1,0 +1,4 @@
+jmarkdown: 3 warnings:
+  - jmarkdown script failed: script boom
+  - shout failed: missing ) after argument list
+  - jmarkdown-postprocess script failed: postprocess boom

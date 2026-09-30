@@ -144,6 +144,13 @@ assert_contains "off/tex/warns" tex.log 'Load javascript not run — "Run note c
 
 ON="$SCRATCH/on"
 make_fixture "$ON"
+# Code that throws as it runs leaves an error in place; the build completes.
+# Sentence-final, this call is found by the parser's retry, which runs it
+# inside its own catch — where a throw used to escape and end the build.
+cat >> "$ON/doc.md" <<'EOF'
+
+The value is Math.nonesuch().
+EOF
 cd "$ON" || exit 1
 node "$JMD" process doc.md --fragment -o out.html >html.log 2>&1 || {
 	echo "FAIL  note-code: jmarkdown exited non-zero (on, html)"; sed 's/^/    | /' html.log; exit 1
@@ -156,6 +163,7 @@ assert_contains "on/function-output" out.html "FUNCBLOCK-OUTPUT"
 assert_contains "on/func-output" out.html "Inline FUNC-OUTPUT here."
 assert_contains "on/extension" out.html 'class="shout"'
 assert_absent "on/no-marker" out.html "jmd-refused"
+assert_contains "on/throw-shown-in-place" out.html "Math.nonesuch is not a function"
 
 echo "note-code: $passed passed, $failed failed"
 [ "$failed" -eq 0 ]

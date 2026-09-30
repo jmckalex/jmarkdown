@@ -6,7 +6,7 @@
 */
 
 import { runInThisContext, marked, registerExtension } from './utils.js';
-import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
+import { noteCodeAllowed, refuseNoteCode, noteCodeError } from './note-code.js';
 
 export default function export_to_jmarkdown(name, options = {}) {
 	const defaultOptions ={
@@ -66,8 +66,24 @@ function construct_simple_function_extension(name, options) {
 					};
 				}
 				let script = `${name}("${match[1]}")`;
-				script = script.replaceAll('\n', '\\n'); 
-				let output = runInThisContext(script);
+				script = script.replaceAll('\n', '\\n');
+				// The argument is spliced into a string literal as written, so
+				// a `"` in it (`shout(he said "hi")`) is a SyntaxError, and the
+				// function may throw on its own account. Either way the error
+				// stands in place and the build carries on (note-code.js).
+				let output;
+				try {
+					output = runInThisContext(script);
+				}
+				catch (error) {
+					return {
+						type: `${name}`,
+						raw: match[0],
+						success: false,
+						text: noteCodeError(name, error, { block: extension_level === 'block' }),
+						tokens: []
+					};
+				}
 
 				let token;
 				if (typeof output === "object" && output !== null) {
@@ -209,9 +225,8 @@ function construct_complex_function_extension(name, options) {
 					else if (exp.type == "MemberExpression") {
 						token = handleMemberExpression(exp, src, name);
 					}
-					else {
-						console.log(exp);
-					}
+					// Anything else (`Math.max(1, 2) + 3 is five.`) is left
+					// undefined: declined, so it stays prose.
 
 					if (token?.tokenize == 'block') {
 						this.lexer.blockTokens(token.text, token.tokens);
@@ -223,8 +238,23 @@ function construct_complex_function_extension(name, options) {
 				}
 				catch (error) {
 					if (error instanceof AcornParseError) {
-						const last_attempt = handlePossibleIrrelevantEndCharacter(error, src, name);
+						// The retry runs code too, and runs it here, inside this
+						// catch — so its errors must be caught again, or they
+						// escape the tokenizer and take the build down
+						// (`The value is Math.foo().` ending a paragraph).
+						let last_attempt;
+						try {
+							last_attempt = handlePossibleIrrelevantEndCharacter(error, src, name);
+						}
+						catch (retry_error) {
+							if (retry_error instanceof VMEvaluationError) {
+								return retry_error.token;
+							}
+							last_attempt = false;
+						}
 						if (last_attempt !== false) {
+							// It finally worked (or was declined as prose — undefined),
+							// so return it
 							// It finally worked, and last_attempt is a valid token, so return it
 							if (last_attempt?.tokenize == 'block') {
 								this.lexer.blockTokens(last_attempt.text, last_attempt.tokens);
@@ -337,53 +367,22 @@ function handleCallExpression(exp, src, name) {
 
 // Here we assume that a sequence expression results from a
 // comma - which is supposed to be punctuation - following an otherwise
-// valid CallExpression or MemberExpression.  So we have to
-// identify the trailing comma which is the issue and find the appropriate
-// subexpression.
+// valid CallExpression or MemberExpression: `calc(2+2), four, which is nice.`
+// The expression that begins at the extension's name is the sequence's
+// FIRST, however many commas of prose follow it, so hand that one to its own
+// handler (which deals with its own trailing full stop). Anything else is
+// declined — undefined, so it stays prose. (Slicing at the LAST comma, as this
+// used to, left a sequence whenever the prose held two commas, and built a
+// token with no `raw`, which crashed the build.)
 function handleSequenceExpression(exp, src, name) {
-	const start = exp.start;
-	const end = exp.end;
-	const sequence = src.slice(start, end);
-	// But we don't want the sequence, just the part up to the last comma.
-	const last_comma_index = sequence.lastIndexOf(',');
-	const code_to_check = sequence.substring(0, last_comma_index);
-
-	let exp2;
-	try {
-		exp2 = acorn.parseExpressionAt(code_to_check, 0, { ecmaVersion: 2022 });
+	const first = exp.expressions[0];
+	if (first.type == "CallExpression") {
+		return handleCallExpression(first, src, name);
 	}
-	catch(error) {
-		throw new AcornParseError(error);
+	if (first.type == "MemberExpression") {
+		return handleMemberExpression(first, src, name);
 	}
-
-	// If we get here we found a valid subexpression
-	let output;
-	let code_to_run;
-	if (exp2.type == "CallExpression" || exp2.type == "MemberExpression") {
-		code_to_run = code_to_check.slice(exp2.start, exp2.end);
-		try {
-			output = runInThisContext(code_to_run);
-		}
-		catch(error) {
-			const token = {
-						type: `${name}`,
-						raw: code_to_run,
-						success: false,
-						error: error
-					};
-			error.token = token;
-			throw new VMEvaluationError(error)
-		}
-	}
-
-	const token = {
-		type: `${name}`,
-		raw: code_to_run,
-		success: true,
-		text: output,
-		tokens: []
-	};
-	return token;
+	return undefined;
 }
 
 
@@ -423,24 +422,28 @@ function handleMemberExpression(exp, src, name) {
 		throw new AcornParseError(error);
 	}
 
+	// Without the sentence's full stop, `Save the Date. Bring wine.` leaves a
+	// bare name — prose, not a call or a member. Decline it, rather than build
+	// a token with no `raw`, which crashed the build.
+	if (exp2.type != "CallExpression" && exp2.type != "MemberExpression") {
+		return undefined;
+	}
+
 	// If we get here we found a valid subexpression
 	let output;
-	let code_to_run;
-	if (exp2.type == "CallExpression" || exp2.type == "MemberExpression") {
-		code_to_run = code_to_check.slice(exp2.start, exp2.end);
-		try {
-			output = runInThisContext(code_to_run);
-		}
-		catch(error) {
-			const token = {
-						type: `${name}`,
-						raw: code_to_run,
-						success: false,
-						error: error
-					};
-			error.token = token;
-			throw new VMEvaluationError(error)
-		}
+	const code_to_run = code_to_check.slice(exp2.start, exp2.end);
+	try {
+		output = runInThisContext(code_to_run);
+	}
+	catch(error) {
+		const token = {
+					type: `${name}`,
+					raw: code_to_run,
+					success: false,
+					error: error
+				};
+		error.token = token;
+		throw new VMEvaluationError(error)
 	}
 
 	let token;
@@ -539,59 +542,29 @@ function handlePossibleIrrelevantEndCharacter(error, src, name) {
 	if (substring_to_check === null) return false;
 
 	let exp;
-	let code_to_run;
 	try {
 		exp = acorn.parseExpressionAt(substring_to_check, 0, { ecmaVersion: 2022 });
-		code_to_run = substring_to_check.slice(exp.start, exp.end);
 	}
 	catch (error) {
 		return false
 	}
 
-	// If we get here we have found a valid subexpression
-	let output = '';
-	try {
-		output = runInThisContext(code_to_run);
+	// If we get here we have found a valid subexpression: handle it exactly
+	// as the tokenizer handles a first-time parse. A bare name (`I saved the
+	// Date.` — without the full stop, just `Date`) is prose, and is declined
+	// (undefined) rather than run: it used to print the function's source into
+	// the sentence. A sequence (`calc(2+2), four.`) used to run whole, and die
+	// on the prose after the comma.
+	if (exp.type == "CallExpression") {
+		return handleCallExpression(exp, substring_to_check, name);
 	}
-	catch(error) {
-		const token = {
-					type: `${name}`,
-					raw: code_to_run,
-					success: false,
-					error: error
-				};
-		error.token = token;
-		throw new VMEvaluationError(error)
+	if (exp.type == "SequenceExpression") {
+		return handleSequenceExpression(exp, substring_to_check, name);
 	}
-
-	let token;
-	if (typeof output === "object" && output !== null) {
-		token = {
-			type: `${name}`,
-			raw: code_to_run,
-			success: true,
-			tokens: []
-		};
-		if ('block' in output) {
-			token.text = output.block;
-			token.tokenize = 'block';
-		}
-		else {
-			token.text = output.inline;
-			token.tokenize = 'inline';
-		}
+	if (exp.type == "MemberExpression") {
+		return handleMemberExpression(exp, substring_to_check, name);
 	}
-	else {
-		token = {
-			type: `${name}`,
-			raw: code_to_run,
-			success: true,
-			text: output,
-			tokens: []
-		};
-	}
-
-	return token;
+	return undefined;
 }
 
 

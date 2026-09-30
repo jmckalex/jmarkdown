@@ -1,0 +1,26 @@
+---
+Title: Prose that looks like code
+---
+
+Each paragraph below once stopped the build or garbled its own sentence. An
+exported name claims only a call or a member; anything else stays prose.
+
+Save the Date. Bring wine.
+
+I saved the Date.
+
+Math.PI + 1, and more.
+
+Math.max(1, 2) + 3 is five.
+
+The math.sqrt(x) function takes one argument.
+
+function(x) is how this paragraph begins.
+
+The func(x) notation is common.
+
+Genuine calls still run: calc("2+2"), four, which is nice.
+
+It is calc("2+2"), four.
+
+Pi is Math.PI.

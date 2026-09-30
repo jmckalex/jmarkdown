@@ -31,20 +31,29 @@ export const mathjs = {
                 }
                 return { type: 'mathjs', raw: expression, text: refuseNoteCode(match[0].slice(0, -1)) };
             }
-            const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
-            //console.log(exp);
-            const expression = src.slice(0, exp.end);
-            //console.log(expression);
-            const obj = runInThisContext(expression);
-            const tex = math.parse(obj.toString()).toTex();
-            //console.log(obj.toString());
+            // Prose can mention these too (`the math.sqrt(x) function`), and
+            // any of the parse, the run or the TeX conversion may then throw.
+            // Nothing is rendered either way, so a failure simply leaves the
+            // text as it is — rather than failing the build.
+            try {
+                const exp = acorn.parseExpressionAt(src, 0, { ecmaVersion: 2022 });
+                //console.log(exp);
+                const expression = src.slice(0, exp.end);
+                //console.log(expression);
+                const obj = runInThisContext(expression);
+                const tex = math.parse(obj.toString()).toTex();
+                //console.log(obj.toString());
 
-            const token = {
-                type: 'latex',
-                raw: match[0],
-                text: '',
-                block: true
-            };
+                const token = {
+                    type: 'latex',
+                    raw: match[0],
+                    text: '',
+                    block: true
+                };
+            }
+            catch {
+                return false;
+            }
         }
 
         return false;

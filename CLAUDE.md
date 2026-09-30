@@ -33,7 +33,7 @@ All source lives in `src/`. Key files:
 | `smart-typography.js` | **Opt-in** (`Smart typography: true`, default off) typographic educator: straight quotes → curly, `---`/`--` → em/en dash, `...` → ellipsis. A `walkTokens` hook on both marked instances mutating only **leaf inline `text` tokens** (code/math/`:::TeX`/escapes never produce those, so protection is free); emits raw **Unicode** so one implementation serves both outputs. Reads the config key lazily at walk time — registration happens before the metadata header is parsed |
 | `note-code.js` | `Run note code`: the one switch over every path by which a document makes the build run code, and the by-name refusal each path emits when it is off; also `noteCodeError`, the in-place marker for code that ran and threw (see below) |
 | `script-blocks.js` | `<script type="jmarkdown">` and `jmarkdown-postprocess` blocks |
-| `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown` |
+| `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown`. An exported name claims only a call or member expression rooted at it — anything else (`Save the Date. Bring wine.`) is declined and stays prose |
 | `inline-function-extension.js` | `function(…) { … }` blocks (at a line start) and inline `func(…) { … }`: run an anonymous function in place. Claims only a complete function WITH A BODY (`functionSource`), so prose that mentions `func(x)` stays prose; a throw becomes a `noteCodeError` marker |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |
 | `post-processor.js` | Cheerio DOM manipulation, cross-reference resolution, beautification |
@@ -353,7 +353,31 @@ first time it renders.
   (beside `refuseNoteCode`) is the failure twin of a refusal: `<span|div
   class="jmd-error" data-jmd-error="NAME">[NAME failed: message]` in HTML,
   nothing in LaTeX, a build warning in both. A note's broken function is the
-  note's problem; the rest of the document still renders.
+  note's problem; the rest of the document still renders. Used by
+  `function(…)`/`func(…)` (below), simple `export_to_jmarkdown` functions (whose
+  argument is spliced into a string literal as written, so a `"` in it is a
+  SyntaxError), and `<script data-type="jmarkdown">` blocks that throw as they
+  run (their *parse* errors already rendered in place). A post-process script
+  that throws is skipped with a warning (no place in the body for a marker).
+  The older `{simple: false}` path keeps its own error UI
+  (`jmarkdown-inline-error` + popup) — which still leaks HTML into LaTeX.
+  **Not yet covered:** the header loaders (`Load javascript`, `Load
+  extensions`, …) still abort the build when a file throws or is missing.
+- **Prose that merely looks like code stays prose.** The always-on exported
+  names (`Math`, `Date`, `String`, `MathJS`, `Algebra`, `calc`) decline
+  anything that isn't a call or member expression rooted at the name, rather
+  than building a token with no `raw` (which crashed the build: `Save the Date.
+  Bring wine.`, `Math.PI + 1, and more.`) or running a bare name (`I saved the
+  Date.` printed `Date`'s source). A comma-sequence uses its FIRST expression,
+  so `calc("2+2"), four, which is nice.` runs `calc` however many commas follow.
+  The sentence-final retry (`handlePossibleIrrelevantEndCharacter`) now
+  dispatches through the same handlers, and its throws are caught — it runs
+  inside the tokenizer's `catch`, so `The value is Math.foo().` ending a
+  paragraph used to end the build. `math.…(` expressions (`mathjs-extension.js`)
+  decline on any failure; note that with the switch on that extension runs its
+  expression but never returns its token, so it renders nothing either way.
+  Fixtures: `tests/features/scripting/` (`prose-safety` — with an empty stderr
+  golden, so a warning on prose fails it — and `script-errors`).
 - **`function(…)` / `func(…)` claim only a whole function with a body**
   (`inline-function-extension.js`): the SHORTEST prefix ending in `}` that
   acorn accepts as a `FunctionExpression` (`functionSource`). So `the func(x)

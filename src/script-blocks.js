@@ -1,6 +1,6 @@
 import { runInThisContext } from './utils.js';
 import * as acorn from 'acorn';
-import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
+import { noteCodeAllowed, refuseNoteCode, noteCodeError } from './note-code.js';
 
 /*
 	This file defines several extensions which look for blocks of the form
@@ -134,7 +134,21 @@ const jmarkdown_script = {
 						}
 						else {
 							global.output = '';
-							runInThisContext(script);
+							// A script that throws as it runs is shown in place, the
+							// way a parse error above is, and the build carries on
+							// (note-code.js). Whatever it set before it threw stays set.
+							try {
+								runInThisContext(script);
+							}
+							catch (error) {
+								return {
+									type: 'jmarkdownScript',
+									raw: match[0],
+									text: match[1],
+									output: noteCodeError('jmarkdown script', error, { block: true }),
+									tokens: []
+								};
+							}
 							let token = {
 								type: 'jmarkdownScript',
 								raw: match[0],

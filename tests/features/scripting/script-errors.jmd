@@ -1,0 +1,21 @@
+---
+Title: Code that throws
+---
+
+<script data-type="jmarkdown">
+function shout(s) { return s.toUpperCase(); }
+export_to_jmarkdown('shout');
+</script>
+
+A simple function runs: shout(hello there). Given a double quote, its call is
+not valid JavaScript: shout(he said "hi").
+
+<script data-type="jmarkdown">
+throw new Error('script boom');
+</script>
+
+<script data-type="jmarkdown-postprocess">
+throw new Error('postprocess boom');
+</script>
+
+After the errors, the build carries on.
