@@ -1,0 +1,1151 @@
+/*
+ * JMarkdown website — shared design system
+ *
+ * The look of Folio's documentation page (../../Folio/folio-docs.html):
+ * a warm paper palette with a burnt-orange accent, Instrument Serif for
+ * display headings, DM Sans for text and JetBrains Mono for code. The
+ * tokens and component rules below are copied from that page so the two
+ * sites read as one family; change a colour here and both the landing
+ * page (../index.html) and the documentation shell (index.html) follow.
+ *
+ * This file styles the CHROME — layout, sidebar, hero, cards, buttons.
+ * The documentation's rendered content (markdown-demo grids, game
+ * matrices, alerts, theorems …) is styled by docs-styles.css, which
+ * uses these same tokens.
+ *
+ * Fonts are loaded by each page's <head>:
+ *   https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap
+ */
+
+
+/* ─── Tokens (Folio's, verbatim) ─── */
+
+:root {
+  --bg: #faf8f5;
+  --bg-card: #ffffff;
+  --bg-code: #f3f0eb;
+  --bg-nav: #f3f0eb;
+  --bg-nav-active: #e8e4dd;
+  --text: #2c2418;
+  --text-secondary: #6b5d4d;
+  --text-tertiary: #9a8c7c;
+  --accent: #b8570c;
+  --accent-light: #f0dcc8;
+  --accent-glow: rgba(184, 87, 12, 0.08);
+  --border: #e0dbd4;
+  --border-light: #ece8e2;
+  --shadow-sm: 0 1px 3px rgba(44,36,24,0.04);
+  --shadow-md: 0 4px 16px rgba(44,36,24,0.06);
+  --shadow-lg: 0 8px 32px rgba(44,36,24,0.08);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'DM Sans', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', Menlo, monospace;
+
+  /* Folio's icon-tile palette, shared by cards, nav and code colouring */
+  --tile-orange-bg: #fef0e0;  --tile-orange: #c6700a;
+  --tile-blue-bg:   #e4eef9;  --tile-blue:   #3a6fb8;
+  --tile-green-bg:  #e2f3e4;  --tile-green:  #3a8c42;
+  --tile-purple-bg: #eee4f6;  --tile-purple: #7c3ab8;
+  --tile-rose-bg:   #fce4e8;  --tile-rose:   #b83a5c;
+  --tile-teal-bg:   #dff0ef;  --tile-teal:   #2a8a84;
+}
+
+
+/* ─── Base ───
+   Folio resets every element's margin and padding with `*`. That is safe
+   on a hand-written page but not here: the docs shell hosts rendered
+   Markdown, whose lists, blockquotes and description lists rely on the
+   browser's defaults. So only box-sizing is global, and the chrome sets
+   its own margins below. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 24px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); }
+
+
+/* ─── Layout ─── */
+
+.page-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  padding: 48px 64px 120px;
+  max-width: 880px;
+}
+
+
+/* ─── Sidebar Navigation ─── */
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--bg-nav);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 32px 0 48px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.sidebar-logo {
+  padding: 0 24px 28px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.sidebar-logo a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sidebar-logo h1 {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.sidebar-logo h1 i {
+  color: var(--accent);
+  font-size: 20px;
+  margin-right: 8px;
+  vertical-align: 1px;
+}
+
+.sidebar-logo .subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.nav-section {
+  padding: 0 16px;
+  margin-bottom: 8px;
+}
+
+.nav-section-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  padding: 16px 8px 6px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 450;
+  line-height: 1.45;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  background: var(--bg-nav-active);
+  color: var(--text);
+}
+
+.nav-link.active {
+  background: var(--accent-glow);
+  color: var(--accent);
+  font-weight: 550;
+}
+
+.nav-link i {
+  width: 18px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.nav-link.active i { opacity: 1; }
+
+/* A link that leaves the page (GitHub, the docs) gets a trailing arrow. */
+.nav-link .nav-out {
+  margin-left: auto;
+  font-size: 10px;
+  width: auto;
+  opacity: 0.5;
+}
+
+
+/* ─── Mobile top bar + drawer ───
+   Folio simply hides its sidebar below 960px. The docs can't: the sidebar
+   is the only way to reach the other pages. So on narrow screens a top bar
+   appears and the sidebar slides in over the page as a drawer. */
+
+.mobile-bar {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(250, 248, 245, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-bar .mobile-logo {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.mobile-bar .mobile-logo i {
+  color: var(--accent);
+  font-size: 16px;
+  margin-right: 6px;
+}
+
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(44, 36, 24, 0.28);
+}
+
+
+/* ─── Hero ─── */
+
+.hero {
+  margin-bottom: 56px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-family: var(--font-serif);
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+
+/* ─── Buttons ───
+   The resting and hover states of Folio's download button: a quiet paper
+   button that fills with the accent. `.btn-primary` starts filled. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #9d4a0a;
+  border-color: #9d4a0a;
+}
+
+
+/* ─── Sections ─── */
+
+.doc-section {
+  margin-bottom: 56px;
+  animation: fadeUp 0.4s ease both;
+}
+
+.doc-section h2 {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  margin: 0 0 20px;
+  color: var(--text);
+  scroll-margin-top: 24px;
+}
+
+.doc-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 32px 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.doc-section p {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.doc-section ul {
+  margin: 0 0 14px 1.5em;
+  padding: 0;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.doc-section ul li { margin-bottom: 10px; }
+
+.doc-section p strong,
+.doc-section li strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.doc-section p a,
+.doc-section li a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-light);
+}
+
+.doc-section p a:hover,
+.doc-section li a:hover { border-bottom-color: var(--accent); }
+
+/* "Read more" line closing a section. */
+.section-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.section-more:hover { text-decoration: underline; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ─── Code (hand-written pages; rendered docs use docs-styles.css) ─── */
+
+.doc-section code,
+.hero code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--bg-code);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+/* Ligatures off: in code a reader may copy, `>=` must not look like `⩾`. */
+.doc-section code,
+.doc-section pre,
+.hero code {
+  font-variant-ligatures: none;
+  tab-size: 4;
+}
+
+.doc-section pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 16px 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.doc-section pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+/* Token colours for hand-highlighted code, after Folio's notes showcase. */
+.tok-comment { color: var(--text-tertiary); }
+.tok-kw      { color: var(--accent); }
+.tok-str     { color: var(--tile-green); }
+.tok-fn      { color: var(--tile-purple); }
+.tok-num     { color: var(--tile-blue); }
+.tok-tag     { color: var(--tile-rose); }
+.tok-attr    { color: var(--tile-teal); }
+.tok-head    { color: var(--accent); font-weight: 500; }
+
+kbd {
+  display: inline-block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: 0 1px 1px rgba(44,36,24,0.06);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+
+/* ─── Feature Cards ─── */
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.feature-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  color: inherit;
+  text-decoration: none;
+}
+
+.feature-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border);
+  transform: translateY(-1px);
+}
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+
+.orange { background: var(--tile-orange-bg); color: var(--tile-orange); }
+.blue   { background: var(--tile-blue-bg);   color: var(--tile-blue); }
+.green  { background: var(--tile-green-bg);  color: var(--tile-green); }
+.purple { background: var(--tile-purple-bg); color: var(--tile-purple); }
+.rose   { background: var(--tile-rose-bg);   color: var(--tile-rose); }
+.teal   { background: var(--tile-teal-bg);   color: var(--tile-teal); }
+
+.feature-card h4 {
+  font-size: 14.5px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.feature-card p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+
+/* ─── Small tool cards (three across) ─── */
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.tool-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tool-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border);
+  transform: translateY(-1px);
+}
+
+.tool-card .tool-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.tool-card h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.tool-card p {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+
+/* ─── Icon list (Folio's perspective list) ─── */
+
+.icon-list { margin: 16px 0; }
+
+.icon-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+  color: inherit;
+  text-decoration: none;
+}
+
+.icon-item:last-child { border-bottom: none; }
+
+a.icon-item:hover h4 { color: var(--accent); }
+
+.icon-item .item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.icon-item h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 2px;
+  transition: color 0.15s ease;
+}
+
+.icon-item p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.55;
+}
+
+
+/* ─── Demo panels (Folio's table demo: a header strip over columns) ─── */
+
+.demo-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 20px 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.demo-panel-header {
+  padding: 10px 18px;
+  background: var(--bg-code);
+  border-bottom: 1px solid var(--border-light);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.demo-panel-header i { font-size: 10px; }
+
+.demo-panel-header .file {
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.demo-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.demo-col {
+  padding: 18px 20px;
+  min-width: 0;
+}
+
+.demo-columns .demo-col + .demo-col {
+  border-left: 1px solid var(--border-light);
+}
+
+.demo-single { padding: 18px 20px; }
+
+.demo-single + .demo-columns,
+.demo-columns + .demo-single {
+  border-top: 1px solid var(--border-light);
+}
+
+.demo-col-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.demo-panel pre {
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* The rendered side of a demo: what a reader of the web page sees. */
+.demo-output {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.demo-output p { margin: 0 0 10px; color: var(--text); }
+.demo-output p:last-child { margin-bottom: 0; }
+
+.demo-output .theorem-env {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.demo-output .theorem-label { font-weight: 700; }
+.demo-output .theorem-env p { font-style: italic; }
+.demo-output .theorem-env .theorem-label { font-style: normal; }
+
+.demo-output a { color: var(--accent); text-decoration: none; }
+
+.demo-output sup a { font-size: 11px; }
+
+.demo-output section.footnotes {
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.demo-output section.footnotes h1 {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin: 0 0 4px;
+}
+
+.demo-output section.footnotes ol { margin: 0; padding-left: 18px; }
+.demo-output section.footnotes p { color: var(--text-secondary); margin: 0; }
+.demo-output .footnote-backref { color: var(--text-tertiary); }
+
+.demo-figure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 160px;
+}
+
+.demo-figure img { width: 100%; max-width: 300px; height: auto; }
+
+/* A terminal transcript. */
+.terminal pre {
+  background: #2c2418;
+  border-color: #2c2418;
+  color: #e8e0d4;
+}
+
+.terminal .tok-comment { color: #9a8c7c; }
+.terminal .tok-ok      { color: #8fd197; }
+.terminal .tok-kw      { color: #f0a868; }
+
+
+/* ─── Steps (Folio's roadmap timeline, reused for installation) ─── */
+
+.step-list {
+  margin: 24px 0;
+  position: relative;
+  padding-left: 28px;
+}
+
+.step-list::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--border);
+  border-radius: 1px;
+}
+
+.step-item {
+  position: relative;
+  padding: 12px 0 14px;
+}
+
+.step-item::before {
+  content: '';
+  position: absolute;
+  left: -25px;
+  top: 18px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+}
+
+.step-item:last-child::before {
+  background: var(--bg);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.step-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.step-item pre { margin: 10px 0 0; }
+
+
+/* ─── Callouts ─── */
+
+.callout {
+  display: flex;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.callout p { margin: 0; color: inherit; }
+
+.callout-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  margin-top: 1px;
+}
+
+.callout.tip  { background: #e8f4e9; border: 1px solid #c5e1c8; color: #2d5a30; }
+.callout.tip .callout-icon  { background: #3a8c42; color: #fff; }
+.callout.info { background: #e4eef9; border: 1px solid #c0d5ee; color: #2a4a6e; }
+.callout.info .callout-icon { background: #3a6fb8; color: #fff; }
+.callout.warn { background: #fef5e0; border: 1px solid #f0ddb0; color: #6b4f14; }
+.callout.warn .callout-icon { background: #c6880a; color: #fff; }
+
+.callout code { background: rgba(255,255,255,0.6); color: inherit; }
+
+
+/* ─── Design Principles ─── */
+
+.principle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.principle-card {
+  border-left: 3px solid var(--accent);
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.principle-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.principle-card p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+
+/* ─── Documentation map (landing page) ─── */
+
+.docs-map {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.docs-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 18px 20px 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.docs-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.docs-group-title .tool-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.docs-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.docs-group ul li { margin: 0; }
+
+.docs-group li a {
+  display: block;
+  padding: 3px 0;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: none;
+}
+
+.docs-group li a:hover { color: var(--accent); }
+
+
+/* ─── Documentation shell (docs/index.html) ─── */
+
+/* The group a page belongs to, above its title — Folio's hero badge. */
+.doc-eyebrow[hidden] { display: none; }
+
+.content-area {
+  transition: opacity 0.15s ease;
+}
+
+.content-area.is-loading { opacity: 0.4; }
+
+.doc-missing {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.doc-missing i { font-size: 28px; }
+
+.doc-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 64px;
+}
+
+.doc-pager:empty { display: none; }
+
+.pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.pager-link:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border);
+  transform: translateY(-1px);
+}
+
+.pager-link.next {
+  grid-column: 2;
+  text-align: right;
+}
+
+.pager-dir {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.pager-dir i { font-size: 10px; }
+
+.pager-title {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.pager-link:hover .pager-title { color: var(--accent); }
+
+
+/* ─── Footer ─── */
+
+.site-footer {
+  margin-top: 72px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.site-footer a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.site-footer a:hover { color: var(--accent); }
+
+
+/* ─── Responsive ─── */
+
+@media (max-width: 960px) {
+  .mobile-bar { display: flex; }
+
+  .page-wrapper { display: block; }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    width: min(300px, 86vw);
+    height: auto;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-lg);
+  }
+
+  body.nav-open .sidebar { transform: none; }
+  body.nav-open .sidebar-backdrop { display: block; }
+
+  .main-content { padding: 32px 28px 80px; max-width: none; }
+
+  .feature-grid,
+  .principle-grid,
+  .docs-map { grid-template-columns: 1fr; }
+
+  .tool-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 640px) {
+  .main-content { padding: 28px 16px 64px; }
+
+  .hero h1 { font-size: 38px; }
+
+  .tool-grid,
+  .demo-columns,
+  .doc-pager { grid-template-columns: 1fr; }
+
+  .pager-link.next { grid-column: auto; }
+
+  .demo-columns .demo-col + .demo-col {
+    border-left: none;
+    border-top: 1px solid var(--border-light);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .doc-section { animation: none; }
+  .sidebar { transition: none; }
+}

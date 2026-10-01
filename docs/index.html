@@ -1,431 +1,376 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JMarkdown Documentation</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JMarkdown Documentation</title>
+<meta name="description" content="The JMarkdown manual: syntax, directives and block environments, dual HTML and LaTeX output, citations, cross-references, diagrams, scripting and configuration.">
 
-  <!-- Web Awesome kit (includes CSS, components, and Font Awesome) -->
-  <script src="https://kit.webawesome.com/47077a146a6d4924.js" crossorigin="anonymous"></script>
+<!-- Fonts: Folio's trio — Instrument Serif headings, DM Sans text, JetBrains Mono code -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-  <!-- Fonts: Crimson Pro serif body + JetBrains Mono for code/eyebrow labels -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Font Awesome Pro (Folio's kit) -->
+<script src="https://kit.fontawesome.com/3c5dfa7541.js" crossorigin="anonymous"></script>
 
-  <!-- MathJax -->
-  <script>
-    MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-        tags: 'ams'
-      }
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-
-  <!-- Highlight.js (github theme to match the warm paper aesthetic) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-
-  <link rel="stylesheet" href="jmarkdown.css">
-  <link rel="stylesheet" href="docs-styles.css">
-  <!-- Font Awesome is included via the Web Awesome kit -->
-
-  <!-- Mermaid -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-
-  <style>
-    /* ---- Dynamo design tokens ---- */
-    :root {
-      --ink:     #2c2c2c;
-      --ink2:    #555;
-      --ink3:    #888;
-      --paper:   #faf9f7;
-      --paper2:  #f5f4f2;
-      --card:    #fff;
-      --accent:  #8b7355;
-      --accent2: #6d5a43;
-      --border:  #e2e0dc;
-      --divider: #e8e5e0;
-
-      /* ---- Map Web Awesome theming onto the warm paper palette ---- */
-      --wa-color-surface-default:  var(--paper);
-      --wa-color-surface-raised:   var(--card);
-      --wa-color-surface-lowered:  var(--paper2);
-      --wa-color-surface-alt:      var(--paper2);
-      --wa-color-surface-border:   var(--border);
-      --wa-color-text-normal:      var(--ink);
-      --wa-color-text-default:     var(--ink);
-      --wa-color-text-quiet:       var(--ink2);
-      --wa-color-text-secondary:   var(--ink2);
-      --wa-color-text-link:        var(--accent2);
-      --wa-color-brand-fill-loud:  var(--accent);
-      --wa-color-brand-on-loud:    #fff;
-
-      --wa-font-family-body:    'Crimson Pro', Georgia, serif;
-      --wa-font-family-heading: 'Crimson Pro', Georgia, serif;
-      --wa-font-family-code:    'JetBrains Mono', ui-monospace, monospace;
+<!-- MathJax. Pages arrive after load, so the router typesets each one
+     itself; see typeset() below. -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      tags: 'ams'
     }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
 
-    html, body {
-      min-height: 100%;
-      padding: 0;
-      margin: 0;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: 'Crimson Pro', Georgia, serif;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Navigation styling */
-    nav[slot='navigation'] {
-      background: var(--paper2);
-    }
-
-    .nav-tree {
-      padding: var(--wa-space-s) 0;
-      font-size: 0.95rem;
-    }
-
-    .nav-tree wa-tree-item::part(label) {
-      white-space: normal;
-      line-height: 1.4;
-      color: var(--ink2);
-    }
-
-    .nav-tree wa-tree-item::part(item) {
-      border-inline-start: none;
-    }
-
-    .nav-tree wa-tree-item:hover::part(label) {
-      color: var(--accent);
-    }
-
-    .nav-header {
-      padding: var(--wa-space-m) var(--wa-space-l);
-      font-family: 'JetBrains Mono', ui-monospace, monospace;
-      font-size: 0.8rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      font-weight: 500;
-      color: var(--accent);
-      background: var(--paper2);
-      border-bottom: 1px solid var(--divider);
-    }
-
-    .nav-version {
-      font-size: 0.7rem;
-      font-weight: normal;
-      letter-spacing: 0.04em;
-      color: var(--ink3);
-    }
-
-    /* Main content area */
-    .content-area {
-      max-width: 52rem;
-      padding: var(--wa-space-l) var(--wa-space-xl);
-      background: var(--paper);
-      color: var(--ink);
-      font-family: 'Crimson Pro', Georgia, serif;
-      font-size: 18px;
-      line-height: 1.65;
-    }
-
-    .content-area img {
-      max-width: 100%;
-    }
-
-    /* Loading state */
-    .loading-message {
-      color: var(--ink3);
-      padding: var(--wa-space-xl);
-      text-align: center;
-    }
-
-    /* Header bar */
-    div[slot='header'] {
-      background: rgba(250, 249, 247, 0.94);
-      backdrop-filter: blur(6px);
-    }
-
-    .site-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 var(--wa-space-l);
-      height: 100%;
-    }
-
-    .site-header h1 {
-      font-size: 1.35rem;
-      margin: 0;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      color: var(--ink);
-    }
-
-    .site-header-links {
-      display: flex;
-      gap: var(--wa-space-m);
-      align-items: center;
-    }
-
-    .site-header-links a {
-      color: var(--accent2);
-      text-decoration: none;
-      font-family: 'JetBrains Mono', ui-monospace, monospace;
-      font-size: 0.8rem;
-    }
-
-    .site-header-links a:hover {
-      color: var(--accent);
-      text-decoration: underline;
-    }
-
-    /* Selected nav item highlight */
-    wa-tree-item[selected]::part(item) {
-      background: var(--card);
-      border-radius: var(--wa-border-radius-s);
-    }
-
-    wa-tree-item[selected]::part(label) {
-      color: var(--accent2);
-      font-weight: 600;
-    }
-
-    /* Subheader with toggle */
-    div[slot='subheader'] {
-      background: var(--paper2);
-    }
-
-    .subheader-bar {
-      display: flex;
-      align-items: center;
-      padding: 0 var(--wa-space-l);
-      height: 100%;
-    }
-
-    wa-page[view='desktop'] [data-toggle-nav] {
-      display: none;
-    }
-  </style>
+<!-- JMarkdown's built-in CSS, then the site chrome, then the content styles.
+     The ?v= query keeps a browser's cached copy of the previous
+     docs-styles.css (the Crimson Pro design) out of the new shell. -->
+<link rel="stylesheet" href="jmarkdown.css">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="docs-styles.css?v=2">
 </head>
 <body>
 
-<wa-page mobile-breakpoint="920">
+<!-- ─── Mobile top bar (narrow screens only) ─── -->
+<div class="mobile-bar">
+  <a class="mobile-logo" href="../index.html"><i class="fa-brands fa-markdown"></i>JMarkdown</a>
+  <button class="menu-button" type="button" data-toggle-nav aria-controls="sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i> Contents</button>
+</div>
+<div class="sidebar-backdrop" data-close-nav></div>
 
-  <!-- Header -->
-  <div slot="header" style="border-bottom: 1px solid var(--wa-color-surface-border); height: 3.5rem;">
-    <div class="site-header">
-      <h1>jmarkdown</h1>
-      <div class="site-header-links">
-        <a href="https://github.com/jmckalex/jmarkdown">GitHub</a>
-      </div>
+<div class="page-wrapper">
+
+  <!-- ─── Sidebar ───
+       Each link's data-page names a fragment (<page>.html, built from
+       <page>.jmd). The order here is the reading order: the Previous /
+       Next links at the foot of each page follow it. -->
+  <nav class="sidebar" id="sidebar" aria-label="Documentation">
+    <div class="sidebar-logo">
+      <a href="../index.html"><h1><i class="fa-brands fa-markdown"></i>JMarkdown</h1></a>
+      <div class="subtitle">Documentation · v1.0</div>
     </div>
-  </div>
 
-  <!-- Subheader with mobile nav toggle -->
-  <div slot="subheader" style="border-bottom: 1px solid var(--wa-color-surface-border); height: 2.5rem;">
-    <div class="subheader-bar">
-      <wa-button data-toggle-nav size="small" appearance="plain">
-        <wa-icon name="bars"></wa-icon>
-        Menu
-      </wa-button>
+    <div class="nav-section">
+      <a class="nav-link" href="../index.html"><i class="fa-solid fa-arrow-left"></i> JMarkdown Home</a>
     </div>
-  </div>
 
-  <!-- Navigation header -->
-  <div slot="navigation-header" class="nav-header">
-    Documentation <span class="nav-version">v0.5</span>
-  </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <a class="nav-link" href="#introduction" data-page="introduction"><i class="fa-solid fa-door-open"></i> Introduction</a>
+      <a class="nav-link" href="#motivation" data-page="motivation"><i class="fa-solid fa-lightbulb"></i> Motivation</a>
+      <a class="nav-link" href="#watch-mode" data-page="watch-mode"><i class="fa-solid fa-eye"></i> Watch Mode</a>
+    </div>
 
-  <!-- Navigation sidebar -->
-  <nav slot="navigation">
-    <wa-tree class="nav-tree" id="doc-nav">
+    <div class="nav-section">
+      <div class="nav-section-title">Syntax</div>
+      <a class="nav-link" href="#syntax-adjustments" data-page="syntax-adjustments"><i class="fa-solid fa-italic"></i> Syntax Adjustments</a>
+      <a class="nav-link" href="#disabled-syntax" data-page="disabled-syntax"><i class="fa-solid fa-ban"></i> Disabled Syntax</a>
+    </div>
 
-      <wa-tree-item data-page="introduction" selected>
-        Introduction
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">Content</div>
+      <a class="nav-link" href="#tables-and-alerts" data-page="tables-and-alerts"><i class="fa-solid fa-table"></i> Tables &amp; Alerts</a>
+      <a class="nav-link" href="#description-lists" data-page="description-lists"><i class="fa-solid fa-list-ul"></i> Description Lists</a>
+      <a class="nav-link" href="#math-support" data-page="math-support"><i class="fa-solid fa-square-root-variable"></i> Math Support</a>
+      <a class="nav-link" href="#enhanced-lists" data-page="enhanced-lists"><i class="fa-solid fa-list-ol"></i> Enhanced Lists</a>
+      <a class="nav-link" href="#code-highlighting" data-page="code-highlighting"><i class="fa-solid fa-code"></i> Code Highlighting</a>
+      <a class="nav-link" href="#bibliographic-support" data-page="bibliographic-support"><i class="fa-solid fa-book-bookmark"></i> Bibliographic Support</a>
+    </div>
 
-      <wa-tree-item data-page="motivation">
-        Motivation
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">Directives &amp; Environments</div>
+      <a class="nav-link" href="#directives-syntax" data-page="directives-syntax"><i class="fa-solid fa-at"></i> Directives</a>
+      <a class="nav-link" href="#block-environments" data-page="block-environments"><i class="fa-solid fa-cubes"></i> Block Environments</a>
+      <a class="nav-link" href="#comments-and-optionals" data-page="comments-and-optionals"><i class="fa-solid fa-comment-slash"></i> Comments &amp; Optionals</a>
+      <a class="nav-link" href="#strategic-form-games" data-page="strategic-form-games"><i class="fa-solid fa-chess-board"></i> Strategic-Form Games</a>
+      <a class="nav-link" href="#markdown-demo" data-page="markdown-demo"><i class="fa-solid fa-table-columns"></i> Demonstrating Markdown</a>
+      <a class="nav-link" href="#mermaid-diagrams" data-page="mermaid-diagrams"><i class="fa-solid fa-diagram-project"></i> Mermaid Diagrams</a>
+      <a class="nav-link" href="#tikz-diagrams" data-page="tikz-diagrams"><i class="fa-solid fa-bezier-curve"></i> TiKZ Diagrams</a>
+      <a class="nav-link" href="#metapost-diagrams" data-page="metapost-diagrams"><i class="fa-solid fa-pen-nib"></i> MetaPost Diagrams</a>
+      <a class="nav-link" href="#sources-and-targets" data-page="sources-and-targets"><i class="fa-solid fa-crosshairs"></i> Sources &amp; Targets</a>
+    </div>
 
-      <wa-tree-item data-page="watch-mode">
-        Watch mode (live preview)
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">Navigation Aids</div>
+      <a class="nav-link" href="#anchors" data-page="anchors"><i class="fa-solid fa-anchor"></i> Anchors</a>
+      <a class="nav-link" href="#table-of-contents" data-page="table-of-contents"><i class="fa-solid fa-list"></i> Table of Contents</a>
+    </div>
 
-      <wa-tree-item expanded>
-        Syntax
-        <wa-tree-item data-page="syntax-adjustments">Adjustments</wa-tree-item>
-        <wa-tree-item data-page="disabled-syntax">Disabled syntax</wa-tree-item>
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">LaTeX &amp; Document Structure</div>
+      <a class="nav-link" href="#dual-output" data-page="dual-output"><i class="fa-solid fa-file-export"></i> Dual Output</a>
+      <a class="nav-link" href="#cross-references" data-page="cross-references"><i class="fa-solid fa-link"></i> Cross-References</a>
+      <a class="nav-link" href="#floats" data-page="floats"><i class="fa-solid fa-image"></i> Figures, Tables &amp; Listings</a>
+      <a class="nav-link" href="#theorems-and-equations" data-page="theorems-and-equations"><i class="fa-solid fa-scroll"></i> Theorems &amp; Equations</a>
+      <a class="nav-link" href="#book-structure" data-page="book-structure"><i class="fa-solid fa-book"></i> Book Structure</a>
+      <a class="nav-link" href="#indexing" data-page="indexing"><i class="fa-solid fa-arrow-down-a-z"></i> Back-of-Book Index</a>
+      <a class="nav-link" href="#print-rendering" data-page="print-rendering"><i class="fa-solid fa-print"></i> Print Rendering</a>
+    </div>
 
-      <wa-tree-item expanded>
-        Content features
-        <wa-tree-item data-page="tables-and-alerts">Tables &amp; alerts</wa-tree-item>
-        <wa-tree-item data-page="description-lists">Description lists</wa-tree-item>
-        <wa-tree-item data-page="math-support">Math support</wa-tree-item>
-        <wa-tree-item data-page="enhanced-lists">Enhanced lists</wa-tree-item>
-        <wa-tree-item data-page="code-highlighting">Code highlighting</wa-tree-item>
-        <wa-tree-item data-page="bibliographic-support">Bibliographic support</wa-tree-item>
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">Metadata Header</div>
+      <a class="nav-link" href="#metadata-header" data-page="metadata-header"><i class="fa-solid fa-sliders"></i> Overview</a>
+      <a class="nav-link" href="#extensions-simple" data-page="extensions-simple"><i class="fa-solid fa-wand-magic-sparkles"></i> Extensions (Simple)</a>
+      <a class="nav-link" href="#extensions-complex" data-page="extensions-complex"><i class="fa-solid fa-wand-magic"></i> Extensions (Complex)</a>
+    </div>
 
-      <wa-tree-item expanded>
-        Directives
-        <wa-tree-item data-page="directives-syntax">Overview</wa-tree-item>
-        <wa-tree-item data-page="comments-and-optionals">Comments &amp; optionals</wa-tree-item>
-        <wa-tree-item data-page="strategic-form-games">Strategic-form games</wa-tree-item>
-        <wa-tree-item data-page="markdown-demo">Demonstrating markdown</wa-tree-item>
-        <wa-tree-item data-page="mermaid-diagrams">Mermaid diagrams</wa-tree-item>
-        <wa-tree-item data-page="tikz-diagrams">TiKZ diagrams</wa-tree-item>
-        <wa-tree-item data-page="metapost-diagrams">MetaPost diagrams</wa-tree-item>
-        <wa-tree-item data-page="sources-and-targets">Sources &amp; targets</wa-tree-item>
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">Scripting</div>
+      <a class="nav-link" href="#inline-scripts" data-page="inline-scripts"><i class="fa-brands fa-js"></i> Inline Scripts</a>
+      <a class="nav-link" href="#post-processing" data-page="post-processing"><i class="fa-solid fa-gears"></i> Post-Processing</a>
+      <a class="nav-link" href="#scripting-example" data-page="scripting-example"><i class="fa-solid fa-flask"></i> Detailed Example</a>
+    </div>
 
-      <wa-tree-item data-page="anchors">
-        Anchors
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">Configuration</div>
+      <a class="nav-link" href="#output-templates" data-page="output-templates"><i class="fa-solid fa-file-code"></i> Output Templates</a>
+      <a class="nav-link" href="#configuration-files" data-page="configuration-files"><i class="fa-solid fa-gear"></i> Configuration Files</a>
+      <a class="nav-link" href="#file-inclusion" data-page="file-inclusion"><i class="fa-solid fa-file-import"></i> File Inclusion</a>
+    </div>
 
-      <wa-tree-item data-page="table-of-contents">
-        Table of contents
-      </wa-tree-item>
+    <div class="nav-section">
+      <div class="nav-section-title">Notes</div>
+      <a class="nav-link" href="#footnotes" data-page="footnotes"><i class="fa-solid fa-superscript"></i> Footnotes</a>
+      <a class="nav-link" href="#endnotes" data-page="endnotes"><i class="fa-solid fa-layer-group"></i> Grouped Endnotes</a>
+    </div>
 
-      <wa-tree-item expanded>
-        LaTeX &amp; document structure
-        <wa-tree-item data-page="dual-output">Dual output (HTML &amp; LaTeX)</wa-tree-item>
-        <wa-tree-item data-page="cross-references">Cross-references</wa-tree-item>
-        <wa-tree-item data-page="floats">Figures, tables &amp; listings</wa-tree-item>
-        <wa-tree-item data-page="theorems-and-equations">Theorems &amp; equations</wa-tree-item>
-        <wa-tree-item data-page="book-structure">Book structure</wa-tree-item>
-        <wa-tree-item data-page="indexing">Back-of-book index</wa-tree-item>
-        <wa-tree-item data-page="print-rendering">Print rendering</wa-tree-item>
-      </wa-tree-item>
-
-      <wa-tree-item expanded>
-        Metadata header
-        <wa-tree-item data-page="metadata-header">Overview</wa-tree-item>
-        <wa-tree-item data-page="extensions-simple">Extensions (simple)</wa-tree-item>
-        <wa-tree-item data-page="extensions-complex">Extensions (complex)</wa-tree-item>
-      </wa-tree-item>
-
-      <wa-tree-item expanded>
-        Scripting
-        <wa-tree-item data-page="inline-scripts">Inline scripts</wa-tree-item>
-        <wa-tree-item data-page="post-processing">Post-processing</wa-tree-item>
-        <wa-tree-item data-page="scripting-example">Detailed example</wa-tree-item>
-      </wa-tree-item>
-
-      <wa-tree-item data-page="output-templates">
-        Output templates
-      </wa-tree-item>
-
-      <wa-tree-item data-page="configuration-files">
-        Configuration files
-      </wa-tree-item>
-
-      <wa-tree-item data-page="file-inclusion">
-        File inclusion
-      </wa-tree-item>
-
-      <wa-tree-item data-page="footnotes">
-        Footnotes
-      </wa-tree-item>
-
-      <wa-tree-item data-page="endnotes">
-        Grouped endnotes
-      </wa-tree-item>
-
-    </wa-tree>
+    <div class="nav-section">
+      <div class="nav-section-title">Elsewhere</div>
+      <a class="nav-link" href="https://github.com/jmckalex/jmarkdown"><i class="fa-brands fa-github"></i> GitHub<i class="fa-solid fa-arrow-up-right-from-square nav-out"></i></a>
+    </div>
   </nav>
 
-  <!-- Main content area -->
-  <div class="content-area">
-    <wa-include
-      id="doc-content"
-      src="introduction.html"
-      allow-scripts>
-    </wa-include>
-    <p class="loading-message" id="loading-msg" style="display: none;">
-      <wa-spinner></wa-spinner> Loading…
-    </p>
-  </div>
+  <!-- ─── Main Content ─── -->
+  <main class="main-content">
+    <div class="hero-badge doc-eyebrow" id="doc-eyebrow" hidden></div>
+    <article class="content-area" id="doc-content">
+      <noscript>
+        <p>This documentation viewer needs JavaScript. Each page is also a plain HTML file — start with <a href="introduction.html">introduction.html</a>.</p>
+      </noscript>
+    </article>
+    <nav class="doc-pager" id="doc-pager" aria-label="Previous and next page"></nav>
 
-</wa-page>
+    <footer class="site-footer">
+      <span>JMarkdown is written by <a href="https://jmckalex.org/home/">J. McKenzie Alexander</a>.</span>
+      <span><a href="../index.html">Home</a> · <a href="https://github.com/jmckalex/jmarkdown">GitHub</a></span>
+    </footer>
+  </main>
+</div>
 
-<script type="module">
-  const nav = document.getElementById('doc-nav');
+<!-- ─── Mobile navigation drawer ─── -->
+<script>
+  function setNavOpen(open) {
+    document.body.classList.toggle('nav-open', open);
+    document.querySelector('[data-toggle-nav]').setAttribute('aria-expanded', String(open));
+  }
+
+  document.querySelector('[data-toggle-nav]').addEventListener('click', () => {
+    setNavOpen(!document.body.classList.contains('nav-open'));
+  });
+  document.querySelector('[data-close-nav]').addEventListener('click', () => setNavOpen(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setNavOpen(false);
+  });
+</script>
+
+<!-- ─── Router ───
+     The pages are fragments built with `jmarkdown process --fragment`. The
+     URL hash names the page and, optionally, an anchor within it:
+
+       #tikz-diagrams                  the TiKZ page
+       #tikz-diagrams/latex-output     …scrolled to id="latex-output"
+
+     Page names never contain a slash and anchor ids may contain colons
+     (`ex:warm`), so the hash splits at the first slash. The fragments link
+     to one another as `foo.html` / `foo.html#bar` and to their own headings
+     as `#bar`; rewriteLinks() turns those into hashes, so every link is an
+     ordinary hash change and the browser's Back button, middle-click and
+     "copy link" all behave. -->
+<script>
   const content = document.getElementById('doc-content');
-  const loadingMsg = document.getElementById('loading-msg');
+  const eyebrow = document.getElementById('doc-eyebrow');
+  const pager = document.getElementById('doc-pager');
+  const sidebar = document.getElementById('sidebar');
 
-  // Navigate to a page by updating the wa-include src
-  function navigateTo(page) {
-    const src = `${page}.html`;
-    loadingMsg.style.display = 'block';
-    content.src = src;
+  const pages = [...sidebar.querySelectorAll('.nav-link[data-page]')].map(link => ({
+    page: link.dataset.page,
+    title: link.textContent.trim(),
+    group: link.closest('.nav-section').querySelector('.nav-section-title')?.textContent.trim() ?? '',
+    link,
+  }));
+  const byName = new Map(pages.map(entry => [entry.page, entry]));
+  const DEFAULT_PAGE = 'introduction';
 
-    // Update URL hash for bookmarkability
-    history.replaceState(null, '', `#${page}`);
+  let currentPage = null;
+  let loadCount = 0;     // generation guard: a slow fetch must not overwrite a newer page
+
+  function parseHash() {
+    let raw = location.hash.slice(1);
+    try { raw = decodeURIComponent(raw); } catch (e) {}
+    const slash = raw.indexOf('/');
+    const page = slash === -1 ? raw : raw.slice(0, slash);
+    const anchor = slash === -1 ? '' : raw.slice(slash + 1);
+    return byName.has(page) ? { page, anchor } : { page: DEFAULT_PAGE, anchor: '' };
   }
 
-  // Handle tree item selection
-  nav.addEventListener('wa-selection-change', (e) => {
-    const selected = e.detail.selection[0];
-    if (selected && selected.dataset.page) {
-      navigateTo(selected.dataset.page);
+  function escapeHTML(text) {
+    return text.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  }
 
-      // On mobile, close the nav drawer after selection
-      const waPage = document.querySelector('wa-page');
-      if (waPage.view === 'mobile') {
-        waPage.hideNavigation();
+  function rewriteLinks(page) {
+    content.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (href.startsWith('#')) {
+        if (href.length > 1) a.setAttribute('href', `#${page}/${href.slice(1)}`);
+        return;
       }
+      const match = href.match(/^(?:\.\/)?([a-z0-9-]+)\.html(?:#(.*))?$/i);
+      if (match && byName.has(match[1])) {
+        a.setAttribute('href', match[2] ? `#${match[1]}/${match[2]}` : `#${match[1]}`);
+      }
+    });
+  }
+
+  // Scripts inserted with innerHTML never run, so replace each with a fresh
+  // element (inline-scripts.html has a live demo that needs this).
+  function runScripts() {
+    content.querySelectorAll('script').forEach(old => {
+      const script = document.createElement('script');
+      [...old.attributes].forEach(attr => script.setAttribute(attr.name, attr.value));
+      script.textContent = old.textContent;
+      old.replaceWith(script);
+    });
+  }
+
+  // Before MathJax has loaded there is nothing to call — its own start-up
+  // typeset will find the page. After that, typeset each new page in turn.
+  function typeset() {
+    if (!window.MathJax?.startup?.promise) return Promise.resolve();
+    MathJax.startup.promise = MathJax.startup.promise
+      .then(() => MathJax.typesetPromise([content]))
+      .catch(error => console.warn('MathJax:', error));
+    return MathJax.startup.promise;
+  }
+
+  // Mermaid is ~3 MB and only one page uses it, so it loads on demand.
+  let mermaidReady = null;
+  function renderMermaid() {
+    const nodes = content.querySelectorAll('.mermaid');
+    if (!nodes.length) return;
+    mermaidReady ??= import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')
+      .then(({ default: mermaid }) => {
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+        return mermaid;
+      });
+    mermaidReady
+      .then(mermaid => mermaid.run({ nodes }))
+      .catch(error => console.warn('Mermaid:', error));
+  }
+
+  function pagerLink(entry, direction) {
+    if (!entry) return '<span></span>';
+    const icon = direction === 'prev' ? 'fa-arrow-left' : 'fa-arrow-right';
+    const label = direction === 'prev' ? 'Previous' : 'Next';
+    return `<a class="pager-link ${direction}" href="#${entry.page}">
+      <span class="pager-dir">${direction === 'prev' ? `<i class="fa-solid ${icon}"></i> ` : ''}${label}${direction === 'next' ? ` <i class="fa-solid ${icon}"></i>` : ''}</span>
+      <span class="pager-title">${escapeHTML(entry.title)}</span>
+    </a>`;
+  }
+
+  function updateChrome(page) {
+    const entry = byName.get(page);
+    const index = pages.indexOf(entry);
+
+    pages.forEach(({ link }) => {
+      const active = link === entry.link;
+      link.classList.toggle('active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+
+    // Keep the active link in view within the sidebar's own scroll.
+    const link = entry.link;
+    if (link.offsetTop < sidebar.scrollTop || link.offsetTop + link.offsetHeight > sidebar.scrollTop + sidebar.clientHeight) {
+      sidebar.scrollTop = link.offsetTop - sidebar.clientHeight / 3;
     }
-  });
 
-  // Handle load complete
-  content.addEventListener('wa-load', () => {
-    loadingMsg.style.display = 'none';
+    document.title = `${entry.title} — JMarkdown Documentation`;
+    eyebrow.textContent = entry.group;
+    eyebrow.hidden = !entry.group;
+    pager.innerHTML = pagerLink(pages[index - 1], 'prev') + pagerLink(pages[index + 1], 'next');
+  }
 
-    // Re-trigger MathJax typesetting on the newly loaded content
-    if (window.MathJax && MathJax.typesetPromise) {
-      MathJax.typesetPromise();
+  async function loadPage(page) {
+    const generation = ++loadCount;
+    content.classList.add('is-loading');
+
+    let html;
+    try {
+      const response = await fetch(`${page}.html`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      html = await response.text();
+    } catch (error) {
+      html = `<div class="doc-missing">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <p>This page couldn't be loaded (${escapeHTML(error.message)}).</p>
+      </div>`;
     }
+    if (generation !== loadCount) return false;
 
-    // Re-trigger Mermaid rendering if present
-    if (window.mermaid) {
-      mermaid.run();
-    }
+    if (window.MathJax?.typesetClear) MathJax.typesetClear([content]);
+    content.innerHTML = html;
+    runScripts();
+    rewriteLinks(page);
+    currentPage = page;
+    updateChrome(page);
+    content.classList.remove('is-loading');
+    renderMermaid();
+    return true;
+  }
 
-    // Scroll main content to top
-    window.scrollTo(0, 0);
-  });
+  // Heading ids carry a `toc-` prefix (`## Latex output` → id="toc-latex-output"),
+  // but many links in the pages were written against the bare slug
+  // (`tikz-diagrams.html#latex-output`); fall back to the prefixed id.
+  function findAnchor(anchor) {
+    return document.getElementById(anchor) || document.getElementById(`toc-${anchor}`);
+  }
 
-  // Handle load error
-  content.addEventListener('wa-include-error', () => {
-    loadingMsg.style.display = 'none';
-    content.innerHTML = `
-      <div style="padding: var(--wa-space-xl); text-align: center; color: var(--wa-color-text-secondary);">
-        <wa-icon name="triangle-exclamation" style="font-size: 2rem;"></wa-icon>
-        <p>This section hasn't been written yet.</p>
-      </div>
-    `;
-  });
+  function scrollToAnchor(anchor, behavior) {
+    const target = anchor && findAnchor(anchor);
+    if (target) target.scrollIntoView({ behavior });
+    else if (!anchor) window.scrollTo({ top: 0, behavior });
+  }
 
-  // Handle initial page load from URL hash
-  const initialPage = location.hash.slice(1) || 'introduction';
-  if (initialPage !== 'introduction') {
-    navigateTo(initialPage);
-
-    // Select the corresponding tree item
-    const item = nav.querySelector(`[data-page="${initialPage}"]`);
-    if (item) {
-      // Deselect the default
-      const defaultSelected = nav.querySelector('[selected]');
-      if (defaultSelected) defaultSelected.selected = false;
-      item.selected = true;
+  async function route() {
+    const { page, anchor } = parseHash();
+    if (page !== currentPage) {
+      if (!(await loadPage(page))) return;
+      scrollToAnchor(anchor, 'instant');
+      // Typesetting changes heights, so land on the anchor again afterwards.
+      typeset().then(() => { if (anchor && currentPage === page) scrollToAnchor(anchor, 'instant'); });
+    } else {
+      scrollToAnchor(anchor, 'smooth');
     }
   }
+
+  // Clicking the page you are already on returns to its top.
+  pages.forEach(({ page, link }) => {
+    link.addEventListener('click', (e) => {
+      setNavOpen(false);
+      if (page === currentPage && location.hash === `#${page}`) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  });
+
+  window.addEventListener('hashchange', route);
+  route();
 </script>
 
 </body>

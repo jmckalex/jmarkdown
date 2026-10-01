@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JMarkdown — Write once, publish twice</title>
+<meta name="description" content="JMarkdown is a Markdown authoring system for scholarly writing: one source file becomes a polished web page or a complete LaTeX document, with citations, cross-references, theorems, figures and an index in both.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://kit.fontawesome.com/3c5dfa7541.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="docs/site.css">
+
+<!-- MathJax typesets only the rendered demo outputs (class mathjax-process);
+     the code samples and prose are left alone. -->
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+    options: { ignoreHtmlClass: 'mathjax-ignore', processHtmlClass: 'mathjax-process' }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+</head>
+<body class="mathjax-ignore">
+
+<!-- ─── Mobile top bar (narrow screens only) ─── -->
+<div class="mobile-bar">
+  <a class="mobile-logo" href="#"><i class="fa-brands fa-markdown"></i>JMarkdown</a>
+  <button class="menu-button" type="button" data-toggle-nav aria-controls="sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i> Menu</button>
+</div>
+<div class="sidebar-backdrop" data-close-nav></div>
+
+<div class="page-wrapper">
+
+  <!-- ─── Sidebar ─── -->
+  <nav class="sidebar" id="sidebar" aria-label="Page sections">
+    <div class="sidebar-logo">
+      <h1><i class="fa-brands fa-markdown"></i>JMarkdown</h1>
+      <div class="subtitle">Scholarly Markdown</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <a class="nav-link active" href="#overview"><i class="fa-solid fa-house"></i> Overview</a>
+      <a class="nav-link" href="#install"><i class="fa-solid fa-download"></i> Install</a>
+      <a class="nav-link" href="#quickstart"><i class="fa-solid fa-play"></i> Quick Start</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">What It Does</div>
+      <a class="nav-link" href="#dual-output"><i class="fa-solid fa-file-export"></i> One Source, Two Outputs</a>
+      <a class="nav-link" href="#extensions"><i class="fa-solid fa-wand-magic-sparkles"></i> Syntax You Invent</a>
+      <a class="nav-link" href="#scripting"><i class="fa-brands fa-js"></i> JavaScript at Build Time</a>
+      <a class="nav-link" href="#scholarly"><i class="fa-solid fa-graduation-cap"></i> Scholarly Apparatus</a>
+      <a class="nav-link" href="#diagrams"><i class="fa-solid fa-bezier-curve"></i> Diagrams &amp; Figures</a>
+      <a class="nav-link" href="#watch"><i class="fa-solid fa-eye"></i> Live Preview</a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Reference</div>
+      <a class="nav-link" href="#documentation"><i class="fa-solid fa-map"></i> Documentation Map</a>
+      <a class="nav-link" href="#principles"><i class="fa-solid fa-compass-drafting"></i> Design Principles</a>
+      <a class="nav-link" href="docs/index.html"><i class="fa-solid fa-book-open"></i> Full Documentation<i class="fa-solid fa-arrow-right nav-out"></i></a>
+      <a class="nav-link" href="https://github.com/jmckalex/jmarkdown"><i class="fa-brands fa-github"></i> GitHub<i class="fa-solid fa-arrow-up-right-from-square nav-out"></i></a>
+    </div>
+  </nav>
+
+  <!-- ─── Main Content ─── -->
+  <main class="main-content">
+
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero-badge"><i class="fa-solid fa-circle-check"></i> Version 1.0</div>
+      <h1>Write once,<br><em>publish twice</em></h1>
+      <p>JMarkdown is a Markdown authoring system for scholarly writing. One source file becomes a polished web page <em>or</em> a complete, compilable LaTeX document — citations, cross-references, theorems, figures and index included. And because it is extensible from inside the document, you can invent new notation and run JavaScript while the page is built.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="docs/index.html"><i class="fa-solid fa-book-open"></i> Read the documentation</a>
+        <a class="btn" href="#install"><i class="fa-solid fa-download"></i> Install</a>
+        <a class="btn" href="https://github.com/jmckalex/jmarkdown"><i class="fa-brands fa-github"></i> GitHub</a>
+      </div>
+    </header>
+
+    <!-- Overview -->
+    <section class="doc-section" id="overview">
+      <h2>Overview</h2>
+      <p>JMarkdown began as one author's preferred Markdown — <code>/italics/</code> between slashes, <code>*bold*</code> between single stars — and grew into the system used to write <em>The Rise of Computational Philosophy</em>, a book authored Knuth-style from a single source of truth. It is built on <a href="https://marked.js.org/">marked.js</a>, runs on Node.js, and needs no build step.</p>
+
+      <div class="feature-grid">
+        <a class="feature-card" href="#dual-output">
+          <div class="card-icon orange"><i class="fa-solid fa-file-export"></i></div>
+          <h4>One Source, Two Outputs</h4>
+          <p>HTML for the web or a complete LaTeX document for print, from the same <code>.md</code> file. Choose the target at the command line.</p>
+        </a>
+        <a class="feature-card" href="#extensions">
+          <div class="card-icon blue"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <h4>Syntax You Invent</h4>
+          <p>Declare new inline notation in the document's own header — Unicode delimiters or regular-expression patterns, no plugin required.</p>
+        </a>
+        <a class="feature-card" href="#scripting">
+          <div class="card-icon purple"><i class="fa-brands fa-js"></i></div>
+          <h4>JavaScript at Build Time</h4>
+          <p>Script blocks run as the document is processed. Export a function and call it from your prose; reshape the finished page with Cheerio.</p>
+        </a>
+        <a class="feature-card" href="#scholarly">
+          <div class="card-icon green"><i class="fa-solid fa-graduation-cap"></i></div>
+          <h4>Scholarly Apparatus</h4>
+          <p>BibTeX citations with CSL styles, cross-references, theorems and proofs, numbered equations, floats, endnotes and a back-of-book index.</p>
+        </a>
+        <a class="feature-card" href="#diagrams">
+          <div class="card-icon rose"><i class="fa-solid fa-bezier-curve"></i></div>
+          <h4>Diagrams &amp; Figures</h4>
+          <p>TikZ, MetaPost and Mermaid figures compiled and cached at build time; game-theoretic payoff matrices typeset from plain text.</p>
+        </a>
+        <a class="feature-card" href="#watch">
+          <div class="card-icon teal"><i class="fa-solid fa-eye"></i></div>
+          <h4>Live Preview</h4>
+          <p><code>jmarkdown watch</code> rebuilds on every save and updates the browser in place, leaving untouched math and diagrams as they were.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Install -->
+    <section class="doc-section" id="install">
+      <h2>Install</h2>
+      <p>JMarkdown is distributed from <a href="https://github.com/jmckalex/jmarkdown">GitHub</a>. You need <strong>Node.js 20.19 or later</strong> and git.</p>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-label">Step 1</div>
+          <div class="step-title">Clone the repository</div>
+          <pre><code>git clone https://github.com/jmckalex/jmarkdown.git</code></pre>
+        </div>
+        <div class="step-item">
+          <div class="step-label">Step 2</div>
+          <div class="step-title">Install its dependencies</div>
+          <pre><code>cd jmarkdown
+npm install</code></pre>
+        </div>
+        <div class="step-item">
+          <div class="step-label">Step 3</div>
+          <div class="step-title">Put <code>jmarkdown</code> on your path</div>
+          <pre><code>npm link
+jmarkdown --help    <span class="tok-comment"># lists the commands</span></code></pre>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon"><i class="fa-solid fa-info"></i></div>
+        <p>A few features call external programs, which you need only if you use those features: a TeX distribution with <code>lualatex</code> and <code>dvisvgm</code> for TikZ, MetaPost (<code>mpost</code>) for MetaPost figures, the Mermaid CLI (<code>mmdc</code>) for Mermaid diagrams in LaTeX, <code>ffmpeg</code> for video posters, and Wolfram Engine for Mathematica. Everything else is plain Node.js.</p>
+      </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="doc-section" id="quickstart">
+      <h2>Quick Start</h2>
+      <p>A JMarkdown document is an ordinary Markdown file with an optional metadata header. Save this as <code>essay.md</code>:</p>
+
+      <div class="demo-panel">
+        <div class="demo-panel-header"><i class="fa-solid fa-file-lines"></i> <span class="file">essay.md</span></div>
+        <div class="demo-single">
+<pre><code><span class="tok-comment">---</span>
+<span class="tok-attr">Title:</span> On Conventions
+<span class="tok-attr">Author:</span> A. N. Author
+<span class="tok-attr">Document class:</span> article
+<span class="tok-comment">---</span>
+
+<span class="tok-head"># Introduction</span>
+
+Conventions are /arbitrary/, yet *binding*: drivers keep left
+in Britain because everyone else does.<span class="tok-kw">[fn:</span> Lewis, /Convention/ (1969).<span class="tok-kw">]</span>
+
+<span class="tok-num">$$
+u_i(s_i^*, s_{-i}^*) \geq u_i(s_i, s_{-i}^*)
+$$</span></code></pre>
+        </div>
+      </div>
+
+      <p>Then build it for whichever reader you have in mind:</p>
+
+      <div class="demo-panel terminal">
+        <div class="demo-panel-header"><i class="fa-solid fa-terminal"></i> Terminal</div>
+        <div class="demo-single">
+<pre><code>jmarkdown process essay.md              <span class="tok-comment"># → essay.html</span>
+jmarkdown process essay.md --to latex   <span class="tok-comment"># → essay.tex, a complete LaTeX document</span>
+jmarkdown watch essay.md --open         <span class="tok-comment"># live preview in your browser</span></code></pre>
+        </div>
+      </div>
+
+      <p><code>jmarkdown init -f essay.md</code> writes a skeleton document to start from, and <code>jmarkdown options</code> lists every configuration setting with its default. Settings can live in a global <code>~/.jmarkdown/config.json</code>, a project's <code>.jmarkdown/config.json</code>, or the document's own header, which wins.</p>
+    </section>
+
+    <!-- One Source, Two Outputs -->
+    <section class="doc-section" id="dual-output">
+      <h2>One Source, Two Outputs</h2>
+      <p>Write the document once and choose the target at the command line. Prose, headings, lists, math, footnotes, cross-references, figures, theorems and tables all render correctly in both, so there is no second copy to keep in sync. Here is a short passage, and what JMarkdown makes of it:</p>
+
+      <div class="demo-panel">
+        <div class="demo-panel-header"><i class="fa-solid fa-code"></i> One source <i class="fa-solid fa-arrow-right"></i> two outputs</div>
+        <div class="demo-single">
+          <div class="demo-col-label"><i class="fa-brands fa-markdown"></i> Source</div>
+<pre><code><span class="tok-kw">@begin(theorem)</span>[Cantor]<span class="tok-attr">{id=thm:cantor}</span>
+No set <span class="tok-num">$A$</span> can be mapped onto its power set <span class="tok-num">$\mathcal{P}(A)$</span>.
+<span class="tok-kw">@end(theorem)</span>
+
+By <span class="tok-kw">@cref</span>[thm:cantor], /no/ set is as large as its
+power set.<span class="tok-kw">[fn:</span> Not even the empty one.<span class="tok-kw">]</span></code></pre>
+        </div>
+        <div class="demo-columns">
+          <div class="demo-col">
+            <div class="demo-col-label"><i class="fa-solid fa-globe"></i> Web · HTML</div>
+            <div class="demo-output mathjax-process">
+              <div class="theorem-env theorem-plain">
+                <p><span class="theorem-label">Theorem 1 (Cantor).</span> No set $A$ can be mapped onto its power set $\mathcal{P}(A)$.</p>
+              </div>
+              <p>By <a class="xref-cref" href="#dual-output">theorem&nbsp;1</a>, <em>no</em> set is as large as its power set.<sup class="footnote-ref"><a href="#dual-output">1</a></sup></p>
+              <section class="footnotes">
+                <h1 class="endnotes-heading">Endnotes</h1>
+                <ol>
+                  <li><p>Not even the empty one. <span class="footnote-backref">↩</span></p></li>
+                </ol>
+              </section>
+            </div>
+          </div>
+          <div class="demo-col">
+            <div class="demo-col-label"><i class="fa-solid fa-print"></i> Print · LaTeX</div>
+<pre><code><span class="tok-kw">\begin</span>{theorem}[Cantor]<span class="tok-kw">\label</span>{thm:cantor}
+No set $A$ can be mapped onto
+its power set $<span class="tok-kw">\mathcal</span>{P}(A)$.
+<span class="tok-kw">\end</span>{theorem}
+
+By <span class="tok-kw">\cref</span>{thm:cantor}, <span class="tok-kw">\emph</span>{no} set
+is as large as its power set.<span class="tok-kw">\footnote</span>{Not
+even the empty one.}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <p>With <code>--to latex</code> you get a complete document, ready for <code>pdflatex</code>: the <code>\documentclass</code>, a preamble assembled from the packages your text actually uses, the title block and the body. Where web and print genuinely should differ, <code>@begin(print)</code> and <code>@begin(web)</code> hold passages meant for one of them alone.</p>
+      <a class="section-more" href="docs/index.html#dual-output">Dual output in depth <i class="fa-solid fa-arrow-right"></i></a>
+    </section>
+
+    <!-- Syntax You Invent -->
+    <section class="doc-section" id="extensions">
+      <h2>Syntax You Invent</h2>
+      <p>Most Markdown processors have a fixed vocabulary. JMarkdown lets a document declare new inline notation in its own metadata header — no plugin, no JavaScript. A <strong>simple</strong> extension names an opening and a closing delimiter, which can be any Unicode character. A <strong>complex</strong> one uses regular expressions, so it can recognise a pattern and capture its parts:</p>
+
+      <div class="demo-panel">
+        <div class="demo-panel-header"><i class="fa-solid fa-wand-magic-sparkles"></i> Extensions declared in the header</div>
+        <div class="demo-single">
+          <div class="demo-col-label"><i class="fa-brands fa-markdown"></i> Source</div>
+<pre><code><span class="tok-comment">---</span>
+<span class="tok-attr">Extension smallcaps:</span> <span class="tok-str">↑ ↑</span> false 1
+	<span class="tok-tag">&lt;span style="font-variant-caps: small-caps;"&gt;</span>${content1}<span class="tok-tag">&lt;/span&gt;</span>
+<span class="tok-attr">Extension subscripts:</span> <span class="tok-str">/[pxyz][0-9k]+/	/^([pxyz])([0-9k]+)/</span>	false 2
+	<span class="tok-tag">&lt;span&gt;</span>\(${content1}_{${content2}}\)<span class="tok-tag">&lt;/span&gt;</span>
+<span class="tok-comment">---</span>
+
+↑Note↑ Each of the players p1, p2, …, pk moves once.</code></pre>
+        </div>
+        <div class="demo-single">
+          <div class="demo-col-label"><i class="fa-solid fa-eye"></i> Rendered</div>
+          <div class="demo-output mathjax-process">
+            <p><span style="font-variant-caps: small-caps;">Note</span> Each of the players <span>\(p_{1}\)</span>, <span>\(p_{2}\)</span>, …, <span>\(p_{k}\)</span> moves once.</p>
+          </div>
+        </div>
+      </div>
+
+      <p>The base syntax is adjusted too: <code>/italics/</code>, <code>*bold*</code>, <code>__underline__</code> and <code>==highlight==</code>; real subscripts and superscripts (<code>H_2O</code>, <code>E=mc^2</code>); emoji, Font Awesome icons and alignment blocks. If you would rather keep standard Markdown emphasis, <code>-n</code> restores it.</p>
+      <a class="section-more" href="docs/index.html#extensions-simple">Defining new syntax <i class="fa-solid fa-arrow-right"></i></a>
+    </section>
+
+    <!-- JavaScript at Build Time -->
+    <section class="doc-section" id="scripting">
+      <h2>JavaScript at Build Time</h2>
+      <p>A script block marked <code>data-type="jmarkdown"</code> runs while the document is processed, in a context shared by every such block in the file. Export a function with <code>export_to_jmarkdown</code> and call it from your prose: whatever it returns takes the call's place — in the HTML and the LaTeX alike.</p>
+
+      <div class="demo-panel">
+        <div class="demo-panel-header"><i class="fa-brands fa-js"></i> A function called from prose</div>
+        <div class="demo-single">
+          <div class="demo-col-label"><i class="fa-brands fa-markdown"></i> Source</div>
+<pre><code><span class="tok-tag">&lt;script data-type="jmarkdown"&gt;</span>
+<span class="tok-kw">function</span> <span class="tok-fn">century</span>(year) {
+	<span class="tok-kw">const</span> n = Math.ceil(year / <span class="tok-num">100</span>);
+	<span class="tok-kw">const</span> teen = n % <span class="tok-num">100</span> &gt;= <span class="tok-num">11</span> &amp;&amp; n % <span class="tok-num">100</span> &lt;= <span class="tok-num">13</span>;
+	<span class="tok-kw">const</span> suffix = teen ? <span class="tok-str">'th'</span> : ({ <span class="tok-num">1</span>: <span class="tok-str">'st'</span>, <span class="tok-num">2</span>: <span class="tok-str">'nd'</span>, <span class="tok-num">3</span>: <span class="tok-str">'rd'</span> }[n % <span class="tok-num">10</span>] ?? <span class="tok-str">'th'</span>);
+	<span class="tok-kw">return</span> <span class="tok-str">`the ${n}${suffix} century`</span>;
+}
+<span class="tok-fn">export_to_jmarkdown</span>(<span class="tok-str">"century"</span>);
+<span class="tok-tag">&lt;/script&gt;</span>
+
+Hobbes wrote /Leviathan/ in century(1651);
+Lewis wrote /Convention/ in century(1969).</code></pre>
+        </div>
+        <div class="demo-columns">
+          <div class="demo-col">
+            <div class="demo-col-label"><i class="fa-solid fa-globe"></i> Web · HTML</div>
+            <div class="demo-output">
+              <p>Hobbes wrote <em>Leviathan</em> in the 17th century; Lewis wrote <em>Convention</em> in the 20th century.</p>
+            </div>
+          </div>
+          <div class="demo-col">
+            <div class="demo-col-label"><i class="fa-solid fa-print"></i> Print · LaTeX</div>
+<pre><code>Hobbes wrote <span class="tok-kw">\emph</span>{Leviathan} in
+the 17th century;
+Lewis wrote <span class="tok-kw">\emph</span>{Convention} in
+the 20th century.</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <p>The same machinery goes further. A function can return Markdown to be parsed in place; a <code>jmarkdown-postprocess</code> block can reshape the finished page with <a href="https://cheerio.js.org/">Cheerio</a>; and <code>defineEnvironment</code> creates new <code>@begin(name)</code> environments, numbered and cross-referenceable if you ask.</p>
+
+      <div class="callout tip">
+        <div class="callout-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <p><strong>Rendering documents someone else wrote?</strong> One configuration switch, <code>Run note code: false</code>, refuses every path by which a document can run code, and marks each refusal in place, by name.</p>
+      </div>
+      <a class="section-more" href="docs/index.html#inline-scripts">Scripting in depth <i class="fa-solid fa-arrow-right"></i></a>
+    </section>
+
+    <!-- Scholarly Apparatus -->
+    <section class="doc-section" id="scholarly">
+      <h2>Scholarly Apparatus</h2>
+      <p>The machinery a paper or a book needs, in both outputs. In LaTeX it maps onto the packages you would have used anyway — natbib, cleveref, thmtools, imakeidx — so the <code>.tex</code> file reads like one a person wrote.</p>
+
+      <div class="icon-list">
+        <a class="icon-item" href="docs/index.html#bibliographic-support">
+          <div class="item-icon green"><i class="fa-solid fa-book-bookmark"></i></div>
+          <div>
+            <h4>Citations &amp; Bibliographies</h4>
+            <p>BibTeX databases cited with natbib's <code>\cite</code> family, or pandoc's <code>[@key]</code> if you prefer. CSL styles on the web — APA, Chicago, Harvard, Vancouver and more — resolved at build time or in the browser.</p>
+          </div>
+        </a>
+        <a class="icon-item" href="docs/index.html#cross-references">
+          <div class="item-icon blue"><i class="fa-solid fa-link"></i></div>
+          <div>
+            <h4>Cross-References</h4>
+            <p><code>@label</code>, <code>@ref</code> and <code>@cref</code>, with the type and number filled in for you — “theorem 1”, “figure 3”. Unresolved and duplicate labels are reported at the end of the build.</p>
+          </div>
+        </a>
+        <a class="icon-item" href="docs/index.html#theorems-and-equations">
+          <div class="item-icon purple"><i class="fa-solid fa-square-root-variable"></i></div>
+          <div>
+            <h4>Theorems, Proofs &amp; Equations</h4>
+            <p>Theorems, lemmas, definitions and proofs, and numbered display equations — each one referenceable by label.</p>
+          </div>
+        </a>
+        <a class="icon-item" href="docs/index.html#floats">
+          <div class="item-icon orange"><i class="fa-solid fa-image"></i></div>
+          <div>
+            <h4>Figures, Tables &amp; Listings</h4>
+            <p>Captioned, numbered floats with subfigures, plus <code>@image</code> and <code>@video</code> sized once for both outputs. Long tables switch to <code>longtable</code> in print automatically.</p>
+          </div>
+        </a>
+        <a class="icon-item" href="docs/index.html#indexing">
+          <div class="item-icon teal"><i class="fa-solid fa-arrow-down-a-z"></i></div>
+          <div>
+            <h4>Back-of-Book Index</h4>
+            <p><code>@index</code> marks become makeindex entries in print and a letter-grouped, hyperlinked index on the web.</p>
+          </div>
+        </a>
+        <a class="icon-item" href="docs/index.html#endnotes">
+          <div class="item-icon rose"><i class="fa-solid fa-superscript"></i></div>
+          <div>
+            <h4>Footnotes &amp; Endnotes</h4>
+            <p>Footnotes written inline, where they belong — <code>[fn: …]</code> — and, if you like, gathered into named endnote groups placed wherever you choose.</p>
+          </div>
+        </a>
+        <a class="icon-item" href="docs/index.html#book-structure">
+          <div class="item-icon orange"><i class="fa-solid fa-book"></i></div>
+          <div>
+            <h4>Book Structure</h4>
+            <p>Front, main and back matter, tables of contents, and books split across many files with <code>[[chapter.md]]</code> inclusion.</p>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Diagrams & Figures -->
+    <section class="doc-section" id="diagrams">
+      <h2>Diagrams &amp; Figures</h2>
+      <p>Figures are written as source and compiled when the document is built, then cached by a hash of their content, so an unchanged figure is never compiled twice. Write the drawing commands; JMarkdown supplies the document around them.</p>
+
+      <div class="demo-panel">
+        <div class="demo-panel-header"><i class="fa-solid fa-bezier-curve"></i> TikZ, compiled to SVG</div>
+        <div class="demo-columns">
+          <div class="demo-col">
+            <div class="demo-col-label"><i class="fa-brands fa-markdown"></i> Source</div>
+<pre><code><span class="tok-kw">@begin(TiKZ)</span><span class="tok-attr">{embed=true}</span>
+<span class="tok-kw">\begin</span>{tikzpicture}[scale=1.4]
+  <span class="tok-kw">\draw</span>[step=0.5, gray!40] (0,0)
+    grid (3,2);
+  <span class="tok-kw">\draw</span>[->, thick] (0,0) -- (3.2,0)
+    node[right] {$x$};
+  <span class="tok-kw">\draw</span>[->, thick] (0,0) -- (0,2.2)
+    node[above] {$y$};
+  <span class="tok-kw">\draw</span>[blue, very thick,
+    domain=0:3, samples=80]
+    plot (\x, {0.2*\x*\x});
+<span class="tok-kw">\end</span>{tikzpicture}
+<span class="tok-kw">@end(TiKZ)</span></code></pre>
+          </div>
+          <div class="demo-col">
+            <div class="demo-col-label"><i class="fa-solid fa-eye"></i> Rendered</div>
+            <div class="demo-figure">
+              <img alt="The parabola y = 0.2x² drawn on a grid, compiled from the TikZ source" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDMuNC4zIC0tPgo8c3ZnIHZlcnNpb249JzEuMScgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB4bWxuczp4bGluaz0naHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluaycgd2lkdGg9JzE0MS4xMjE5NzdwdCcgaGVpZ2h0PScxMDIuMDE2NjY5cHQnIHZpZXdCb3g9Jy02MC4xNTI0MTUgLTU5LjUxMjY5NCAxNDEuMTIxOTc3IDEwMi4wMTY2NjknPgo8ZGVmcy8+CjxnIGlkPSdwYWdlMSc+CjxnIGZpbGw9J25vbmUnIHN0cm9rZS1taXRlcmxpbWl0PScxMCc+CjxwYXRoIGQ9J00tNTYuNjQwNjI2IDM4Ljk5NjA5NUg2Mi40MTQ1TS01Ni42NDA2MjYgMTkuMTUyM0g2Mi40MTQ1TS01Ni42NDA2MjYtLjY4NzVINjIuNDE0NU0tNTYuNjQwNjI2LTIwLjUzMTJINjIuNDE0NU0tNTYuNjQwNjI2LTQwLjM3NUg2Mi40MTQ1TS01Ni42NDA2MjYgMzguOTk2MDk1Vi00MC4zNzVNLTM2LjgwMDggMzguOTk2MDk1Vi00MC4zNzVNLTE2Ljk1NyAzOC45OTYwOTVWLTQwLjM3NU0yLjg4NjcgMzguOTk2MDk1Vi00MC4zNzVNMjIuNzMwNSAzOC45OTYwOTVWLTQwLjM3NU00Mi41NzAzIDM4Ljk5NjA5NVYtNDAuMzc1TTYyLjQxNDUgMzguOTk2MDk1Vi00MC4zNzUnIHN0cm9rZT0nI2NjYycgc3Ryb2tlLXdpZHRoPScuMTk5MjUnLz4KPHBhdGggZD0nTS01Ni42NDA2MjYgMzguOTk2MDk1SDY5LjU1NDUnIHN0cm9rZT0nIzAwMCcgc3Ryb2tlLXdpZHRoPScuNzk3MDEnLz4KPHBhdGggZD0nTTY3LjQwMjMzIDM1Ljg4NjcyQzY3Ljg2NzE3IDM3Ljc1MzkxIDY4LjkwNjIzIDM4LjYzMjgxNCA2OS45NTMxMDcgMzguOTk2MDk1QzY4LjkwNjIzIDM5LjM1OTM3NiA2Ny44NjcxNyA0MC4yNDIxOSA2Ny40MDIzMyA0Mi4xMDU0Nycgc3Ryb2tlPScjMDAwJyBzdHJva2Utd2lkdGg9Jy43OTcwMScgc3Ryb2tlLWxpbmVjYXA9J3JvdW5kJyBzdHJva2UtbGluZWpvaW49J3JvdW5kJy8+CjwvZz4KPGcgdHJhbnNmb3JtPSdtYXRyaXgoMSAwIDAgMSAxMzEuMzc2MiAyLjM0ODUpJz4KPHBhdGggZD0nTS01Mi45OTc4NTYgMzUuNzAxODI4Qy01Mi45MzI0MDIgMzUuNDE4MTkxLTUyLjY4MTQ5MyAzNC40MTQ1NTUtNTEuOTE3ODU2IDM0LjQxNDU1NUMtNTEuODYzMzExIDM0LjQxNDU1NS01MS42MDE0OTMgMzQuNDE0NTU1LTUxLjM3MjQwMiAzNC41NTYzNzNDLTUxLjY3Nzg1NyAzNC42MTA5MTktNTEuODk2MDM4IDM0Ljg4MzY0Ni01MS44OTYwMzggMzUuMTQ1NDY0Qy01MS44OTYwMzggMzUuMzIwMDEtNTEuNzc2MDM4IDM1LjUyNzI4Mi01MS40ODE0OTMgMzUuNTI3MjgyQy01MS4yNDE0OTMgMzUuNTI3MjgyLTUwLjg5MjQwMiAzNS4zMzA5MTktNTAuODkyNDAyIDM0Ljg5NDU1NUMtNTAuODkyNDAyIDM0LjMyNzI4My01MS41MzYwMzggMzQuMTc0NTU1LTUxLjkwNjk0NyAzNC4xNzQ1NTVDLTUyLjUzOTY3NCAzNC4xNzQ1NTUtNTIuOTIxNDkzIDM0Ljc1MjczNy01My4wNTI0MDIgMzUuMDAzNjQ2Qy01My4zMjUxMjkgMzQuMjgzNjQ2LTUzLjkxNDIyIDM0LjE3NDU1NS01NC4yMzA1ODMgMzQuMTc0NTU1Qy01NS4zNjUxMjggMzQuMTc0NTU1LTU1Ljk4Njk0NiAzNS41ODE4MjgtNTUuOTg2OTQ2IDM1Ljg1NDU1NUMtNTUuOTg2OTQ2IDM1Ljk2MzY0Ni01NS44Nzc4NTUgMzUuOTYzNjQ2LTU1Ljg1NjAzNyAzNS45NjM2NDZDLTU1Ljc2ODc2NCAzNS45NjM2NDYtNTUuNzM2MDM3IDM1Ljk0MTgyOC01NS43MTQyMTkgMzUuODQzNjQ2Qy01NS4zNDMzMSAzNC42ODcyODMtNTQuNjIzMzEgMzQuNDE0NTU1LTU0LjI1MjQwMSAzNC40MTQ1NTVDLTU0LjA0NTEyOSAzNC40MTQ1NTUtNTMuNjYzMzExIDM0LjUxMjczNy01My42NjMzMTEgMzUuMTQ1NDY0Qy01My42NjMzMTEgMzUuNDgzNjQ2LTUzLjg0ODc2NSAzNi4yMTQ1NTUtNTQuMjUyNDAxIDM3Ljc0MTgyN0MtNTQuNDI2OTQ3IDM4LjQxODE5MS01NC44MDg3NjUgMzguODc2MzcyLTU1LjI4ODc2NSAzOC44NzYzNzJDLTU1LjM1NDIxOSAzOC44NzYzNzItNTUuNjA1MTI4IDM4Ljg3NjM3Mi01NS44MzQyMTkgMzguNzM0NTU0Qy01NS41NjE0OTIgMzguNjgwMDA5LTU1LjMyMTQ5MiAzOC40NTA5MTgtNTUuMzIxNDkyIDM4LjE0NTQ2M0MtNTUuMzIxNDkyIDM3Ljg1MDkxOC01NS41NjE0OTIgMzcuNzYzNjQ1LTU1LjcyNTEyOCAzNy43NjM2NDVDLTU2LjA1MjQwMSAzNy43NjM2NDUtNTYuMzI1MTI4IDM4LjA0NzI4Mi01Ni4zMjUxMjggMzguMzk2MzcyQy01Ni4zMjUxMjggMzguODk4MTktNTUuNzc5Njc0IDM5LjExNjM3Mi01NS4yOTk2NzQgMzkuMTE2MzcyQy01NC41Nzk2NzQgMzkuMTE2MzcyLTU0LjE4Njk0NyAzOC4zNTI3MzYtNTQuMTU0MjE5IDM4LjI4NzI4MkMtNTQuMDIzMzEgMzguNjkwOTE4LTUzLjYzMDU4MyAzOS4xMTYzNzItNTIuOTc2MDM4IDM5LjExNjM3MkMtNTEuODUyNDAyIDM5LjExNjM3Mi01MS4yMzA1ODQgMzcuNzA5MS01MS4yMzA1ODQgMzcuNDM2MzczQy01MS4yMzA1ODQgMzcuMzI3MjgyLTUxLjMyODc2NiAzNy4zMjcyODItNTEuMzYxNDkzIDM3LjMyNzI4MkMtNTEuNDU5Njc1IDM3LjMyNzI4Mi01MS40ODE0OTMgMzcuMzcwOTE4LTUxLjUwMzMxMSAzNy40NDcyODJDLTUxLjg2MzMxMSAzOC42MTQ1NTQtNTIuNjA1MTI5IDM4Ljg3NjM3Mi01Mi45NTQyMiAzOC44NzYzNzJDLTUzLjM3OTY3NCAzOC44NzYzNzItNTMuNTU0MjIgMzguNTI3MjgxLTUzLjU1NDIyIDM4LjE1NjM3MkMtNTMuNTU0MjIgMzcuOTE2MzczLTUzLjQ4ODc2NSAzNy42NzYzNzMtNTMuMzY4NzY1IDM3LjE5NjM3M0wtNTIuOTk3ODU2IDM1LjcwMTgyOFonLz4KPC9nPgo8cGF0aCBkPSdNLTU2LjY0MDYyNiAzOC45OTYwOTVWLTQ3LjUxNTYnIHN0cm9rZT0nIzAwMCcgZmlsbD0nbm9uZScgc3Ryb2tlLXdpZHRoPScuNzk3MDEnIHN0cm9rZS1taXRlcmxpbWl0PScxMCcvPgo8cGF0aCBkPSdNLTU5Ljc1MzkxLTQ1LjM2MzMzQy01Ny44ODY3Mi00NS44MjgxNy01Ny4wMDM5MDgtNDYuODY3MjQtNTYuNjQwNjI2LTQ3LjkxNDExMkMtNTYuMjc3MzQ1LTQ2Ljg2NzI0LTU1LjM5ODQ0LTQ1LjgyODE3LTUzLjUzMTI1LTQ1LjM2MzMzJyBzdHJva2U9JyMwMDAnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nLjc5NzAxJyBzdHJva2UtbWl0ZXJsaW1pdD0nMTAnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcgc3Ryb2tlLWxpbmVqb2luPSdyb3VuZCcvPgo8ZyB0cmFuc2Zvcm09J21hdHJpeCgxIDAgMCAxIC0yLjg3IC05My44MTIxKSc+CjxwYXRoIGQ9J00tNTEuMzM5Njc1IDM0Ljg0MDAxQy01MS4yOTYwMzggMzQuNjg3MjgzLTUxLjI5NjAzOCAzNC42NjU0NjQtNTEuMjk2MDM4IDM0LjU4OTEwMUMtNTEuMjk2MDM4IDM0LjM5MjczNy01MS40NDg3NjYgMzQuMjk0NTU1LTUxLjYxMjQwMiAzNC4yOTQ1NTVDLTUxLjcyMTQ5MyAzNC4yOTQ1NTUtNTEuODk2MDM4IDM0LjM2MDAxLTUxLjk5NDIyIDM0LjUyMzY0NkMtNTIuMDE2MDM4IDM0LjU3ODE5Mi01Mi4xMDMzMTEgMzQuOTE2MzczLTUyLjE0Njk0NyAzNS4xMTI3MzdDLTUyLjIyMzMxMSAzNS4zOTYzNzMtNTIuMjk5Njc1IDM1LjY5MDkxOS01Mi4zNjUxMjkgMzUuOTg1NDY0TC01Mi44NTYwMzggMzcuOTQ5MUMtNTIuODk5Njc0IDM4LjExMjczNi01My4zNjg3NjUgMzguODc2MzcyLTU0LjA4ODc2NSAzOC44NzYzNzJDLTU0LjY0NTEyOCAzOC44NzYzNzItNTQuNzY1MTI4IDM4LjM5NjM3Mi01NC43NjUxMjggMzcuOTkyNzM2Qy01NC43NjUxMjggMzcuNDkwOTE4LTU0LjU3OTY3NCAzNi44MTQ1NTUtNTQuMjA4NzY1IDM1Ljg1NDU1NUMtNTQuMDM0MjIgMzUuNDA3MjgyLTUzLjk5MDU4MyAzNS4yODcyODItNTMuOTkwNTgzIDM1LjA2OTEwMUMtNTMuOTkwNTgzIDM0LjU3ODE5Mi01NC4zMzk2NzQgMzQuMTc0NTU1LTU0Ljg4NTEyOCAzNC4xNzQ1NTVDLTU1LjkyMTQ5MiAzNC4xNzQ1NTUtNTYuMzI1MTI4IDM1Ljc1NjM3My01Ni4zMjUxMjggMzUuODU0NTU1Qy01Ni4zMjUxMjggMzUuOTYzNjQ2LTU2LjIxNjAzNyAzNS45NjM2NDYtNTYuMTk0MjE5IDM1Ljk2MzY0NkMtNTYuMDg1MTI4IDM1Ljk2MzY0Ni01Ni4wNzQyMTkgMzUuOTQxODI4LTU2LjAxOTY3MyAzNS43NjcyODJDLTU1LjcyNTEyOCAzNC43NDE4MjgtNTUuMjg4NzY1IDM0LjQxNDU1NS01NC45MTc4NTYgMzQuNDE0NTU1Qy01NC44MzA1ODMgMzQuNDE0NTU1LTU0LjY0NTEyOCAzNC40MTQ1NTUtNTQuNjQ1MTI4IDM0Ljc2MzY0NkMtNTQuNjQ1MTI4IDM1LjAzNjM3My01NC43NTQyMTkgMzUuMzIwMDEtNTQuODMwNTgzIDM1LjUyNzI4MkMtNTUuMjY2OTQ2IDM2LjY4MzY0Ni01NS40NjMzMSAzNy4zMDU0NjQtNTUuNDYzMzEgMzcuODE4MTkxQy01NS40NjMzMSAzOC43ODkxLTU0Ljc3NjAzNyAzOS4xMTYzNzItNTQuMTMyNDAxIDM5LjExNjM3MkMtNTMuNzA2OTQ3IDM5LjExNjM3Mi01My4zMzYwMzggMzguOTMwOTE4LTUzLjAzMDU4MyAzOC42MjU0NjNDLTUzLjE3MjQwMiAzOS4xOTI3MzYtNTMuMzAzMzExIDM5LjcyNzI4MS01My43Mzk2NzQgNDAuMzA1NDYzQy01NC4wMjMzMSA0MC42NzYzNzItNTQuNDM3ODU2IDQwLjk5MjczNS01NC45Mzk2NzQgNDAuOTkyNzM1Qy01NS4wOTI0MDEgNDAuOTkyNzM1LTU1LjU4MzMxIDQwLjk2MDAwOC01NS43Njg3NjQgNDAuNTM0NTU0Qy01NS41OTQyMTkgNDAuNTM0NTU0LTU1LjQ1MjQwMSA0MC41MzQ1NTQtNTUuMjk5Njc0IDQwLjQwMzY0NUMtNTUuMTkwNTgzIDQwLjMwNTQ2My01NS4wODE0OTIgNDAuMTYzNjQ1LTU1LjA4MTQ5MiAzOS45NTYzNzJDLTU1LjA4MTQ5MiAzOS42MTgxOS01NS4zNzYwMzcgMzkuNTc0NTU0LTU1LjQ4NTEyOCAzOS41NzQ1NTRDLTU1LjczNjAzNyAzOS41NzQ1NTQtNTYuMDk2MDM3IDM5Ljc0OTA5OS01Ni4wOTYwMzcgNDAuMjgzNjQ1Qy01Ni4wOTYwMzcgNDAuODI5MDk5LTU1LjYxNjAzNyA0MS4yMzI3MzUtNTQuOTM5Njc0IDQxLjIzMjczNUMtNTMuODE2MDM4IDQxLjIzMjczNS01Mi42OTI0MDIgNDAuMjQwMDA4LTUyLjM4Njk0NyAzOS4wMDcyODFMLTUxLjMzOTY3NSAzNC44NDAwMVonLz4KPC9nPgo8cGF0aCBkPSdNLTU2LjY0MDYyNiAzOC45OTYwOTVMLTU1LjEzNjcyIDM4Ljk4NDM3NkwtNTMuNjI4OTEgMzguOTQ5MjJMLTUyLjEyMTEgMzguODk0NTMyTC01MC42MTMyOCAzOC44MTI1MDFMLTQ5LjEwOTM4IDM4LjcxMDkzOUwtNDcuNjAxNTYgMzguNTg1OTM5TC00Ni4wOTM4IDM4LjQzNzUwMUwtNDQuNTg5OCAzOC4yNjU2MjZMLTQzLjA4MiAzOC4wNzAzMTRMLTQxLjU3NDIgMzcuODUxNTZMLTQwLjA3MDMgMzcuNjEzMjhMLTM4LjU2MjUgMzcuMzQ3NjZMLTM3LjA1NDcgMzcuMDYyNUwtMzUuNTUwOCAzNi43NTM5MUwtMzQuMDQzIDM2LjQyMTg4TC0zMi41MzUyIDM2LjA3MDMxTC0zMS4wMjczIDM1LjY5MTQxTC0yOS41MjM0IDM1LjI4OTA2TC0yOC4wMTU2IDM0Ljg2NzE5TC0yNi41MDc4IDM0LjQyMTg4TC0yNS4wMDM5IDMzLjk1MzEzTC0yMy40OTYxIDMzLjQ2MDk0TC0yMS45ODgzIDMyLjk0NTMxTC0yMC40ODQ0IDMyLjQwNjI1TC0xOC45NzY2IDMxLjg0NzY2TC0xNy40Njg4IDMxLjI2NTYzTC0xNS45NjQ4IDMwLjY1NjI1TC0xNC40NTcgMzAuMDI3MzRMLTEyLjk0OTIgMjkuMzc1TC0xMS40NDE0IDI4LjcwMzFMLTkuOTM3NSAyOC4wMDM5TC04LjQyOTcgMjcuMjg1MkwtNi45MjE5IDI2LjUzOTFMLTUuNDE4IDI1Ljc3MzRMLTMuOTEwMiAyNC45ODQ0TC0yLjQwMjMgMjQuMTcxOUwtLjg5ODQgMjMuMzM1OUwuNjA5NCAyMi40ODA1TDIuMTE3MiAyMS41OTc3TDMuNjIxMSAyMC42OTUzTDUuMTI4OSAxOS43Njk1TDYuNjM2NyAxOC44MjAzTDguMTQ0NSAxNy44NDc3TDkuNjQ4NCAxNi44NTE2TDExLjE1NjIgMTUuODMyTDEyLjY2NDEgMTQuNzkzTDE0LjE2OCAxMy43MzA1TDE1LjY3NTggMTIuNjQwNkwxNy4xODM2IDExLjUzMTNMMTguNjg3NSAxMC4zOTg0TDIwLjE5NTMgOS4yNDIyTDIxLjcwMzEgOC4wNjY0TDIzLjIwNyA2Ljg2MzNMMjQuNzE0OCA1LjY0MDZMMjYuMjIyNyA0LjM5NDVMMjcuNzMwNSAzLjEyNUwyOS4yMzQ0IDEuODMyTDMwLjc0MjIgLjUxNTZMMzIuMjUtLjgyMDNMMzMuNzUzOS0yLjE4MzZMMzUuMjYxNy0zLjU2NjRMMzYuNzY5NS00Ljk3MjdMMzguMjczNC02LjQwNjJMMzkuNzgxMi03Ljg1NTVMNDEuMjg5MS05LjMzMkw0Mi43OTMtMTAuODMyTDQ0LjMwMDUtMTIuMzUxNkw0NS44MDg1LTEzLjg5ODRMNDcuMzE2NS0xNS40NjQ4TDQ4LjgyMDUtMTcuMDU0N0w1MC4zMjg1LTE4LjY2OEw1MS44MzU1LTIwLjMwMDhMNTMuMzM5NS0yMS45NjA5TDU0Ljg0NzUtMjMuNjQ0NUw1Ni4zNTU1LTI1LjM0NzdMNTcuODU5NS0yNy4wNzQyTDU5LjM2NzUtMjguODI0Mkw2MC44NzQ1LTMwLjU5NzdMNjIuMzc4NS0zMi4zOTQ1JyBzdHJva2U9JyMwMGYnIGZpbGw9J25vbmUnIHN0cm9rZS13aWR0aD0nMS4xOTU1Mycgc3Ryb2tlLW1pdGVybGltaXQ9JzEwJy8+CjwvZz4KPC9zdmc+">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-grid">
+        <a class="tool-card" href="docs/index.html#tikz-diagrams">
+          <div class="tool-icon green"><i class="fa-solid fa-bezier-curve"></i></div>
+          <h4>TikZ</h4>
+          <p>SVG on the web; a native <code>tikzpicture</code> in print.</p>
+        </a>
+        <a class="tool-card" href="docs/index.html#metapost-diagrams">
+          <div class="tool-icon purple"><i class="fa-solid fa-pen-nib"></i></div>
+          <h4>MetaPost</h4>
+          <p>Knuth's language for exact figures, compiled with <code>mpost</code>.</p>
+        </a>
+        <a class="tool-card" href="docs/index.html#mermaid-diagrams">
+          <div class="tool-icon blue"><i class="fa-solid fa-diagram-project"></i></div>
+          <h4>Mermaid</h4>
+          <p>Flowcharts and sequence diagrams from plain text.</p>
+        </a>
+        <a class="tool-card" href="docs/index.html#strategic-form-games">
+          <div class="tool-icon orange"><i class="fa-solid fa-chess-board"></i></div>
+          <h4>Strategic-Form Games</h4>
+          <p>Payoff matrices typeset from a plain-text grid.</p>
+        </a>
+        <a class="tool-card" href="docs/index.html#math-support">
+          <div class="tool-icon rose"><i class="fa-solid fa-square-root-variable"></i></div>
+          <h4>Mathematics</h4>
+          <p>MathJax on the web, LaTeX in print; macros defined once.</p>
+        </a>
+        <a class="tool-card" href="docs/index.html#code-highlighting">
+          <div class="tool-icon teal"><i class="fa-solid fa-code"></i></div>
+          <h4>Code</h4>
+          <p>highlight.js on the web, minted in print.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Live Preview -->
+    <section class="doc-section" id="watch">
+      <h2>Live Preview</h2>
+      <p><code>jmarkdown watch</code> rebuilds the document every time you save and updates the browser in place — no reload, no flicker, no lost scroll position. Rendered mathematics and diagrams in the parts you didn't touch stay exactly as they were.</p>
+
+      <div class="demo-panel terminal">
+        <div class="demo-panel-header"><i class="fa-solid fa-terminal"></i> Terminal</div>
+        <div class="demo-single">
+<pre><code><span class="tok-kw">$</span> jmarkdown watch notes.md --open
+jmarkdown watch: notes.md → notes.html
+  live preview at http://localhost:3000/  (Ctrl-C to stop)
+  <span class="tok-ok">✓</span> notes.html  (675ms)  · initial
+  <span class="tok-ok">✓</span> notes.html  (182ms)  · change notes.md
+  <span class="tok-ok">✓</span> notes.html  (179ms)  · change notes.md</code></pre>
+        </div>
+      </div>
+
+      <ul>
+        <li><strong>It knows what the document reads.</strong> Included chapters, configuration files, templates, the bibliography and images are tracked too, and the list is rediscovered on every build.</li>
+        <li><strong>Problems appear in the page.</strong> A failed build shows its error over the last good version; unresolved references and duplicate labels show as a dismissible banner.</li>
+        <li><strong>It works for LaTeX too.</strong> <code>--to latex</code> keeps the <code>.tex</code> file current as you write.</li>
+      </ul>
+      <a class="section-more" href="docs/index.html#watch-mode">Watch mode in depth <i class="fa-solid fa-arrow-right"></i></a>
+    </section>
+
+    <!-- Documentation Map -->
+    <section class="doc-section" id="documentation">
+      <h2>Documentation</h2>
+      <p>The full manual covers every feature in depth. Its examples are <em>live</em>: each one's source and rendered result are produced by JMarkdown as the page is built, so the two can't drift apart.</p>
+
+      <div class="docs-map">
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon orange"><i class="fa-solid fa-flag"></i></span> Getting Started</div>
+          <ul>
+            <li><a href="docs/index.html#introduction">Introduction</a></li>
+            <li><a href="docs/index.html#motivation">Motivation</a></li>
+            <li><a href="docs/index.html#watch-mode">Watch Mode</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon blue"><i class="fa-solid fa-italic"></i></span> Syntax</div>
+          <ul>
+            <li><a href="docs/index.html#syntax-adjustments">Syntax Adjustments</a></li>
+            <li><a href="docs/index.html#disabled-syntax">Disabled Syntax</a></li>
+            <li><a href="docs/index.html#anchors">Anchors</a></li>
+            <li><a href="docs/index.html#table-of-contents">Table of Contents</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon green"><i class="fa-solid fa-table"></i></span> Content</div>
+          <ul>
+            <li><a href="docs/index.html#tables-and-alerts">Tables &amp; Alerts</a></li>
+            <li><a href="docs/index.html#description-lists">Description Lists</a></li>
+            <li><a href="docs/index.html#enhanced-lists">Enhanced Lists</a></li>
+            <li><a href="docs/index.html#math-support">Math Support</a></li>
+            <li><a href="docs/index.html#code-highlighting">Code Highlighting</a></li>
+            <li><a href="docs/index.html#bibliographic-support">Bibliographic Support</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon purple"><i class="fa-solid fa-at"></i></span> Directives &amp; Environments</div>
+          <ul>
+            <li><a href="docs/index.html#directives-syntax">Directives</a></li>
+            <li><a href="docs/index.html#block-environments">Block Environments</a></li>
+            <li><a href="docs/index.html#comments-and-optionals">Comments &amp; Optionals</a></li>
+            <li><a href="docs/index.html#markdown-demo">Demonstrating Markdown</a></li>
+            <li><a href="docs/index.html#sources-and-targets">Sources &amp; Targets</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon rose"><i class="fa-solid fa-bezier-curve"></i></span> Diagrams</div>
+          <ul>
+            <li><a href="docs/index.html#tikz-diagrams">TiKZ Diagrams</a></li>
+            <li><a href="docs/index.html#metapost-diagrams">MetaPost Diagrams</a></li>
+            <li><a href="docs/index.html#mermaid-diagrams">Mermaid Diagrams</a></li>
+            <li><a href="docs/index.html#strategic-form-games">Strategic-Form Games</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon teal"><i class="fa-solid fa-file-export"></i></span> LaTeX &amp; Document Structure</div>
+          <ul>
+            <li><a href="docs/index.html#dual-output">Dual Output</a></li>
+            <li><a href="docs/index.html#cross-references">Cross-References</a></li>
+            <li><a href="docs/index.html#floats">Figures, Tables &amp; Listings</a></li>
+            <li><a href="docs/index.html#theorems-and-equations">Theorems &amp; Equations</a></li>
+            <li><a href="docs/index.html#book-structure">Book Structure</a></li>
+            <li><a href="docs/index.html#indexing">Back-of-Book Index</a></li>
+            <li><a href="docs/index.html#print-rendering">Print Rendering</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon blue"><i class="fa-solid fa-sliders"></i></span> Metadata &amp; Extensions</div>
+          <ul>
+            <li><a href="docs/index.html#metadata-header">Metadata Header</a></li>
+            <li><a href="docs/index.html#extensions-simple">Extensions (Simple)</a></li>
+            <li><a href="docs/index.html#extensions-complex">Extensions (Complex)</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon purple"><i class="fa-brands fa-js"></i></span> Scripting</div>
+          <ul>
+            <li><a href="docs/index.html#inline-scripts">Inline Scripts</a></li>
+            <li><a href="docs/index.html#post-processing">Post-Processing</a></li>
+            <li><a href="docs/index.html#scripting-example">Detailed Example</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon orange"><i class="fa-solid fa-gear"></i></span> Configuration</div>
+          <ul>
+            <li><a href="docs/index.html#output-templates">Output Templates</a></li>
+            <li><a href="docs/index.html#configuration-files">Configuration Files</a></li>
+            <li><a href="docs/index.html#file-inclusion">File Inclusion</a></li>
+          </ul>
+        </div>
+        <div class="docs-group">
+          <div class="docs-group-title"><span class="tool-icon green"><i class="fa-solid fa-superscript"></i></span> Notes</div>
+          <ul>
+            <li><a href="docs/index.html#footnotes">Footnotes</a></li>
+            <li><a href="docs/index.html#endnotes">Grouped Endnotes</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="docs/index.html"><i class="fa-solid fa-book-open"></i> Open the documentation</a>
+      </div>
+    </section>
+
+    <!-- Design Principles -->
+    <section class="doc-section" id="principles">
+      <h2>Design Principles</h2>
+      <p>A handful of commitments shape how JMarkdown grows.</p>
+
+      <div class="principle-grid">
+        <div class="principle-card">
+          <h4>One Source of Truth</h4>
+          <p>Web and print come from the same file, so they can't drift apart. The two outputs differ only where they must.</p>
+        </div>
+        <div class="principle-card">
+          <h4>Documents Carry Their Own Extensions</h4>
+          <p>New syntax, functions and environments live in the file that uses them, so a document stays portable and self-describing.</p>
+        </div>
+        <div class="principle-card">
+          <h4>Additive, Never Breaking</h4>
+          <p>New forms arrive beside the old ones. The @-directives are a complete superset of the colon syntax, which still works.</p>
+        </div>
+        <div class="principle-card">
+          <h4>Degrade Gracefully</h4>
+          <p>A missing tool, a failed figure or a throwing script leaves a visible marker and a build warning — not a lost document.</p>
+        </div>
+        <div class="principle-card">
+          <h4>Examples That Can't Lie</h4>
+          <p>Every demo in the manual is rendered by JMarkdown as the manual is built, so the documentation can't fall out of date.</p>
+        </div>
+        <div class="principle-card">
+          <h4>Safe to Host</h4>
+          <p>Applications that render other people's notes can switch off every path by which a document runs code — with one setting.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <span>JMarkdown is written by <a href="https://jmckalex.org/home/">J. McKenzie Alexander</a>.</span>
+      <span><a href="docs/index.html">Documentation</a> · <a href="https://github.com/jmckalex/jmarkdown">GitHub</a></span>
+    </footer>
+
+  </main>
+</div>
+
+<!-- ─── Mobile navigation drawer ─── -->
+<script>
+  function setNavOpen(open) {
+    document.body.classList.toggle('nav-open', open);
+    document.querySelector('[data-toggle-nav]').setAttribute('aria-expanded', String(open));
+  }
+
+  document.querySelector('[data-toggle-nav]').addEventListener('click', () => {
+    setNavOpen(!document.body.classList.contains('nav-open'));
+  });
+  document.querySelector('[data-close-nav]').addEventListener('click', () => setNavOpen(false));
+  document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+    link.addEventListener('click', () => setNavOpen(false));
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setNavOpen(false);
+  });
+</script>
+
+<!-- ─── Active Nav Highlight (as in Folio's docs) ─── -->
+<script>
+  const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+  const sections = document.querySelectorAll('.doc-section, .hero');
+
+  function updateActiveNav() {
+    const midpoint = window.innerHeight / 2;
+    let current = '';
+    sections.forEach(section => {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= midpoint) current = section.id || 'overview';
+    });
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', updateActiveNav, { passive: true });
+  window.addEventListener('resize', updateActiveNav, { passive: true });
+  updateActiveNav();
+</script>
+
+</body>
+</html>

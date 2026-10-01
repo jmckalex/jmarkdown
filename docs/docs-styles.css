@@ -1,46 +1,28 @@
 /*
  * jmarkdown documentation styles
  *
- * Restyled to the "dynamo" design system: a warm "paper" palette,
- * Crimson Pro serif body text, JetBrains Mono for code and small
- * uppercase eyebrow labels, h2 headings with a top divider rule,
- * bordered zebra-striped tables, and warm rounded code panels.
+ * The rendered CONTENT of each documentation page, in Folio's design:
+ * DM Sans text, Instrument Serif headings, JetBrains Mono code, the warm
+ * paper palette and its burnt-orange accent. Every colour and font comes
+ * from the tokens in site.css, which also styles the shell around the
+ * content (sidebar, pager, footer); load site.css first.
  *
  * This file consolidates:
  *   1. jmarkdown's built-in CSS (from the default template), reskinned
  *   2. Document-specific styles used across the documentation
  *   3. Description list and checkbox list extension styles
+ *   4. The document-preparation constructs (floats, theorems, equations,
+ *      contents lists, the index) — adapted from jmarkdown-style.css,
+ *      the standalone stylesheet for authors' own documents
  *
  * Every JMarkdown-specific component rule (markdown-demo grid, table.game
  * and its sub-rules, markdown-alert variants, description-list dl grid,
  * title-box, TOC, alignment helpers, feedback, checkbox lists, emoji image)
- * is preserved by selector — only the palette/typography has changed.
+ * is kept by selector — only the palette and typography change.
  *
- * Include this in the documentation shell page's <head>.
+ * Typography is scoped to .content-area, the <article> the documentation
+ * shell (index.html) loads each page into.
  */
-
-
-/* ============================================================
-   Dynamo design tokens
-   ============================================================ */
-
-:root {
-  --ink:     #2c2c2c;
-  --ink2:    #555;
-  --ink3:    #888;
-  --paper:   #faf9f7;
-  --paper2:  #f5f4f2;
-  --card:    #fff;
-  --accent:  #8b7355;
-  --accent2: #6d5a43;
-  --border:  #e2e0dc;
-  --divider: #e8e5e0;
-  /* Warm code panel surfaces */
-  --code-panel:  #f6f3ee;
-  --code-inline: #f1ede6;
-  --code-inline-border: #e6e1d8;
-  --row-stripe:  #fcfbf9;
-}
 
 
 /* ============================================================
@@ -48,86 +30,180 @@
    ============================================================ */
 
 .content-area {
-  color: var(--ink);
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: 18px;
-  line-height: 1.65;
-  -webkit-font-smoothing: antialiased;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.75;
 }
 
-.content-area code,
-.content-area pre,
-.content-area .mono {
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+.content-area img {
+  max-width: 100%;
 }
 
 .content-area a {
-  color: var(--accent2);
+  color: var(--accent);
   text-decoration: none;
+  border-bottom: 1px solid var(--accent-light);
+  transition: border-color 0.15s ease;
 }
 
 .content-area a:hover {
-  text-decoration: underline;
+  border-bottom-color: var(--accent);
 }
 
-/* Headings */
+/* Links that are navigation rather than prose: no underline rule. */
+.content-area .toc a,
+.content-area .footnote-ref a,
+.content-area .footnote-backref,
+.content-area nav.index a {
+  border-bottom: none;
+}
 
+.content-area strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* JMarkdown's **intense** emphasis: small caps, from the built-in CSS,
+   minus the text shadow, which smudges at DM Sans's text sizes. */
+.content-area span.intense {
+  color: var(--text);
+  font-weight: 650;
+  text-shadow: none;
+}
+
+.content-area span.highlight,
+.content-area mark {
+  background: #fdeec2;
+  color: var(--text);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+
+/* ============================================================
+   Headings
+   ============================================================ */
+
+.content-area h1,
+.content-area h2,
+.content-area h3,
+.content-area h4,
+.content-area h5,
+.content-area h6 {
+  color: var(--text);
+  line-height: 1.3;
+  scroll-margin-top: 24px;
+}
+
+/* The page title — Folio's hero heading. */
 .content-area h1 {
-  font-size: 32px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin: 0 0 6px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--divider);
+  font-family: var(--font-serif);
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  margin: 0 0 18px;
 }
 
+/* The paragraph that opens a page reads as the hero's lead. */
+.content-area > h1:first-child + p {
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+/* Section headings — Folio's section h2. */
 .content-area h2 {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin: 48px 0 6px;
-  padding-top: 14px;
-  border-top: 1px solid var(--divider);
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  margin: 52px 0 16px;
 }
 
 .content-area h3 {
-  font-size: 21px;
+  font-size: 17px;
   font-weight: 600;
-  margin: 32px 0 6px;
+  letter-spacing: -0.01em;
+  margin: 34px 0 10px;
 }
 
 .content-area h4 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--ink);
-  margin: 22px 0 4px;
+  margin: 26px 0 8px;
 }
 
+.content-area h5,
+.content-area h6 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin: 22px 0 6px;
+}
+
+@media (max-width: 640px) {
+  .content-area h1 { font-size: 34px; }
+  .content-area h2 { font-size: 26px; margin-top: 44px; }
+}
+
+/* Headings rendered INSIDE a live demo are examples, not structure:
+   keep them in proportion with the demo's output column. */
+.markdown-demo-parsed h1 { font-size: 28px; margin: 4px 0 10px; }
+.markdown-demo-parsed h2 { font-size: 23px; margin: 16px 0 8px; }
+.markdown-demo-parsed h3 { font-size: 15.5px; margin: 14px 0 6px; }
+.markdown-demo-parsed h4 { font-size: 14.5px; margin: 12px 0 4px; }
+.markdown-demo-parsed > :first-child { margin-top: 0; }
+
+
+/* ============================================================
+   Block elements
+   ============================================================ */
+
 .content-area p {
-  margin: 10px 0;
+  margin: 0 0 14px;
 }
 
 .content-area ul,
 .content-area ol {
-  margin: 10px 0;
-  padding-left: 24px;
+  margin: 0 0 14px;
+  padding-left: 1.5em;
 }
 
 .content-area li {
-  margin: 4px 0;
+  margin: 0 0 6px;
 }
 
+.content-area li > ul,
+.content-area li > ol {
+  margin: 6px 0 0;
+}
+
+.content-area li > p {
+  margin-bottom: 6px;
+}
+
+/* A blockquote is the manual's "note" voice: Folio's principle card. */
 .content-area blockquote {
-  margin: 14px 0;
-  padding: 2px 18px;
-  border-left: 3px solid var(--border);
-  color: var(--ink2);
+  margin: 20px 0;
+  padding: 14px 20px;
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.content-area blockquote > :last-child {
+  margin-bottom: 0;
 }
 
 .content-area hr {
   border: none;
-  border-top: 1px solid var(--divider);
-  margin: 28px 0;
+  border-top: 1px solid var(--border);
+  margin: 32px 0;
 }
 
 
@@ -135,84 +211,163 @@
    Code panels
    ============================================================ */
 
+/* Ligatures off throughout: in code a reader may copy, `>=` must not
+   render as `⩾`, nor `->` as an arrow. */
+.content-area code,
+.content-area pre,
+.content-area .mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+
 pre code.hljs {
   tab-size: 2;
   -moz-tab-size: 2;
 }
 
 .content-area pre {
-  background: var(--code-panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 16px;
+  background: var(--bg-code);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
   overflow-x: auto;
-  font-size: 13.5px;
-  line-height: 1.5;
-  margin: 14px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 16px 0;
 }
 
 .content-area :not(pre) > code {
-  background: var(--code-inline);
-  border: 1px solid var(--code-inline-border);
+  background: var(--bg-code);
   border-radius: 4px;
-  padding: 1px 5px;
+  padding: 2px 6px;
   font-size: 0.86em;
+  color: var(--accent);
 }
 
 .content-area pre code {
   background: none;
   border: none;
   padding: 0;
+  font-size: inherit;
+  color: inherit;
 }
 
-/* highlight.js: take the theme's token colours but keep our warm panel. */
-.content-area pre code.hljs {
-  background: transparent;
-  padding: 0;
-  color: var(--ink);
+/* highlight.js token colours, drawn from Folio's icon-tile palette (the
+   highlight.js theme stylesheet is no longer loaded). */
+.content-area .hljs-comment,
+.content-area .hljs-quote,
+.content-area .hljs-meta {
+  color: var(--text-tertiary);
+  font-style: italic;
 }
 
-code {
-  font-size: 14px;
+.content-area .hljs-keyword,
+.content-area .hljs-selector-tag,
+.content-area .hljs-doctag,
+.content-area .hljs-section {
+  color: var(--accent);
 }
+
+.content-area .hljs-section {
+  font-weight: 600;
+}
+
+.content-area .hljs-string,
+.content-area .hljs-regexp,
+.content-area .hljs-addition,
+.content-area .hljs-code,
+.content-area .hljs-meta .hljs-string {
+  color: var(--tile-green);
+}
+
+.content-area .hljs-number,
+.content-area .hljs-literal,
+.content-area .hljs-symbol,
+.content-area .hljs-bullet,
+.content-area .hljs-link {
+  color: var(--tile-blue);
+}
+
+.content-area .hljs-title,
+.content-area .hljs-title.function_,
+.content-area .hljs-title.class_ {
+  color: var(--tile-purple);
+}
+
+.content-area .hljs-name,
+.content-area .hljs-selector-id,
+.content-area .hljs-selector-class,
+.content-area .hljs-deletion {
+  color: var(--tile-rose);
+}
+
+.content-area .hljs-attr,
+.content-area .hljs-attribute,
+.content-area .hljs-property,
+.content-area .hljs-variable,
+.content-area .hljs-template-variable,
+.content-area .hljs-selector-pseudo {
+  color: var(--tile-teal);
+}
+
+.content-area .hljs-built_in,
+.content-area .hljs-type {
+  color: var(--tile-orange);
+}
+
+.content-area .hljs-tag,
+.content-area .hljs-punctuation,
+.content-area .hljs-subst,
+.content-area .hljs-params {
+  color: var(--text-secondary);
+}
+
+.content-area .hljs-emphasis { font-style: italic; }
+.content-area .hljs-strong { font-weight: 600; }
 
 
 /* ============================================================
-   Tables (bordered, zebra-striped, mono uppercase headers)
+   Tables (Folio's shortcut table: ruled rows, uppercase headers)
    ============================================================ */
 
-table {
-  border-collapse: collapse;
+.content-area table:not(.game) {
   width: 100%;
-  margin: 16px 0;
-  font-size: 15.5px;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-table:not(.game),
-th,
-td {
-  border: 1px solid var(--border);
-  padding: 8px 11px;
-}
-
-th {
-  background: var(--paper2);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 12.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink2);
-  font-weight: 500;
+.content-area table:not(.game) th {
   text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--border);
+  vertical-align: bottom;
 }
 
-table:not(.game) tr:nth-child(even) td {
-  background: var(--row-stripe);
-}
-
-td,
-th {
+.content-area table:not(.game) td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
   vertical-align: top;
+}
+
+.content-area table:not(.game) tr:last-child td {
+  border-bottom: none;
+}
+
+.content-area table:not(.game) tbody tr:hover {
+  background: var(--accent-glow);
+}
+
+.content-area table:not(.game) td > p:last-child {
+  margin-bottom: 0;
 }
 
 
@@ -227,49 +382,83 @@ th {
 
 
 /* ============================================================
-   GFM alerts
+   GFM alerts (Folio's callout boxes)
    ============================================================ */
 
-.markdown-alert-title {
-  margin-top: 0pt;
-  margin-bottom: 3pt;
+.markdown-alert {
+  margin: 20px 0;
+  padding: 16px 20px;
+  border: 1px solid;
+  border-radius: var(--radius);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.content-area .markdown-alert p {
+  color: inherit;
+  margin: 0 0 8px;
+}
+
+.content-area .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.content-area .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  margin: 0 0 6px;
 }
 
 .markdown-alert svg.octicon {
-  margin: 3pt;
-  vertical-align: middle;
+  margin: 0;
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
-.markdown-alert {
-  padding: 0.5rem 0.5rem;
-  margin-bottom: 16px;
-  border-left: .25em solid;
-  border-radius: 4px;
+.markdown-alert code,
+.content-area .markdown-alert :not(pre) > code {
+  background: rgba(255, 255, 255, 0.6);
+  color: inherit;
 }
 
 .markdown-alert-note {
-  border-color: #0969DA;
-  background-color: #DAEEFF;
-}
-
-.markdown-alert-warning {
-  border-color: #9A6700;
-  background-color: #FFF8E5;
+  background: #e4eef9;
+  border-color: #c0d5ee;
+  color: #2a4a6e;
 }
 
 .markdown-alert-tip {
-  border-color: #1A7F37;
-  background-color: #DDFBE6;
+  background: #e8f4e9;
+  border-color: #c5e1c8;
+  color: #2d5a30;
+}
+
+.markdown-alert-warning {
+  background: #fef5e0;
+  border-color: #f0ddb0;
+  color: #6b4f14;
 }
 
 .markdown-alert-important {
-  border-color: #CF222E;
-  background-color: #FFEBE9;
+  background: #f3ecf9;
+  border-color: #ddcbec;
+  color: #4e2a6e;
+}
+
+.markdown-alert-caution {
+  background: #fce4e8;
+  border-color: #f1c4cd;
+  color: #6e2a3e;
 }
 
 
 /* ============================================================
-   Markdown-demo (side-by-side source / output grid)
+   Markdown-demo (side-by-side source / output)
+
+   Folio's table demo: one card, split into a source column on the code
+   tint and an output column on white, each under a small uppercase label.
    ============================================================ */
 
 .markdown-demo-container {
@@ -278,10 +467,15 @@ th {
   grid-template-areas:
     "codelabel outlabel"
     "code      out";
-  column-gap: 16px;
-  row-gap: 4px;
-  align-items: start;
-  margin: 16px 0;
+  /* stretch, not jmarkdown.css's `start`: the source column's tint
+     must reach the foot of the card however tall the output is. */
+  align-items: stretch;
+  margin: 20px 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .markdown-demo-code-label   { grid-area: codelabel; }
@@ -299,6 +493,35 @@ th {
   min-width: 0;
 }
 
+.markdown-demo-code-label,
+.markdown-demo-output-label {
+  padding: 14px 20px 8px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+
+/* The source column carries the code tint from its label to its foot. */
+.markdown-demo-code-label,
+.markdown-demo-markdown {
+  background: var(--bg-code);
+  border-right: 1px solid var(--border-light);
+}
+
+.markdown-demo-markdown {
+  padding: 0 20px 18px;
+}
+
+.markdown-demo-parsed {
+  padding: 0 20px 18px;
+  overflow-x: auto;
+  font-size: 14.5px;
+  line-height: 1.7;
+}
+
 .markdown-demo-container pre {
   height: auto;
   width: 100%;
@@ -314,8 +537,8 @@ th {
   box-sizing: border-box;
 }
 
-/* Source (left) pane: flush code, no panel chrome, so it uses the full column. */
-.markdown-demo-markdown pre {
+/* Source pane: flush code, no panel chrome — the column is the panel. */
+.content-area .markdown-demo-markdown pre {
   padding: 0;
   border: none;
   background: transparent;
@@ -323,32 +546,26 @@ th {
 }
 
 div.markdown-demo-markdown code.hljs {
-  font-size: 10.5pt;
+  font-size: 12.5px;
   background-color: transparent;
 }
 
-div.markdown-demo-parsed {
-  padding: 14px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow-x: auto;
+/* Output pane: inline code takes a paper tint, since the pane is white. */
+.content-area .markdown-demo-parsed pre {
+  margin: 10px 0;
 }
 
-.markdown-demo-parsed ol,
-.markdown-demo-parsed ul,
-.markdown-demo-parsed p {
-  margin: 0pt;
+.markdown-demo-parsed > :last-child {
+  margin-bottom: 0;
 }
 
-.markdown-demo-code-label,
-.markdown-demo-output-label {
-  font-weight: bold;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--accent);
+.content-area .markdown-demo-parsed p {
+  margin: 0 0 10px;
+}
+
+.content-area .markdown-demo-parsed ol,
+.content-area .markdown-demo-parsed ul {
+  margin: 0 0 10px;
 }
 
 /* Mobile: stack the source above the output, each under its own label,
@@ -362,8 +579,14 @@ div.markdown-demo-parsed {
       "outlabel"
       "out";
   }
+
+  .markdown-demo-code-label,
+  .markdown-demo-markdown {
+    border-right: none;
+  }
+
   .markdown-demo-output-label {
-    margin-top: 12px;
+    border-top: 1px solid var(--border-light);
   }
 }
 
@@ -372,21 +595,26 @@ div.markdown-demo-parsed {
    Strategic-form games
    ============================================================ */
 
+table.game {
+  border-collapse: collapse;
+  margin: 16px auto;
+  font-size: 14.5px;
+  color: var(--text);
+}
+
 table.game caption {
   caption-side: bottom;
   padding-top: 10px;
   text-align: center;
-  color: inherit;
-}
-
-table.game {
-  border-collapse: collapse;
+  color: var(--text-secondary);
+  font-size: 13.5px;
 }
 
 table.game td {
-  border: 1px solid var(--ink);
+  border: 1px solid var(--text);
   border-collapse: collapse;
   text-align: center;
+  padding: 4px 10px;
 }
 
 table.game tr:first-child td:first-child {
@@ -409,6 +637,7 @@ table.game td.rowLabel {
 
 table.game td.strategyLabels {
   border: none;
+  font-weight: 500;
 }
 
 table.game tr.no-border td {
@@ -428,10 +657,11 @@ table.game td.columnStrategies {
 table.game td.payoffs {
   padding-top: 6px;
   padding-bottom: 6px;
+  background: var(--bg-card);
 }
 
 table.game.playerLabels td {
-  border: 1px solid var(--ink) !important;
+  border: 1px solid var(--text) !important;
   text-align: center !important;
 }
 
@@ -466,20 +696,25 @@ table.game td.columnLabel p {
 
 
 /* ============================================================
-   TiKZ error display
+   Diagrams
    ============================================================ */
 
+.content-area .mermaid {
+  margin: 20px 0;
+  text-align: center;
+}
+
 .tikz-error {
-  border: 2px solid #ff6b6b;
-  background-color: #fff5f5;
-  padding: 15px;
-  margin: 10px 0;
-  border-radius: 4px;
+  border: 1px solid #f1c4cd;
+  background-color: #fce4e8;
+  color: #6e2a3e;
+  padding: 16px 20px;
+  margin: 16px 0;
+  border-radius: var(--radius);
 }
 
 .tikz-error-message {
-  color: #d63031;
-  font-weight: bold;
+  font-weight: 600;
   margin-top: 0;
 }
 
@@ -487,13 +722,24 @@ table.game td.columnLabel p {
   background-color: var(--accent);
   color: white;
   border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: var(--font-sans);
   cursor: pointer;
 }
 
 .tikz-error button:hover {
-  background-color: var(--accent2);
+  background-color: #9d4a0a;
+}
+
+/* Build-time failures and refusals marked in place (note-code.js). */
+.jmd-error {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: #fce4e8;
+  color: #6e2a3e;
+  font-size: 0.9em;
 }
 
 
@@ -561,7 +807,7 @@ section.feedback .question {
 }
 
 section.feedback .mark {
-  background-color: var(--paper2);
+  background-color: var(--bg-code);
 }
 
 
@@ -571,15 +817,6 @@ section.feedback .mark {
 
 sup, sub {
   line-height: 0pt;
-}
-
-/* User-defined numbered environments (defineEnvironment(..., {numbered:true})). */
-.jmd-env {
-  margin: 16px 0;
-}
-
-.jmd-env .env-label {
-  font-weight: 700;
 }
 
 
@@ -608,26 +845,31 @@ sup, sub {
    Title box directive
    ============================================================ */
 
-div.title-box div.title {
-  border: solid 1pt var(--accent);
-  background-color: var(--accent);
-  color: white;
-  border-top-left-radius: 8pt;
-  border-top-right-radius: 8pt;
-  padding: 6pt;
+div.title-box {
+  margin: 16px 0;
 }
 
-div.title-box div.title p {
+div.title-box div.title {
+  background-color: var(--accent);
+  color: white;
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-weight: 600;
+}
+
+.content-area div.title-box div.title p {
   margin: 0pt;
+  color: inherit;
 }
 
 div.title-box div.body {
-  border: solid 1pt var(--border);
-  background-color: var(--paper2);
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
   border-top: none;
-  border-bottom-left-radius: 8pt;
-  border-bottom-right-radius: 8pt;
-  padding: 6pt;
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  padding: 12px 14px;
 }
 
 div.title-box div.body > :last-child {
@@ -643,11 +885,12 @@ dl {
   display: grid;
   grid-template-columns: auto 1fr;
   margin-top: 0pt;
-  margin-bottom: 0pt;
+  margin-bottom: 14px;
 }
 
 dl dt {
-  font-weight: bold;
+  font-weight: 600;
+  color: var(--text);
 }
 
 dl dt:after {
@@ -683,11 +926,232 @@ foo-bar::part(bottom) {
 
 
 /* ============================================================
-   TOC
+   Table of contents + lists of figures/tables/listings
    ============================================================ */
 
-p#toc {
-  font-weight: bold;
+/* A contents list is a card, its title the sidebar's section label. */
+div.toc {
+  margin: 20px 0;
+  padding: 16px 20px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.content-area p#toc {
+  margin: 0 0 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+
+.content-area div.toc ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+.content-area div.toc ul ul {
+  padding-left: 16px;
+}
+
+.content-area div.toc li {
+  margin: 2px 0;
+}
+
+.content-area div.toc a {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.content-area div.toc a:hover {
+  color: var(--accent);
+}
+
+nav.list-of-figures ul,
+nav.list-of-tables ul,
+nav.list-of-listings ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 8px 0 16px;
+}
+
+
+/* ============================================================
+   Floats: figures, tables, listings (@begin(figure) …)
+   ============================================================ */
+
+figure.figure,
+figure.table-float,
+figure.listing {
+  margin: 24px auto;
+  text-align: center;
+}
+
+figure img {
+  max-width: 100%;
+}
+
+figure.subfigure {
+  display: inline-block;
+  vertical-align: top;
+  margin: 0 1%;
+}
+
+/* Listings are code: left-aligned content under a centred caption. */
+figure.listing pre {
+  text-align: left;
+}
+
+figcaption {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.figure-label,
+.table-label,
+.listing-label,
+.subfigure-label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Table floats put the caption above, like LaTeX convention. */
+figure.table-float figcaption {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+
+/* ============================================================
+   Theorems and equations (@begin(theorem) …, @begin(equation) …)
+   ============================================================ */
+
+/* Theorem-like environments sit on a ruled accent edge, Folio's
+   principle card without the shadow. Plain theorems set their body in
+   italic, as LaTeX's plain style does, so web and print agree. */
+.theorem-env {
+  margin: 16px 0;
+  padding: 12px 16px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.content-area .theorem-env > :last-child {
+  margin-bottom: 0;
+}
+
+.theorem-env.theorem-plain p {
+  font-style: italic;
+}
+
+.theorem-env .theorem-label {
+  font-weight: 700;
+  font-style: normal;
+  color: var(--text);
+}
+
+.theorem-env.theorem-definition .theorem-label,
+.theorem-env.theorem-example .theorem-label,
+.theorem-env.theorem-remark .theorem-label {
+  font-weight: 600;
+}
+
+/* User-defined numbered environments (defineEnvironment(..., {numbered:true})). */
+.jmd-env {
+  margin: 16px 0;
+}
+
+.jmd-env .env-label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.proof-env {
+  margin: 16px 0;
+}
+
+.equation {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.equation .eqn-body {
+  flex: 1;
+  text-align: center;
+}
+
+.equation .eqn-number {
+  color: var(--text-tertiary);
+}
+
+
+/* ============================================================
+   Back-of-book index (@index)
+   ============================================================ */
+
+p.index-group-letter {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin: 18px 0 4px;
+}
+
+nav.index ul.index-entries {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+nav.index ul.index-subentries {
+  list-style: none;
+  padding-left: 20px;
+  margin: 0;
+}
+
+nav.index li {
+  margin: 2px 0;
+}
+
+.index-see em {
+  color: var(--text-tertiary);
+}
+
+
+/* ============================================================
+   Footnotes and endnotes
+   ============================================================ */
+
+section.footnotes {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13.5px;
+}
+
+/* The endnotes heading is an <h1>; it must not read as a page title. */
+.content-area section.footnotes h1,
+.content-area section.footnotes h2 {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin: 0 0 8px;
+}
+
+.footnote-backref {
+  color: var(--text-tertiary);
 }
 
 
@@ -698,4 +1162,8 @@ p#toc {
 li:has(input[type="checkbox"]:first-child) {
   list-style: none;
   margin-left: -18pt;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
 }
