@@ -129,7 +129,7 @@
   and you want some processed and others left raw — for instance a verbatim code
   fragment alongside a prose caption.</p>
 <p>The <code>inline</code> and <code>block</code> forms differ from the others in an important way. With
-  <code>true</code><em><code>false</code></em>array, the <strong>captures</strong> are processed individually and then dropped
+  <code>true</code>/<code>false</code>/array, the <strong>captures</strong> are processed individually and then dropped
   into a template that is emitted as-is. With <code>inline</code>/<code>block</code>, the captures are
   substituted first and then the <strong>assembled result</strong> is handed back to the parser.
   That makes <code>inline</code> handy when your template itself is written in markdown

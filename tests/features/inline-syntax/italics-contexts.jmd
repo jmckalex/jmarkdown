@@ -1,0 +1,23 @@
+---
+Title: italics contexts
+---
+
+An /italic phrase/ here, a (/word/) in parentheses, and one that ends with /word/.
+
+A "/quoted/" and a “/curly/” word, and /a *b* c/ with strong inside.
+
+/Start/ of a line,
+and the end /of a line/
+and /again/.
+
+Punctuation: /one/, /two/; /three/: /four/! /why?/ —/dash/—
+
+A link [/word/](http://x.com) and [a /b/ c](http://x.com).
+
+- a /list/ item
+
+| a | b |
+|---|---|
+| a /table/ cell | /x/ |
+
+A footnote[fn: with /italic/ inside] here.

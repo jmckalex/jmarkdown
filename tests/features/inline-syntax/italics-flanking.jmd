@@ -1,0 +1,20 @@
+---
+Title: italics flanking
+---
+
+A slash inside a word, a path or a URL never opens or closes /italics/.
+
+Bare URLs are autolinked whole: see http://a/b/c/ for this, and
+https://example.com/a/b/?q=1&r=/x/#frag/ with a query and a fragment, and
+ftp://files.example.org/pub/x/ too.
+
+A URL ending a sentence keeps the full stop outside: read http://a.com/b/c/.
+
+Already fine before: www.example.com/a/b/ and <http://a/b/c/>.
+
+Paths stay paths: see /usr/local/bin/ here, (/usr/local/bin/) in parentheses,
+~/notes/ and ./src/ and ../lib/ and C:/Users/x/ on other systems.
+
+Words and numbers: either and/or both, and the fraction 1/2/3.
+
+A URL and real italics together: see http://a.com/ and /this phrase/ here.

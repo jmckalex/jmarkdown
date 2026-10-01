@@ -28,7 +28,7 @@ All source lives in `src/`. Key files:
 | `file-inclusion.js` | Expands `[[name.md]]` inclusion directives before parsing (recursive; active-chain cycle detection; paths relative to the including file). Pipeline step 5. |
 | `extended-directives.js` | The `createDirectives` factory (the canonical pattern for new directives) |
 | `additional-directives.js` | Project directives, including `:TeX`, `:HTML`, `:::TeX`, `:::HTML` |
-| `syntax-modifications.js` | Inline syntax: `/italics/`, `*strong*`, `==highlight==`, `__underline__`, sub/sup |
+| `syntax-modifications.js` | Inline syntax: `/italics/`, `*strong*`, `==highlight==`, `__underline__`, sub/sup. `/italics/` has flanking rules, so slashes in words, paths and URLs stay literal (see "`/italics/` flanking") |
 | `syntax-enhancements.js` | Further inline/block syntax |
 | `smart-typography.js` | **Opt-in** (`Smart typography: true`, default off) typographic educator: straight quotes → curly, `---`/`--` → em/en dash, `...` → ellipsis. A `walkTokens` hook on both marked instances mutating only **leaf inline `text` tokens** (code/math/`:::TeX`/escapes never produce those, so protection is free); emits raw **Unicode** so one implementation serves both outputs. Reads the config key lazily at walk time — registration happens before the metadata header is parsed |
 | `note-code.js` | `Run note code`: the one switch over every path by which a document makes the build run code, and the by-name refusal each path emits when it is off; also `noteCodeError`, the in-place marker for code that ran and threw (see below) |
@@ -407,7 +407,40 @@ tokenizer mis-claims it (the old `` `::Note` ``-in-prose bug, fixed 2026-06).
 Anchor block/container starts to line starts (`(?:^|\n)…`, returning the
 post-newline index) and pre-check the tokenizer's real shape (see
 `description-lists.js` and the directive `start` in `extended-directives.js`).
-Inline starts may match anywhere — that's correct for them.
+Inline starts may match anywhere — inline code spans are claimed before text is
+cut — but an inline `start()` that reports a position its tokenizer then
+declines still CUTS THE TEXT TOKEN there, and that matters wherever a
+built-in tokenizer needs to see a run of text whole. GFM's url autolinker is
+the one that bit: marked's text rule stops before `https?://` only if the cut
+text still contains it, so a start at the `:` or a `/` of `http://` left the
+URL as plain text. Two starts did exactly that (fixed 2026-10): `/italics/`
+(every `/`) and the label-less inline `:` directive (every `:`). So for inline
+starts too, report only positions where the tokenizer can match.
+
+### `/italics/` flanking (`syntax-modifications.js`)
+A slash inside a word, a path or a URL never opens or closes italics. The
+rule, which Clew's live-edit scanner (`jmarkdown-scan.js`) mirrors:
+
+- the **opening** `/` is not preceded by a letter, a digit, or any of
+  `:` `/` `.` `~` (no preceding character — the start of a paragraph, link
+  text, table cell or footnote — is a boundary, so it may open there);
+- the **content** is one or more characters, none of them `/` `.` `?` `!`,
+  except that the last may be `.` `?` or `!` (unchanged from before);
+- the **closing** `/` is not followed by a letter, a digit or `/`.
+
+"Letter" and "digit" are Unicode (`\p{L}`, `\p{N}`). As one pattern:
+`(?<![\p{L}\p{N}:\/.~])\/([^\/.?!]+[.?!]?)\/(?![\p{L}\p{N}\/])` with the `u`
+flag. `start()` searches for exactly that; the tokenizer matches it anchored and
+reads the preceding character from the previous token's `raw` (its second
+argument), which also backstops another extension's cut just before a `/`. So
+`and/or`, `1/2/3`, `/usr/local/bin/`, `~/notes/`, `./src/`, `C:/Users/x/` and
+every bare `http(s)://`/`ftp://` URL stay literal (the URLs now autolinked, as
+plain GFM does — they never were before), while `/a phrase/`, `(/word/)`,
+`/word/.`, `"/quoted/"`, `/a *b* c/` and italics in links, lists, table cells
+and footnotes are unchanged. **Inherent limit:** a lone one-segment path with a
+trailing slash (`see /tmp/ here`) is indistinguishable from `/italic/` and still
+italicises. Fixtures: `tests/features/inline-syntax/` (`italics-flanking`,
+`italics-contexts`, both with empty stderr goldens).
 
 ### `runInThisContext`
 Script blocks, function extensions, and post-processor scripts share a single VM context (`runInThisContext` from Node's `vm` module, re-exported via `utils.js`). Anything assigned to `global.*` is visible everywhere downstream.
