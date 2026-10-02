@@ -8,6 +8,7 @@ export { cheerio };
 import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
+import { checkMathPackages } from './latex-lint.js';
 import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
 import { addWarning } from './warnings.js';
 import { buildIndexes } from './indexing.js';
@@ -27,6 +28,10 @@ function warnUnresolvedRef(key, info) {
 
 // Post-process HTML output using cheerio
 export function postProcessHTML(html, options = {}) {
+	// The LaTeX-export lint's end-of-build check: maths needing a package that
+	// a LaTeX export of this document would not load (latex-lint.js).
+	checkMathPackages();
+
 	// Load into cheerio — in fragment mode, pass isDocument=false to prevent
 	// cheerio wrapping the content in <html><head><body> tags.
 	const $ = cheerio.load(html, null, !options.fragment);

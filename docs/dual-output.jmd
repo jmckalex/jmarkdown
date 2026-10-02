@@ -403,6 +403,38 @@ In short: `:print` and `:web` are about **audience** — Markdown routed to one
 target; `:TeX` and `:HTML` are about **escape-hatching** raw target-language markup
 that has no Markdown equivalent.
 
+## Warnings for a LaTeX export
+
+Some things render perfectly well in a browser and still stop a LaTeX export —
+MathJax is forgiving where LaTeX is not. Every build, HTML included, warns about
+those it can be sure of, in the build's warning summary (and watch mode's
+banner), so you hear about them while you write rather than when you export.
+Each warning names a short code:
+
+| Code | What it catches | The fix |
+|---|---|---|
+| `dollars` | `$5 and $10` (the dollars pair up as maths, in the browser too), or a lone `$` that starts maths LaTeX never ends | escape the dollar sign: `\$5` |
+| `display-math` | `\begin{align*}` (or `gather`, `multline`, `equation`, …) inside `$$ … $$` or `\[ … \]` — LaTeX stops on the nesting | write the environment on its own, with no wrapper |
+| `mathjax-only` | `\require`, `\bbox`, `\enclose`, `\class`, … — MathJax extensions LaTeX has never heard of | leave them out of a document meant for print |
+| `package` | maths a package must define — `\mathbb`, `\text`, `\begin{cases}`, `\blacksquare`, `\cancel`, `\mathscr` — when nothing the document loads provides it | `Packages: amssymb` (the warning names the package) |
+| `backslash` | a Windows path in prose, `C:\Users\me`, whose backslashes LaTeX reads as commands | escape them, or put the path in backticks |
+| `braces` | an unmatched `{` or `}` in prose | escape it: `\}` |
+
+For `package`, "provides" takes in everything a LaTeX export would load: the
+`Packages` key, a `\usepackage` in `LaTeX preamble`, the document class (`amsart`
+brings amsmath), a maths font package, `Math macros` (which loads amsmath and
+amssymb), and what the engine loads for what it sees, such as amsmath for an
+`@begin(equation)`. A command the document defines itself is never a package's.
+
+To silence a warning, name its code, in the header or a configuration file;
+`latex-export` silences them all:
+
+```
+---
+Silence warnings: dollars, backslash
+---
+```
+
 ## Reference
 
 ### CLI

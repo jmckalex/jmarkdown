@@ -396,6 +396,66 @@ Final paragraph.
 <p>In short: <code>:print</code> and <code>:web</code> are about <span class="intense">audience</span> — Markdown routed to one
   target; <code>:TeX</code> and <code>:HTML</code> are about <span class="intense">escape-hatching</span> raw target-language markup
   that has no Markdown equivalent.</p>
+<h2 id="toc-warnings-for-a-latex-export">Warnings for a LaTeX export</h2>
+<p>Some things render perfectly well in a browser and still stop a LaTeX export —
+  MathJax is forgiving where LaTeX is not. Every build, HTML included, warns about
+  those it can be sure of, in the build's warning summary (and watch mode's
+  banner), so you hear about them while you write rather than when you export.
+  Each warning names a short code:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>What it catches</th>
+      <th>The fix</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>dollars</code></td>
+      <td><code>$5 and $10</code> (the dollars pair up as maths, in the browser too), or a lone <code>$</code> that starts maths LaTeX never ends</td>
+      <td>escape the dollar sign: <code>\$5</code></td>
+    </tr>
+    <tr>
+      <td><code>display-math</code></td>
+      <td><code>\begin{align*}</code> (or <code>gather</code>, <code>multline</code>, <code>equation</code>, …) inside <code>$$ … $$</code> or <code>\[ … \]</code> — LaTeX stops on the nesting</td>
+      <td>write the environment on its own, with no wrapper</td>
+    </tr>
+    <tr>
+      <td><code>mathjax-only</code></td>
+      <td><code>\require</code>, <code>\bbox</code>, <code>\enclose</code>, <code>\class</code>, … — MathJax extensions LaTeX has never heard of</td>
+      <td>leave them out of a document meant for print</td>
+    </tr>
+    <tr>
+      <td><code>package</code></td>
+      <td>maths a package must define — <code>\mathbb</code>, <code>\text</code>, <code>\begin{cases}</code>, <code>\blacksquare</code>, <code>\cancel</code>, <code>\mathscr</code> — when nothing the document loads provides it</td>
+      <td><code>Packages: amssymb</code> (the warning names the package)</td>
+    </tr>
+    <tr>
+      <td><code>backslash</code></td>
+      <td>a Windows path in prose, <code>C:\Users\me</code>, whose backslashes LaTeX reads as commands</td>
+      <td>escape them, or put the path in backticks</td>
+    </tr>
+    <tr>
+      <td><code>braces</code></td>
+      <td>an unmatched <code>{</code> or <code>}</code> in prose</td>
+      <td>escape it: <code>\}</code></td>
+    </tr>
+  </tbody>
+</table>
+<p>For <code>package</code>, "provides" takes in everything a LaTeX export would load: the
+  <code>Packages</code> key, a <code>\usepackage</code> in <code>LaTeX preamble</code>, the document class (<code>amsart</code>
+  brings amsmath), a maths font package, <code>Math macros</code> (which loads amsmath and
+  amssymb), and what the engine loads for what it sees, such as amsmath for an
+  <code>@begin(equation)</code>. A command the document defines itself is never a package's.
+</p>
+<p>To silence a warning, name its code, in the header or a configuration file;
+  <code>latex-export</code> silences them all:
+</p>
+<pre><code class="hljs">---
+Silence warnings: dollars, backslash
+---
+</code></pre>
 <h2 id="toc-reference">Reference</h2>
 <h3 id="toc-cli">CLI</h3>
 <table>

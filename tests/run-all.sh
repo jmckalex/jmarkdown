@@ -81,7 +81,16 @@ sh "$REPO/tests/bibliographies/run.sh"
 bibliographies_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ]; then
+# 10. latex-lint — the LaTeX-export lint's warnings, each firing and each near
+#     miss quiet, silencing, and a clean document. A suite because its fixtures
+#     are LaTeX that must not compile, and the package check reads the config
+#     (HOME isolated). Gates CI.
+echo "------ latex-lint ------"
+sh "$REPO/tests/latex-lint/run.sh"
+latex_lint_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi
