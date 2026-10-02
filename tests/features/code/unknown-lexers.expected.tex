@@ -1,0 +1,52 @@
+A fence in a language minted has no Pygments lexer for prints as plain text in
+LaTeX (with a warning), instead of stopping the compile.
+
+\begin{minted}{text}
+tag:#project
+\end{minted}
+
+\begin{minted}{text}
+not done
+due before tomorrow
+\end{minted}
+
+\begin{minted}{text}
+## Todo
+- [ ] write
+\end{minted}
+
+\begin{minted}{text}
+TABLE file.mtime FROM "notes"
+\end{minted}
+
+\begin{minted}{text}
+dv.list(dv.pages().file.name)
+\end{minted}
+
+\begin{minted}{text}
+filters:
+  - file.hasTag("x")
+\end{minted}
+
+\begin{minted}{text}
+graph LR
+  A --> B
+\end{minted}
+
+\begin{minted}{text}
+Name |= Value
+width |> 10
+\end{minted}
+
+\begin{minted}{text}
+title: An admonition
+Body text.
+\end{minted}
+
+A known language is unchanged, and only the first word of an info string is
+the language:
+
+\begin{minted}{python}
+print("hello")
+\end{minted}
+

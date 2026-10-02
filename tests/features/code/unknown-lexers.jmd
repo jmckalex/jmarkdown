@@ -1,0 +1,55 @@
+---
+Title: unknown lexers
+---
+
+A fence in a language minted has no Pygments lexer for prints as plain text in
+LaTeX (with a warning), instead of stopping the compile.
+
+```query
+tag:#project
+```
+
+```tasks
+not done
+due before tomorrow
+```
+
+```kanban
+## Todo
+- [ ] write
+```
+
+```dataview
+TABLE file.mtime FROM "notes"
+```
+
+```dataviewjs
+dv.list(dv.pages().file.name)
+```
+
+```base
+filters:
+  - file.hasTag("x")
+```
+
+```mermaid
+graph LR
+  A --> B
+```
+
+```tabbing
+Name |= Value
+width |> 10
+```
+
+```ad-note
+title: An admonition
+Body text.
+```
+
+A known language is unchanged, and only the first word of an info string is
+the language:
+
+```python title="example.py"
+print("hello")
+```

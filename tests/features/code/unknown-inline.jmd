@@ -1,0 +1,11 @@
+---
+Title: unknown inline language
+Code language: nosuchlang
+---
+
+With an unknown `Code language`, inline code such as `x = 1` and a fence with no
+language of its own print as plain text in LaTeX:
+
+```
+plain fenced code
+```
