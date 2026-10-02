@@ -83,14 +83,25 @@ if [ "$n" -eq 2 ]; then pass "hook/type-and-alias"; else fail "hook/type-and-ali
 assert_contains "hook/label" out.html '<span class="callout-title-inner">From the host</span>'
 assert_contains "hook/icon" out.html 'viewBox="0 0 448 512"'
 
+# --- the table module loads with no Node at all ---------------------------------
+# Clew bundles src/callout-table.js for the browser: its import graph must be
+# itself and callout-definitions.js, evaluated in a context with no process,
+# require or filesystem.
+
+if node --experimental-vm-modules "$HERE/browser-load.mjs" "$REPO/src" >"$SCRATCH/browser.out" 2>&1; then
+	pass "table/loads-without-node"
+else
+	fail "table/loads-without-node" "$(grep -v -e ExperimentalWarning -e trace-warnings "$SCRATCH/browser.out")"
+fi
+
 # --- the LaTeX palette agrees with the stylesheet -------------------------------
 
 if node --input-type=module -e "
 import fs from 'fs';
 const css = fs.readFileSync('$REPO/src/jmarkdown.css', 'utf8');
-const js = fs.readFileSync('$REPO/src/callouts.js', 'utf8');
+const js = fs.readFileSync('$REPO/src/callout-table.js', 'utf8');
 const fromCss = Object.fromEntries([...css.matchAll(/\.callout\[data-callout='([a-z]+)'\]\s*\{\s*--callout:\s*(#[0-9a-f]{6});/g)].map((m) => [m[1], m[2]]));
-const block = /const PALETTE = \{([^}]*)\}/.exec(js)[1];
+const block = /export const PALETTE = \{([^}]*)\}/.exec(js)[1];
 const fromJs = Object.fromEntries([...block.matchAll(/([a-z]+): '(#[0-9a-f]{6})'/g)].map((m) => [m[1], m[2]]));
 const base = /\.callout\[data-callout\] \{[^}]*--callout: (#[0-9a-f]{6});/.exec(css)[1];
 const ok = JSON.stringify(fromCss) === JSON.stringify(fromJs) && Object.keys(fromJs).length === 15 && base === fromJs.note;

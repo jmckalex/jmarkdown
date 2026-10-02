@@ -4,7 +4,9 @@
 //
 // usage: node hook.mjs <repo> <file.md> <out.html>
 const [repo, file, output] = process.argv.slice(2);
-const { applyCustomCallouts } = await import(`${repo}/src/callouts.js`);
+// Imported from the TABLE module, as Clew imports it: the table installed
+// there must be the one the extension (loaded by index.js) renders with.
+const { applyCustomCallouts } = await import(`${repo}/src/callout-table.js`);
 const { processFile } = await import(`${repo}/src/index.js`);
 applyCustomCallouts({
 	hosted: { label: 'From the host', color: 'teal', icon: [448, 512, 'M0 0L448 0L448 512L0 512Z'], aliases: ['viahost'] },
