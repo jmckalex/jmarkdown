@@ -358,18 +358,29 @@ export function iconLatex([width, height, d]) {
  * `title` and `body` are TeX already. Folded callouts arrive here like any
  * other: print shows them expanded.
  */
+// What the box draws behind its text, in each of its parts: the tint as a
+// rounded rectangle, then the accent strip clipped to the same rounded shape.
+// Defined once per box (a local macro, in `code=`) and handed to all four
+// skins below: every tcolorbox skin sets its OWN interior code, so a box
+// broken across pages — drawn with the first/middle/last skins — otherwise
+// lost it and fell back to tcolorbox's default grey, strip and tint gone.
+const INTERIOR = '\\fill[jmdcallout!12!white, rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);'
+	+ '\\begin{scope}\\clip[rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);'
+	+ '\\fill[jmdcallout] (frame.south west) rectangle ([xshift=3pt]frame.north west);\\end{scope}';
+
 export function calloutLatex({ rgb, icon, title, body }) {
 	requirePackage('tcolorbox');
 	addPreamble('\\tcbuselibrary{skins,breakable}');
 	const head = `{\\color{jmdcallout}\\bfseries ${icon ? `${icon}\\hspace{0.45em}` : ''}${title}}`;
 	return [
 		'\\begin{tcolorbox}[enhanced, breakable, frame hidden,',
-		`  code={\\definecolor{jmdcallout}{RGB}{${rgb.join(',')}}},`,
+		`  code={\\definecolor{jmdcallout}{RGB}{${rgb.join(',')}}\\def\\jmdcalloutinterior{${INTERIOR}}},`,
 		'  boxrule=0pt, leftrule=3pt, arc=3.75pt, boxsep=0pt,',
 		'  left=12pt, right=12pt, top=9pt, bottom=9pt,',
-		'  interior code={\\fill[jmdcallout!12!white, rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);',
-		'    \\begin{scope}\\clip[rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);',
-		'    \\fill[jmdcallout] (frame.south west) rectangle ([xshift=3pt]frame.north west);\\end{scope}}]',
+		'  interior code=\\jmdcalloutinterior,',
+		'  skin first is subskin of={enhancedfirst}{frame hidden, interior code=\\jmdcalloutinterior},',
+		'  skin middle is subskin of={enhancedmiddle}{frame hidden, interior code=\\jmdcalloutinterior},',
+		'  skin last is subskin of={enhancedlast}{frame hidden, interior code=\\jmdcalloutinterior}]',
 		body ? `${head}\\par\\vspace{4.5pt}` : head,
 		...(body ? [body] : []),
 		'\\end{tcolorbox}',

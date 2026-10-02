@@ -325,7 +325,11 @@ headings from the type as written (`[!CAUTION]` "Caution", not "Warning").
   works), frame hidden, a rounded tint (`!12!white`) and a clipped 3pt accent
   strip drawn in `interior code` (a real frame under the interior showed a
   hairline), title row = icon + bold title in the accent; folds print
-  expanded. The icon is the SAME Font Awesome glyph, drawn by TikZ `svg.path`
+  expanded. The interior is a per-box macro (`\jmdcalloutinterior`, defined in
+  `code=`) handed to the box AND to its `skin first/middle/last is subskin of`:
+  every tcolorbox skin sets its own interior code, so a callout broken across
+  pages lost its strip and tint and printed tcolorbox's grey (fixed 2026-10;
+  latex-compile's `callouts/page-break` checks the RENDERED pages). The icon is the SAME Font Awesome glyph, drawn by TikZ `svg.path`
   from path data **normalised in JS to absolute M/L/C/Z** — svg.path mis-draws
   Font Awesome's semicircular arcs (the discs of info/question/circle-check
   vanished). Needs tcolorbox (+ skins, breakable), tikz (+ svg.path), graphicx

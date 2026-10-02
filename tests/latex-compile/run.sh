@@ -166,6 +166,20 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		if (cd "$work" && $engine $shellesc -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
 			echo "PASS  $label$suffix"
 			pass=$((pass + 1))
+			# A callout broken across pages: check the RENDERED pages, since a
+			# part that lost its colours still compiles (callout-pages.mjs).
+			if [ "$label" = "callouts/page-break" ]; then
+				if ! command -v pdftoppm >/dev/null 2>&1; then
+					echo "SKIP  $label$suffix [pages]  (pdftoppm not installed)"
+				elif node "$HERE/callout-pages.mjs" "$work/doc.pdf" E08C3C FBF1E8 >"$work/pages.log" 2>&1; then
+					echo "PASS  $label$suffix [pages]"
+					pass=$((pass + 1))
+				else
+					echo "FAIL  $label$suffix [pages]"
+					sed 's/^/    | /' "$work/pages.log"
+					fail=$((fail + 1))
+				fi
+			fi
 		else
 			echo "FAIL  $label$suffix"
 			grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
