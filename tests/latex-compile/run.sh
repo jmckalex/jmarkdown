@@ -52,7 +52,11 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 	case "$category" in
 		games)             extra='\usepackage{sgame}';                   needs='sgame.sty' ;;
 		tables)            extra='\usepackage{multirow}\usepackage{longtable}\usepackage{caption}\usepackage{booktabs}'; needs='multirow.sty longtable.sty booktabs.sty' ;;
-		inline-syntax)     extra='\usepackage{color}\usepackage{soul}';   needs='soul.sty' ;;
+		# inline-syntax: the italics fixtures carry links (bare URLs are
+		# autolinked) and a booktabs table.
+		inline-syntax)     extra='\usepackage{color}\usepackage{soul}\usepackage{booktabs}\usepackage{hyperref}'; needs='soul.sty booktabs.sty hyperref.sty' ;;
+		# scripting: func's heading holds inline code (\mintinline).
+		scripting)         extra='\usepackage{minted}';                   needs='minted.sty' ;;
 		code)              extra='\usepackage{minted}';                   needs='minted.sty' ;;
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
 		# crossref: label-in-env labels theorem-like environments, so the
@@ -104,7 +108,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "scripting" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
