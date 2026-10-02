@@ -78,11 +78,25 @@ if render article; then
 	want "article/end document"   "$TEX" '\end{document}'
 fi
 
+# --- citations.jmd: the \cite family loads natbib by itself; \fullcite (→
+#     \bibentry) loads bibentry and reads the .bbl at \begin{document}. A full
+#     document used to leave all three to the author, so it did not compile. ---
+if render citations; then
+	want "cite/natbib"          "$TEX" '\usepackage{natbib}'
+	want "cite/bibentry"        "$TEX" '\usepackage{bibentry}'
+	want "cite/nobibliography*" "$TEX" '\AtBeginDocument{\nobibliography*}'
+	want "cite/citet"           "$TEX" '\citet{Quine:1948}'
+	want "cite/bibentry entry"  "$TEX" '\bibentry{Quine:1948}'
+	want "cite/bibliography"    "$TEX" '\bibliography{'
+fi
 # --- engine-lua.jmd: the engine tunes font/encoding defaults; class falls back ---
 if render engine-lua; then
 	want   "lua/fontspec"      "$TEX" '\usepackage{fontspec}'
 	absent "lua/no inputenc"   "$TEX" '\usepackage[utf8]{inputenc}'
 	want   "lua/default class" "$TEX" '\documentclass{article}'
+	# A document with no citations loads neither citation package.
+	absent "lua/no natbib"     "$TEX" '\usepackage{natbib}'
+	absent "lua/no bibentry"   "$TEX" '\usepackage{bibentry}'
 fi
 
 # --- frontmatter-escape.jmd: plain-text Title/Author escape &/# before \title{} ---

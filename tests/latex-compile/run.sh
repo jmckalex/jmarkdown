@@ -119,7 +119,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
@@ -128,25 +128,41 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		shellesc='-shell-escape'
 	fi
 
-	# Build a minimal document. report class so headings/ fixtures, which
-	# emit \chapter, have a class that defines it.
 	work="$SCRATCH/$category-$name"
 	mkdir -p "$work"
-	{
-		printf '\\documentclass{report}\n'
-		printf '%s\n' "$extra"
-		printf '\\begin{document}\n'
-		cat "$tex"
-		printf '\n\\end{document}\n'
-	} >"$work/doc.tex"
-
 	engines='pdflatex'
+	if [ "$category" = "citations" ]; then
+		# Citations compile as the FULL document jmarkdown writes — its own
+		# preamble, not this script's — since what is under test is that an
+		# export loads natbib/bibentry by itself. The engine is the one that
+		# document targets (fontspec → LuaLaTeX).
+		src="${tex%.expected.tex}.jmd"
+		if ! (cd "$(dirname "$src")" && node "$REPO/src/index.js" process "$(basename "$src")" --to latex -o "$work/doc.tex" >/dev/null 2>"$work/build.log"); then
+			echo "FAIL  $label  (jmarkdown exited non-zero)"
+			sed 's/^/    | /' "$work/build.log"
+			fail=$((fail + 1))
+			continue
+		fi
+		grep -q '{fontspec}' "$work/doc.tex" && engines='lualatex'
+	else
+		# Build a minimal document. report class so headings/ fixtures, which
+		# emit \chapter, have a class that defines it.
+		{
+			printf '\\documentclass{report}\n'
+			printf '%s\n' "$extra"
+			printf '\\begin{document}\n'
+			cat "$tex"
+			printf '\n\\end{document}\n'
+		} >"$work/doc.tex"
+	fi
+
 	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ]; } && command -v lualatex >/dev/null 2>&1; then
 		engines='pdflatex lualatex'
 	fi
 	for engine in $engines; do
 		suffix=''
 		[ "$engine" = pdflatex ] || suffix=" [$engine]"
+		[ "$category" = citations ] && suffix=" [full document, $engine]"
 		if (cd "$work" && $engine $shellesc -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
 			echo "PASS  $label$suffix"
 			pass=$((pass + 1))
