@@ -1,0 +1,12 @@
+---
+Title: unknown citation key, vancouver
+Bibliography: refs.bib
+Bibliography style: vancouver
+Resolve citations: true
+---
+
+An unknown key is left as written, in every style, with a build warning:
+\cite{NoSuchKey}, and \citet{NoSuchKey}. A known key cited with it is still
+resolved, \citep{Quine:1948,NoSuchKey}, and a known key alone, \cite{Skyrms:1996}.
+
+@bibliography
