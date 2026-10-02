@@ -54,7 +54,8 @@ import { createRequire } from 'module';
 import { configManager } from './config-manager.js';
 import { addWarning } from './warnings.js';
 import { resolveCallouts, defaultTitle } from './callout-definitions.js';
-import { cssColorToRgb, legibleOnLight, iconLatex, calloutLatex, escapeTexText } from './callout-latex.js';
+import { cssColorToRgb, legibleOnLight, iconLatex, calloutLatex } from './callout-latex.js';
+import { escapeTexText } from './latex-escape.js';
 
 /** Each icon's path, in its own Font Awesome viewBox (VIEWBOX). */
 const ICONS = {

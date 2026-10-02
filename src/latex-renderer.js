@@ -12,7 +12,7 @@
 
 import { configManager } from './config-manager.js';
 import { requirePackage } from './preamble.js';
-import { escapeLatexText as escapeLatex } from './latex-escape.js';
+import { escapeLatexText as escapeLatex, escapeTexText } from './latex-escape.js';
 import { commandForDepth } from './sectioning.js';
 
 // Candidate \mintinline delimiters, tried in order. \mintinline takes its code
@@ -21,6 +21,31 @@ import { commandForDepth } from './sectioning.js';
 // literal braces, backslashes, %, & and so on.
 const MINTINLINE_DELIMS = ['|', '!', '+', '@', '/', ':', ';', '"', "'", '~', '?', '='];
 
+// True while a heading's content renders. A heading's text is a MOVING
+// argument — \section{…} writes it to the .aux and the .toc — and there
+// \mintinline's \verb-style delimiters break: `\section{\mintinline{text}|x|}`
+// stops pdflatex ("Argument of \FV@… has an extra }"). minted 3 copes with
+// them in \textbf, \emph, \footnote and \href, so headings are the one case.
+let inHeading = false;
+
+// Inline code in a heading. Brace delimiters survive a moving argument and the
+// .toc round trip, provided TeX can read the code as one balanced group: no
+// `#` or `%` (their meaning is fixed when the argument is read), no backslash,
+// balanced braces. Anything else is typeset as \texttt with every special
+// escaped — the same monospace, unhighlighted, as inline `text` code is anyway.
+function headingCode(lang, code) {
+	let depth = 0;
+	for (const c of code) {
+		if (c === '{') depth++;
+		else if (c === '}' && --depth < 0) break;
+	}
+	if (depth === 0 && !/[#%\\]/.test(code)) {
+		requirePackage('minted');
+		return `\\mintinline{${lang}}{${code}}`;
+	}
+	return `\\texttt{${escapeTexText(code)}}`;
+}
+
 const latexRenderer = {
 
 	paragraph(token) {
@@ -28,7 +53,13 @@ const latexRenderer = {
 	},
 
 	heading(token) {
-		let content = this.parser.parseInline(token.tokens);
+		let content;
+		inHeading = true;
+		try {
+			content = this.parser.parseInline(token.tokens);
+		} finally {
+			inHeading = false;
+		}
 		const command = commandForDepth(token.depth);
 
 		// Check for {-} suffix, which signals an unnumbered heading.
@@ -50,9 +81,10 @@ const latexRenderer = {
 	},
 
 	codespan(token) {
-		requirePackage('minted');
 		const lang = configManager.get('Code language') || 'text';
 		const code = token.text;
+		if (inHeading) return headingCode(lang, code);
+		requirePackage('minted');
 		// Use a delimiter the code doesn't contain. The brace form
 		// \mintinline{lang}{code} breaks on a literal `}` in the code (the group
 		// closes early); a \verb-style delimiter avoids that.

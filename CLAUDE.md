@@ -669,7 +669,14 @@ Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path), `Bib
 (The old `crossrefs`-never-resets bug is **fixed**: the cross-ref table lives in
 `crossref.js`, reset per run via `resetCrossrefs()` at the top of
 `postProcessHTML`. The codespan-breaks-on-`}` bug is **fixed**: `codespan` picks
-a `\mintinline` delimiter the code doesn't contain.)
+a `\mintinline` delimiter the code doesn't contain. Inline code in a **heading**
+is the exception (fixed 2026-10): a heading is a moving argument, where `|…|`
+delimiters stop pdflatex, so there `codespan` emits `\mintinline{lang}{code}`, or
+— when the code holds `#`, `%`, `\` or unbalanced braces, which no argument can
+carry verbatim — `\texttt{…}` with every special escaped (`latex-renderer.js`,
+`headingCode`). minted 3 copes with `|…|` inside `\textbf`/`\emph`/`\footnote`/
+`\href`. Note: minted 3 highlights in a batch, so code appears on the SECOND
+compile; the first shows `<MINTED>` placeholders.)
 
 ## LaTeX document-preparation system
 

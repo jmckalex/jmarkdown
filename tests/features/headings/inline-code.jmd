@@ -1,0 +1,11 @@
+---
+Title: inline code in headings
+---
+
+# Plain `code` in a heading
+
+## With `a_b^c` and `f{x}` inside
+
+## Unsafe in a heading: `#include`, `100%`, `\section`, `f{`
+
+Body text keeps its delimiter form, even for `|pipes|`.

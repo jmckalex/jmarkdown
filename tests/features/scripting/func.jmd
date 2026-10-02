@@ -9,7 +9,7 @@ The answer is func() { return 6*7 } today.
 A function may return markdown, func() { return { inline: '*strong* and /italic/' } }, lexed inline.
 
 Trailing prose is not part of it: func() { return 'one' } (see above), and a brace
-inside a string does not end it: func() { return '}' } here.
+inside a string does not end it: func() { return '}'.length } character.
 
 Prose that merely mentions the func(x) notation stays prose.
 

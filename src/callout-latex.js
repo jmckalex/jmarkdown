@@ -377,17 +377,3 @@ export function calloutLatex({ rgb, icon, title, body }) {
 		'',
 	].join('\n');
 }
-
-/**
- * Plain text for TeX — every special character escaped. For text that is
- * NOT markdown (a type's label, from its definition), where JMarkdown's
- * prose rules (escapeLatexText leaves `_ % $` alone) do not apply. `< > |`
- * too: without T1 encoding they print as ¡ ¿ —.
- */
-export function escapeTexText(text) {
-	return String(text).replace(/[\\{}$&#^_%~<>|]/g, (c) => ({
-		'\\': '\\textbackslash{}', '{': '\\{', '}': '\\}', '$': '\\$', '&': '\\&',
-		'#': '\\#', '^': '\\^{}', '_': '\\_', '%': '\\%', '~': '\\~{}',
-		'<': '\\textless{}', '>': '\\textgreater{}', '|': '\\textbar{}',
-	})[c]);
-}

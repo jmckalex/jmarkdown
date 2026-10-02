@@ -61,6 +61,8 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		inline-syntax)     extra='\usepackage{color}\usepackage{soul}\usepackage{booktabs}\usepackage{hyperref}'; needs='soul.sty booktabs.sty hyperref.sty' ;;
 		# scripting: func's heading holds inline code (\mintinline).
 		scripting)         extra='\usepackage{minted}';                   needs='minted.sty' ;;
+		# headings: inline-code puts inline code in headings (a moving argument).
+		headings)          extra='\usepackage{minted}\usepackage{hyperref}'; needs='minted.sty hyperref.sty' ;;
 		code)              extra='\usepackage{minted}';                   needs='minted.sty' ;;
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
 		# crossref: label-in-env labels theorem-like environments, so the
@@ -117,7 +119,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
