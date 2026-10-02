@@ -30,6 +30,7 @@ import markedAlert from 'marked-alert';
 import { renderAlertLatex } from './alerts.js';
 import { calloutBlock } from './callouts.js';
 import { tabbingFence, tabbing } from './tabbing.js';
+import { escapedCharacters } from './escapes.js';
 import createMarkdownDemo from './markdown-demo.js';
 import strategicFormGame from './strategic-form-games.js';
 import createTiKZ from './tikz.js';
@@ -431,6 +432,10 @@ marked_copy.use(markedMoreLists());
 // (last-registered wins), claiming the whole block before a line that starts
 // with +/-/* inside an aligned equation can be mistaken for a list item.
 registerExtension(jmarkdownSyntaxEnhancements.mathBlock);
+
+// A backslash-escaped character prints as itself in both outputs (escapes.js):
+// TeX-escaped in LaTeX, and `\$` kept out of MathJax's reach in HTML.
+registerExtension(escapedCharacters);
 
 // This extension has to be registered after the directives in order for it to work.
 registerExtensions([

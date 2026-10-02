@@ -42,7 +42,8 @@ All source lives in `src/`. Key files:
 | `html-template.js` | HTML full-document assembly (Mustache + config merge); peer of `latex-template.js` |
 | `default-template.tex.mustache` | The `.tex` document skeleton (triple-brace; peer of `default-template.html.mustache`) |
 | `preamble.js` | Usage-driven package manager: `requirePackage` / `addPreamble` / `addLatePreamble` / `crefName`; `assemblePreamble()` |
-| `latex-escape.js` | Shared `&`/`#` prose escaping (`escapeLatexText`) |
+| `latex-escape.js` | Shared `&`/`#` prose escaping (`escapeLatexText`); `escapeTexText` escapes everything |
+| `escapes.js` | A backslash-escaped character (`\$`, `\_`, `\{`, `\\`) prints as itself: a renderer for marked's `escape` tokens — `escapeTexText` in LaTeX (they used to reach the .tex bare: `\$5` started maths, `\_` was a subscript error), and in HTML an escaped `$` wrapped in `<span class="escaped">` so MathJax cannot pair it with the next `$`. Registered in index.js |
 | `sectioning.js` | Sectioning ladder + `Heading base`/`Document class` resolution (shared by the LaTeX heading renderer and the HTML cref word) |
 | `crossref.js` | HTML cross-reference registry: per-run label table + `typedRefText` (the `:cref` wording) |
 | `warnings.js` | Build-warning collector (reset per run from `processFile`): unresolved `:ref`/`:cref` and duplicate labels still render/overwrite as before, but are collected and summarised on stderr at end of build; watch mode shows them as an amber dismissible banner (`buildwarnings` SSE event, replayed to fresh connections) |
