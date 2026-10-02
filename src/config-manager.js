@@ -332,6 +332,13 @@ class ConfigManager {
 				str = value[0].trim().toLowerCase();
 				this.config["Smart typography"] = (str == "true");
 				break;
+			case "Code_language":
+				// Space-keyed, like Block_elements: latex-renderer.js reads
+				// configManager.get('Code language'). Without this case a
+				// header's `Code language:` landed under `Code_language` and was
+				// silently ignored, though docs/code-highlighting documents it.
+				this.config["Code language"] = value[0].trim();
+				break;
 			case "Video_mode":
 			case "Video_poster":
 				// Space-keyed for the same reason as Block_elements: media.js
