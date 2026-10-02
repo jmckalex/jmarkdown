@@ -12,9 +12,10 @@
 # For every tests/features/**/*.expected.tex golden (and tests/callouts', whose
 # custom-type golden needs a project config the feature harness cannot give
 # it), this wraps the content in a minimal document with a per-category
-# preamble and runs pdflatex — and, for callouts, LuaLaTeX as well: their
-# icons are TikZ drawings and their boxes tcolorbox skins, and both engines
-# are promised.
+# preamble and runs pdflatex — and, for callouts and tabbing, LuaLaTeX as
+# well: callout icons are TikZ drawings and their boxes tcolorbox skins,
+# tabbing's accents and Unicode differ by engine, and both engines are
+# promised.
 #
 # Exit status: non-zero if any fixture FAILed to compile; zero otherwise
 # (skips do not fail the run).
@@ -83,6 +84,9 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# code and inline code inside them render as minted.
 		callouts)          extra='\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\usepackage{graphicx}\usepackage{tikz}\usetikzlibrary{svg.path}\usepackage{minted}\usepackage{amsmath}'; needs='tcolorbox.sty tikz.sty minted.sty' ;;
 		typography)        extra='\usepackage{minted}'; needs='minted.sty' ;;
+		# tabbing: LaTeX's own environment, no package; minted for the inline
+		# code in the fixtures' prose.
+		tabbing)           extra='\usepackage{minted}'; needs='minted.sty' ;;
 		# description-lists: the codespan-double-colon fixture has inline code
 		# spans, which render as \mintinline.
 		description-lists) extra='\usepackage{minted}'; needs='minted.sty' ;;
@@ -120,7 +124,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
@@ -157,7 +161,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		} >"$work/doc.tex"
 	fi
 
-	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ]; } && command -v lualatex >/dev/null 2>&1; then
+	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ]; } && command -v lualatex >/dev/null 2>&1; then
 		engines='pdflatex lualatex'
 	fi
 	for engine in $engines; do

@@ -29,6 +29,7 @@ import { targets, sources, inlineTarget } from './sources-and-targets.js';
 import markedAlert from 'marked-alert';
 import { renderAlertLatex } from './alerts.js';
 import { calloutBlock } from './callouts.js';
+import { tabbingFence, tabbing } from './tabbing.js';
 import createMarkdownDemo from './markdown-demo.js';
 import strategicFormGame from './strategic-form-games.js';
 import createTiKZ from './tikz.js';
@@ -390,6 +391,14 @@ marked_copy.use(alertExtension);
 // most recently registered block extension first. Not gated by -n: callouts
 // are standard Obsidian syntax, not JMarkdown's dialect.
 registerExtension(calloutBlock);
+
+// LaTeX's tabbing (tabbing.js): the ```tabbing fence and @begin(tabbing), one
+// body. tabbing.js has no imports (Clew's preview client imports its layout),
+// so it does not register itself: the fence goes on both instances and the
+// environment through defineEnvironment, as Clew's configured `Extensions` /
+// `Environments` entries did.
+registerExtension(tabbingFence);
+defineEnvironment('tabbing', tabbing);
 
 
 const markdownDemos = [

@@ -92,6 +92,7 @@
       <a class="nav-link" href="#mermaid-diagrams" data-page="mermaid-diagrams"><i class="fa-solid fa-diagram-project"></i> Mermaid Diagrams</a>
       <a class="nav-link" href="#tikz-diagrams" data-page="tikz-diagrams"><i class="fa-solid fa-bezier-curve"></i> TiKZ Diagrams</a>
       <a class="nav-link" href="#metapost-diagrams" data-page="metapost-diagrams"><i class="fa-solid fa-pen-nib"></i> MetaPost Diagrams</a>
+      <a class="nav-link" href="#tabbing" data-page="tabbing"><i class="fa-solid fa-ruler-horizontal"></i> Tabbing</a>
       <a class="nav-link" href="#sources-and-targets" data-page="sources-and-targets"><i class="fa-solid fa-crosshairs"></i> Sources &amp; Targets</a>
     </div>
 
@@ -177,6 +178,11 @@
     if (e.key === 'Escape') setNavOpen(false);
   });
 </script>
+
+<!-- ─── Tabbing ───
+     Lays out the tabbing blocks on whichever page the router swaps in
+     (src/tabbing-page.js; regenerate with scripts/docs-tabbing-layout.mjs). -->
+<script src="tabbing-layout.js"></script>
 
 <!-- ─── Router ───
      The pages are fragments built with `jmarkdown process --fragment`. The

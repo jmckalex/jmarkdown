@@ -1,0 +1,229 @@
+<h1 id="toc-tabbing-latexs-tabbing-environment">Tabbing (LaTeX's <code>tabbing</code> environment)</h1>
+<p>LaTeX's <code>tabbing</code> environment lines text up at <span class="intense">stops</span> you set as you go, the
+  way a typewriter's tab stops work. It is the right tool for the things a table
+  is too heavy for: an address list, a timetable, a few lines of pseudo-code, a
+  column of labels hanging in the margin. JMarkdown has all of it, in a notation
+  of its own with LaTeX's commands accepted alongside, and in both outputs: a
+  real <code>\begin{tabbing}</code> in print, and the same layout in the browser.</p>
+<p>Write a <code>```tabbing</code> fence. Every line is a row, and a bar plus one
+  character is a tab command:</p>
+<div class="clew-tabbing" data-tabbing-key="1g5714p">
+  <div class="tb-row tb-kill"><span class="tb-t">Alice $\qquad$ </span><span class="tb-op" data-op="set"></span><span class="tb-t">12 Oak Street $\qquad$ </span><span class="tb-op" data-op="set"></span></div>
+  <div class="tb-row"><span class="tb-t">Name:</span><span class="tb-op" data-op="next"></span><span class="tb-t">Street:</span><span class="tb-op" data-op="next"></span><span class="tb-t">Phone</span></div>
+  <div class="tb-row"><span class="tb-t">Alice</span><span class="tb-op" data-op="next"></span><span class="tb-t">12 Oak Street</span><span class="tb-op" data-op="next"></span><span class="tb-t">555 1234</span></div>
+  <div class="tb-row"><span class="tb-t">Bob</span><span class="tb-op" data-op="next"></span><span class="tb-t">7 Elm Road</span><span class="tb-op" data-op="next"></span><span class="tb-t">555 9876</span></div>
+</div>
+<pre><code class="hljs language-markdown"><span class="hljs-code">```tabbing
+Alice $\qquad$ |= 12 Oak Street $\qquad$ |= |kill
+Name:       |&gt; Street:          |&gt; Phone
+Alice       |&gt; 12 Oak Street    |&gt; 555 1234
+Bob         |&gt; 7 Elm Road       |&gt; 555 9876
+```</span>
+</code></pre>
+<p><code>|=</code> sets a stop where it stands — right after the text before it, measured as
+  it is drawn — and <code>|&gt;</code> moves to the next one. So the first row here is a
+  <span class="intense">ruler</span>: it ends in <code>|kill</code>, which sets its stops without showing it, and it
+  holds each column's <strong>widest</strong> entry, so every row fits (the <code>$\qquad$</code> adds a
+  gutter, as <code>\qquad</code> does in LaTeX). Stops set from the short header words
+  instead would make the longer entries run under the next column. The spaces in
+  the source are only there to keep it readable; a run of them counts as one.
+</p>
+<h2 id="toc-the-commands">The commands</h2>
+<p>Each mark echoes the LaTeX command it stands for, and the LaTeX command works
+  too:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Mark</th>
+      <th>LaTeX</th>
+      <th>What it does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>|=</code></td>
+      <td><code>\=</code></td>
+      <td>set a stop here</td>
+    </tr>
+    <tr>
+      <td><code>|&gt;</code></td>
+      <td><code>\&gt;</code></td>
+      <td>move to the next stop</td>
+    </tr>
+    <tr>
+      <td><code>|&lt;</code></td>
+      <td><code>\&lt;</code></td>
+      <td>at the start of a row: back one stop, for this row only</td>
+    </tr>
+    <tr>
+      <td><code>|+</code></td>
+      <td><code>\+</code></td>
+      <td>move the left margin in one stop, for the rows that follow</td>
+    </tr>
+    <tr>
+      <td><code>|-</code></td>
+      <td><code>\-</code></td>
+      <td>move the left margin back out one stop</td>
+    </tr>
+    <tr>
+      <td><code>|'</code></td>
+      <td><code>\'</code></td>
+      <td>put the text so far flush right, just before this column</td>
+    </tr>
+    <tr>
+      <td><code>|`</code></td>
+      <td><code>\`</code></td>
+      <td>put the rest of the row flush against the right edge</td>
+    </tr>
+    <tr>
+      <td><code>|[</code> <code>|]</code></td>
+      <td><code>\pushtabs</code> <code>\poptabs</code></td>
+      <td>save and restore the stops</td>
+    </tr>
+    <tr>
+      <td><code>|kill</code></td>
+      <td><code>\kill</code></td>
+      <td>end a ruler row: its stops are set, the row is not shown</td>
+    </tr>
+    <tr>
+      <td>a new line</td>
+      <td><code>\\</code></td>
+      <td>end the row</td>
+    </tr>
+  </tbody>
+</table>
+<p><code>\|</code> is a literal bar, and marks are not read inside <code>$…$</code> maths or a code
+  span, so <code>$|x|$</code> is an absolute value, not two commands.</p>
+<h2 id="toc-a-ruler-row">A ruler row</h2>
+<p>A ruler is any row ending in <code>|kill</code> — it can hold placeholder text, or columns
+  wider than anything in the table:</p>
+<div class="clew-tabbing" data-tabbing-key="55n5z4">
+  <div class="tb-row tb-kill"><span class="tb-t">Wednesday: </span><span class="tb-op" data-op="set"></span><span class="tb-t">10:00–11:00 </span><span class="tb-op" data-op="set"></span><span class="tb-t">Lecture hall</span></div>
+  <div class="tb-row"><span class="tb-t">Mon</span><span class="tb-op" data-op="next"></span><span class="tb-t">9:00</span><span class="tb-op" data-op="next"></span><span class="tb-t">Seminar</span></div>
+  <div class="tb-row"><span class="tb-t">Tue</span><span class="tb-op" data-op="next"></span><span class="tb-t">14:00</span><span class="tb-op" data-op="next"></span><span class="tb-t">Lab</span></div>
+</div>
+<pre><code class="hljs language-markdown"><span class="hljs-code">```tabbing
+Wednesday:   |= 10:00–11:00   |= Lecture hall |kill
+Mon          |&gt; 9:00          |&gt; Seminar
+Tue          |&gt; 14:00         |&gt; Lab
+```</span>
+</code></pre>
+<h2 id="toc-indenting-and-stepping-back">Indenting, and stepping back</h2>
+<p><code>|+</code> moves the left margin in by one stop for the rows that follow, <code>|-</code> moves
+  it back, and <code>|&lt;</code> at the start of a row steps back one stop for that row only —
+  handy for pseudo-code:</p>
+<div class="clew-tabbing" data-tabbing-key="1wfe869">
+  <div class="tb-row tb-kill"><span class="tb-t">while </span><span class="tb-op" data-op="set"></span><span class="tb-t">xxxx </span><span class="tb-op" data-op="set"></span></div>
+  <div class="tb-row"><span class="tb-t">while there is work</span><span class="tb-op" data-op="plus"></span></div>
+  <div class="tb-row"><span class="tb-t">take the next item</span></div>
+  <div class="tb-row"><span class="tb-t">if it is done</span><span class="tb-op" data-op="plus"></span></div>
+  <div class="tb-row"><span class="tb-t">drop it</span></div>
+  <div class="tb-row"><span class="tb-op" data-op="back"></span><span class="tb-t">else</span></div>
+  <div class="tb-row"><span class="tb-t">put it back</span><span class="tb-op" data-op="minus"></span><span class="tb-op" data-op="minus"></span></div>
+  <div class="tb-row"><span class="tb-t">end</span></div>
+</div>
+<pre><code class="hljs language-markdown"><span class="hljs-code">```tabbing
+while |= xxxx |= |kill
+while there is work |+
+take the next item
+if it is done |+
+drop it
+|&lt; else
+put it back |-|-
+end
+```</span>
+</code></pre>
+<p>Here <code>|&lt;</code> puts <code>else</code> level with its <code>if</code>, one stop out from the rows around
+  it, and the two <code>|-</code> on the last indented row bring <code>end</code> home.</p>
+<h2 id="toc-flush-right">Flush right</h2>
+<p><code>|'</code> puts the text so far flush right, just before the column it is in — labels
+  hanging in the margin — and <code>|`</code> puts the rest of the row against the right
+  edge:</p>
+<div class="clew-tabbing" data-tabbing-key="o06505">
+  <div class="tb-row tb-kill"><span class="tb-t">Label: </span><span class="tb-op" data-op="set"></span><span class="tb-t">The text starts here</span></div>
+  <div class="tb-row"><span class="tb-op" data-op="next"></span><span class="tb-t">Item</span><span class="tb-op" data-op="lab"></span><span class="tb-t">The item's text lines up at the column</span></div>
+  <div class="tb-row"><span class="tb-op" data-op="next"></span><span class="tb-t">Longer item</span><span class="tb-op" data-op="lab"></span><span class="tb-t">So does this one</span></div>
+  <div class="tb-row"><span class="tb-t">A title</span><span class="tb-op" data-op="rj"></span><span class="tb-t">page 7</span></div>
+</div>
+<pre><code class="hljs language-markdown"><span class="hljs-code">```tabbing
+Label: |= The text starts here |kill
+|&gt; Item |' The item's text lines up at the column
+|&gt; Longer item |' So does this one
+A title |` page 7
+```</span>
+</code></pre>
+<h2 id="toc-saving-the-stops">Saving the stops</h2>
+<p><code>|[</code> and <code>|]</code>, each alone on a row, save and restore the stops, so a few rows
+  can have columns of their own:</p>
+<div class="clew-tabbing" data-tabbing-key="9iffsa">
+  <div class="tb-row"><span class="tb-t">Left </span><span class="tb-op" data-op="set"></span><span class="tb-t">Middle </span><span class="tb-op" data-op="set"></span><span class="tb-t">Right</span></div>
+  <div class="tb-row tb-silent"><span class="tb-op" data-op="push"></span></div>
+  <div class="tb-row tb-kill"><span class="tb-t">A much longer first column </span><span class="tb-op" data-op="set"></span><span class="tb-t">x</span></div>
+  <div class="tb-row"><span class="tb-op" data-op="next"></span><span class="tb-t">in the temporary column</span></div>
+  <div class="tb-row tb-silent"><span class="tb-op" data-op="pop"></span></div>
+  <div class="tb-row"><span class="tb-op" data-op="next"></span><span class="tb-t">back in the middle</span></div>
+</div>
+<pre><code class="hljs language-markdown"><span class="hljs-code">```tabbing
+Left |= Middle |= Right
+|[
+A much longer first column |= x |kill
+|&gt; in the temporary column
+|]
+|&gt; back in the middle
+```</span>
+</code></pre>
+<h2 id="toc-latex-as-written">LaTeX, as written</h2>
+<p>LaTeX's own commands work too, inside the fence or as a <code>@begin(tabbing)</code>
+  environment, so tabbing pasted from a <code>.tex</code> file needs no rewriting. Since
+  <code>\=</code>, <code>\'</code> and <code>\`</code> are taken, the accents they usually write are <code>\a=</code>,
+  <code>\a'</code> and <code>\a`</code> — LaTeX's own names for them inside <code>tabbing</code>. Cells carry
+  any inline formatting, and maths:
+</p>
+<div class="clew-tabbing" data-tabbing-key="1syd4r">
+  <div class="tb-row"><span class="tb-t"><strong>Symbol</strong> </span><span class="tb-op" data-op="set"></span><span class="tb-t">$x^2 + y^2$ </span><span class="tb-op" data-op="set"></span><span class="tb-t"><em>the circle</em></span></div>
+  <div class="tb-row"><span class="tb-t"><strong>Name</strong></span><span class="tb-op" data-op="next"></span><span class="tb-t">$r$</span><span class="tb-op" data-op="next"></span><span class="tb-t">radius</span></div>
+  <div class="tb-row"><span class="tb-t">Café</span><span class="tb-op" data-op="next"></span><span class="tb-t">$\bar{x}$</span><span class="tb-op" data-op="next"></span><span class="tb-t">the mēan</span></div>
+</div>
+<pre><code class="hljs">@begin(tabbing)
+*Symbol* \= $x^2 + y^2$ \= /the circle/ \\
+*Name* \&gt; $r$ \&gt; radius \\
+Caf\a'e \&gt; $\bar{x}$ \&gt; the m\a=ean
+@end(tabbing)
+</code></pre>
+<p>A cell wider than its column runs on under the next one, as it does in LaTeX —
+  tabbing is for text you know will fit.</p>
+<h2 id="toc-in-print">In print</h2>
+<p>With <code>--to latex</code> a tabbing block becomes the environment itself, every mark
+  its command. The first example above is written as:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{tabbing}
+Alice <span class="hljs-built_in">$</span><span class="hljs-keyword">\qquad</span><span class="hljs-built_in">$</span>  <span class="hljs-keyword">\=</span> 12 Oak Street <span class="hljs-built_in">$</span><span class="hljs-keyword">\qquad</span><span class="hljs-built_in">$</span>  <span class="hljs-keyword">\=</span> <span class="hljs-keyword">\kill</span>
+Name: <span class="hljs-keyword">\&gt;</span> Street: <span class="hljs-keyword">\&gt;</span> Phone <span class="hljs-keyword">\\</span>
+Alice <span class="hljs-keyword">\&gt;</span> 12 Oak Street <span class="hljs-keyword">\&gt;</span> 555 1234 <span class="hljs-keyword">\\</span>
+Bob <span class="hljs-keyword">\&gt;</span> 7 Elm Road <span class="hljs-keyword">\&gt;</span> 555 9876
+<span class="hljs-keyword">\end</span>{tabbing}
+</code></pre>
+<p><code>tabbing</code> is part of LaTeX itself, so no package is needed, and it compiles
+  under pdfLaTeX and LuaLaTeX alike. The accents go back to <code>\a'{e}</code> and its
+  kin, which every engine can typeset. A push or pop row is not a line of its
+  own: its command precedes the next row.</p>
+<h2 id="toc-on-the-web">On the web</h2>
+<p>A stop depends on the <strong>rendered</strong> width of the text before it, so on the web
+  the layout is done in the browser. The HTML carries the rows and pieces with
+  a marker for every command; a small script (<code>src/tabbing-page.js</code>) measures
+  each piece and places it by replaying LaTeX's own algorithm, the one in
+  <code>latex.ltx</code>. It lays a block out again whenever a piece changes size — a web
+  font arriving, MathJax typesetting a cell, the window resizing a flush-right
+  row — and in <a href="watch-mode.html">watch mode</a> whenever a live update changes the
+  block.
+</p>
+<p>The default template includes the script on any page with a tabbing block. A
+  <a href="output-templates.html">custom template</a> opts in with the same section:
+</p>
+<pre><code class="hljs">{{#Tabbing_script}}
+&lt;script&gt;
+{{{.}}}
+&lt;/script&gt;
+{{/Tabbing_script}}
+</code></pre>
+<p>Without it — in a page with no script, or before the script has run — the
+  pieces sit in line with a gap at each stop: readable, though not aligned.</p>

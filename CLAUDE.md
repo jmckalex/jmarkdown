@@ -58,6 +58,8 @@ All source lives in `src/`. Key files:
 | `callout-table.js` | The callout TABLE — built-in types, icons, palette, installed custom types (`applyCustomCallouts`), lookups, `defaultTitle` — importing only `callout-definitions.js`, so code with no engine (Clew's browser bundle, its main process) can share it; `callouts.js` re-exports it. One instance: a table installed here is the one the extension renders with. tests/callouts loads its import graph in a bare VM context to keep it Node-free |
 | `callout-definitions.js` | Custom callout type validation + merging (`checkEntry`, `resolveCallouts`) — Clew-app's `custom-callouts.js`, code verbatim |
 | `callout-latex.js` | Callouts in LaTeX: a tcolorbox per callout, the Font Awesome icon drawn with TikZ `svg.path` from normalised path data, CSS colours → RGB with the light-page lightness cap |
+| `tabbing.js` | LaTeX's `tabbing` as a ```` ```tabbing ```` fence or `@begin(tabbing)`: parser, `layoutTabbing` (latex.ltx's tab logic over measured widths), HTML and LaTeX renderers. Ported from Clew-app; HTML byte-identical to Clew's. **No imports** (Clew's browser bundle imports it), so `index.js` registers it. See "Tabbing" |
+| `tabbing-page.js` | The page script that lays tabbing out in the browser — `tabbingPageScript()`, shipped as source text, placed by the default template's `{{#Tabbing_script}}`; `docsTabbingLayout()` for `docs/tabbing-layout.js` |
 | `inline-footnotes.js` | `[^label: body]` / `[fn: body]` inline footnotes with multi-paragraph support, plus **grouped endnotes**: per-note `(group)` (`[fn(g): …]`), the ambient `@endnoteGroup(name)` directive, and `@endnotes` / `@endnotes(name)` placement. See "Grouped endnotes" |
 | `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc). Each also registers a `@begin(name)` parity handler (byte-identical to its `:::` twin — see "graphics parity" under begin-end); the inline `⟦…⟧` Mathematica form is unchanged |
 | `metapost.js` | `@begin(metapost)…@end(metapost)` block environment (registry-only, no `:::` form). Verbatim MetaPost source, compiled once and cached by content hash under a `MetaPost/` dir next to the source. HTML → `mpost` (`outputformat:="svg"`) → `<img src='MetaPost/<hash>-N.svg'>` (same `{scale/width/embed/empty-cache}` attrs as TiKZ); LaTeX → `mptopdf` → cached PDF via `\includegraphics[max width=\linewidth]` (mermaid's engine-agnostic model — works with the default pdflatex, no luamplib). Compile happens at RENDER time (not tokenize); failures → inline error box (HTML) / dropped + warning (LaTeX), and the error path deletes any partial figure so it never caches. No fixture (needs `mpost`/`mptopdf` + would write a cache dir into the tree) |
@@ -365,6 +367,52 @@ headings from the type as written (`[!CAUTION]` "Caution", not "Warning").
   **`tests/callouts/run.sh`** — the `Callouts` config with good and hostile
   definitions (goldens + leak assertions), the host hook, and the CSS/LaTeX
   palette agreement.
+
+### Tabbing (`tabbing.js`, `tabbing-page.js`)
+
+LaTeX's `tabbing` environment, in two forms with one body: a ```` ```tabbing ````
+fence, where a bar plus one character is a tab command (`|=` `|>` `|<` `|+` `|-`
+`|'` `` |` `` `|[` `|]`, and a row ending `|kill`), and `@begin(tabbing)`; both
+also take LaTeX's own commands (`\=` `\>` … `\\` `\kill` `\pushtabs`), so tabbing
+pasted from a `.tex` file needs no rewriting. One source line is one row.
+
+- **Ported from Clew-app `src/engine/tabbing.js` @03bb33a**, the code below the
+  header unchanged but for two LaTeX changes (`tabbingLatex`): an accent written
+  `\a'e` (the parser makes it a combining mark, which the HTML keeps) goes back to
+  `\a'{e}`, since pdfLaTeX cannot typeset a combining mark; and the environment
+  ends with a blank line, as every block the engine writes does (the fence
+  consumes the source's). The HTML is **byte-identical** to Clew's — the
+  `clew-tabbing` class included — checked by rendering the demo vault's
+  Guide/Tabbing.md through both (fragment, 6 blocks).
+- **No imports, and it must keep none**: Clew's preview client (a browser
+  bundle) imports `layoutTabbing` from it, and `tabbing-page.js` ships
+  `layoutTabbing` as source text. So it does not register itself: `index.js`
+  does, after callouts — `registerExtension(tabbingFence)` (both instances, as
+  Clew's configured `Extensions` entry was) and `defineEnvironment('tabbing',
+  tabbing)` (Clew's `Environments` route). No other extension claims a
+  ```` ```tabbing ```` fence, so the order is free.
+- **LaTeX** is the real environment, every mark its command; `tabbing` is in the
+  LaTeX kernel, so no package. A push/pop row is no line of its own.
+- **HTML layout needs the browser**: a stop depends on the rendered width of the
+  text before it. The markup is rows of pieces (`span.tb-t`) and command markers
+  (`span.tb-op[data-op]`); `tabbing-page.js` measures and places them with
+  `layoutTabbing` (`layout` is Clew's preview-client code). It finds blocks with a
+  MutationObserver — watch mode's morphdom strips the laid-out class and
+  `data-laid-key` from a block in place, and the docs router swaps pages in by
+  innerHTML — and lays a block out again when a piece resizes (fonts, MathJax). The
+  default template includes it on a page with a block (`{{#Tabbing_script}}`,
+  set by `html-template.js`); a custom template opts in with the same section,
+  and Clew's template has none (it lays out with its own client). The CSS is
+  Clew's rules, in `jmarkdown.css`. Before the script runs the pieces sit inline,
+  readable but unaligned.
+- **Docs**: `docs/tabbing.jmd`. The docs site's pages are `--fragment` builds, so
+  `docs/index.html` loads `docs/tabbing-layout.js`, generated by
+  `scripts/docs-tabbing-layout.mjs`, and `docs/jmarkdown.css` carries the CSS.
+- Tests: `tests/features/tabbing/` (the demo guide's cases: `ruler`, `indent`,
+  `flush-right`, `push-pop`, `latex-commands`; latex-compile runs them under
+  pdfLaTeX and LuaLaTeX) and the gating **`tests/tabbing/run.sh`** — Clew's unit
+  tests (parser, layout worked by hand from latex.ltx, LaTeX, HTML) plus the
+  accents, import-freedom, and `docs/tabbing-layout.js` being current.
 
 ### Grouped endnotes (`inline-footnotes.js`)
 Footnotes can be collected into named **groups** and each group **placed** at a

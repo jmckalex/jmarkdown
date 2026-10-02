@@ -39,6 +39,7 @@ strategic-form-games
 syntax-adjustments
 table-of-contents
 tables-and-alerts
+tabbing
 watch-mode
 
 # LaTeX & document-preparation pages

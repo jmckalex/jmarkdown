@@ -1,0 +1,228 @@
+---
+Title: Tabbing
+---
+
+# Tabbing (LaTeX's `tabbing` environment)
+
+LaTeX's `tabbing` environment lines text up at **stops** you set as you go, the
+way a typewriter's tab stops work. It is the right tool for the things a table
+is too heavy for: an address list, a timetable, a few lines of pseudo-code, a
+column of labels hanging in the margin. JMarkdown has all of it, in a notation
+of its own with LaTeX's commands accepted alongside, and in both outputs: a
+real `\begin{tabbing}` in print, and the same layout in the browser.
+
+Write a ```` ```tabbing ```` fence. Every line is a row, and a bar plus one
+character is a tab command:
+
+```tabbing
+Alice $\qquad$ |= 12 Oak Street $\qquad$ |= |kill
+Name:       |> Street:          |> Phone
+Alice       |> 12 Oak Street    |> 555 1234
+Bob         |> 7 Elm Road       |> 555 9876
+```
+
+````markdown
+```tabbing
+Alice $\qquad$ |= 12 Oak Street $\qquad$ |= |kill
+Name:       |> Street:          |> Phone
+Alice       |> 12 Oak Street    |> 555 1234
+Bob         |> 7 Elm Road       |> 555 9876
+```
+````
+
+`|=` sets a stop where it stands — right after the text before it, measured as
+it is drawn — and `|>` moves to the next one. So the first row here is a
+**ruler**: it ends in `|kill`, which sets its stops without showing it, and it
+holds each column's *widest* entry, so every row fits (the `$\qquad$` adds a
+gutter, as `\qquad` does in LaTeX). Stops set from the short header words
+instead would make the longer entries run under the next column. The spaces in
+the source are only there to keep it readable; a run of them counts as one.
+
+## The commands
+
+Each mark echoes the LaTeX command it stands for, and the LaTeX command works
+too:
+
+| Mark | LaTeX | What it does |
+|---|---|---|
+| `\|=` | `\=` | set a stop here |
+| `\|>` | `\>` | move to the next stop |
+| `\|<` | `\<` | at the start of a row: back one stop, for this row only |
+| `\|+` | `\+` | move the left margin in one stop, for the rows that follow |
+| `\|-` | `\-` | move the left margin back out one stop |
+| `\|'` | `\'` | put the text so far flush right, just before this column |
+| `` \|` `` | `` \` `` | put the rest of the row flush against the right edge |
+| `\|[` `\|]` | `\pushtabs` `\poptabs` | save and restore the stops |
+| `\|kill` | `\kill` | end a ruler row: its stops are set, the row is not shown |
+| a new line | `\\` | end the row |
+
+`\|` is a literal bar, and marks are not read inside `$…$` maths or a code
+span, so `$|x|$` is an absolute value, not two commands.
+
+## A ruler row
+
+A ruler is any row ending in `|kill` — it can hold placeholder text, or columns
+wider than anything in the table:
+
+```tabbing
+Wednesday:   |= 10:00–11:00   |= Lecture hall |kill
+Mon          |> 9:00          |> Seminar
+Tue          |> 14:00         |> Lab
+```
+
+````markdown
+```tabbing
+Wednesday:   |= 10:00–11:00   |= Lecture hall |kill
+Mon          |> 9:00          |> Seminar
+Tue          |> 14:00         |> Lab
+```
+````
+
+## Indenting, and stepping back
+
+`|+` moves the left margin in by one stop for the rows that follow, `|-` moves
+it back, and `|<` at the start of a row steps back one stop for that row only —
+handy for pseudo-code:
+
+```tabbing
+while |= xxxx |= |kill
+while there is work |+
+take the next item
+if it is done |+
+drop it
+|< else
+put it back |-|-
+end
+```
+
+````markdown
+```tabbing
+while |= xxxx |= |kill
+while there is work |+
+take the next item
+if it is done |+
+drop it
+|< else
+put it back |-|-
+end
+```
+````
+
+Here `|<` puts `else` level with its `if`, one stop out from the rows around
+it, and the two `|-` on the last indented row bring `end` home.
+
+## Flush right
+
+`|'` puts the text so far flush right, just before the column it is in — labels
+hanging in the margin — and `` |` `` puts the rest of the row against the right
+edge:
+
+```tabbing
+Label: |= The text starts here |kill
+|> Item |' The item's text lines up at the column
+|> Longer item |' So does this one
+A title |` page 7
+```
+
+````markdown
+```tabbing
+Label: |= The text starts here |kill
+|> Item |' The item's text lines up at the column
+|> Longer item |' So does this one
+A title |` page 7
+```
+````
+
+## Saving the stops
+
+`|[` and `|]`, each alone on a row, save and restore the stops, so a few rows
+can have columns of their own:
+
+```tabbing
+Left |= Middle |= Right
+|[
+A much longer first column |= x |kill
+|> in the temporary column
+|]
+|> back in the middle
+```
+
+````markdown
+```tabbing
+Left |= Middle |= Right
+|[
+A much longer first column |= x |kill
+|> in the temporary column
+|]
+|> back in the middle
+```
+````
+
+## LaTeX, as written
+
+LaTeX's own commands work too, inside the fence or as a `@begin(tabbing)`
+environment, so tabbing pasted from a `.tex` file needs no rewriting. Since
+`\=`, `\'` and `` \` `` are taken, the accents they usually write are `\a=`,
+`\a'` and `` \a` `` — LaTeX's own names for them inside `tabbing`. Cells carry
+any inline formatting, and maths:
+
+@begin(tabbing)
+*Symbol* \= $x^2 + y^2$ \= /the circle/ \\
+*Name* \> $r$ \> radius \\
+Caf\a'e \> $\bar{x}$ \> the m\a=ean
+@end(tabbing)
+
+```
+@begin(tabbing)
+*Symbol* \= $x^2 + y^2$ \= /the circle/ \\
+*Name* \> $r$ \> radius \\
+Caf\a'e \> $\bar{x}$ \> the m\a=ean
+@end(tabbing)
+```
+
+A cell wider than its column runs on under the next one, as it does in LaTeX —
+tabbing is for text you know will fit.
+
+## In print
+
+With `--to latex` a tabbing block becomes the environment itself, every mark
+its command. The first example above is written as:
+
+```latex
+\begin{tabbing}
+Alice $\qquad$  \= 12 Oak Street $\qquad$  \= \kill
+Name: \> Street: \> Phone \\
+Alice \> 12 Oak Street \> 555 1234 \\
+Bob \> 7 Elm Road \> 555 9876
+\end{tabbing}
+```
+
+`tabbing` is part of LaTeX itself, so no package is needed, and it compiles
+under pdfLaTeX and LuaLaTeX alike. The accents go back to `\a'{e}` and its
+kin, which every engine can typeset. A push or pop row is not a line of its
+own: its command precedes the next row.
+
+## On the web
+
+A stop depends on the *rendered* width of the text before it, so on the web
+the layout is done in the browser. The HTML carries the rows and pieces with
+a marker for every command; a small script (`src/tabbing-page.js`) measures
+each piece and places it by replaying LaTeX's own algorithm, the one in
+`latex.ltx`. It lays a block out again whenever a piece changes size — a web
+font arriving, MathJax typesetting a cell, the window resizing a flush-right
+row — and in [watch mode](watch-mode.html) whenever a live update changes the
+block.
+
+The default template includes the script on any page with a tabbing block. A
+[custom template](output-templates.html) opts in with the same section:
+
+```
+{{#Tabbing_script}}
+<script>
+{{{.}}}
+</script>
+{{/Tabbing_script}}
+```
+
+Without it — in a page with no script, or before the script has run — the
+pieces sit in line with a gap at each stop: readable, though not aligned.

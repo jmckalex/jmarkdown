@@ -1,0 +1,12 @@
+# Indenting, and stepping back
+
+```tabbing
+while |= xxxx |= |kill
+while there is work |+
+take the next item
+if it is done |+
+drop it
+|< else
+put it back |-|-
+end
+```

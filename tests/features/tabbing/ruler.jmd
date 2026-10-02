@@ -1,0 +1,17 @@
+# Ruler rows
+
+From Clew's demo vault, Guide/Tabbing.md: a `|kill` row sets the stops from
+each column's widest entry and is not shown.
+
+```tabbing
+Alice $\qquad$ |= 12 Oak Street $\qquad$ |= |kill
+Name:       |> Street:          |> Phone
+Alice       |> 12 Oak Street    |> 555 1234
+Bob         |> 7 Elm Road       |> 555 9876
+```
+
+```tabbing
+Wednesday:   |= 10:00–11:00   |= Lecture hall |kill
+Mon          |> 9:00          |> Seminar
+Tue          |> 14:00         |> Lab
+```

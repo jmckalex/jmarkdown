@@ -1,0 +1,24 @@
+\section{LaTeX, as written}
+
+LaTeX's own commands, as a \mintinline{text}|@begin(tabbing)| environment; cells carry inline
+formatting and maths, and \mintinline{text}|\a'| / \mintinline{text}|\a=| are the accents.
+
+\begin{tabbing}
+\textbf{Symbol}  \= $x^2 + y^2$  \= \emph{the circle} \\
+\textbf{Name} \> $r$ \> radius \\
+Caf\a'{e} \> $\bar{x}$ \> the m\a={e}an
+\end{tabbing}
+
+The same commands inside the fence, with \mintinline{text}|\pushtabs|, \mintinline{text}|\poptabs|, \mintinline{text}|\kill| and
+\mintinline{text}|\\[len]|:
+
+\begin{tabbing}
+Name:  \= Street:  \= Phone \\
+Alice \> 12 Oak \> 555 \\
+\pushtabs
+A much longer column  \= x \kill
+\> temporary \\
+\poptabs
+\> back
+\end{tabbing}
+

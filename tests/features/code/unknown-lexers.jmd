@@ -37,6 +37,9 @@ graph LR
   A --> B
 ```
 
+A `tabbing` fence is no longer code at all: it is LaTeX's tabbing
+(tabbing.js), so it gives no warning.
+
 ```tabbing
 Name |= Value
 width |> 10

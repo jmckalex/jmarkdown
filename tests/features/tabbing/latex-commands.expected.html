@@ -1,0 +1,20 @@
+<h1 id="toc-latex-as-written">LaTeX, as written</h1>
+<p>LaTeX's own commands, as a <code>@begin(tabbing)</code> environment; cells carry inline
+  formatting and maths, and <code>\a'</code> / <code>\a=</code> are the accents.</p>
+<div class="clew-tabbing" data-tabbing-key="1syd4r">
+  <div class="tb-row"><span class="tb-t"><strong>Symbol</strong> </span><span class="tb-op" data-op="set"></span><span class="tb-t">$x^2 + y^2$ </span><span class="tb-op" data-op="set"></span><span class="tb-t"><em>the circle</em></span></div>
+  <div class="tb-row"><span class="tb-t"><strong>Name</strong></span><span class="tb-op" data-op="next"></span><span class="tb-t">$r$</span><span class="tb-op" data-op="next"></span><span class="tb-t">radius</span></div>
+  <div class="tb-row"><span class="tb-t">Café</span><span class="tb-op" data-op="next"></span><span class="tb-t">$\bar{x}$</span><span class="tb-op" data-op="next"></span><span class="tb-t">the mēan</span></div>
+</div>
+<p>The same commands inside the fence, with <code>\pushtabs</code>, <code>\poptabs</code>, <code>\kill</code> and
+  <code>\\[len]</code>:
+</p>
+<div class="clew-tabbing" data-tabbing-key="1rdn6b7">
+  <div class="tb-row"><span class="tb-t">Name: </span><span class="tb-op" data-op="set"></span><span class="tb-t">Street: </span><span class="tb-op" data-op="set"></span><span class="tb-t">Phone</span></div>
+  <div class="tb-row"><span class="tb-t">Alice</span><span class="tb-op" data-op="next"></span><span class="tb-t">12 Oak</span><span class="tb-op" data-op="next"></span><span class="tb-t">555</span></div>
+  <div class="tb-row tb-silent"><span class="tb-op" data-op="push"></span></div>
+  <div class="tb-row tb-kill"><span class="tb-t">A much longer column </span><span class="tb-op" data-op="set"></span><span class="tb-t">x</span></div>
+  <div class="tb-row"><span class="tb-op" data-op="next"></span><span class="tb-t">temporary</span></div>
+  <div class="tb-row tb-silent"><span class="tb-op" data-op="pop"></span></div>
+  <div class="tb-row"><span class="tb-op" data-op="next"></span><span class="tb-t">back</span></div>
+</div>

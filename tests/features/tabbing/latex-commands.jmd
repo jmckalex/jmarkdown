@@ -1,0 +1,22 @@
+# LaTeX, as written
+
+LaTeX's own commands, as a `@begin(tabbing)` environment; cells carry inline
+formatting and maths, and `\a'` / `\a=` are the accents.
+
+@begin(tabbing)
+*Symbol* \= $x^2 + y^2$ \= /the circle/ \\
+*Name* \> $r$ \> radius \\
+Caf\a'e \> $\bar{x}$ \> the m\a=ean
+@end(tabbing)
+
+The same commands inside the fence, with `\pushtabs`, `\poptabs`, `\kill` and
+`\\[len]`:
+
+```tabbing
+Name: \= Street: \= Phone \\[2pt] Alice \> 12 Oak \> 555 \\
+\pushtabs
+A much longer column \= x \kill
+\> temporary \\
+\poptabs
+\> back
+```
