@@ -83,6 +83,34 @@ function registerTemplates(appDir, customTemplate, baseDir, activeStyle) {
 	}
 }
 
+/**
+ * What kind of citation a CSL style produces — its own
+ * `<category citation-format="…"/>`: 'numeric' (vancouver), 'author-date'
+ * (apa, harvard1, chicago, ajp, bjps, econometrica, ergo), 'note' or 'label' —
+ * or null when the style cannot be read. Asked of the style itself, so a
+ * custom `Bibliography style: foo.csl` answers for itself too. citations.js
+ * uses it to make LaTeX output numeric when the HTML is.
+ */
+export function cslCitationFormat(style) {
+	const name = String(style || '').trim();
+	if (!name) return null;
+	let xml = null;
+	try {
+		const custom = configManager.get('Biblify.template');
+		if (custom && custom.name === name && custom.file) {
+			const baseDir = configManager.get('Markdown file directory') || process.cwd();
+			xml = fs.readFileSync(path.isAbsolute(custom.file) ? custom.file : path.resolve(baseDir, custom.file), 'utf8');
+		} else if (BUNDLED_TEMPLATES[name]) {
+			xml = fs.readFileSync(path.join(configManager.get('Jmarkdown app directory'), 'csl', BUNDLED_TEMPLATES[name]), 'utf8');
+		} else if (Cite) {
+			xml = Cite.plugins.config.get('@csl').templates.get(name) || null;
+		}
+	} catch {
+		return null;
+	}
+	return (xml && /citation-format="([^"]+)"/.exec(xml)?.[1]) || null;
+}
+
 // --- BibTeX indexing (Biblify.processBibfile / get_citations) -----------------
 
 function processBibfile(data) {

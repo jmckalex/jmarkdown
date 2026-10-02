@@ -1,4 +1,5 @@
 Title: Citations
+Bibliography style: chicago
 ------------------------------------
 
 A textual \citet{Quine:1948}, a parenthetical \citep{Skyrms:1996}, and a full

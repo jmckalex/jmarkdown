@@ -88,6 +88,18 @@ if render citations; then
 	want "cite/citet"           "$TEX" '\citet{Quine:1948}'
 	want "cite/bibentry entry"  "$TEX" '\bibentry{Quine:1948}'
 	want "cite/bibliography"    "$TEX" '\bibliography{'
+	# An author-year style (chicago) keeps natbib's default and plainnat.
+	absent "cite/author-year: no numbers" "$TEX" '\usepackage[numbers'
+	want   "cite/author-year: plainnat"   "$TEX" '\bibliographystyle{plainnat}'
+fi
+
+# --- citations-numeric.jmd: a numeric CSL style (vancouver — its own
+#     citation-format says so) is numeric in print too: natbib's numbers
+#     option, sorted and compressed like the HTML, and unsrtnat, numbered by
+#     first citation as the HTML is. ---
+if render citations-numeric; then
+	want "numeric/natbib numbers" "$TEX" '\usepackage[numbers,sort&compress]{natbib}'
+	want "numeric/unsrtnat"       "$TEX" '\bibliographystyle{unsrtnat}'
 fi
 # --- engine-lua.jmd: the engine tunes font/encoding defaults; class falls back ---
 if render engine-lua; then

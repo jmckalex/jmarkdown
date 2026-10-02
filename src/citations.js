@@ -56,6 +56,7 @@ import { escapeLatexText } from './latex-escape.js';
 import { attachmentsFor } from './bib-attachments.js';
 import { addWarning } from './warnings.js';
 import { requirePackage, addPreamble } from './preamble.js';
+import { cslCitationFormat } from './biblify-compile.js';
 
 // The canonical \cite-family grammar, shared with the post-pass. Anchored so it
 // can be used to re-parse a single stored command.
@@ -109,6 +110,19 @@ export const citations = {
 	LaTeX, the compile-time CSL pass, the runtime Biblify client) serve both
 	syntaxes with no further work.
 */
+// A numeric style (Vancouver, or a custom numeric CSL) is numeric in print
+// too: natbib's `numbers` option, and unsrtnat for the list — numbered by
+// order of first citation, as the HTML numbers them — so "[1]" means the same
+// reference in both. What is numeric is the style's own CSL
+// citation-format (cslCitationFormat), not a list of names here.
+// sort&compress: a group prints sorted and ranged, [1, 2] / [1–3], as the
+// HTML's vancouverString does — not in the order the keys were written.
+const NATBIB_NUMERIC = 'numbers,sort&compress';
+
+function latexNumeric(style) {
+	return cslCitationFormat(style || configManager.get('Biblify.bibliography style')) === 'numeric';
+}
+
 export function renderCiteCommand(cmd) {
 	{
 		if (global.isLatex) {
@@ -120,7 +134,7 @@ export function renderCiteCommand(cmd) {
 			// the one @bibliography's \bibliography{…} produces, at the start of
 			// the document. (A --fragment build leaves all this to the document
 			// it goes into.)
-			requirePackage('natbib');
+			requirePackage('natbib', latexNumeric() ? NATBIB_NUMERIC : '');
 			return cmd.replace(
 				/^\\fullcite(?:\[[^\]]*\])?(?:\[[^\]]*\])?\{([^}]*)\}/i,
 				(_m, keys) => {
@@ -354,9 +368,11 @@ export const bibliography = {
 		const { title, style, scope, all } = parseBibAttrs(token.attrsRaw);
 
 		if (global.isLatex) {
+			const numeric = latexNumeric(style);
+			if (numeric) requirePackage('natbib', NATBIB_NUMERIC);
 			const bibStyle =
 				configManager.get('Biblify.latex bib style') ||
-				styleToBst(style || configManager.get('Biblify.bibliography style'));
+				(numeric ? 'unsrtnat' : styleToBst(style || configManager.get('Biblify.bibliography style')));
 			const bibPath = configManager.get('Biblify.bibliography') || '';
 			const bibBase = bibPath
 				? path.basename(bibPath, path.extname(bibPath))

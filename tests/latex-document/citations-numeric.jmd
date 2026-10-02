@@ -1,0 +1,7 @@
+Title: Numeric citations
+Bibliography style: vancouver
+------------------------------------
+
+First \cite{Skyrms:1996}, then \cite{Quine:1948}, and both \citep{Quine:1948,Skyrms:1996}.
+
+@bibliography
