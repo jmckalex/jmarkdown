@@ -1,0 +1,12 @@
+---
+Title: numbered headings with a TOC
+Headings: numeric
+---
+
+{{TOC}}
+
+# First
+
+## A subsection
+
+# Second
