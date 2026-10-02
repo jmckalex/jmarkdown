@@ -76,7 +76,7 @@ import { execFileSync } from 'child_process';
 import { configManager } from './config-manager.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { requirePackage } from './preamble.js';
-import { escapeLatexText } from './latex-escape.js';
+import { escapeLatexText, escapeTexText } from './latex-escape.js';
 import { addWarning } from './warnings.js';
 
 const VIDEO_DIR_NAME = 'Video';
@@ -303,7 +303,10 @@ function imageHTML(ctx) {
 }
 
 // LaTeX can't include an SVG, but authors keeping vector art in SVG usually have
-// a PDF beside it. Prefer that (or a PNG) silently; warn only if neither exists.
+// a PDF beside it. Prefer that (or a PNG) silently. With neither, null: the
+// caller links to the SVG instead, with a warning — passing it to
+// \\includegraphics anyway gave a document that would not compile ("Unknown
+// graphics extension: .svg").
 function resolveGraphic(src) {
 	if (!/\.svg$/i.test(src)) return src;
 	const dir = markdownDir();
@@ -311,8 +314,7 @@ function resolveGraphic(src) {
 		const sibling = src.replace(/\.svg$/i, ext);
 		if (fs.existsSync(path.resolve(dir, sibling))) return sibling;
 	}
-	addWarning(`@image: ${src} is an SVG, which \\includegraphics cannot read — put a .pdf or .png beside it`);
-	return src;
+	return null;
 }
 
 function imageLatex(ctx) {
@@ -329,6 +331,15 @@ function imageLatex(ctx) {
 		requirePackage('hyperref');
 		addWarning(`@image: ${src} is remote — LaTeX output links to it rather than including it`);
 		body = `\\href{${escapeLatexPath(src)}}{${escapeLatexText(alt || src)}}`;
+	} else if (resolveGraphic(src) === null) {
+		// An SVG with nothing \\includegraphics can read beside it. Degrade as a
+		// remote image does — a link, here to the local file, opened in the
+		// reader's own viewer (`run:`, as @video's link mode) — rather than
+		// emit a document that will not compile. The link text is plain text,
+		// so it is escaped in full (a path's `_` would otherwise break it).
+		requirePackage('hyperref');
+		addWarning(`@image: ${src} is an SVG, which \\includegraphics cannot read — LaTeX output links to it instead; put a .pdf or .png beside it to include it`);
+		body = `\\href{${escapeLatexPath(`run:${src}`)}}{${escapeTexText(alt || src)}}`;
 	} else {
 		requirePackage('graphicx');
 		const opts = latexOptions(dims, own, 'image');
