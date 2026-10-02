@@ -31,9 +31,10 @@
 	browser, with no JavaScript, and prints open. LaTeX prints every callout
 	expanded.
 
-	ICONS are inline SVG paths of Font Awesome Free icons (CC BY 4.0 — see
-	THIRD-PARTY-NOTICES.md, which records exactly which release each comes
-	from; most are Free 6.7.2, not 7 as Clew's comment says). Inline rather
+	ICONS are inline SVG paths of Font Awesome Free 6.7.2 icons, every one an
+	exact copy from that release (CC BY 4.0 — see THIRD-PARTY-NOTICES.md;
+	Clew's comment said Free 7, and three of its paths were not exact Free
+	paths until 2026-10-02). Inline rather
 	than <i class="fa-…">: no dependency on the Font Awesome runtime having
 	loaded, nothing to copy into a site export, and it prints. LaTeX draws the
 	same paths (callout-latex.js).

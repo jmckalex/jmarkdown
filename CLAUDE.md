@@ -295,9 +295,9 @@ declined both: unknown types, and jmarkdown's own `suggestion` type.
   jmarkdown's own **suggestion** (lightbulb, accent `#db61a2`, a hue nothing
   else uses), kept as a built-in by the owner's decision (2026-10-02).
 - **Icons** are Font Awesome designs embedded as path data (CC BY 4.0;
-  `THIRD-PARTY-NOTICES.md` records each one's exact source — mostly Free
-  6.7.2, not 7 as Clew's comment says; `bug`/`list-ol` differ slightly from
-  6.7.2 and `list-check` matches no Free release). Do not add an icon from
+  `THIRD-PARTY-NOTICES.md` records each one's source — all exact Font
+  Awesome Free 6.7.2 since 2026-10-02, when `bug`, `list-ol` and `list-check`,
+  which were not, were replaced; Clew's comment said Free 7). Do not add an icon from
   anywhere but a published Font Awesome FREE package (the Pro 6 copies under
   ../../prez are commercially licensed).
 - **Unknown types** render as Obsidian draws them — a note: pencil, note's

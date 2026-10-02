@@ -21,12 +21,13 @@ ways.
 
 ### Embedded in the source
 
-The path data of fifteen icons is copied into `src/callouts.js`, one per
+The path data of fifteen icons is copied into `src/callout-table.js`, one per
 built-in callout type, and is written into every document that contains a
 callout: as inline SVG in HTML, and as a TikZ drawing of the same outline in
 LaTeX (`src/callout-latex.js` re-expresses the path's arcs as Bézier curves
-without changing the glyph). Checked path-for-path against the published
-packages (2026-10-02):
+without changing the glyph). All fifteen are exact copies from **one
+published release, Font Awesome Free 6.7.2** — checked path-for-path against
+the package (2026-10-02):
 
 | Callout type | Icon | Source |
 |---|---|---|
@@ -42,13 +43,15 @@ packages (2026-10-02):
 | danger | `bolt` | Font Awesome Free 6.7.2, solid — exact |
 | quote | `quote-left` | Font Awesome Free 6.7.2, solid — exact |
 | suggestion | `lightbulb` | Font Awesome Free 6.7.2, solid — exact |
-| bug | `bug` | Font Awesome Free 6.7.2, solid — with small coordinate differences |
-| example | `list-ol` | Font Awesome Free 6.7.2, solid — with small coordinate differences |
-| compatibility | `list-check` | Font Awesome's `list-check` design; this path matches no Free release from 6.0.0 to 7.3.1 |
+| bug | `bug` | Font Awesome Free 6.7.2, solid — exact |
+| example | `list-ol` | Font Awesome Free 6.7.2, solid — exact |
+| compatibility | `list-check` | Font Awesome Free 6.7.2, solid — exact |
 
-The table came to JMarkdown from Clew (below), whose source describes it as
-Font Awesome Free 7; the check above is what the paths actually are. All
-fifteen are Font Awesome designs and are attributed to Font Awesome here.
+The table came to JMarkdown from Clew (below). Three of its paths — `bug`,
+`list-ol` and `list-check` — were not exact Font Awesome Free paths (the first
+two drifted slightly from 6.7.2; the third matched no Free release from 6.0.0
+to 7.3.1); on 2026-10-02 they were replaced with the exact 6.7.2 ones, so the
+whole table now comes from that one release.
 A document that redistributes JMarkdown output containing callouts carries
 these icons with it.
 
