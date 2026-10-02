@@ -1,0 +1,12 @@
+A markdown image of an SVG with nothing beside it becomes a link in LaTeX:
+\href{run:figs/drawing.svg}{A vector drawing}
+
+So does a remote one: \href{https://example.com/picture.png}{A remote picture}
+
+An ordinary image is still included: \includegraphics[width=\textwidth]{figs/plain.png}
+
+A video whose poster is an SVG falls back to its caption:
+
+% video: A short clip
+\href{run:tiny.mp4}{A short clip}
+

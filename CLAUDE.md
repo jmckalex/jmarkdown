@@ -61,6 +61,7 @@ All source lives in `src/`. Key files:
 | `inline-footnotes.js` | `[^label: body]` / `[fn: body]` inline footnotes with multi-paragraph support, plus **grouped endnotes**: per-note `(group)` (`[fn(g): …]`), the ambient `@endnoteGroup(name)` directive, and `@endnotes` / `@endnotes(name)` placement. See "Grouped endnotes" |
 | `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc). Each also registers a `@begin(name)` parity handler (byte-identical to its `:::` twin — see "graphics parity" under begin-end); the inline `⟦…⟧` Mathematica form is unchanged |
 | `metapost.js` | `@begin(metapost)…@end(metapost)` block environment (registry-only, no `:::` form). Verbatim MetaPost source, compiled once and cached by content hash under a `MetaPost/` dir next to the source. HTML → `mpost` (`outputformat:="svg"`) → `<img src='MetaPost/<hash>-N.svg'>` (same `{scale/width/embed/empty-cache}` attrs as TiKZ); LaTeX → `mptopdf` → cached PDF via `\includegraphics[max width=\linewidth]` (mermaid's engine-agnostic model — works with the default pdflatex, no luamplib). Compile happens at RENDER time (not tokenize); failures → inline error box (HTML) / dropped + warning (LaTeX), and the error path deletes any partial figure so it never caches. No fixture (needs `mpost`/`mptopdf` + would write a cache dir into the tree) |
+| `latex-graphics.js` | An author's image into LaTeX, for every route (markdown `![]()`, `@image`, `@video`'s poster): `\includegraphics`, or — for a remote image, or an SVG with no `.pdf`/`.png` beside it, which LaTeX cannot read — a `\href` link plus a warning (`latexGraphic`, `resolveGraphic`) |
 | `media.js` | `@image(path)[alt]{attrs}` / `@video(path)[alt]{attrs}` — images and video in both formats. One semantic attribute vocabulary (`width`/`height`/`scale`/`align`) translated per format, `tex-`/`web-` scoped overrides, everything else passed through as HTML attributes. Video degrades in LaTeX under `Video mode` (link · embed · attach · poster) |
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
 | `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
@@ -260,10 +261,14 @@ and numbering, and the two compose.
   big to hash per build) under `Video/` next to the source; `Video poster: none`
   turns it off, and a missing ffmpeg degrades with a warning. `ffprobe` supplies
   the aspect ratio when `embed` needs a height it wasn't given (16:9 fallback).
-- **Remote images in LaTeX** can't be fetched at build time, so they become
-  `\href{url}{alt}` with a warning rather than vanishing; an `.svg` prefers a
-  sibling `.pdf`/`.png` if one exists (warning if not — `\includegraphics` can't
-  read SVG).
+- **Remote and SVG images in LaTeX** (`latex-graphics.js`, shared by `@image`,
+  plain markdown `![alt](src)` and `@video`'s poster): a remote image can't be
+  fetched at build time, so it becomes `\href{url}{alt}` with a warning; an
+  `.svg` uses a sibling `.pdf`/`.png` if one exists, and otherwise becomes a
+  `\href{run:…}` link to the SVG with a warning — `\includegraphics` can't read
+  SVG, and handing it one gave a document that would not compile (fixed
+  2026-10, for `@image` first and then for markdown images and posters, which
+  had the same fault).
 - Fixtures: `tests/features/media/` (`image`, `video` — with a 1.5KB `tiny.mp4` and
   a 98-byte `frame.png` so the `embed`/`attach` paths are really exercised; the
   video fixture pins `Video poster: none` and explicit dimensions so no external

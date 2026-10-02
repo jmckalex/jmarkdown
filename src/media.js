@@ -76,7 +76,8 @@ import { execFileSync } from 'child_process';
 import { configManager } from './config-manager.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { requirePackage } from './preamble.js';
-import { escapeLatexText, escapeTexText } from './latex-escape.js';
+import { escapeLatexText } from './latex-escape.js';
+import { latexGraphic, resolveGraphic, isRemote, markdownDir, escapeLatexPath } from './latex-graphics.js';
 import { addWarning } from './warnings.js';
 
 const VIDEO_DIR_NAME = 'Video';
@@ -94,15 +95,6 @@ function escAttr(s) {
 	return htmlEscape(s).replace(/"/g, '&quot;');
 }
 
-// \href and \includegraphics take their argument almost verbatim, but a `%` or
-// `#` in a path or URL still ends the line / means a parameter.
-function escapeLatexPath(s) {
-	return String(s).replace(/([%#])/g, '\\$1');
-}
-
-function markdownDir() {
-	return configManager.get('Markdown file directory') || process.cwd();
-}
 
 // Trim float noise: 0.6000000000000001 → 0.6, 45 → 45.
 function num(n) {
@@ -281,10 +273,6 @@ function missingSource(name, format) {
 	return format === 'latex' ? '' : `<span class="jmd-error">[@${name}: no source]</span>`;
 }
 
-function isRemote(src) {
-	return /^[a-z][a-z0-9+.-]*:\/\//i.test(src) || src.startsWith('//');
-}
-
 /* --- @image ----------------------------------------------------------------- */
 
 function imageHTML(ctx) {
@@ -302,20 +290,8 @@ function imageHTML(ctx) {
 	return ctx.block ? img + '\n' : img;
 }
 
-// LaTeX can't include an SVG, but authors keeping vector art in SVG usually have
-// a PDF beside it. Prefer that (or a PNG) silently. With neither, null: the
-// caller links to the SVG instead, with a warning — passing it to
-// \\includegraphics anyway gave a document that would not compile ("Unknown
-// graphics extension: .svg").
-function resolveGraphic(src) {
-	if (!/\.svg$/i.test(src)) return src;
-	const dir = markdownDir();
-	for (const ext of ['.pdf', '.png']) {
-		const sibling = src.replace(/\.svg$/i, ext);
-		if (fs.existsSync(path.resolve(dir, sibling))) return sibling;
-	}
-	return null;
-}
+// Remote and SVG images in LaTeX — link instead of include — are
+// latex-graphics.js's business, shared with markdown images.
 
 function imageLatex(ctx) {
 	const src = (ctx.arg || '').trim();
@@ -324,28 +300,15 @@ function imageLatex(ctx) {
 	const { dims, own } = scope(ctx.attrs, 'latex');
 	const alt = ctx.text;
 
-	let body;
-	if (isRemote(src)) {
-		// A remote image can't be pulled into a PDF at build time; give the print
-		// reader the link instead of dropping it silently.
-		requirePackage('hyperref');
-		addWarning(`@image: ${src} is remote — LaTeX output links to it rather than including it`);
-		body = `\\href{${escapeLatexPath(src)}}{${escapeLatexText(alt || src)}}`;
-	} else if (resolveGraphic(src) === null) {
-		// An SVG with nothing \\includegraphics can read beside it. Degrade as a
-		// remote image does — a link, here to the local file, opened in the
-		// reader's own viewer (`run:`, as @video's link mode) — rather than
-		// emit a document that will not compile. The link text is plain text,
-		// so it is escaped in full (a path's `_` would otherwise break it).
-		requirePackage('hyperref');
-		addWarning(`@image: ${src} is an SVG, which \\includegraphics cannot read — LaTeX output links to it instead; put a .pdf or .png beside it to include it`);
-		body = `\\href{${escapeLatexPath(`run:${src}`)}}{${escapeTexText(alt || src)}}`;
-	} else {
-		requirePackage('graphicx');
-		const opts = latexOptions(dims, own, 'image');
-		const optStr = opts.length ? `[${opts.join(',')}]` : '';
-		body = `\\includegraphics${optStr}{${escapeLatexPath(resolveGraphic(src))}}`;
-	}
+	const body = latexGraphic({
+		src,
+		alt,
+		what: '@image',
+		options: () => {
+			const opts = latexOptions(dims, own, 'image');
+			return opts.length ? `[${opts.join(',')}]` : '';
+		},
+	});
 
 	if (!ctx.block) return body;
 
@@ -472,6 +435,13 @@ function videoLatex(ctx) {
 	if (poster && !fs.existsSync(path.resolve(markdownDir(), poster))) {
 		addWarning(`@video: poster ${poster} was not found`);
 		poster = null;
+	}
+	// An SVG still can't go to \\includegraphics; a .pdf/.png beside it can.
+	if (poster && resolveGraphic(poster) === null) {
+		addWarning(`@video: poster ${poster} is an SVG, which \\includegraphics cannot read — put a .pdf or .png beside it; the link shows the caption instead`);
+		poster = null;
+	} else if (poster) {
+		poster = resolveGraphic(poster);
 	}
 
 	const opts = latexOptions(dims, own, 'video');

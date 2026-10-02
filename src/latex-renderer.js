@@ -12,6 +12,7 @@
 
 import { configManager } from './config-manager.js';
 import { requirePackage } from './preamble.js';
+import { latexGraphic } from './latex-graphics.js';
 import { escapeLatexText as escapeLatex, escapeTexText } from './latex-escape.js';
 import { commandForDepth } from './sectioning.js';
 
@@ -115,8 +116,10 @@ const latexRenderer = {
 		// Use @begin(figure) (see floats.js) for a captioned, numbered,
 		// referenceable float; nesting \includegraphics there avoids a figure
 		// inside a figure.
-		requirePackage('graphicx');
-		return `\\includegraphics[width=\\textwidth]{${escapeLatex(token.href)}}`;
+		// A remote image or an SVG can't be included; latex-graphics.js links
+		// to it instead, with a warning, rather than emit a document that will
+		// not compile.
+		return latexGraphic({ src: token.href, alt: token.text, what: 'image', options: () => '[width=\\textwidth]' });
 	},
 
 	blockquote(token) {

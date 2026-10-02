@@ -1,0 +1,15 @@
+---
+Title: images LaTeX cannot include
+Video poster: none
+---
+
+A markdown image of an SVG with nothing beside it becomes a link in LaTeX:
+![A vector drawing](figs/drawing.svg)
+
+So does a remote one: ![A remote picture](https://example.com/picture.png)
+
+An ordinary image is still included: ![A plain picture](figs/plain.png)
+
+A video whose poster is an SVG falls back to its caption:
+
+@video+(tiny.mp4)[A short clip]{poster=still.svg width=0.3}
