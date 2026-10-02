@@ -65,11 +65,21 @@
 }
 
 /* JMarkdown's **intense** emphasis: small caps, from the built-in CSS,
-   minus the text shadow, which smudges at DM Sans's text sizes. */
+   minus the text shadow, which smudges at DM Sans's text sizes.
+   DM Sans has no real small caps (no `smcp`), so the browser shrinks its
+   capitals to 70%: 0.7 × a 0.70em cap height = 0.49em, BELOW the 0.526em
+   x-height, so the "small caps" came out shorter than the lowercase around
+   them. 1.08em lifts them to x-height (0.53em) while keeping full capitals
+   close to their normal size (1.12em made them visibly large); the tracking
+   is the usual small-caps spacing, and line-height: 1 stops the larger
+   text from opening up the lines it sits on. */
 .content-area span.intense {
   color: var(--text);
   font-weight: 650;
   text-shadow: none;
+  font-size: 1.08em;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 .content-area span.highlight,
