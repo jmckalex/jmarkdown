@@ -1,0 +1,72 @@
+{
+	"Callouts": [
+		{
+			"name": "warning",
+			"title": "Careful",
+			"color": "#ff00aa",
+			"aliases": [
+				"watchout"
+			]
+		},
+		{
+			"name": "recipe",
+			"title": "Recipe",
+			"icon": "utensils",
+			"color": "rebeccapurple",
+			"aliases": [
+				"cook"
+			]
+		},
+		{
+			"name": "idea",
+			"icon": "regular:lightbulb",
+			"color": "hsl(45, 90%, 50%)"
+		},
+		{
+			"name": "repo",
+			"icon": "brands:github"
+		},
+		{
+			"name": "plain"
+		},
+		{
+			"name": "long",
+			"title": "A very long title A very long title A very long title A very long title A very long title A very long title A very long title A very long title A very long title A very long title "
+		},
+		{
+			"name": "texty",
+			"title": "\\input{/etc/passwd} <img src=x onerror=alert(1)> $x$ 100% a_b ~ #1 & {}"
+		},
+		{
+			"name": "<script>"
+		},
+		{
+			"name": "css",
+			"color": "red;background:url(x)"
+		},
+		{
+			"name": "path",
+			"icon": "../../../etc/passwd"
+		},
+		{
+			"name": "missing",
+			"icon": "no-such-icon-at-all"
+		},
+		{
+			"name": "badalias",
+			"aliases": [
+				"Bad Alias"
+			]
+		},
+		"not an entry",
+		{
+			"title": "no name"
+		},
+		{
+			"name": "tip",
+			"aliases": [
+				"note"
+			]
+		}
+	]
+}

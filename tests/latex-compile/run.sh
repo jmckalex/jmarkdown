@@ -9,8 +9,12 @@
 # only on demand (`npm run test:latex` or directly) and skips gracefully when
 # something is missing.
 #
-# For every tests/features/**/*.expected.tex golden, this wraps the content in
-# a minimal document with a per-category preamble and runs pdflatex.
+# For every tests/features/**/*.expected.tex golden (and tests/callouts', whose
+# custom-type golden needs a project config the feature harness cannot give
+# it), this wraps the content in a minimal document with a per-category
+# preamble and runs pdflatex — and, for callouts, LuaLaTeX as well: their
+# icons are TikZ drawings and their boxes tcolorbox skins, and both engines
+# are promised.
 #
 # Exit status: non-zero if any fixture FAILed to compile; zero otherwise
 # (skips do not fail the run).
@@ -39,7 +43,7 @@ skip=0
 # Is a LaTeX package/style file installed?
 has_pkg() { kpsewhich "$1" >/dev/null 2>&1; }
 
-for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
+for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expected.tex' | sort); do
 	category=$(basename "$(dirname "$tex")")
 	name=$(basename "$tex" .expected.tex)
 	label="$category/$name"
@@ -69,7 +73,12 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		listings)          extra='\usepackage{minted}\usepackage{cleveref}'; needs='minted.sty cleveref.sty' ;;
 		contents)          extra='\usepackage[draft]{graphicx}\usepackage{booktabs}\usepackage{minted}'; needs='booktabs.sty minted.sty' ;;
 		tikz-diagrams)     extra='\usepackage{tikz}\usetikzlibrary{arrows.meta,positioning,shapes,calc}'; needs='tikz.sty' ;;
-		alerts)            extra='\usepackage{tcolorbox}'; needs='tcolorbox.sty' ;;
+		# alerts: a GFM alert is rendered by callouts.js now, so it needs the
+		# callout preamble (see callouts, below).
+		alerts)            extra='\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\usepackage{graphicx}\usepackage{tikz}\usetikzlibrary{svg.path}'; needs='tcolorbox.sty tikz.sty' ;;
+		# callouts: what callout-latex.js requires in a full document; the
+		# code and inline code inside them render as minted.
+		callouts)          extra='\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\usepackage{graphicx}\usepackage{tikz}\usetikzlibrary{svg.path}\usepackage{minted}\usepackage{amsmath}'; needs='tcolorbox.sty tikz.sty minted.sty' ;;
 		typography)        extra='\usepackage{minted}'; needs='minted.sty' ;;
 		# description-lists: the codespan-double-colon fixture has inline code
 		# spans, which render as \mintinline.
@@ -108,7 +117,7 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "scripting" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
@@ -129,14 +138,22 @@ for tex in $(find "$REPO/tests/features" -name '*.expected.tex' | sort); do
 		printf '\n\\end{document}\n'
 	} >"$work/doc.tex"
 
-	if (cd "$work" && pdflatex $shellesc -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
-		echo "PASS  $label"
-		pass=$((pass + 1))
-	else
-		echo "FAIL  $label"
-		grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
-		fail=$((fail + 1))
+	engines='pdflatex'
+	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ]; } && command -v lualatex >/dev/null 2>&1; then
+		engines='pdflatex lualatex'
 	fi
+	for engine in $engines; do
+		suffix=''
+		[ "$engine" = pdflatex ] || suffix=" [$engine]"
+		if (cd "$work" && $engine $shellesc -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+			echo "PASS  $label$suffix"
+			pass=$((pass + 1))
+		else
+			echo "FAIL  $label$suffix"
+			grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
+			fail=$((fail + 1))
+		fi
+	done
 done
 
 echo

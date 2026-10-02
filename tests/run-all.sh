@@ -56,7 +56,15 @@ sh "$REPO/tests/note-code/run.sh"
 note_code_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ]; then
+# 7. callouts — custom callout types from a project config (`Callouts`) and the
+#    applyCustomCallouts() host hook, hostile definitions included. A suite
+#    because the definitions need a .jmarkdown/config.json. Gates CI.
+echo "------ callouts ------"
+sh "$REPO/tests/callouts/run.sh"
+callouts_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi

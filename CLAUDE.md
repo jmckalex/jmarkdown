@@ -53,7 +53,10 @@ All source lives in `src/`. Key files:
 | `theorems.js` | `@begin(theorem|lemma|…|proof)` — thmtools, one shared sequential counter |
 | `numbered-environments.js` | `defineEnvironment` honouring `numbered: true`: auto-numbered, cross-referenceable user environments (HTML via the `number_environments` post-processor pass over `.jmd-env` markers; LaTeX via an auto thmtools theorem-like). All env-registration routes funnel through here; `getNumberedSpecs()` feeds the post-processor |
 | `equations.js` | `@begin(equation)` — numbered, referenceable display math |
-| `alerts.js` | LaTeX rendering of GFM alerts (`> [!NOTE]`) as `tcolorbox` |
+| `alerts.js` | LaTeX rendering of GFM alerts (`> [!NOTE]`) as `tcolorbox` — now unreached: callouts.js claims every `> [!…]` block |
+| `callouts.js` | Obsidian callouts `> [!type]` — every built-in type and alias, custom titles, `-`/`+` folds (`<details>`), unknown types as notes, custom types. Ported from Clew-app; HTML byte-identical to Clew's. See "Obsidian callouts" |
+| `callout-definitions.js` | Custom callout type validation + merging (`checkEntry`, `resolveCallouts`) — Clew-app's `custom-callouts.js`, code verbatim |
+| `callout-latex.js` | Callouts in LaTeX: a tcolorbox per callout, the Font Awesome icon drawn with TikZ `svg.path` from normalised path data, CSS colours → RGB with the light-page lightness cap |
 | `inline-footnotes.js` | `[^label: body]` / `[fn: body]` inline footnotes with multi-paragraph support, plus **grouped endnotes**: per-note `(group)` (`[fn(g): …]`), the ambient `@endnoteGroup(name)` directive, and `@endnotes` / `@endnotes(name)` placement. See "Grouped endnotes" |
 | `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc). Each also registers a `@begin(name)` parity handler (byte-identical to its `:::` twin — see "graphics parity" under begin-end); the inline `⟦…⟧` Mathematica form is unchanged |
 | `metapost.js` | `@begin(metapost)…@end(metapost)` block environment (registry-only, no `:::` form). Verbatim MetaPost source, compiled once and cached by content hash under a `MetaPost/` dir next to the source. HTML → `mpost` (`outputformat:="svg"`) → `<img src='MetaPost/<hash>-N.svg'>` (same `{scale/width/embed/empty-cache}` attrs as TiKZ); LaTeX → `mptopdf` → cached PDF via `\includegraphics[max width=\linewidth]` (mermaid's engine-agnostic model — works with the default pdflatex, no luamplib). Compile happens at RENDER time (not tokenize); failures → inline error box (HTML) / dropped + warning (LaTeX), and the error path deletes any partial figure so it never caches. No fixture (needs `mpost`/`mptopdf` + would write a cache dir into the tree) |
@@ -264,6 +267,84 @@ and numbering, and the two compose.
   a 98-byte `frame.png` so the `embed`/`attach` paths are really exercised; the
   video fixture pins `Video poster: none` and explicit dimensions so no external
   tool runs during the suite) and `tests/features/at-directives/at-arg-slot`.
+
+### Obsidian callouts (`callouts.js`)
+
+`> [!type]`, `> [!type] Title`, `> [!type]-` / `> [!type]+` (foldable,
+collapsed / open). Ported from Clew-app's `src/engine/callouts.js` @0423008 —
+**one implementation**: the jmarkdown CLI, Clew's exports and Clew's reading
+view render callouts with this module, and for every built-in and custom type
+its HTML is **byte-identical** to Clew's (verified by running Clew's module and
+this one in the same engine). Keep it that way: a change to the HTML is a
+change for Clew too. The two INTENDED differences from Clew @0423008, which
+declined both: unknown types, and jmarkdown's own `suggestion` type.
+
+- **Claims the whole syntax**, the five GFM alert types included (`[!NOTE]`,
+  `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]` are Obsidian types or
+  aliases), matched case-insensitively. Registered in index.js AFTER marked-alert
+  (marked offers the last-registered block extension first); marked-alert stays
+  installed but no longer sees a `> [!…]` block, so its markup, jmarkdown's
+  `question`/`suggestion` variants and alerts.js's LaTeX are unreached
+  (`question` is Obsidian's type; `suggestion` is kept as a built-in, below).
+  **On under `-n`**: callouts are Obsidian syntax, not the dialect.
+- **Built-in types** (Obsidian's, aliases in brackets): note, abstract
+  (summary, tldr), info, todo, tip (hint, important), success (check, done),
+  question (help, faq), warning (caution, attention), failure (fail, missing),
+  danger (error), bug, example, quote (cite), and Clew's compatibility — plus
+  jmarkdown's own **suggestion** (lightbulb, accent `#db61a2`, a hue nothing
+  else uses), kept as a built-in by the owner's decision (2026-10-02).
+- **Icons** are Font Awesome designs embedded as path data (CC BY 4.0;
+  `THIRD-PARTY-NOTICES.md` records each one's exact source — mostly Free
+  6.7.2, not 7 as Clew's comment says; `bug`/`list-ol` differ slightly from
+  6.7.2 and `list-check` matches no Free release). Do not add an icon from
+  anywhere but a published Font Awesome FREE package (the Pro 6 copies under
+  ../../prez are commercially licensed).
+- **Unknown types** render as Obsidian draws them — a note: pencil, note's
+  colour (the stylesheet's default), title = the name capitalised, and
+  `data-callout="<name, lower-cased>"` kept. (Clew @0423008 declined them.)
+- **HTML**: `<div class="callout markdown-alert markdown-alert-<type>"
+  data-callout="<type>">` + `<p class="callout-title markdown-alert-title">`
+  (inline Font Awesome SVG + `.callout-title-inner`) + `.callout-content`;
+  folds are `<details>`/`<summary>` (`open` for `+`). A custom colour rides as
+  `style="--clew-callout-color: …"` + `.callout-custom`. Styling in
+  jmarkdown.css (Clew's reading-view rules for a light page; palette shared
+  with the LaTeX side, checked by tests/callouts).
+- **LaTeX** (`callout-latex.js`): a self-contained tcolorbox per callout —
+  accent defined locally (`code={\definecolor{jmdcallout}…}`, so nesting
+  works), frame hidden, a rounded tint (`!12!white`) and a clipped 3pt accent
+  strip drawn in `interior code` (a real frame under the interior showed a
+  hairline), title row = icon + bold title in the accent; folds print
+  expanded. The icon is the SAME Font Awesome glyph, drawn by TikZ `svg.path`
+  from path data **normalised in JS to absolute M/L/C/Z** — svg.path mis-draws
+  Font Awesome's semicircular arcs (the discs of info/question/circle-check
+  vanished). Needs tcolorbox (+ skins, breakable), tikz (+ svg.path), graphicx
+  — all usage-driven; nothing else, so `--fragment` output compiles wherever
+  those are loaded. Compiles under pdfLaTeX and LuaLaTeX (latex-compile runs
+  both for the `callouts` category).
+- **Custom types**, two ways, validated identically (`callout-definitions.js`,
+  Clew's code verbatim — a bad entry is skipped with a reason, never
+  half-applied; only an escaped title, a grammar-checked colour and icon-table
+  path data reach output):
+  - `applyCustomCallouts(resolvedTable)` — a host (Clew) hands over a resolved
+    `name → { label, color, icon: [w,h,d]|null, aliases }`.
+  - The **`Callouts` config key** — `[{ "name", "title"?, "icon"?, "color"?,
+    "aliases"? }]` in `.jmarkdown/config.json` (config only: a header's
+    `Callouts:` is ignored with a warning). Icon NAMES (`lightbulb`,
+    `regular:circle`, `brands:github`) are read on demand from
+    **`@fortawesome/fontawesome-free`** (a dependency since 2026-10, pinned to
+    Clew's ^7.3.1 so a name gives the same path data); without the package an
+    icon name is refused with a warning. When set, the config table is used;
+    a host's table stands when it is not. Re-resolved lazily, at tokenize time,
+    only when the value changes.
+  - A custom colour (hex, rgb(), hsl(), CSS name) is capped at OKLCH L 0.68 on
+    the light page — CSS `oklch(from … min(l, 0.68) c h)`, and the same
+    computation in JS for LaTeX.
+- Tests: `tests/features/callouts/` (`types` — every type and alias plus the
+  GFM spellings; `forms` — title, folds, nested list/code/maths/callout,
+  title-only, empty; `unknown`; `normal-syntax`), and the gating
+  **`tests/callouts/run.sh`** — the `Callouts` config with good and hostile
+  definitions (goldens + leak assertions), the host hook, and the CSS/LaTeX
+  palette agreement.
 
 ### Grouped endnotes (`inline-footnotes.js`)
 Footnotes can be collected into named **groups** and each group **placed** at a

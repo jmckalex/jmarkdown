@@ -1,0 +1,35 @@
+---
+Title: callout forms
+---
+
+> [!warning] Mind the *gap* & the step
+> A custom title, with markdown in it.
+
+> [!tip]- Folded, starts collapsed
+> Hidden until opened. LaTeX prints it expanded.
+
+> [!faq]+ Folded, starts open
+> Shown.
+
+> [!note]
+> Nested content: a list,
+>
+> - one
+> - two
+>
+> some code,
+>
+> ```js
+> const x = 1;
+> ```
+>
+> and maths, $e^{i\pi} + 1 = 0$, and
+>
+> > [!warning] A callout in a callout
+> > Inner body.
+>
+> back in the outer one.
+
+> [!info] Title only
+
+> [!quote]

@@ -137,7 +137,7 @@ a capable MultiMarkdown, then adds features of its own:
 
 | Feature | What it gives you | See |
 |---|---|---|
-| Tables and alerts | GFM tables (with spans and per-column widths) and GFM alert callouts | [Tables & alerts](tables-and-alerts.html) |
+| Tables and alerts | GFM tables (with spans and per-column widths) and Obsidian callouts, GitHub alerts included | [Tables & alerts](tables-and-alerts.html) |
 | Math | LaTeX math via MathJax, inline and display | [Math support](math-support.html) |
 | Enhanced lists | Alphabetical and Roman-numeral list markers | [Enhanced lists](enhanced-lists.html) |
 | Description lists | A term-and-definition list syntax | [Description lists](description-lists.html) |

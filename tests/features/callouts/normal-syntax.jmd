@@ -1,0 +1,9 @@
+---
+Title: callouts under -n
+---
+
+Callouts are standard Obsidian syntax, not JMarkdown's dialect, so
+`-n/--normal-syntax` leaves them on.
+
+> [!tip] Still a callout
+> With *emphasis* in plain-markdown terms.

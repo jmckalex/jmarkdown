@@ -1,0 +1,16 @@
+---
+Title: unknown callout types
+---
+
+An unknown type renders as a note, titled with its name capitalised.
+
+> [!foo]
+> Pencil icon, note's colour, `data-callout="foo"`.
+
+> [!My-Type] A title of its own
+> The name is matched case-insensitively and kept lower-case.
+
+A blockquote that is not a callout stays a blockquote:
+
+> [not a callout]
+> Just quoted text.

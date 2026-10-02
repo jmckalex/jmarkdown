@@ -45,7 +45,9 @@ to make the `jmarkdown` executable available from the command line.
 - Add `.class` and `#id` to elements with directive syntax: `{.class #id}`
 - Description lists with support for nested description lists.
 - Support for emojis (:heart:), FontAwesome icons 
-- GitHub-style tables and alerts
+- GitHub-style tables
+- Obsidian callouts (`> [!note]`, `> [!warning]- Folded`, every Obsidian type
+  and alias, custom types in config), with Font Awesome icons, in HTML and LaTeX
 - Footnotes via `marked-footnotes`
 - [Directives syntax](https://talk.commonmark.org/t/generic-directives-plugins-syntax/444) for:
 	- Commenting out content
@@ -120,6 +122,10 @@ graph LR
 ## License
 
 MIT
+
+Third-party material carried in the source or written into output — the
+Font Awesome icons used for callouts (CC BY 4.0) — is listed in
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
 
 ## Author
 

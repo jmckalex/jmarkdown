@@ -13,8 +13,10 @@ LaTeX for print from a single source.
 JMarkdown's tables are an extended dialect that adds **column spanning**, **row
 spanning**, **per-column alignment and width**, and two **headerless** forms — all
 on top of ordinary GFM table syntax, so existing tables keep working unchanged.
-Alerts are GitHub-style admonition blocks (`> [!NOTE]`, `> [!WARNING]`, …) with
-two extra variants — `question` and `suggestion` — added by JMarkdown.
+Alerts are callouts in Obsidian's style — `> [!NOTE]`, `> [!warning] A title`,
+`> [!tip]- Folded` — covering every Obsidian type (GitHub's five alerts among
+them) plus JMarkdown's own `suggestion`, with icons, custom titles, folding and
+custom types.
 
 Throughout, the live demos show the source on the left and its rendered result on
 the right, so the examples can never drift from what the parser actually does.
@@ -203,10 +205,11 @@ no change to your source.
 
 # Alerts
 
-An *alert* (also called an admonition or callout) is a blockquote tagged with a
-variant marker on its first line. JMarkdown renders it as a coloured box with an
-icon and a title, in the GitHub style. The marker is `[!TYPE]` as the first line
-of a blockquote:
+An *alert* — Obsidian calls it a *callout*, and it is also known as an
+admonition — is a blockquote tagged with a type marker on its first line.
+JMarkdown renders it the way Obsidian does: an accent-coloured left border, a
+light tint of the accent behind the text, and a title row with the type's icon.
+The marker is `[!type]` as the first line of a blockquote:
 
 :::markdown-demo
 > [!NOTE]
@@ -215,12 +218,14 @@ of a blockquote:
 :::
 
 The body of the alert is ordinary markdown, so it may span several lines and
-contain emphasis, lists, links, and so on. Everything after the `[!TYPE]` line
-becomes the box's content.
+contain emphasis, lists, links, maths, code, and so on. Everything after the
+`[!type]` line becomes the box's content. The marker is matched without regard
+to case: `[!NOTE]`, `[!Note]` and `[!note]` are the same.
 
-## The built-in variants
+## The built-in types
 
-Five variants come from GitHub's specification, each with its own colour and icon:
+GitHub's specification defines five alerts. JMarkdown accepts all five, each
+with its own colour and icon:
 
 :::markdown-demo
 > [!TIP]
@@ -243,67 +248,135 @@ Five variants come from GitHub's specification, each with its own colour and ico
 > Negative potential consequences of an action.
 :::
 
-JMarkdown adds two further variants of its own — `question` and `suggestion` —
-intended for the kind of marginal commentary that arises when drafting:
+In Obsidian's scheme, which JMarkdown follows, `important` is another name for
+`tip` and `caution` another name for `warning`, so each pair looks the same.
+Obsidian defines a dozen more types besides, several with aliases of their own;
+all are listed in the reference table at the end of this page. `question` is one
+of them, and suits the marginal commentary that arises when drafting:
 
 :::markdown-demo
 > [!QUESTION]
 > Is this assumption still warranted given the new data?
 :::
 
+JMarkdown adds one type of its own, `suggestion`, with a lightbulb:
+
 :::markdown-demo
 > [!SUGGESTION]
 > Consider splitting this section into two.
 :::
 
+A type JMarkdown does not know is drawn as a note, titled with its own name —
+`[!aside]` becomes a note headed "Aside" — as Obsidian draws one.
+
+## Titles, folding and nesting
+
+Text after the marker replaces the type's name as the title, and may contain
+markdown:
+
+:::markdown-demo
+> [!warning] Mind the *gap*
+> The title row keeps the type's icon and colour.
+:::
+
+A `-` straight after the marker makes the alert foldable, starting closed; a `+`
+makes it foldable, starting open. The title becomes a summary line with a chevron
+that opens and closes it — no script involved:
+
+:::markdown-demo
+> [!tip]- Click to open
+> Hidden until the title is clicked.
+:::
+
+Alerts nest: inside an alert, a line starting `> >` begins another.
+
+:::markdown-demo
+> [!note] The outer alert
+> Some text.
+>
+> > [!example] An alert inside it
+> > More text.
+:::
+
 ## How an alert renders
 
-An alert becomes a `<div>` whose classes encode the variant, followed by a title
-paragraph (icon plus label) and then the rendered body. For `> [!NOTE]` the markup
-is:
+An alert becomes a `<div>` carrying both Obsidian's names (`callout`,
+`data-callout`) and GitHub's (`markdown-alert-<type>`), so a stylesheet written
+for either applies. For `> [!NOTE]` the markup is:
 
 ```html
-<div class="markdown-alert markdown-alert-note">
-  <p class="markdown-alert-title">…icon…Note</p>
-  <p>…the body…</p>
+<div class="callout markdown-alert markdown-alert-note" data-callout="note">
+  <p class="callout-title markdown-alert-title"><svg class="callout-icon">…</svg><span class="callout-title-inner">Note</span></p>
+  <div class="callout-content">…the body…</div>
 </div>
 ```
 
-The two JMarkdown variants follow the same outer structure — the container class is
-`markdown-alert-question` or `markdown-alert-suggestion` — but their title
-paragraphs use the class `alert-question` and `alert-suggestion` respectively.
+A foldable alert is a `<details>` element instead, its title a `<summary>`. An
+alias renders as its type: `[!caution]` gives `data-callout="warning"`.
 
 ## Icons and styling
 
-The default colouring and the icons are not invented by JMarkdown — they come from
-the underlying alert extension and from your stylesheet:
+The icons are Font Awesome's, written into the page as inline SVG, so they show
+with no icon font loaded and print as they look. The colours, border, tint and
+spacing come from the standard stylesheet (`jmarkdown.css`), keyed on
+`data-callout`. To restyle a type, target it in your own stylesheet —
+`.callout[data-callout='note'] { --callout: teal; }` recolours the note's border,
+icon, title and tint at once.
 
-- The **five GitHub variants** ship with self-contained Octicon SVG icons, so they
-  display correctly with no extra setup.
-- The **two JMarkdown variants** (`question`, `suggestion`) use Font Awesome icon
-  markup. They render their icon only when Font Awesome is loaded in the page; the
-  documentation template and the standard output template load it, so the icons
-  appear there. The text label still shows even without Font Awesome.
+In print, each alert becomes a box drawn to the same design, with the same icon:
+see [Print rendering](print-rendering.html).
 
-The colours, padding, border, and icon placement are all supplied by CSS keyed on
-the `markdown-alert` / `markdown-alert-<variant>` classes. To restyle a variant —
-or to theme the two JMarkdown variants to taste — target those classes in your own
-stylesheet. JMarkdown emits the structure; the appearance is yours to set.
+## Custom types
 
-## Alert variant reference
+New types — or a new title, icon or colour for a built-in one — are defined in
+the project's `.jmarkdown/config.json` (or the global `~/.jmarkdown/config.json`)
+under `Callouts`:
 
-| Variant      | Marker          | Container class            | Source |
-|--------------|-----------------|----------------------------|--------|
-| Note         | `> [!NOTE]`      | `markdown-alert-note`      | GitHub |
-| Tip          | `> [!TIP]`       | `markdown-alert-tip`       | GitHub |
-| Important    | `> [!IMPORTANT]` | `markdown-alert-important` | GitHub |
-| Warning      | `> [!WARNING]`   | `markdown-alert-warning`   | GitHub |
-| Caution      | `> [!CAUTION]`   | `markdown-alert-caution`   | GitHub |
-| Question     | `> [!QUESTION]`  | `markdown-alert-question`  | JMarkdown |
-| Suggestion   | `> [!SUGGESTION]`| `markdown-alert-suggestion`| JMarkdown |
+```json
+{
+	"Callouts": [
+		{ "name": "recipe", "title": "Recipe", "icon": "utensils",
+		  "color": "rebeccapurple", "aliases": ["cook"] },
+		{ "name": "warning", "color": "#c2410c" }
+	]
+}
+```
 
-The marker is case-insensitive in matching but is conventionally written in upper
-case.
+- `name` — the `[!name]` it answers to: a letter, then letters, digits, `-` or
+  `_`. A built-in's name changes that type.
+- `title` — the default title (otherwise the name, capitalised).
+- `icon` — a Font Awesome Free icon by name: `lightbulb`, or with its family,
+  `regular:circle` or `brands:github`.
+- `color` — a CSS colour: hex, `rgb()`, `hsl()` or a colour name. A colour too
+  pale to read on the page is darkened until it does.
+- `aliases` — further `[!alias]` spellings for the type.
+
+Every definition is checked. One that is malformed — a name that is not a name,
+an icon that does not exist, a colour that is not a colour — is skipped with a
+warning naming the entry and the reason, and never half-applied.
+
+## Alert type reference
+
+| Type          | Also written                  | Icon                  |
+|---------------|-------------------------------|-----------------------|
+| note          |                               | pencil                |
+| abstract      | summary, tldr                 | clipboard             |
+| info          |                               | circle with an *i*    |
+| todo          |                               | circled check         |
+| tip           | hint, important               | flame                 |
+| success       | check, done                   | check                 |
+| question      | help, faq                     | circled question mark |
+| warning       | caution, attention            | warning triangle      |
+| failure       | fail, missing                 | cross                 |
+| danger        | error                         | lightning bolt        |
+| bug           |                               | bug                   |
+| example       |                               | numbered list         |
+| quote         | cite                          | quotation mark        |
+| compatibility |                               | checklist             |
+| suggestion    |                               | lightbulb             |
+
+The first fourteen are Obsidian's (`compatibility` is Clew's addition, used in
+Obsidian's own help vault); `suggestion` is JMarkdown's.
 
 # See also
 

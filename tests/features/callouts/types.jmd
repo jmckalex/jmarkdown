@@ -1,0 +1,108 @@
+---
+Title: callout types
+---
+
+Every built-in type and alias, then the GFM spellings, which are matched
+case-insensitively.
+
+> [!note]
+> The `note` callout.
+
+> [!abstract]
+> The `abstract` callout.
+
+> [!summary]
+> The `summary` callout.
+
+> [!tldr]
+> The `tldr` callout.
+
+> [!info]
+> The `info` callout.
+
+> [!todo]
+> The `todo` callout.
+
+> [!tip]
+> The `tip` callout.
+
+> [!hint]
+> The `hint` callout.
+
+> [!important]
+> The `important` callout.
+
+> [!success]
+> The `success` callout.
+
+> [!check]
+> The `check` callout.
+
+> [!done]
+> The `done` callout.
+
+> [!question]
+> The `question` callout.
+
+> [!help]
+> The `help` callout.
+
+> [!faq]
+> The `faq` callout.
+
+> [!warning]
+> The `warning` callout.
+
+> [!caution]
+> The `caution` callout.
+
+> [!attention]
+> The `attention` callout.
+
+> [!failure]
+> The `failure` callout.
+
+> [!fail]
+> The `fail` callout.
+
+> [!missing]
+> The `missing` callout.
+
+> [!danger]
+> The `danger` callout.
+
+> [!error]
+> The `error` callout.
+
+> [!bug]
+> The `bug` callout.
+
+> [!example]
+> The `example` callout.
+
+> [!quote]
+> The `quote` callout.
+
+> [!cite]
+> The `cite` callout.
+
+> [!compatibility]
+> The `compatibility` callout.
+
+> [!suggestion]
+> The `suggestion` callout, jmarkdown's own.
+
+> [!NOTE]
+> GFM spelling: NOTE.
+
+> [!TIP]
+> GFM spelling: TIP.
+
+> [!IMPORTANT]
+> GFM spelling: IMPORTANT.
+
+> [!WARNING]
+> GFM spelling: WARNING.
+
+> [!CAUTION]
+> GFM spelling: CAUTION.

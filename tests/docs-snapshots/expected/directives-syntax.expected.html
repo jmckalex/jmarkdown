@@ -177,16 +177,18 @@ happens to come next.</code></pre>
   <code>img</code>, <code>input</code>, <code>col</code>, …) and self-closes them rather than emitting a stray closing
   tag.
 </p>
-<div class="markdown-alert markdown-alert-warning">
-  <p class="markdown-alert-title"><svg class="octicon octicon-alert mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-      <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
-    </svg>Warning</p>
-  <p>The tag name <code>p</code> is a poor choice for a block directive. Because marked's own
-    paragraph handling competes with it, a <code>p</code>-named block directive does not wrap
-    its bracketed text the way other block tags do — the text leaks out as separate
-    paragraphs. Reach for a <code>div</code> (the default) or a semantic block element such as
-    <code>aside</code>, <code>section</code>, <code>figure</code>, or <code>blockquote</code> instead.
-  </p>
+<div class="callout markdown-alert markdown-alert-warning" data-callout="warning">
+  <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"></path>
+    </svg><span class="callout-title-inner">Warning</span></p>
+  <div class="callout-content">
+    <p>The tag name <code>p</code> is a poor choice for a block directive. Because marked's own
+      paragraph handling competes with it, a <code>p</code>-named block directive does not wrap
+      its bracketed text the way other block tags do — the text leaks out as separate
+      paragraphs. Reach for a <code>div</code> (the default) or a semantic block element such as
+      <code>aside</code>, <code>section</code>, <code>figure</code>, or <code>blockquote</code> instead.
+    </p>
+  </div>
 </div>
 <h2 id="toc-container-directives">Container directives</h2>
 <p>A container directive is the one you will use most. It opens with three colons, a
@@ -348,16 +350,18 @@ Inner content, fully nested.
 </div>
 <p>Inspect that span and you will see <code>id="x"</code>, <code>class="a b"</code>, and <code>key="value"</code> — the
   two class shorthands collapsed into a single <code>class</code> attribute.</p>
-<div class="markdown-alert markdown-alert-caution">
-  <p class="markdown-alert-title"><svg class="octicon octicon-stop mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-      <path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
-    </svg>Caution</p>
-  <p><span class="intense">Quote any value that is not a bare identifier or number.</span> The attribute parser
-    treats characters such as <code>-</code> outside an identifier as token boundaries. An
-    <strong>unquoted</strong> <code>datetime=2026-06-07</code> parses as <code>datetime="2026"</code> plus a spurious
-    attribute, whereas <code>datetime="2026-06-07"</code> parses correctly. Dates, CSS values,
-    URLs, anything with hyphens, slashes, colons, or spaces — wrap it in quotes.
-  </p>
+<div class="callout markdown-alert markdown-alert-warning" data-callout="warning">
+  <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"></path>
+    </svg><span class="callout-title-inner">Warning</span></p>
+  <div class="callout-content">
+    <p><span class="intense">Quote any value that is not a bare identifier or number.</span> The attribute parser
+      treats characters such as <code>-</code> outside an identifier as token boundaries. An
+      <strong>unquoted</strong> <code>datetime=2026-06-07</code> parses as <code>datetime="2026"</code> plus a spurious
+      attribute, whereas <code>datetime="2026-06-07"</code> parses correctly. Dates, CSS values,
+      URLs, anything with hyphens, slashes, colons, or spaces — wrap it in quotes.
+    </p>
+  </div>
 </div>
 <h2 id="toc-reference">Reference</h2>
 <h3 id="toc-levels-and-markers">Levels and markers</h3>

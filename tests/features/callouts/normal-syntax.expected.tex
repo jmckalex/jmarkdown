@@ -1,0 +1,14 @@
+Callouts are standard Obsidian syntax, not JMarkdown's dialect, so
+\mintinline{text}|-n/--normal-syntax| leaves them on.
+
+\begin{tcolorbox}[enhanced, breakable, frame hidden,
+  code={\definecolor{jmdcallout}{RGB}{0,184,163}},
+  boxrule=0pt, leftrule=3pt, arc=3.75pt, boxsep=0pt,
+  left=12pt, right=12pt, top=9pt, bottom=9pt,
+  interior code={\fill[jmdcallout!12!white, rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);
+    \begin{scope}\clip[rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);
+    \fill[jmdcallout] (frame.south west) rectangle ([xshift=3pt]frame.north west);\end{scope}}]
+{\color{jmdcallout}\bfseries \raisebox{-0.125em}{\resizebox{!}{1em}{\begin{tikzpicture}[yscale=-1]\useasboundingbox svg {M 0 0 L 448 0 L 448 512 L 0 512 Z};\fill svg {M 159.3 5.4 C 167.1 -1.9 179.2 -1.8 187 5.5 C 214.6 31.4 240.5 59.3 264.7 89.5 C 275.7 75.1 288.2 59.4 301.7 46.6 C 309.6 39.2 321.8 39.2 329.7 46.7 C 364.3 79.7 393.6 123.3 414.2 164.7 C 434.5 205.5 448 247.2 448 276.6 C 448 404.2 348.2 512 224 512 C 98.4 512 0 404.1 0 276.5 C 0 238.1 17.8 191.2 45.4 144.8 C 73.3 97.7 112.7 48.6 159.3 5.4 Z M 225.7 416 C 251 416 273.4 409 294.5 395 C 336.6 365.6 347.9 306.8 322.6 260.6 C 318.1 251.6 306.6 251 300.1 258.6 L 274.9 287.9 C 268.3 295.5 256.4 295.3 250.2 287.4 C 233.7 266.4 204.2 228.9 187.4 207.6 C 181.1 199.6 169.1 199.5 162.7 207.5 C 128.9 250 111.9 276.8 111.9 306.9 C 112 375.4 162.6 416 225.7 416 Z};\end{tikzpicture}}}\hspace{0.45em}Still a callout}\par\vspace{4.5pt}
+With \emph{emphasis} in plain-markdown terms.
+\end{tcolorbox}
+

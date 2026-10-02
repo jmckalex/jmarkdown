@@ -22,14 +22,16 @@ The live demos below show JMarkdown source on the left and rendered HTML on the
 right; the fenced ```latex``` blocks beneath them show the **real** LaTeX that
 `jmarkdown process … --to latex` generates for the same source.
 
-## GFM alerts become coloured callouts
+## Alerts become tinted boxes
 
-A GitHub-flavoured-Markdown *alert* is a blockquote whose first line is a marker
-of the form `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, or `[!CAUTION]`.
-On the web JMarkdown renders the familiar GitHub callout: a coloured left border,
-an icon, and a title. In print, each alert becomes a
-[`tcolorbox`](https://ctan.org/pkg/tcolorbox) — a coloured, titled box — its frame
-and background tinted to match the alert kind:
+An *alert* — a callout, in Obsidian's terms — is a blockquote whose first line is
+a marker such as `[!NOTE]`, `[!TIP]` or `[!WARNING]`: any of Obsidian's types, or
+JMarkdown's own `suggestion` (see [Tables and alerts](tables-and-alerts.html)).
+On the web JMarkdown renders it as Obsidian does: an accent-coloured left border,
+a light tint of the accent behind the text, and a title row with the type's icon.
+In print, each alert becomes a [`tcolorbox`](https://ctan.org/pkg/tcolorbox)
+drawn to the same design — the accent for the left rule, the icon and the title,
+a 12% tint of it as the background, rounded corners:
 
 :::markdown-demo
 > [!NOTE]
@@ -39,44 +41,60 @@ and background tinted to match the alert kind:
 > Urgent information that needs immediate attention to avoid a problem.
 :::
 
-All five kinds map to a `tcolorbox` whose `colframe` and `colback` encode the
-alert's colour. The body is rendered as Markdown first, so emphasis, links, and
-inline math inside an alert come through as normal LaTeX:
+The body is rendered as Markdown first, so emphasis, links, lists, code and maths
+inside an alert come through as normal LaTeX. The generated LaTeX for the note
+is below, with the icon's path data shortened to `…`:
 
 ```latex
-\begin{tcolorbox}[colframe=blue,colback=blue!8,title=Note]
+\begin{tcolorbox}[enhanced, breakable, frame hidden,
+  code={\definecolor{jmdcallout}{RGB}{91,141,239}},
+  boxrule=0pt, leftrule=3pt, arc=3.75pt, boxsep=0pt,
+  left=12pt, right=12pt, top=9pt, bottom=9pt,
+  interior code={\fill[jmdcallout!12!white, rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);
+    \begin{scope}\clip[rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);
+    \fill[jmdcallout] (frame.south west) rectangle ([xshift=3pt]frame.north west);\end{scope}}]
+{\color{jmdcallout}\bfseries \raisebox{-0.125em}{\resizebox{!}{1em}{\begin{tikzpicture}[yscale=-1]\useasboundingbox svg {M 0 0 L 512 0 L 512 512 L 0 512 Z};\fill svg {…};\end{tikzpicture}}}\hspace{0.45em}Note}\par\vspace{4.5pt}
 Useful information that users should know, even when skimming.
-\end{tcolorbox}
-
-\begin{tcolorbox}[colframe=teal,colback=teal!8,title=Tip]
-Helpful advice for doing things better or more easily.
-\end{tcolorbox}
-
-\begin{tcolorbox}[colframe=violet,colback=violet!8,title=Important]
-Key information users need to know to achieve their goal.
-\end{tcolorbox}
-
-\begin{tcolorbox}[colframe=orange,colback=orange!8,title=Warning]
-Urgent info that needs immediate user attention to avoid problems.
-\end{tcolorbox}
-
-\begin{tcolorbox}[colframe=red,colback=red!8,title=Caution]
-Advises about risks or negative outcomes of certain actions.
 \end{tcolorbox}
 ```
 
-The colour for each kind is fixed:
+Each box is self-contained:
 
-| Alert | Frame and background | Title |
-|---|---|---|
-| `[!NOTE]` | blue | Note |
-| `[!TIP]` | teal | Tip |
-| `[!IMPORTANT]` | violet | Important |
-| `[!WARNING]` | orange | Warning |
-| `[!CAUTION]` | red | Caution |
+- The **accent** is defined inside the box (`code={\definecolor…}`), so an alert
+  nested in another keeps its own colour without disturbing the outer one.
+- The **icon** is the same Font Awesome glyph as on the web, drawn from its outline
+  by TikZ: no icon font is needed, and it prints at any size. It is scaled to the
+  height of the title text.
+- The **frame** is not drawn; the tint and the left rule are painted inside the
+  box (`interior code`), the rule clipped to the same rounded corners, so the left
+  edge curves as the web version's does.
+- A **foldable** alert (`[!tip]- …`) prints expanded: paper cannot fold.
 
-The `!8` suffix on the background colour is a `tcolorbox`/`xcolor` tint: an 8% wash
-of the frame colour, light enough to keep body text readable.
+The boxes are `breakable`, so a long alert continues onto the next page. A full
+document loads what they need automatically — `tcolorbox` with its `skins` and
+`breakable` libraries, `tikz` with `svg.path`, and `graphicx`; a `--fragment`
+build leaves that to the surrounding document. The result compiles under
+pdfLaTeX and LuaLaTeX alike.
+
+Each type has a fixed accent:
+
+| Type (also written) | Accent |
+|---|---|
+| note | `#5b8def` |
+| abstract (summary, tldr), tip (hint, important), compatibility | `#00b8a3` |
+| info, todo | `#3b9dd8` |
+| success (check, done) | `#3fb950` |
+| question (help, faq) | `#d9a441` |
+| warning (caution, attention) | `#e08c3c` |
+| failure (fail, missing), danger (error), bug | `#e5534b` |
+| example | `#a371f7` |
+| quote (cite) | `#8b949e` |
+| suggestion | `#db61a2` |
+
+A type JMarkdown does not know is drawn as a note. A custom type's colour (the
+`Callouts` configuration) is used as given, except that one too pale to read on
+paper is darkened to a lightness of 0.68 in the OKLCH colour space — the same rule
+the web stylesheet applies.
 
 ## Description lists become a `description` environment
 
@@ -237,7 +255,7 @@ cached raster image in print is an acceptable trade.
 
 | Construct | HTML | LaTeX |
 |---|---|---|
-| GFM alert (`[!NOTE]` …) | GitHub-style callout `div` | `tcolorbox`, colour by kind |
+| Alert / callout (`[!NOTE]` …) | Obsidian-style callout `div` (or `details` when foldable), Font Awesome icon | `tcolorbox` in the same design, same icon drawn by TikZ |
 | Description list | `dl` with `dt` and `dd` | `description` environment |
 | Table over 20 rows | plain `table` | `longtable` (header repeats, breaks across pages) |
 | TikZ block | cached compiled image | native `tikzpicture` (vector, document fonts) |

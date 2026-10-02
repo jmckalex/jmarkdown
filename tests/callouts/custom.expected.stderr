@@ -1,0 +1,9 @@
+jmarkdown: 8 warnings:
+  - Callouts: entry 8 (“<script>”) skipped — “<script>” is not a callout name — a letter, then letters, digits, - or _
+  - Callouts: entry 9 (“css”) skipped — “red;background:url(x)” is not a colour (hex, rgb(), hsl() or a CSS name)
+  - Callouts: entry 10 (“path”) skipped — no Font Awesome icon called “../../../etc/passwd”
+  - Callouts: entry 11 (“missing”) skipped — no Font Awesome icon called “no-such-icon-at-all”
+  - Callouts: entry 12 (“badalias”) skipped — the alias “bad alias” is not a callout name
+  - Callouts: entry 13 skipped — not an entry
+  - Callouts: entry 14 skipped — no name
+  - Callouts: “tip”: the alias “note” is a callout type of its own — ignored

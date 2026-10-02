@@ -7,8 +7,11 @@
 <p>JMarkdown's tables are an extended dialect that adds <span class="intense">column spanning</span>, <span class="intense">row
     spanning</span>, <span class="intense">per-column alignment and width</span>, and two <span class="intense">headerless</span> forms — all
   on top of ordinary GFM table syntax, so existing tables keep working unchanged.
-  Alerts are GitHub-style admonition blocks (<code>&gt; [!NOTE]</code>, <code>&gt; [!WARNING]</code>, …) with
-  two extra variants — <code>question</code> and <code>suggestion</code> — added by JMarkdown.</p>
+  Alerts are callouts in Obsidian's style — <code>&gt; [!NOTE]</code>, <code>&gt; [!warning] A title</code>,
+  <code>&gt; [!tip]- Folded</code> — covering every Obsidian type (GitHub's five alerts among
+  them) plus JMarkdown's own <code>suggestion</code>, with icons, custom titles, folding and
+  custom types.
+</p>
 <p>Throughout, the live demos show the source on the left and its rendered result on
   the right, so the examples can never drift from what the parser actually does.</p>
 <h1 id="toc-tables">Tables</h1>
@@ -446,10 +449,11 @@
   </tbody>
 </table>
 <h1 id="toc-alerts">Alerts</h1>
-<p>An <strong>alert</strong> (also called an admonition or callout) is a blockquote tagged with a
-  variant marker on its first line. JMarkdown renders it as a coloured box with an
-  icon and a title, in the GitHub style. The marker is <code>[!TYPE]</code> as the first line
-  of a blockquote:</p>
+<p>An <strong>alert</strong> — Obsidian calls it a <strong>callout</strong>, and it is also known as an
+  admonition — is a blockquote tagged with a type marker on its first line.
+  JMarkdown renders it the way Obsidian does: an accent-coloured left border, a
+  light tint of the accent behind the text, and a title row with the type's icon.
+  The marker is <code>[!type]</code> as the first line of a blockquote:</p>
 <div class="markdown-demo-container">
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
@@ -459,21 +463,26 @@
 <span class="hljs-quote">&gt; account, even when skimming.</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-note">
-      <p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
-        </svg>Note</p>
-      <p>Highlights information that users should take into
-        account, even when skimming.</p>
+    <div class="callout markdown-alert markdown-alert-note" data-callout="note">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1 0 32c0 8.8 7.2 16 16 16l32 0zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"></path>
+        </svg><span class="callout-title-inner">Note</span></p>
+      <div class="callout-content">
+        <p>Highlights information that users should take into
+          account, even when skimming.</p>
+      </div>
     </div>
 
   </div>
 </div>
 <p>The body of the alert is ordinary markdown, so it may span several lines and
-  contain emphasis, lists, links, and so on. Everything after the <code>[!TYPE]</code> line
-  becomes the box's content.</p>
-<h2 id="toc-the-built-in-variants">The built-in variants</h2>
-<p>Five variants come from GitHub's specification, each with its own colour and icon:</p>
+  contain emphasis, lists, links, maths, code, and so on. Everything after the
+  <code>[!type]</code> line becomes the box's content. The marker is matched without regard
+  to case: <code>[!NOTE]</code>, <code>[!Note]</code> and <code>[!note]</code> are the same.
+</p>
+<h2 id="toc-the-built-in-types">The built-in types</h2>
+<p>GitHub's specification defines five alerts. JMarkdown accepts all five, each
+  with its own colour and icon:</p>
 <div class="markdown-demo-container">
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
@@ -482,11 +491,13 @@
 <span class="hljs-quote">&gt; Optional information to help a user be more successful.</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-tip">
-      <p class="markdown-alert-title"><svg class="octicon octicon-light-bulb mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path>
-        </svg>Tip</p>
-      <p>Optional information to help a user be more successful.</p>
+    <div class="callout markdown-alert markdown-alert-tip" data-callout="tip">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M159.3 5.4c7.8-7.3 19.9-7.2 27.7 .1c27.6 25.9 53.5 53.8 77.7 84c11-14.4 23.5-30.1 37-42.9c7.9-7.4 20.1-7.4 28 .1c34.6 33 63.9 76.6 84.5 118c20.3 40.8 33.8 82.5 33.8 111.9C448 404.2 348.2 512 224 512C98.4 512 0 404.1 0 276.5c0-38.4 17.8-85.3 45.4-131.7C73.3 97.7 112.7 48.6 159.3 5.4zM225.7 416c25.3 0 47.7-7 68.8-21c42.1-29.4 53.4-88.2 28.1-134.4c-4.5-9-16-9.6-22.5-2l-25.2 29.3c-6.6 7.6-18.5 7.4-24.7-.5c-16.5-21-46-58.5-62.8-79.8c-6.3-8-18.3-8.1-24.7-.1c-33.8 42.5-50.8 69.3-50.8 99.4C112 375.4 162.6 416 225.7 416z"></path>
+        </svg><span class="callout-title-inner">Tip</span></p>
+      <div class="callout-content">
+        <p>Optional information to help a user be more successful.</p>
+      </div>
     </div>
 
   </div>
@@ -499,11 +510,13 @@
 <span class="hljs-quote">&gt; Crucial information necessary for users to succeed.</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-important">
-      <p class="markdown-alert-title"><svg class="octicon octicon-report mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
-        </svg>Important</p>
-      <p>Crucial information necessary for users to succeed.</p>
+    <div class="callout markdown-alert markdown-alert-tip" data-callout="tip">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M159.3 5.4c7.8-7.3 19.9-7.2 27.7 .1c27.6 25.9 53.5 53.8 77.7 84c11-14.4 23.5-30.1 37-42.9c7.9-7.4 20.1-7.4 28 .1c34.6 33 63.9 76.6 84.5 118c20.3 40.8 33.8 82.5 33.8 111.9C448 404.2 348.2 512 224 512C98.4 512 0 404.1 0 276.5c0-38.4 17.8-85.3 45.4-131.7C73.3 97.7 112.7 48.6 159.3 5.4zM225.7 416c25.3 0 47.7-7 68.8-21c42.1-29.4 53.4-88.2 28.1-134.4c-4.5-9-16-9.6-22.5-2l-25.2 29.3c-6.6 7.6-18.5 7.4-24.7-.5c-16.5-21-46-58.5-62.8-79.8c-6.3-8-18.3-8.1-24.7-.1c-33.8 42.5-50.8 69.3-50.8 99.4C112 375.4 162.6 416 225.7 416z"></path>
+        </svg><span class="callout-title-inner">Tip</span></p>
+      <div class="callout-content">
+        <p>Crucial information necessary for users to succeed.</p>
+      </div>
     </div>
 
   </div>
@@ -517,12 +530,14 @@
 <span class="hljs-quote">&gt; potential risks.</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-warning">
-      <p class="markdown-alert-title"><svg class="octicon octicon-alert mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
-        </svg>Warning</p>
-      <p>Critical content demanding immediate attention due to
-        potential risks.</p>
+    <div class="callout markdown-alert markdown-alert-warning" data-callout="warning">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"></path>
+        </svg><span class="callout-title-inner">Warning</span></p>
+      <div class="callout-content">
+        <p>Critical content demanding immediate attention due to
+          potential risks.</p>
+      </div>
     </div>
 
   </div>
@@ -535,17 +550,23 @@
 <span class="hljs-quote">&gt; Negative potential consequences of an action.</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-caution">
-      <p class="markdown-alert-title"><svg class="octicon octicon-stop mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
-        </svg>Caution</p>
-      <p>Negative potential consequences of an action.</p>
+    <div class="callout markdown-alert markdown-alert-warning" data-callout="warning">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"></path>
+        </svg><span class="callout-title-inner">Warning</span></p>
+      <div class="callout-content">
+        <p>Negative potential consequences of an action.</p>
+      </div>
     </div>
 
   </div>
 </div>
-<p>JMarkdown adds two further variants of its own — <code>question</code> and <code>suggestion</code> —
-  intended for the kind of marginal commentary that arises when drafting:</p>
+<p>In Obsidian's scheme, which JMarkdown follows, <code>important</code> is another name for
+  <code>tip</code> and <code>caution</code> another name for <code>warning</code>, so each pair looks the same.
+  Obsidian defines a dozen more types besides, several with aliases of their own;
+  all are listed in the reference table at the end of this page. <code>question</code> is one
+  of them, and suits the marginal commentary that arises when drafting:
+</p>
 <div class="markdown-demo-container">
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
@@ -554,13 +575,18 @@
 <span class="hljs-quote">&gt; Is this assumption still warranted given the new data?</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-question">
-      <p class="alert-question"><i class="fa-regular fa-circle-question"></i>Question</p>
-      <p>Is this assumption still warranted given the new data?</p>
+    <div class="callout markdown-alert markdown-alert-question" data-callout="question">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 165.3c7.9-22.3 29.1-37.3 52.8-37.3l58.3 0c34.9 0 63.1 28.3 63.1 63.1c0 22.6-12.1 43.5-31.7 54.8L280 264.4c-.2 13-10.9 23.6-24 23.6c-13.3 0-24-10.7-24-24l0-13.5c0-8.6 4.6-16.5 12.1-20.8l44.3-25.4c4.7-2.7 7.6-7.7 7.6-13.1c0-8.4-6.8-15.1-15.1-15.1l-58.3 0c-3.4 0-6.4 2.1-7.5 5.3l-.4 1.2c-4.4 12.5-18.2 19-30.6 14.6s-19-18.2-14.6-30.6l.4-1.2zM224 352a32 32 0 1 1 64 0 32 32 0 1 1 -64 0z"></path>
+        </svg><span class="callout-title-inner">Question</span></p>
+      <div class="callout-content">
+        <p>Is this assumption still warranted given the new data?</p>
+      </div>
     </div>
 
   </div>
 </div>
+<p>JMarkdown adds one type of its own, <code>suggestion</code>, with a lightbulb:</p>
 <div class="markdown-demo-container">
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
@@ -569,98 +595,233 @@
 <span class="hljs-quote">&gt; Consider splitting this section into two.</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-suggestion">
-      <p class="alert-suggestion"><span class="fa-stack"><i class="fa-light fa-circle fa-stack-2x"></i><i class="fa fa-lightbulb fa-stack-1x"></i></span>Suggestion</p>
-      <p>Consider splitting this section into two.</p>
+    <div class="callout markdown-alert markdown-alert-suggestion" data-callout="suggestion">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 384 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M272 384c9.6-31.9 29.5-59.1 49.2-86.2c0 0 0 0 0 0c5.2-7.1 10.4-14.2 15.4-21.4c19.8-28.5 31.4-63 31.4-100.3C368 78.8 289.2 0 192 0S16 78.8 16 176c0 37.3 11.6 71.9 31.4 100.3c5 7.2 10.2 14.3 15.4 21.4c0 0 0 0 0 0c19.8 27.1 39.7 54.4 49.2 86.2l160 0zM192 512c44.2 0 80-35.8 80-80l0-16-160 0 0 16c0 44.2 35.8 80 80 80zM112 176c0 8.8-7.2 16-16 16s-16-7.2-16-16c0-61.9 50.1-112 112-112c8.8 0 16 7.2 16 16s-7.2 16-16 16c-44.2 0-80 35.8-80 80z"></path>
+        </svg><span class="callout-title-inner">Suggestion</span></p>
+      <div class="callout-content">
+        <p>Consider splitting this section into two.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+<p>A type JMarkdown does not know is drawn as a note, titled with its own name —
+  <code>[!aside]</code> becomes a note headed "Aside" — as Obsidian draws one.
+</p>
+<h2 id="toc-titles-folding-and-nesting">Titles, folding and nesting</h2>
+<p>Text after the marker replaces the type's name as the title, and may contain
+  markdown:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="hljs-quote">&gt; [!warning] Mind the <span class="hljs-emphasis">*gap*</span></span>
+<span class="hljs-quote">&gt; The title row keeps the type's icon and colour.</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="callout markdown-alert markdown-alert-warning" data-callout="warning">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"></path>
+        </svg><span class="callout-title-inner">Mind the <strong>gap</strong></span></p>
+      <div class="callout-content">
+        <p>The title row keeps the type's icon and colour.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+<p>A <code>-</code> straight after the marker makes the alert foldable, starting closed; a <code>+</code>
+  makes it foldable, starting open. The title becomes a summary line with a chevron
+  that opens and closes it — no script involved:</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="hljs-quote">&gt; [!tip]- Click to open</span>
+<span class="hljs-quote">&gt; Hidden until the title is clicked.</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <details class="callout markdown-alert markdown-alert-tip is-collapsible" data-callout="tip">
+      <summary class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 448 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M159.3 5.4c7.8-7.3 19.9-7.2 27.7 .1c27.6 25.9 53.5 53.8 77.7 84c11-14.4 23.5-30.1 37-42.9c7.9-7.4 20.1-7.4 28 .1c34.6 33 63.9 76.6 84.5 118c20.3 40.8 33.8 82.5 33.8 111.9C448 404.2 348.2 512 224 512C98.4 512 0 404.1 0 276.5c0-38.4 17.8-85.3 45.4-131.7C73.3 97.7 112.7 48.6 159.3 5.4zM225.7 416c25.3 0 47.7-7 68.8-21c42.1-29.4 53.4-88.2 28.1-134.4c-4.5-9-16-9.6-22.5-2l-25.2 29.3c-6.6 7.6-18.5 7.4-24.7-.5c-16.5-21-46-58.5-62.8-79.8c-6.3-8-18.3-8.1-24.7-.1c-33.8 42.5-50.8 69.3-50.8 99.4C112 375.4 162.6 416 225.7 416z"></path>
+        </svg><span class="callout-title-inner">Click to open</span></summary>
+      <div class="callout-content">
+        <p>Hidden until the title is clicked.</p>
+      </div>
+    </details>
+
+  </div>
+</div>
+<p>Alerts nest: inside an alert, a line starting <code>&gt; &gt;</code> begins another.</p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown"><span class="hljs-quote">&gt; [!note] The outer alert</span>
+<span class="hljs-quote">&gt; Some text.</span>
+<span class="hljs-quote">&gt;
+&gt; &gt; [!example] An alert inside it</span>
+<span class="hljs-quote">&gt; &gt; More text.</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <div class="callout markdown-alert markdown-alert-note" data-callout="note">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1 0 32c0 8.8 7.2 16 16 16l32 0zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"></path>
+        </svg><span class="callout-title-inner">The outer alert</span></p>
+      <div class="callout-content">
+        <p>Some text.</p>
+        <div class="callout markdown-alert markdown-alert-example" data-callout="example">
+          <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M24 56c0-13.3 10.7-24 24-24l32 0c13.3 0 24 10.7 24 24l0 120 16 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-80 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l16 0 0-96-8 0C34.7 80 24 69.3 24 56zM86.7 341.2c-6.5-7.4-18.3-6.9-24 1.2L51.5 358.1c-7.7 10.8-22.7 13.3-33.5 5.6s-13.3-22.7-5.6-33.5l11.1-15.6c23.7-33.2 72.3-35.6 99.2-4.9c21.3 24.4 20.8 60.9-1.1 84.7L86.8 432l33.2 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-88 0c-9.5 0-18.2-5.6-22-14.4s-2.1-18.9 4.3-25.9l72-78c5.3-5.8 5.4-14.6 .3-20.5zM224 64l256 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-256 0c-17.7 0-32-14.3-32-32s14.3-32 32-32zm0 160l256 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-256 0c-17.7 0-32-14.3-32-32s14.3-32 32-32zm0 160l256 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-256 0c-17.7 0-32-14.3-32-32s14.3-32 32-32z"></path>
+            </svg><span class="callout-title-inner">An alert inside it</span></p>
+          <div class="callout-content">
+            <p>More text.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
 </div>
 <h2 id="toc-how-an-alert-renders">How an alert renders</h2>
-<p>An alert becomes a <code>&lt;div&gt;</code> whose classes encode the variant, followed by a title
-  paragraph (icon plus label) and then the rendered body. For <code>&gt; [!NOTE]</code> the markup
-  is:</p>
-<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"markdown-alert markdown-alert-note"</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"markdown-alert-title"</span>&gt;</span>…icon…Note<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
-  <span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span>…the body…<span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+<p>An alert becomes a <code>&lt;div&gt;</code> carrying both Obsidian's names (<code>callout</code>,
+  <code>data-callout</code>) and GitHub's (<code>markdown-alert-&lt;type&gt;</code>), so a stylesheet written
+  for either applies. For <code>&gt; [!NOTE]</code> the markup is:
+</p>
+<pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"callout markdown-alert markdown-alert-note"</span> <span class="hljs-attr">data-callout</span>=<span class="hljs-string">"note"</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">p</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"callout-title markdown-alert-title"</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">svg</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"callout-icon"</span>&gt;</span>…<span class="hljs-tag">&lt;/<span class="hljs-name">svg</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">span</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"callout-title-inner"</span>&gt;</span>Note<span class="hljs-tag">&lt;/<span class="hljs-name">span</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"callout-content"</span>&gt;</span>…the body…<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
 <span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
 </code></pre>
-<p>The two JMarkdown variants follow the same outer structure — the container class is
-  <code>markdown-alert-question</code> or <code>markdown-alert-suggestion</code> — but their title
-  paragraphs use the class <code>alert-question</code> and <code>alert-suggestion</code> respectively.
-</p>
+<p>A foldable alert is a <code>&lt;details&gt;</code> element instead, its title a <code>&lt;summary&gt;</code>. An
+  alias renders as its type: <code>[!caution]</code> gives <code>data-callout="warning"</code>.</p>
 <h2 id="toc-icons-and-styling">Icons and styling</h2>
-<p>The default colouring and the icons are not invented by JMarkdown — they come from
-  the underlying alert extension and from your stylesheet:</p>
+<p>The icons are Font Awesome's, written into the page as inline SVG, so they show
+  with no icon font loaded and print as they look. The colours, border, tint and
+  spacing come from the standard stylesheet (<code>jmarkdown.css</code>), keyed on
+  <code>data-callout</code>. To restyle a type, target it in your own stylesheet —
+  <code>.callout[data-callout='note'] { --callout: teal; }</code> recolours the note's border,
+  icon, title and tint at once.
+</p>
+<p>In print, each alert becomes a box drawn to the same design, with the same icon:
+  see <a href="print-rendering.html">Print rendering</a>.</p>
+<h2 id="toc-custom-types">Custom types</h2>
+<p>New types — or a new title, icon or colour for a built-in one — are defined in
+  the project's <code>.jmarkdown/config.json</code> (or the global <code>~/.jmarkdown/config.json</code>)
+  under <code>Callouts</code>:</p>
+<pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+	<span class="hljs-attr">"Callouts"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+		<span class="hljs-punctuation">{</span> <span class="hljs-attr">"name"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"recipe"</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"title"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"Recipe"</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"icon"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"utensils"</span><span class="hljs-punctuation">,</span>
+		  <span class="hljs-attr">"color"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"rebeccapurple"</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"aliases"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">"cook"</span><span class="hljs-punctuation">]</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+		<span class="hljs-punctuation">{</span> <span class="hljs-attr">"name"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"warning"</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"color"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"#c2410c"</span> <span class="hljs-punctuation">}</span>
+	<span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
 <ul>
-  <li>The <span class="intense">five GitHub variants</span> ship with self-contained Octicon SVG icons, so they
-    display correctly with no extra setup.</li>
-  <li>The <span class="intense">two JMarkdown variants</span> (<code>question</code>, <code>suggestion</code>) use Font Awesome icon
-    markup. They render their icon only when Font Awesome is loaded in the page; the
-    documentation template and the standard output template load it, so the icons
-    appear there. The text label still shows even without Font Awesome.</li>
+  <li><code>name</code> — the <code>[!name]</code> it answers to: a letter, then letters, digits, <code>-</code> or
+    <code>_</code>. A built-in's name changes that type.
+  </li>
+  <li><code>title</code> — the default title (otherwise the name, capitalised).</li>
+  <li><code>icon</code> — a Font Awesome Free icon by name: <code>lightbulb</code>, or with its family,
+    <code>regular:circle</code> or <code>brands:github</code>.
+  </li>
+  <li><code>color</code> — a CSS colour: hex, <code>rgb()</code>, <code>hsl()</code> or a colour name. A colour too
+    pale to read on the page is darkened until it does.</li>
+  <li><code>aliases</code> — further <code>[!alias]</code> spellings for the type.</li>
 </ul>
-<p>The colours, padding, border, and icon placement are all supplied by CSS keyed on
-  the <code>markdown-alert</code> / <code>markdown-alert-&lt;variant&gt;</code> classes. To restyle a variant —
-  or to theme the two JMarkdown variants to taste — target those classes in your own
-  stylesheet. JMarkdown emits the structure; the appearance is yours to set.</p>
-<h2 id="toc-alert-variant-reference">Alert variant reference</h2>
+<p>Every definition is checked. One that is malformed — a name that is not a name,
+  an icon that does not exist, a colour that is not a colour — is skipped with a
+  warning naming the entry and the reason, and never half-applied.</p>
+<h2 id="toc-alert-type-reference">Alert type reference</h2>
 <table>
   <thead>
     <tr>
-      <th>Variant</th>
-      <th>Marker</th>
-      <th>Container class</th>
-      <th>Source</th>
+      <th>Type</th>
+      <th>Also written</th>
+      <th>Icon</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>Note</td>
-      <td><code>&gt; [!NOTE]</code></td>
-      <td><code>markdown-alert-note</code></td>
-      <td>GitHub</td>
+      <td>note</td>
+      <td></td>
+      <td>pencil</td>
     </tr>
     <tr>
-      <td>Tip</td>
-      <td><code>&gt; [!TIP]</code></td>
-      <td><code>markdown-alert-tip</code></td>
-      <td>GitHub</td>
+      <td>abstract</td>
+      <td>summary, tldr</td>
+      <td>clipboard</td>
     </tr>
     <tr>
-      <td>Important</td>
-      <td><code>&gt; [!IMPORTANT]</code></td>
-      <td><code>markdown-alert-important</code></td>
-      <td>GitHub</td>
+      <td>info</td>
+      <td></td>
+      <td>circle with an <strong>i</strong></td>
     </tr>
     <tr>
-      <td>Warning</td>
-      <td><code>&gt; [!WARNING]</code></td>
-      <td><code>markdown-alert-warning</code></td>
-      <td>GitHub</td>
+      <td>todo</td>
+      <td></td>
+      <td>circled check</td>
     </tr>
     <tr>
-      <td>Caution</td>
-      <td><code>&gt; [!CAUTION]</code></td>
-      <td><code>markdown-alert-caution</code></td>
-      <td>GitHub</td>
+      <td>tip</td>
+      <td>hint, important</td>
+      <td>flame</td>
     </tr>
     <tr>
-      <td>Question</td>
-      <td><code>&gt; [!QUESTION]</code></td>
-      <td><code>markdown-alert-question</code></td>
-      <td>JMarkdown</td>
+      <td>success</td>
+      <td>check, done</td>
+      <td>check</td>
     </tr>
     <tr>
-      <td>Suggestion</td>
-      <td><code>&gt; [!SUGGESTION]</code></td>
-      <td><code>markdown-alert-suggestion</code></td>
-      <td>JMarkdown</td>
+      <td>question</td>
+      <td>help, faq</td>
+      <td>circled question mark</td>
+    </tr>
+    <tr>
+      <td>warning</td>
+      <td>caution, attention</td>
+      <td>warning triangle</td>
+    </tr>
+    <tr>
+      <td>failure</td>
+      <td>fail, missing</td>
+      <td>cross</td>
+    </tr>
+    <tr>
+      <td>danger</td>
+      <td>error</td>
+      <td>lightning bolt</td>
+    </tr>
+    <tr>
+      <td>bug</td>
+      <td></td>
+      <td>bug</td>
+    </tr>
+    <tr>
+      <td>example</td>
+      <td></td>
+      <td>numbered list</td>
+    </tr>
+    <tr>
+      <td>quote</td>
+      <td>cite</td>
+      <td>quotation mark</td>
+    </tr>
+    <tr>
+      <td>compatibility</td>
+      <td></td>
+      <td>checklist</td>
+    </tr>
+    <tr>
+      <td>suggestion</td>
+      <td></td>
+      <td>lightbulb</td>
     </tr>
   </tbody>
 </table>
-<p>The marker is case-insensitive in matching but is conventionally written in upper
-  case.</p>
+<p>The first fourteen are Obsidian's (<code>compatibility</code> is Clew's addition, used in
+  Obsidian's own help vault); <code>suggestion</code> is JMarkdown's.</p>
 <h1 id="toc-see-also">See also</h1>
 <ul>
   <li><a href="block-environments.html">Block environments</a> — named <code>@begin … @end</code> wrappers,
