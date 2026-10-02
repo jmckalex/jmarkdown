@@ -7,8 +7,10 @@ A methods detail\textsuperscript{1}.
 \bigskip
 \noindent{\large\bfseries Introduction notes}\par\nobreak\smallskip
 \begingroup\setlength{\parindent}{0pt}
-\noindent\textsuperscript{1}~first intro note\par\smallskip
-\noindent\textsuperscript{2}~second intro note\par\smallskip
+\ifcsname c@jmdendnote\endcsname\else\newcounter{jmdendnote}\fi
+\expandafter\def\csname theHjmdendnote\endcsname{intro.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~first intro note\par\smallskip
+\noindent\setcounter{jmdendnote}{1}\refstepcounter{jmdendnote}\textsuperscript{2}~second intro note\par\smallskip
 \endgroup
 
 
@@ -16,6 +18,8 @@ A methods detail\textsuperscript{1}.
 \bigskip
 \noindent{\large\bfseries Methods notes}\par\nobreak\smallskip
 \begingroup\setlength{\parindent}{0pt}
-\noindent\textsuperscript{1}~a methods note\par\smallskip
+\ifcsname c@jmdendnote\endcsname\else\newcounter{jmdendnote}\fi
+\expandafter\def\csname theHjmdendnote\endcsname{methods.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~a methods note\par\smallskip
 \endgroup
 

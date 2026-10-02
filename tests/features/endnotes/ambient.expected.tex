@@ -10,12 +10,16 @@ A tail default note\textsuperscript{2}.
 
 \bigskip
 \begingroup\setlength{\parindent}{0pt}
-\noindent\textsuperscript{1}~ungrouped one\par\smallskip
-\noindent\textsuperscript{2}~ungrouped two\par\smallskip
+\ifcsname c@jmdendnote\endcsname\else\newcounter{jmdendnote}\fi
+\expandafter\def\csname theHjmdendnote\endcsname{endnotes.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~ungrouped one\par\smallskip
+\noindent\setcounter{jmdendnote}{1}\refstepcounter{jmdendnote}\textsuperscript{2}~ungrouped two\par\smallskip
 \smallskip\noindent{\bfseries ch1}\par\nobreak\smallskip
-\noindent\textsuperscript{1}~ch1 first\par\smallskip
-\noindent\textsuperscript{2}~ch1 second\par\smallskip
+\expandafter\def\csname theHjmdendnote\endcsname{ch1.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~ch1 first\par\smallskip
+\noindent\setcounter{jmdendnote}{1}\refstepcounter{jmdendnote}\textsuperscript{2}~ch1 second\par\smallskip
 \smallskip\noindent{\bfseries ch2}\par\nobreak\smallskip
-\noindent\textsuperscript{1}~jumps to ch2\par\smallskip
+\expandafter\def\csname theHjmdendnote\endcsname{ch2.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~jumps to ch2\par\smallskip
 \endgroup
 

@@ -67,8 +67,9 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
 		# crossref: label-in-env labels theorem-like environments, so the
 		# wrapper declares the two kinds that fixture uses (shared counter,
-		# as theorems.js declares them).
-		crossref)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[style=definition,sibling=theorem]{definition}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
+		# as theorems.js declares them); label-in-endnote's \cref names the
+		# endnote counter, as a full document's late preamble does.
+		crossref)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[style=definition,sibling=theorem]{definition}\usepackage{cleveref}\crefname{jmdendnote}{footnote}{footnotes}'; needs='thmtools.sty cleveref.sty' ;;
 		floats)            extra='\usepackage[draft]{graphicx}\usepackage{subcaption}\usepackage{booktabs}\usepackage{cleveref}'; needs='subcaption.sty cleveref.sty booktabs.sty' ;;
 		theorems)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[sibling=theorem]{lemma}\declaretheorem[sibling=theorem]{corollary}\declaretheorem[sibling=theorem]{proposition}\declaretheorem[style=definition,sibling=theorem]{definition}\declaretheorem[style=definition,sibling=theorem]{example}\declaretheorem[style=remark,sibling=theorem]{remark}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
 		equations)         extra='\usepackage{amsmath}\usepackage{cleveref}'; needs='cleveref.sty' ;;

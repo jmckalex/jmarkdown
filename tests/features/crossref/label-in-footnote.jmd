@@ -1,0 +1,10 @@
+# Labels inside footnotes
+
+A classic footnote[^a], an inline one[fn: Inline, labelled @label[fn-inline] here.],
+a labelled inline one[^c: Labelled inline, labelled @label[fn-labelled] here.], and
+the classic footnote cited a second time[^a].
+
+References: classic @ref[fn-classic], inline @ref[fn-inline], typed
+@cref[fn-labelled] and @Cref[fn-classic].
+
+[^a]: Classic, labelled @label[fn-classic] here.

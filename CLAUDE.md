@@ -403,7 +403,29 @@ docs `footnotes` snapshot and the three `footnotes` fixtures are byte-identical)
   (`endnotesMode`), notes become endnotes: a `\textsuperscript{n}` mark inline and
   JMarkdown-built per-group lists at the placements (JMarkdown owns the numbering,
   so this leans on no `endnotes`/`enotez` package semantics).
-- Fixtures: `tests/features/endnotes/` (`grouped`, `ambient`).
+- **Classic `[^a]` footnotes in LaTeX.** marked-footnote renders HTML only, so
+  until 2026-10 its `<sup><a …>` marks and closing `<section class="footnotes">`
+  went into the `.tex` verbatim. A `walkTokens` hook (`latexClassicFootnotes`,
+  LaTeX only) now retypes each reference to `jmdClassicFootnote`, rendered as
+  `\footnote{the note's content}` where it stands, and blanks the list. A note
+  referenced twice gets `\label{jmdfn:…}` in its first `\footnote` and
+  `\textsuperscript{\ref{jmdfn:…}}` at the others. Being walkTokens, it has no
+  place in `index.js`'s registration order.
+- **A `@label` inside a note** resolves to that note's number in every kind —
+  classic, inline, labelled, grouped — so `@ref` → `1`, `@cref` → `footnote 1`.
+  HTML: `process_crossrefs` (`post-processor.js`) finds the enclosing
+  `li#footnote-…` (classic) **or** `li#fn-…` (inline-footnotes.js; only the first
+  was looked for, so inline notes printed "??") and numbers by position in that
+  note's own list, hence per group. LaTeX: `\footnote` numbers itself; an endnote
+  list steps a `jmdendnote` counter set to each item's number, declared in the
+  body behind an `\ifcsname` guard (fragments stay self-contained) and cleveref-
+  named `footnote` via `crefName`. `\theHjmdendnote` is redefined per group, since
+  each group restarts at 1. **The two outputs can number differently** in a
+  document mixing classic and inline notes: HTML keeps two lists (each from 1),
+  LaTeX one footnote sequence. Each reference matches what its own output shows.
+- Fixtures: `tests/features/endnotes/` (`grouped`, `ambient`),
+  `tests/features/footnotes/classic`, `tests/features/crossref/`
+  (`label-in-footnote`, `label-in-endnote`).
 
 ### `Run note code` — a document's code, and a host that did not write it (`note-code.js`)
 

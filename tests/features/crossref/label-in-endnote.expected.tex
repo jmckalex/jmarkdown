@@ -1,0 +1,17 @@
+\section{Labels inside endnotes}
+
+A grouped note\textsuperscript{1} and a second
+one\textsuperscript{2}.
+
+References: \ref{en-second}, typed \cref{en-first}.
+
+
+
+\bigskip
+\begingroup\setlength{\parindent}{0pt}
+\ifcsname c@jmdendnote\endcsname\else\newcounter{jmdendnote}\fi
+\expandafter\def\csname theHjmdendnote\endcsname{g.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~Grouped, labelled \label{en-first} here.\par\smallskip
+\noindent\setcounter{jmdendnote}{1}\refstepcounter{jmdendnote}\textsuperscript{2}~Second, labelled \label{en-second} here.\par\smallskip
+\endgroup
+

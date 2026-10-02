@@ -359,7 +359,12 @@ function process_crossrefs($) {
 		let anchor = $elem.attr('id');
 		let number;
 		let type;
-		let in_footnote = $elem.closest('[id^="footnote-"]').length > 0 ? true : false;
+		// The note a label sits in: a classic [^a] footnote (marked-footnote,
+		// li#footnote-…) or an inline / labelled / grouped one (inline-
+		// footnotes.js, li#fn-…). Looking only for `footnote-` left every
+		// inline note's label unresolved — "??".
+		const $note = $elem.closest('li[id^="footnote-"], li[id^="fn-"]');
+		let in_footnote = $note.length > 0;
 		// A :label INSIDE a numbered construct (theorem, figure, table, listing,
 		// equation — anything a numbering pass stamped data-xref-number on)
 		// adopts that construct's number and type: the HTML twin of LaTeX's
@@ -367,10 +372,10 @@ function process_crossrefs($) {
 		// natively. Equivalent to labelling via the {id=…} attribute.
 		const $host = $elem.closest('[data-xref-number]');
 		if (in_footnote) {
-			let $footnote = $elem.closest('[id^="footnote-"]');
-			const $ol = $footnote.closest("ol");
-			const $allItems = $ol.children('li');
-			const currentIndex = $allItems.index($footnote);
+			// Its number is its place in its own list: grouped endnotes number
+			// per group, as their lists do.
+			const $allItems = $note.closest("ol").children('li');
+			const currentIndex = $allItems.index($note);
 			number = `${currentIndex+1}`;
 			type = 'footnote';
 		}

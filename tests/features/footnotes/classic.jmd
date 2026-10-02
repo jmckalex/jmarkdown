@@ -1,0 +1,9 @@
+Title: classic
+------------------------------------
+
+First mention[^r], a long note[^long], and the first again[^r].
+
+[^r]: The repeated note.
+[^long]: First paragraph of a long note.
+
+    Second paragraph of the long note, with /emphasis/.

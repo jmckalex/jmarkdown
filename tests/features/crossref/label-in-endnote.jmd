@@ -1,0 +1,8 @@
+# Labels inside endnotes
+
+A grouped note[fn(g): Grouped, labelled @label[en-first] here.] and a second
+one[fn(g): Second, labelled @label[en-second] here.].
+
+References: @ref[en-second], typed @cref[en-first].
+
+@endnotes(g)
