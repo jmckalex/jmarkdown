@@ -57,6 +57,7 @@ import { attachmentsFor } from './bib-attachments.js';
 import { addWarning } from './warnings.js';
 import { requirePackage, addPreamble } from './preamble.js';
 import { cslCitationFormat } from './biblify-compile.js';
+import { bibliographyFiles, readBibliographies, bibEntries, repeatedKeys, warnShadowedEntries, writeMergedBibliography } from './bibliographies.js';
 
 // The canonical \cite-family grammar, shared with the post-pass. Anchored so it
 // can be used to re-parse a single stored command.
@@ -343,6 +344,42 @@ function styleToBst(style) {
 	}
 }
 
+/*
+	The databases \bibliography{…} names — each by its basename, as one file
+	always was (bibtex finds it on its search path: the .tex's folder, or the
+	BIBINPUTS a host sets).
+
+	Several files are listed strongest first — the note's, then the configured —
+	which is the order bibtex reads them in, so its first-found entry is the one
+	that wins in HTML too. But bibtex counts a key it has seen before as an ERROR,
+	and latexmk stops on it, leaving every citation "?". So when a key is in
+	more than one file, the files are merged into one beside the output
+	(writeMergedBibliography) and that is what is named; a file that could not
+	be read is still listed, for bibtex to look for. A URL is the runtime
+	client's business; bibtex cannot read one.
+*/
+function latexBibliographyNames() {
+	const files = bibliographyFiles().filter((file) => {
+		if (file.path) return true;
+		addWarning(`bibliography: "${file.name}" is a URL, which bibtex cannot read — left out of \\bibliography`);
+		return false;
+	});
+	const base = (file) => path.basename(file.name, path.extname(file.name));
+	if (files.length === 0) return ['references'];
+	if (files.length === 1) return [base(files[0])];
+
+	const read = readBibliographies(files);
+	const indexed = read.filter((file) => file.content != null)
+		.map((file) => ({ file, entries: new Map(bibEntries(file.content).map(({ key, start, end }) => [key, file.content.slice(start, end)])) }));
+	warnShadowedEntries(indexed);
+	const strongestFirst = [...read].reverse();
+	if (repeatedKeys(read).size === 0) return strongestFirst.map(base);
+
+	const merged = writeMergedBibliography(read, 'bibtex will stop on a key that is in more than one of them');
+	if (!merged) return strongestFirst.map(base);
+	return [merged.name, ...strongestFirst.filter((file) => file.content == null).map(base)];
+}
+
 export const bibliography = {
 	name: 'bibliography',
 	level: 'block',
@@ -373,10 +410,7 @@ export const bibliography = {
 			const bibStyle =
 				configManager.get('Biblify.latex bib style') ||
 				(numeric ? 'unsrtnat' : styleToBst(style || configManager.get('Biblify.bibliography style')));
-			const bibPath = configManager.get('Biblify.bibliography') || '';
-			const bibBase = bibPath
-				? path.basename(bibPath, path.extname(bibPath))
-				: 'references';
+			const bibBase = latexBibliographyNames().join(',');
 			// A `title` retitles the list the standard LaTeX way, by redefining the
 			// class's heading macro — \bibname in chapter-bearing classes,
 			// \refname in article and friends. The engine still draws the heading,

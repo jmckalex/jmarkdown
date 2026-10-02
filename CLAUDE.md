@@ -70,6 +70,7 @@ All source lives in `src/`. Key files:
 | `citations.js` | Compile-time citations (`Resolve citations`): parse-time `\cite`-family inline tokenizer + `@bibliography` block extension (legacy alias `::Bibliography`) |
 | `pandoc-citations.js` | **Opt-in** (`Pandoc citations: true`) pandoc citation syntax — `[@key]` / `@key` / `[-@key]` — as a second front end: the tokenizer *translates* to the equivalent `\cite` command and reuses `renderCiteCommand`, so all three back-ends serve both syntaxes unchanged |
 | `bib-attachments.js` | Reads the raw `.bib` for a reference's **attachments** (BibDesk `Bdsk-File-N` — base64 → binary plist → `relativePath` + macOS bookmark — and the JabRef/Zotero `file` field), resolving each to an absolute path. Consumed only by `\citefile`; includes a minimal `bplist00` reader (no new dependency) |
+| `bibliographies.js` | Which `.bib` files a document draws on — the configured `Biblify.bibliography`, then the header's `Bibliography:`, each a list — in order (a later file wins a key), merged; the shadowed-entry warning; the merged `<output>-bibliography.bib` for bibtex (on a repeated key) and the runtime client. See "Several bibliographies" |
 | `biblify-compile.js` | Compile-time citation resolver: cheerio post-pass (HTML only) porting the runtime Biblify client — indexes `.bib`, resolves placeholders via `citation-js` + CSL, assembles bibliographies |
 
 ## Processing pipeline (in order)
@@ -735,7 +736,55 @@ runtime Biblify client never sees it.
   self-checking suite that builds in a temp directory and asserts against paths it
   computes at run time. It is wired into `tests/run-all.sh` as a gating suite.
 
-Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path), `Bibliography style` (apa/harvard1/vancouver/bjps/chicago/ajp/econometrica/ergo, or a custom `foo.csl`), `Resolve citations`, `Citation tooltips`, `Minimal bibliography` (writes `<out>.cited.bib`), `LaTeX bib style` (natbib `.bst`). Bundled CSL files live in `src/csl/`. `citation-js` is a dependency, loaded via `createRequire` (it's CJS; `require('citation-js')` returns the `Cite` constructor with `Cite.plugins` static). An UNKNOWN key (not in the `.bib`) is left as its literal command in every style — numeric included (Vancouver used to print `[undefined]`, fixed 2026-10) — with one build warning per key, `citation: no bibliography entry for "key"` (`warnMissingKey`; it used to be a bare console line outside the summary); a known key cited with it still resolves. LaTeX is untouched (natbib prints `?`). A NUMERIC style is numeric in print too (2026-10): when the style's own CSL `citation-format` is `numeric` (`cslCitationFormat`, biblify-compile.js — vancouver, or a custom numeric `.csl`), LaTeX gets `\usepackage[numbers,sort&compress]{natbib}` and `\bibliographystyle{unsrtnat}` (numbered by first citation, groups sorted and ranged, as the HTML numbers them — checked through bibtex, both engines); author-date styles keep plainnat/apalike; an explicit `LaTeX bib style` still wins. Vancouver is a whole-document mode; per-section style switching and scoped/sectional bibliographies are HTML-only. Fixtures: `tests/features/citations/` (`bibliography`, `legacy-alias`) — they **must** pin `Bibliography style` in the header, since a global `~/.jmarkdown/config.json` can otherwise supply a machine-specific default and make the goldens non-reproducible. `docs/bibliographic-support.jmd` is deliberately **excluded** from docs-snapshots (external BibTeX), so those fixtures are the only automated cover.
+#### Several bibliographies (`bibliographies.js`)
+A note's `Bibliography:` **adds** to the configured one (since 2026-10-03; before,
+it replaced it). The configured one is `Biblify.bibliography` from the config
+files — `~/.jmarkdown/config.json`, overridden by the project's
+`./.jmarkdown/config.json`, which is where Clew writes the vault's (absolute path,
+`render-service.js #biblifyConfig`). Both are **lists**: an array or a
+comma/newline-separated string in config; in a header, commas, a YAML flow list
+`[a.bib, b.bib]`, a YAML block list or continuation lines (`parseBibliographyList`).
+The header's value goes to `Biblify.note bibliography` (config-manager), not over
+the configured value.
+
+- **Order and precedence:** configured files, then the note's; a file **later** in
+  the order wins a key. Relative paths resolve against the source file, as before.
+- **`Bibliography mode: replace`** (header key; `add` is the default) uses the
+  note's files alone. Chosen over a keyword inside the list (`Bibliography: only
+  refs.bib`) so the value stays a plain list of paths — what a YAML/Obsidian
+  property editor (Clew's) can type as a list — and the switch is a separate,
+  discoverable property next to `Bibliography` and `Bibliography style`. Replace
+  with no note `Bibliography` warns and uses the configured one.
+- **Shadowed entries warn only when they differ** (whitespace aside), one warning
+  per pair of files naming the keys; identical copies (a bibporter subset of the
+  master) are silent. Names written as absolute paths are shown by basename.
+- **Readers:** compile-time HTML (`biblify-compile.js`) indexes every readable file
+  and merges the maps; `\citefile` (`bib-attachments.js`) looks a key up
+  strongest-first and resolves attachments against THAT `.bib`'s folder; numbering
+  under numeric styles and the reference list follow from the merged map.
+- **One-file readers get a merged file** written beside the output as
+  `<output>-bibliography.bib` (`writeMergedBibliography`; needs the `Output file`
+  config key, which `index.js` sets before the parse): (1) **bibtex, when a key is
+  in more than one listed file** — bibtex counts a repeated entry as an ERROR (exit
+  2) and latexmk then stops, leaving every citation "?" (verified); with the keys
+  apart, LaTeX lists the files themselves, strongest first:
+  `\bibliography{note,…,configured}` (basenames, as one file always was — bibtex
+  finds each on its search path, so a host's BIBINPUTS must reach the configured
+  file's folder); (2) the **runtime Biblify client**, which reads one `bibfile`,
+  whenever there are several. The merge is the files strongest-first with every
+  entry a stronger file has removed, so `@string`/`@preamble`/comments survive; it
+  starts with a `% Generated by jmarkdown` marker, is written only when changed,
+  and a file of that name WITHOUT the marker is never overwritten (warn + list the
+  files). On stdout there is nowhere to write it: the files are listed, with a
+  warning. A URL bibliography is the runtime client's alone (bibtex and the merge
+  leave it out, with a warning).
+- Suite: **`tests/bibliographies/run.sh`** (gating) — a project config as Clew
+  writes it, HOME isolated; add/replace/list forms/config array/numeric/
+  `\fullcite`/`\citefile`, the three LaTeX cases with a real bibtex run, the
+  overwrite guard, stdout, the runtime client.
+
+Metadata keys (all `Capitalised Words With Spaces`): `Bibliography` (path, or a list),
+`Bibliography mode` (`add`/`replace`), `Bibliography style` (apa/harvard1/vancouver/bjps/chicago/ajp/econometrica/ergo, or a custom `foo.csl`), `Resolve citations`, `Citation tooltips`, `Minimal bibliography` (writes `<out>.cited.bib`), `LaTeX bib style` (natbib `.bst`). Bundled CSL files live in `src/csl/`. `citation-js` is a dependency, loaded via `createRequire` (it's CJS; `require('citation-js')` returns the `Cite` constructor with `Cite.plugins` static). An UNKNOWN key (not in the `.bib`) is left as its literal command in every style — numeric included (Vancouver used to print `[undefined]`, fixed 2026-10) — with one build warning per key, `citation: no bibliography entry for "key"` (`warnMissingKey`; it used to be a bare console line outside the summary); a known key cited with it still resolves. LaTeX is untouched (natbib prints `?`). A NUMERIC style is numeric in print too (2026-10): when the style's own CSL `citation-format` is `numeric` (`cslCitationFormat`, biblify-compile.js — vancouver, or a custom numeric `.csl`), LaTeX gets `\usepackage[numbers,sort&compress]{natbib}` and `\bibliographystyle{unsrtnat}` (numbered by first citation, groups sorted and ranged, as the HTML numbers them — checked through bibtex, both engines); author-date styles keep plainnat/apalike; an explicit `LaTeX bib style` still wins. Vancouver is a whole-document mode; per-section style switching and scoped/sectional bibliographies are HTML-only. Fixtures: `tests/features/citations/` (`bibliography`, `legacy-alias`) — they **must** pin `Bibliography style` in the header, since a global `~/.jmarkdown/config.json` can otherwise supply a machine-specific default and make the goldens non-reproducible. `docs/bibliographic-support.jmd` is deliberately **excluded** from docs-snapshots (external BibTeX), so those fixtures are the only automated cover.
 
 ## Style
 

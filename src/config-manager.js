@@ -275,8 +275,14 @@ class ConfigManager {
 				}
 				break;
 			case "Bibliography":
-				str = value[0].trim();
-				this.config["Biblify"]["bibliography"] = str;
+				// The note's own files, ADDED to the configured
+				// `Biblify.bibliography` — a later file wins a key — unless
+				// `Bibliography mode: replace` (see bibliographies.js). Kept
+				// whole: a list may run over several header lines.
+				this.config["Biblify"]["note bibliography"] = value.join('\n');
+				break;
+			case "Bibliography_mode":
+				this.config["Biblify"]["bibliography mode"] = value[0].trim().toLowerCase();
 				break;
 			case "Resolve_citations":
 				// Switch on compile-time citation resolution (vs. the runtime

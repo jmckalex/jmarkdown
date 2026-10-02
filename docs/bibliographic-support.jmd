@@ -64,7 +64,8 @@ As argued in \cite{Lewis:1969}, …
 | Metadata key | Purpose |
 |---|---|
 | `Resolve citations` | `true` to assemble citations and the bibliography at build time. Absent (the default) leaves the runtime path in charge. |
-| `Bibliography` | Path to a BibTeX `.bib` database, resolved relative to the **source** file. |
+| `Bibliography` | Path to a BibTeX `.bib` database, resolved relative to the **source** file — or several, separated by commas. They are **added** to any bibliography a configuration file sets (see [Several bibliographies](#several-bibliographies)). |
+| `Bibliography mode` | `replace` to use the note's own `Bibliography` alone, ignoring the configured one. `add` (the default) adds to it. |
 | `Bibliography style` | A built-in style name or a path to a CSL file (see below). |
 
 When `Resolve citations` is on, processing does the following, with no browser
@@ -153,6 +154,70 @@ Two further keys refine the compile-time output:
 `Minimal bibliography` needs a real output file to sit beside, so it is skipped
 (with a console note) when output goes to stdout. The trimmed database is handy
 for shipping a paper with exactly the references it uses and nothing more.
+
+## Several bibliographies
+
+A bibliography can come from two places: a
+[configuration file](configuration-files.html) — your own
+`~/.jmarkdown/config.json`, or a project's `.jmarkdown/config.json`, which
+overrides it — and the document's header. The two **add up**: a note that names
+its own `.bib` still has every entry of the configured one, so a project can keep
+one master bibliography and a note can bring a few references of its own.
+
+```
+{ "Biblify": { "bibliography": "/Users/me/Library/master.bib" } }
+```
+
+```
+---
+Bibliography: extra.bib, preprints.bib
+---
+```
+
+Either place takes a **list**. In a header, separate the files with commas, or
+write a YAML list — `[extra.bib, preprints.bib]`, or one `- extra.bib` per line;
+in a configuration file, a string with commas or an array. Relative paths resolve
+against the source file, as one file always did.
+
+When the same key is in more than one file, the file listed **later** wins, so a
+note's entry beats the configured one. If the two entries differ, the build says
+so — once for each pair of files, naming the keys — so a stale copy doesn't go
+unnoticed:
+
+```
+bibliography: extra.bib (this note's) and master.bib (configured) disagree on
+2 entries; extra.bib's used: lewis1969, skyrms2010
+```
+
+Identical entries, as in a minimal `.bib` cut from the master, pass silently.
+
+To use **only** the note's files, as every header did before this — the
+configured bibliography ignored — add `Bibliography mode: replace`:
+
+```
+---
+Bibliography: just-these.bib
+Bibliography mode: replace
+---
+```
+
+Everything that reads a bibliography reads them all: the inline citations and
+the reference list, numbering under a numeric style (in citation order, whichever
+file an entry came from), `\fullcite`, and `\citefile`, which looks a key up the
+same way and finds an attachment relative to the `.bib` that holds the entry.
+Two readers take a single file, and get the files merged into one written beside
+the output, as `<output>-bibliography.bib`:
+
+- **bibtex**, when a key is in more than one of the files. bibtex counts a repeated
+  key as an error, and latexmk stops on it, leaving every citation as "?". With
+  the keys apart, the files are listed as they are:
+  `\bibliography{extra,preprints,master}`.
+- **The runtime Biblify client** (`Resolve citations` off), whenever there is more
+  than one file.
+
+The merged file starts with a comment saying jmarkdown wrote it, and is rewritten
+on every build; a file of that name that jmarkdown did not write is never
+overwritten (the build warns and lists the files instead).
 
 ## The citation commands
 
@@ -316,7 +381,9 @@ work to LaTeX:
   commands. The one exception is `\fullcite`, which natbib lacks: it is
   translated to `\bibentry` (from the `bibentry` package).
 - The `@bibliography` marker emits `\bibliographystyle{…}` followed by
-  `\bibliography{…}`, pointing at the basename of your `Bibliography` database.
+  `\bibliography{…}`, pointing at the basename of your `Bibliography` database —
+  or at each of several, the note's first, or at their merge when a key is in
+  more than one (see [Several bibliographies](#several-bibliographies)).
 - Real `bibtex`/`biber` resolves the citations and builds the reference list when
   you compile the resulting `.tex`.
 

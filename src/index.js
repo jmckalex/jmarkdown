@@ -625,6 +625,9 @@ const input = isStdin ? await readStdin() : fs.readFileSync(filename, 'utf8');
 // In stdin mode without -o, write to stdout (outFile === null is the sentinel).
 const outFile = options.output
 	|| (isStdin ? null : filename.replace(/\.([^.]+)$/, isLatex ? '.tex' : '.html'));
+// Where the output goes, for what is written beside it: several bibliographies
+// merged into one, for bibtex or the runtime client (bibliographies.js).
+configManager.set('Output file', outFile ? path.resolve(outFile) : null);
 
 function writeOutput(text) {
 	if (outFile === null) {

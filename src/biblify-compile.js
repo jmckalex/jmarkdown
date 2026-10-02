@@ -24,6 +24,7 @@ import { createRequire } from 'module';
 import { configManager } from './config-manager.js';
 import { CITE_RE } from './citations.js';
 import { addWarning, getWarnings } from './warnings.js';
+import { bibliographyFiles, readBibliographies, warnShadowedEntries } from './bibliographies.js';
 
 const require = createRequire(import.meta.url);
 
@@ -319,7 +320,6 @@ export function resolveCitations($, options = {}) {
 
 	const appDir = configManager.get('Jmarkdown app directory');
 	const baseDir = configManager.get('Markdown file directory') || process.cwd();
-	const bibPathRaw = configManager.get('Biblify.bibliography') || '';
 	let style = (configManager.get('Biblify.bibliography style') || 'chicago').trim();
 	if (!style) style = 'chicago';
 	const customTemplate = configManager.get('Biblify.template');
@@ -327,23 +327,24 @@ export function resolveCitations($, options = {}) {
 	const minimal = !!configManager.get('Biblify.minimal');
 	const outBase = options.outBase || null;
 
-	if (!bibPathRaw) {
+	// Every bibliography file — the configured ones, then the note's — read and
+	// indexed, a later file's entry winning a key (bibliographies.js). Paths
+	// resolve relative to the source file.
+	const files = bibliographyFiles();
+	if (files.length === 0) {
 		console.error('Resolve citations is on but no `Bibliography` file was given; leaving citations unresolved.');
 		recoverPlaceholders($);
 		return;
 	}
-
-	// Read + index the .bib file (path resolves relative to the source file).
-	let bibContent;
-	try {
-		const resolved = path.isAbsolute(bibPathRaw) ? bibPathRaw : path.resolve(baseDir, bibPathRaw);
-		bibContent = fs.readFileSync(resolved, 'utf8');
-	} catch (e) {
-		console.error(`Could not read bibliography file "${bibPathRaw}": ${e.message}`);
+	const indexed = readBibliographies(files)
+		.filter((file) => file.content != null)
+		.map((file) => ({ file, entries: processBibfile(file.content) }));
+	if (indexed.length === 0) {
 		recoverPlaceholders($);
 		return;
 	}
-	const bibfileMap = processBibfile(bibContent);
+	warnShadowedEntries(indexed);
+	const bibfileMap = Object.assign({}, ...indexed.map(({ entries }) => entries));
 
 	registerTemplates(appDir, customTemplate, baseDir, style);
 

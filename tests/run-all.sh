@@ -72,7 +72,16 @@ sh "$REPO/tests/tabbing/run.sh"
 tabbing_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ]; then
+# 9. bibliographies — a note's Bibliography ADDS to the configured one (a
+#    project config, which the feature harness cannot give a fixture), the
+#    merged .bib written beside LaTeX/runtime output, and a real bibtex run
+#    when TeX is installed. Gates CI.
+echo "------ bibliographies ------"
+sh "$REPO/tests/bibliographies/run.sh"
+bibliographies_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi
