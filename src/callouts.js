@@ -5,9 +5,11 @@
 	CLI, Clew's exports and Clew's reading view render a callout with ONE
 	implementation: for every built-in and custom type the HTML is
 	byte-identical to Clew's. What this port adds: LaTeX (callout-latex.js),
-	the `Callouts` config key for CLI users, unknown types, and one built-in
-	type, jmarkdown's own `suggestion` (lightbulb) — the two intended
-	differences from Clew @0423008's output, which declined both.
+	the `Callouts` config key for CLI users, unknown types, one built-in type
+	(jmarkdown's own `suggestion`, lightbulb), exact Font Awesome Free 6.7.2
+	paths for bug, list-ol and list-check, and untitled headings from the type
+	AS WRITTEN (`[!CAUTION]` → "Caution", untitledCalloutTitle) — the intended
+	differences from Clew @0423008's output.
 
 	  > [!warning]                 bare
 	  > [!warning] Mind the gap    custom title
@@ -61,7 +63,7 @@ import { addWarning } from './warnings.js';
 import { resolveCallouts } from './callout-definitions.js';
 import {
 	BUILTIN_CALLOUT_TYPES, resolveType, specFor, calloutIcon, calloutIconGeometry, calloutAccent,
-	installCalloutTable, hostCalloutTable, hostCalloutVersion,
+	installCalloutTable, hostCalloutTable, hostCalloutVersion, untitledCalloutTitle,
 } from './callout-table.js';
 import { cssColorToRgb, legibleOnLight, iconLatex, calloutLatex } from './callout-latex.js';
 import { escapeTexText } from './latex-escape.js';
@@ -71,6 +73,7 @@ export {
 	ICONS, VIEWBOX, BUILTIN, PALETTE, CALLOUT_TYPES, BUILTIN_CALLOUT_TYPES,
 	applyCustomCallouts, calloutGeneration, resolveType, specFor, calloutIcon,
 	builtinCalloutIcon, calloutColor, calloutIconGeometry, calloutAccent, defaultTitle,
+	untitledCalloutTitle,
 } from './callout-table.js';
 
 /* --- The `Callouts` config key -------------------------------------------------- */
@@ -189,6 +192,7 @@ export const calloutBlock = {
 			type: 'calloutBlock',
 			raw,
 			calloutType: type,
+			written: opener[1],               // the type as written, for an untitled heading
 			fold: opener[2] || null,          // '-' collapsed, '+' expanded, null fixed
 			title: opener[3].trim(),
 			tokens: [],
@@ -206,7 +210,7 @@ export const calloutBlock = {
 		if (global.isLatex) {
 			const title = token.title
 				? this.parser.parseInline(token.titleTokens)
-				: escapeTexText(spec.label);
+				: escapeTexText(untitledCalloutTitle(token.written));
 			const custom = spec.color ? cssColorToRgb(spec.color) : null;
 			const accent = calloutAccent(token.calloutType).slice(1);
 			const rgb = custom ? legibleOnLight(custom) : [0, 2, 4].map((i) => parseInt(accent.slice(i, i + 2), 16));
@@ -220,7 +224,7 @@ export const calloutBlock = {
 
 		const title = token.title
 			? this.parser.parseInline(token.titleTokens)
-			: escapeHtml(spec.label);
+			: escapeHtml(untitledCalloutTitle(token.written));
 		const body = this.parser.parse(token.tokens);
 
 		// A custom colour rides on the element as --clew-callout-color (the

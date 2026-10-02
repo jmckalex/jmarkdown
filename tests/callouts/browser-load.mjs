@@ -31,6 +31,11 @@ const checks = {
 	'resolveType(caution) = warning': t.resolveType('caution') === 'warning',
 	'calloutIcon(note) is inline SVG': t.calloutIcon('note').startsWith('<svg class="callout-icon"'),
 	'CALLOUT_TYPES lists 15 types': Object.keys(t.CALLOUT_TYPES).length === 15,
+	'defaultTitle(CAUTION) = Caution': t.defaultTitle('CAUTION') === 'Caution',
+	'untitled [!CAUTION] = Caution': t.untitledCalloutTitle('CAUTION') === 'Caution',
+	'untitled [!tldr] = Tldr': t.untitledCalloutTitle('tldr') === 'Tldr',
+	'untitled [!my-type] = My-type': t.untitledCalloutTitle('my-type') === 'My-type',
+	'untitled [!NOTE] = Note': t.untitledCalloutTitle('NOTE') === 'Note',
 	'graph is callout-table + callout-definitions only': [...modules.keys()].map((f) => path.basename(f)).sort().join(',') === 'callout-definitions.js,callout-table.js',
 };
 const failed = Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name);

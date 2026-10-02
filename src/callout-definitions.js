@@ -2,12 +2,14 @@
 	Custom callout TYPES — validation and merging, shared by the callout
 	extension (callouts.js) and any host that resolves its own definitions.
 
-	Ported verbatim from Clew-app's src/shared/custom-callouts.js (@0423008),
-	so a definition is accepted or refused for the same reason in both: Clew
+	Ported from Clew-app's src/shared/custom-callouts.js (@0423008), so a
+	definition is accepted or refused for the same reason in both: Clew
 	resolves its global and per-vault lists with it and hands the engine the
 	result (applyCustomCallouts), and the jmarkdown CLI resolves the
-	`Callouts` config key with it. Only the code below this comment is shared;
-	keep it byte-identical to Clew's when either changes.
+	`Callouts` config key with it. The code below is Clew's except for
+	defaultTitle, which now lower-cases the rest of the name (2026-10-02:
+	titles come from the type as WRITTEN, so `CAUTION` must give "Caution");
+	Clew imports this module rather than keeping its own copy.
 
 	A definition is `{ name, title?, icon?, color?, aliases? }`. Everything is
 	validated because a definition may come from anyone (a shared vault, a
@@ -64,8 +66,14 @@ export function iconKey(icon, table) {
 	return null;
 }
 
-/** "my-type" → "My-type", as Obsidian titles an untitled callout. */
-export const defaultTitle = (name) => name.charAt(0).toUpperCase() + name.slice(1);
+/**
+ * A callout name as a title: the first letter upper-case, the rest lower —
+ * "CAUTION" → "Caution", "tldr" → "Tldr", "my-type" → "My-type". Obsidian's
+ * docs say an untitled callout is titled with "its type identifier in title
+ * case"; a hyphenated name is one word here, as GitHub's single-word alert
+ * names give no other guide.
+ */
+export const defaultTitle = (name) => String(name).charAt(0).toUpperCase() + String(name).slice(1).toLowerCase();
 
 /**
  * One stored entry, checked: `{ name, title?, icon?, color?, aliases? }`.

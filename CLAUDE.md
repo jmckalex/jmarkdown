@@ -277,8 +277,11 @@ collapsed / open). Ported from Clew-app's `src/engine/callouts.js` @0423008 —
 view render callouts with this module, and for every built-in and custom type
 its HTML is **byte-identical** to Clew's (verified by running Clew's module and
 this one in the same engine). Keep it that way: a change to the HTML is a
-change for Clew too. The two INTENDED differences from Clew @0423008, which
-declined both: unknown types, and jmarkdown's own `suggestion` type.
+change for Clew too. The INTENDED differences from Clew @0423008's output
+(all 2026-10-02; Clew re-vendors this module to pick them up): unknown types
+and jmarkdown's own `suggestion` type (Clew declined both); `bug`, `list-ol`
+and `list-check` drawn with exact Font Awesome Free 6.7.2 paths; and untitled
+headings from the type as written (`[!CAUTION]` "Caution", not "Warning").
 
 - **Claims the whole syntax**, the five GFM alert types included (`[!NOTE]`,
   `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]` are Obsidian types or
@@ -303,6 +306,13 @@ declined both: unknown types, and jmarkdown's own `suggestion` type.
 - **Unknown types** render as Obsidian draws them — a note: pencil, note's
   colour (the stylesheet's default), title = the name capitalised, and
   `data-callout="<name, lower-cased>"` kept. (Clew @0423008 declined them.)
+- **Untitled headings come from the type AS WRITTEN** (`untitledCalloutTitle`,
+  callout-table.js; since 2026-10-02, as GitHub and Obsidian do): the type's
+  own name, in any case, gives its title (a built-in's label, or a custom
+  type's `title`); an alias or an unknown name gives that name through
+  `defaultTitle` — first letter upper, rest lower: `[!CAUTION]` "Caution",
+  `[!tldr]` "Tldr", `[!my-type]` "My-type", `[!NOTE]`/`[!note]` "Note". Icon,
+  colour and `data-callout` stay the canonical type's.
 - **HTML**: `<div class="callout markdown-alert markdown-alert-<type>"
   data-callout="<type>">` + `<p class="callout-title markdown-alert-title">`
   (inline Font Awesome SVG + `.callout-title-inner`) + `.callout-content`;

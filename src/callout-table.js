@@ -18,7 +18,7 @@
 
 import { defaultTitle } from './callout-definitions.js';
 
-/** "CAUTION" → "Caution": the title an untitled callout gets from a name. */
+/** "CAUTION" → "Caution": a name as a title (see untitledCalloutTitle). */
 export { defaultTitle };
 
 /** Each icon's path, in its own viewBox (VIEWBOX) — all exact Font Awesome Free
@@ -239,6 +239,24 @@ export function calloutColor(type) {
 /** The canonical type for whatever the author wrote, or null. Case-insensitive. */
 export function resolveType(raw) {
 	return ALIASES.get(String(raw ?? '').toLowerCase().trim()) ?? null;
+}
+
+/**
+ * The heading of an UNTITLED callout, from the type as the author WROTE it
+ * — as GitHub and Obsidian title them. The type's own name (in any case)
+ * gives the type's title: a built-in's label, or a custom type's `title`. An
+ * alias, or an unknown type, gives the name written, through defaultTitle:
+ *
+ *   [!NOTE], [!note] → "Note"    [!CAUTION] → "Caution" (a warning)
+ *   [!tldr] → "Tldr" (abstract)  [!my-type] → "My-type" (unknown)
+ *
+ * The callout's look — icon, colour, data-callout — is always the canonical
+ * type's; only the words change.
+ */
+export function untitledCalloutTitle(written) {
+	const name = String(written ?? '').toLowerCase().trim();
+	const type = resolveType(name) ?? name;
+	return name === type ? specFor(type).label : defaultTitle(name);
 }
 
 const escapeHtml = (s) => String(s)

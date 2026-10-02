@@ -249,7 +249,8 @@ with its own colour and icon:
 :::
 
 In Obsidian's scheme, which JMarkdown follows, `important` is another name for
-`tip` and `caution` another name for `warning`, so each pair looks the same.
+`tip` and `caution` another name for `warning`: each pair shares a colour and
+an icon, while the title is the name you wrote — "Important", "Caution".
 Obsidian defines a dozen more types besides, several with aliases of their own;
 all are listed in the reference table at the end of this page. `question` is one
 of them, and suits the marginal commentary that arises when drafting:
@@ -271,8 +272,10 @@ A type JMarkdown does not know is drawn as a note, titled with its own name —
 
 ## Titles, folding and nesting
 
-Text after the marker replaces the type's name as the title, and may contain
-markdown:
+An alert with no title of its own is headed by its type as written,
+capitalised: `[!NOTE]` and `[!note]` give "Note", `[!CAUTION]` gives "Caution",
+`[!tldr]` gives "Tldr" (an abstract). Text after the marker replaces that title,
+and may contain markdown:
 
 :::markdown-demo
 > [!warning] Mind the *gap*
@@ -312,7 +315,8 @@ for either applies. For `> [!NOTE]` the markup is:
 ```
 
 A foldable alert is a `<details>` element instead, its title a `<summary>`. An
-alias renders as its type: `[!caution]` gives `data-callout="warning"`.
+alias renders as its type — `[!caution]` gives `data-callout="warning"`, with
+the warning's icon and colour — under its own title, "Caution".
 
 ## Icons and styling
 
