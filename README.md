@@ -121,7 +121,7 @@ graph LR
 
 ## License
 
-MIT
+MIT — see [`LICENSE`](LICENSE).
 
 Third-party material carried in the source or written into output — the
 Font Awesome icons used for callouts (CC BY 4.0) — is listed in

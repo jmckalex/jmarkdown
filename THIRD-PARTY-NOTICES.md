@@ -1,7 +1,7 @@
 # Third-party notices
 
-JMarkdown itself is © J. McKenzie Alexander (see `README.md` for its
-licence). Its npm dependencies are installed by npm, not shipped in this
+JMarkdown itself is © J. McKenzie Alexander, under the MIT License (see
+`LICENSE`). Its npm dependencies are installed by npm, not shipped in this
 repository, and each carries its own licence in its own package under
 `node_modules/`. What follows is the third-party material that JMarkdown
 **carries in its own source** or **writes into the documents it produces**,
