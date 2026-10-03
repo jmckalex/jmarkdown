@@ -210,6 +210,25 @@ sed "s|^Bibliography: refs.bib|Bibliography: $NOTES/refs.bib|" "$NOTES/overlap.m
 assert_contains "stdout/lists-the-files" "$OUT/stdin.tex" '\bibliography{refs,vault}'
 assert_contains "stdout/warns" "$OUT/stdin.err" "no output file to write their merge beside"
 
+# --- a configured RELATIVE path is the config's: relative to the working
+# directory (where the project config is read), not to each note's folder ------
+
+printf '@book{localonly,\n  author = {Local, Lou},\n  title = {Found From the Project Folder},\n  publisher = {Local Press},\n  year = {2018}\n}\n' >"$SCRATCH/project/local.bib"
+config '"local.bib"' true apa
+printf -- '---\nTitle: relative\nBibliography: refs.bib\n---\n\nCites \\citet{localonly} and \\citet{noteonly}.\n\n@bibliography\n' >"$NOTES/relative.md"
+build relative html --fragment
+assert_contains "relative/configured-from-project" "$OUT/relative.html" "Found From the Project Folder"
+assert_contains "relative/note-from-note" "$OUT/relative.html" "Only in the Note"
+assert_absent   "relative/no-warning" "$OUT/relative.html.err" "cannot read"
+
+# --- a file that cannot be read is left out of a LaTeX list (bibtex stops on a
+# database it cannot open), with a warning ----------------------------------------
+
+config "[\"missing.bib\", \"$VAULT\"]" true apa
+build apart latex --fragment
+assert_contains "unreadable/left-out" "$OUT/apart.tex" '\bibliography{extra,vault}'
+assert_contains "unreadable/warns" "$OUT/apart.latex.err" 'cannot read "missing.bib" — no such file, so it is left out'
+
 # --- the runtime Biblify client, which reads one file -----------------------------
 
 config "\"$VAULT\"" false apa

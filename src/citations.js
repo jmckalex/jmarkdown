@@ -354,9 +354,11 @@ function styleToBst(style) {
 	that wins in HTML too. But bibtex counts a key it has seen before as an ERROR,
 	and latexmk stops on it, leaving every citation "?". So when a key is in
 	more than one file, the files are merged into one beside the output
-	(writeMergedBibliography) and that is what is named; a file that could not
-	be read is still listed, for bibtex to look for. A URL is the runtime
-	client's business; bibtex cannot read one.
+	(writeMergedBibliography) and that is what is named. A file the build cannot
+	read is left out, with the warning readBibliographies gives: bibtex stops on
+	a database it cannot open just the same. (One file alone is named whatever
+	happens, as it always was, for bibtex to find on its search path.) A URL is
+	the runtime client's business; bibtex cannot read one.
 */
 function latexBibliographyNames() {
 	const files = bibliographyFiles().filter((file) => {
@@ -369,15 +371,15 @@ function latexBibliographyNames() {
 	if (files.length === 1) return [base(files[0])];
 
 	const read = readBibliographies(files);
-	const indexed = read.filter((file) => file.content != null)
+	const readable = read.filter((file) => file.content != null);
+	const indexed = readable
 		.map((file) => ({ file, entries: new Map(bibEntries(file.content).map(({ key, start, end }) => [key, file.content.slice(start, end)])) }));
 	warnShadowedEntries(indexed);
-	const strongestFirst = [...read].reverse();
+	const strongestFirst = [...(readable.length ? readable : read)].reverse();
 	if (repeatedKeys(read).size === 0) return strongestFirst.map(base);
 
 	const merged = writeMergedBibliography(read, 'bibtex will stop on a key that is in more than one of them');
-	if (!merged) return strongestFirst.map(base);
-	return [merged.name, ...strongestFirst.filter((file) => file.content == null).map(base)];
+	return merged ? [merged.name] : strongestFirst.map(base);
 }
 
 export const bibliography = {

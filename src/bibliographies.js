@@ -19,7 +19,12 @@
 	files alone — what every header did before 2026-10-03, when its
 	`Bibliography` replaced the configured one outright.
 
-	Relative paths resolve against the document's folder, as they always have.
+	A relative path resolves against where it was written: a note's against
+	the note's folder, as it always has; a configured one against the working
+	directory, where the project config is read from (it used to resolve
+	against each note's folder, so a project's `./refs.bib` was a different
+	file for every note in a subfolder — which mattered little while a note's
+	own `Bibliography` switched it off, and for every such note once it adds).
 
 	Consumers: biblify-compile.js (compile-time HTML reads every file),
 	citations.js (@bibliography in LaTeX), bib-attachments.js (\citefile looks a
@@ -78,11 +83,11 @@ export function bibliographyFiles() {
 		? note.map((name) => ({ name, origin: 'note' }))
 		: [...configured.map((name) => ({ name, origin: 'config' })), ...note.map((name) => ({ name, origin: 'note' }))];
 
-	const baseDir = configManager.get('Markdown file directory') || process.cwd();
+	const noteDir = configManager.get('Markdown file directory') || process.cwd();
 	const files = named.map(({ name, origin }) => ({
 		name,
 		origin,
-		path: isUrl(name) ? null : path.resolve(baseDir, name),
+		path: isUrl(name) ? null : path.resolve(origin === 'note' ? noteDir : process.cwd(), name),
 	}));
 	// A file named twice keeps its later (stronger) place.
 	return files.filter((file, i) => !files.slice(i + 1).some((later) => (later.path ?? later.name) === (file.path ?? file.name)));
@@ -103,7 +108,7 @@ export function readBibliographies(files = bibliographyFiles()) {
 		if (!file.path) return { ...file, content: null, url: true };
 		let stamp;
 		try { stamp = fs.statSync(file.path).mtimeMs; } catch {
-			warnOnce(`bibliography: cannot read "${file.name}" — no such file`);
+			warnOnce(`bibliography: cannot read "${file.name}" — no such file, so it is left out`);
 			return { ...file, content: null };
 		}
 		const cached = readCache.get(file.path);
@@ -113,7 +118,7 @@ export function readBibliographies(files = bibliographyFiles()) {
 			readCache.set(file.path, { stamp, content });
 			return { ...file, content };
 		} catch (e) {
-			warnOnce(`bibliography: cannot read "${file.name}" — ${e.message}`);
+			warnOnce(`bibliography: cannot read "${file.name}" (${e.message}), so it is left out`);
 			return { ...file, content: null };
 		}
 	});

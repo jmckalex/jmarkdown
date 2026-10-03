@@ -3,6 +3,7 @@ Title: generated headings
 Headings: numeric
 Resolve citations: true
 Bibliography: ../citations/refs.bib
+Bibliography mode: replace
 Bibliography style: apa
 ---
 

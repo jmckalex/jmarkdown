@@ -1,5 +1,6 @@
 Title: fullcite
 Bibliography: refs.bib
+Bibliography mode: replace
 Bibliography style: chicago
 Resolve citations: true
 ------------------------------------

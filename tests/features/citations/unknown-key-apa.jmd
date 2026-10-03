@@ -1,6 +1,7 @@
 ---
 Title: unknown citation key, apa
 Bibliography: refs.bib
+Bibliography mode: replace
 Bibliography style: apa
 Resolve citations: true
 ---

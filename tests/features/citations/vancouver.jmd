@@ -1,5 +1,6 @@
 Title: vancouver
 Bibliography: refs.bib
+Bibliography mode: replace
 Bibliography style: vancouver
 Resolve citations: true
 ------------------------------------

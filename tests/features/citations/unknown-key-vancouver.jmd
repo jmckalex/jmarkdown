@@ -1,6 +1,7 @@
 ---
 Title: unknown citation key, vancouver
 Bibliography: refs.bib
+Bibliography mode: replace
 Bibliography style: vancouver
 Resolve citations: true
 ---
