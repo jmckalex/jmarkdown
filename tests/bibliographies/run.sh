@@ -229,6 +229,57 @@ build apart latex --fragment
 assert_contains "unreadable/left-out" "$OUT/apart.tex" '\bibliography{extra,vault}'
 assert_contains "unreadable/warns" "$OUT/apart.latex.err" 'cannot read "missing.bib" — no such file, so it is left out'
 
+# --- a bibliography a HOST names for one build (--bibliography): a configured
+# one in every respect. Clew's exports pass the vault's this way ----------------
+
+config '""' true apa
+printf -- '---\nTitle: hostonly\n---\n\nCites \\citet{vaultonly}.\n\n@bibliography\n' >"$NOTES/hostonly.md"
+build hostonly html --fragment --bibliography "$VAULT"
+assert_contains "host/resolves" "$OUT/hostonly.html" "Only in the Vault"
+assert_absent   "host/no-unresolved" "$OUT/hostonly.html.err" "no bibliography entry"
+build hostonly latex --bibliography "$VAULT"
+assert_contains "host/latex-names-it" "$OUT/hostonly.tex" '\bibliography{vault}'
+if command -v pdflatex >/dev/null 2>&1 && command -v bibtex >/dev/null 2>&1; then
+	# bibtex finds a bibliography by its basename on BIBINPUTS, which a host
+	# sets to the file's folder.
+	(cd "$OUT" && sed -e '/fontspec/d' -e '/setmainfont/d' hostonly.tex >hostonly-pdf.tex; \
+		pdflatex -interaction=nonstopmode hostonly-pdf.tex >/dev/null 2>&1; \
+		BIBINPUTS="$SCRATCH/vault:" bibtex hostonly-pdf >hostbib.out 2>&1; echo $? >hostbib.status; \
+		pdflatex -interaction=nonstopmode hostonly-pdf.tex >/dev/null 2>&1; \
+		pdflatex -interaction=nonstopmode hostonly-pdf.tex >/dev/null 2>&1; \
+		pdftotext hostonly-pdf.pdf hostonly.txt 2>/dev/null)
+	if [ "$(cat "$OUT/hostbib.status")" = 0 ]; then pass "host/bibtex/clean"; else fail "host/bibtex/clean" "$(cat "$OUT/hostbib.out")"; fi
+	[ -f "$OUT/hostonly.txt" ] && assert_contains "host/pdf/resolved" "$OUT/hostonly.txt" "Only in the Vault"
+	[ -f "$OUT/hostonly.txt" ] && assert_absent   "host/pdf/no-undefined" "$OUT/hostonly.txt" "?"
+fi
+
+build add html --fragment --bibliography "$VAULT"
+assert_contains "host/note-adds/note-wins" "$OUT/add.html" "The Note Version"
+assert_contains "host/note-adds/host-entry" "$OUT/add.html" "Only in the Vault"
+assert_contains "host/note-adds/warns" "$OUT/add.html.err" "refs.bib (this note's) and vault.bib (configured) disagree on an entry"
+
+build replace html --fragment --bibliography "$VAULT"
+assert_absent   "host/replace-drops" "$OUT/replace.html" "Only in the Vault"
+assert_contains "host/replace-unresolved" "$OUT/replace.html.err" 'no bibliography entry for "vaultonly"'
+
+build hostonly html --fragment --bibliography ../vault/vault.bib
+assert_contains "host/relative-to-cwd" "$OUT/hostonly.html" "Only in the Vault"
+
+# The library route Clew's export worker takes: processFile's `bibliography`
+# option (a string here; a list works the same).
+config '""' true apa
+(cd "$SCRATCH/project" && HOME="$SCRATCH/home" node --input-type=module -e "
+	const { processFile } = await import('$JMD');
+	await processFile('$NOTES/hostonly.md', { to: 'html', fragment: true, output: '$OUT/library.html', bibliography: '$VAULT' });
+" >/dev/null 2>"$OUT/library.err")
+assert_contains "host/processFile-option" "$OUT/library.html" "Only in the Vault"
+
+# After the config files': a host's file wins a key over the config's.
+printf '@book{vaultonly,\n  author = {Vault, Vera},\n  title = {The Host Version},\n  publisher = {Host Press},\n  year = {2002}\n}\n' >"$SCRATCH/host.bib"
+config "\"$VAULT\"" true apa
+build hostonly html --fragment --bibliography "$SCRATCH/host.bib"
+assert_contains "host/after-config" "$OUT/hostonly.html" "The Host Version"
+
 # --- the runtime Biblify client, which reads one file -----------------------------
 
 config "\"$VAULT\"" false apa

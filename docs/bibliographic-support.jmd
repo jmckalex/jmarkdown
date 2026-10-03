@@ -180,6 +180,15 @@ in a configuration file, a string with commas or an array. A relative path in th
 header resolves against the source file; one in a configuration file, against the
 folder you run JMarkdown from (where a project's configuration file is read).
 
+A program that runs JMarkdown for you can name more files for a single build,
+with `--bibliography` (once per file):
+
+```
+jmarkdown process paper.md --bibliography ~/Library/master.bib
+```
+
+They count as configured ones, coming after the configuration files' own.
+
 When the same key is in more than one file, the file listed **later** wins, so a
 note's entry beats the configured one. If the two entries differ, the build says
 so — once for each pair of files, naming the keys — so a stale copy doesn't go

@@ -6,8 +6,15 @@
 	  1. `Biblify.bibliography` from the config files — ~/.jmarkdown/config.json,
 	     then the project's ./.jmarkdown/config.json, which overrides it (a host
 	     writes there: Clew puts the vault's bibliography in the config it
-	     generates);
-	  2. then the header's `Bibliography:`.
+	     generates for its previews);
+	  2. the files a HOST names for one build — `--bibliography <file>`
+	     (repeatable), or processFile's `bibliography` option — configured ones
+	     in every respect, after the config files'. Clew's exports run the
+	     user's own config, not its generated one, and pass the vault's
+	     bibliography this way. An option rather than an environment variable:
+	     it belongs to one build and shows in the call, where a variable left
+	     in a shell would add a bibliography to every build unseen;
+	  3. then the header's `Bibliography:`.
 
 	Each is a LIST: an array in a config file, or a string of files separated by
 	commas or new lines — so `Bibliography: refs.bib, extra.bib`, a YAML list
@@ -70,7 +77,10 @@ export function parseBibliographyList(value) {
  * place.
  */
 export function bibliographyFiles() {
-	const configured = parseBibliographyList(configManager.get('Biblify.bibliography'));
+	const configured = [
+		...parseBibliographyList(configManager.get('Biblify.bibliography')),
+		...parseBibliographyList(configManager.get('Biblify.host bibliography')),
+	];
 	const note = parseBibliographyList(configManager.get('Biblify.note bibliography'));
 	const mode = String(configManager.get('Biblify.bibliography mode') || 'add').trim().toLowerCase();
 	if (mode !== 'add' && mode !== 'replace') {

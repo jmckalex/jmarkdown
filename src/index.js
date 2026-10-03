@@ -639,6 +639,10 @@ const outFile = options.output
 // Where the output goes, for what is written beside it: several bibliographies
 // merged into one, for bibtex or the runtime client (bibliographies.js).
 configManager.set('Output file', outFile ? path.resolve(outFile) : null);
+// Bibliography files a HOST names for this build (`--bibliography`, or the
+// `bibliography` option of processFile): treated as configured ones, after the
+// config files' (bibliographies.js). Set every build, so none outlives it.
+configManager.set('Biblify.host bibliography', [options.bibliography ?? []].flat().filter(Boolean));
 
 function writeOutput(text) {
 	if (outFile === null) {
@@ -854,6 +858,8 @@ const isCliEntry = (() => {
 })();
 if (isCliEntry) {
 	const program = new Command();
+	// A repeatable option: each use adds to the list.
+	const collectOption = (value, list) => [...list, value];
 
 	program
 		.version('0.5')
@@ -893,6 +899,7 @@ if (isCliEntry) {
 		.option('--fragment', 'Output an HTML fragment without the template wrapper (no <html>, <head>, <body>)')
 		.option('--to <format>', 'Output format: html (default) or latex', 'html')
 		.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension; stdout in stdin mode)')
+		.option('--bibliography <file>', 'Add a bibliography file for this build, as a configured one (repeatable)', collectOption, [])
 		.action(async (filename, options) => {
 			await processFile(filename, { ...program.opts(), ...options });
 		});
@@ -909,6 +916,7 @@ if (isCliEntry) {
 		.option('--css', 'Live-track CSS assets (fast inject, no reload). Omit BOTH --css/--js to track both kinds')
 		.option('--js', 'Live-track JS assets (full page reload). Omit BOTH --css/--js to track both kinds')
 		.option('--no-sync', 'Do not inject the editor preview-sync bridge (forward/inverse search when embedded)')
+		.option('--bibliography <file>', 'Add a bibliography file for every build, as a configured one (repeatable)', collectOption, [])
 		.action(async (filename, options) => {
 			const { startWatch } = await import('./watch.js');
 			await startWatch(filename, options);

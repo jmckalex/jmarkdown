@@ -8,7 +8,7 @@ JMarkdown is a Node.js Markdown authoring system built on **marked.js v16**. A s
 
 - **Language:** JavaScript (ES modules — `"type": "module"` in `package.json`).
 - **Entry point:** `src/index.js`, exposed as the `jmarkdown` binary via the `bin` field.
-- **CLI:** `jmarkdown process <file.md> [--to html|latex] [--fragment] [-n]`, plus `jmarkdown init`, `jmarkdown options`, and `jmarkdown watch <file.md>` (live rebuild + browser reload — see "Watch mode").
+- **CLI:** `jmarkdown process <file.md> [--to html|latex] [--fragment] [-n] [--bibliography <file>]…`, plus `jmarkdown init`, `jmarkdown options`, and `jmarkdown watch <file.md>` (live rebuild + browser reload — see "Watch mode").
 - **No build step.** Source runs directly under Node. No test suite at present (`npm test` is a placeholder).
 
 ## Repository layout
@@ -817,6 +817,16 @@ comma/newline-separated string in config; in a header, commas, a YAML flow list
 The header's value goes to `Biblify.note bibliography` (config-manager), not over
 the configured value.
 
+- **Host-named files:** `--bibliography <file>` (repeatable; `process` and `watch`)
+  or processFile's `bibliography` option (string or list) — stored per build as
+  `Biblify.host bibliography` (index.js, reset every build) and treated as
+  CONFIGURED in every respect, after the config files'. For a host whose build
+  doesn't run its own config: Clew's single-note exports run the user's config
+  cascade, never the generated one that carries the vault's bibliography to its
+  previews, so they pass it this way. An option, not an environment variable: it
+  belongs to one build and shows in the call, where a variable left in a shell
+  would add a bibliography to every build unseen. In LaTeX it is named by
+  basename like any other, so the host's BIBINPUTS must reach its folder.
 - **Order and precedence:** configured files, then the note's; a file **later** in
   the order wins a key. A relative path resolves against where it was written: a
   note's against the note's folder (as before); a CONFIGURED one against the working
