@@ -16,14 +16,15 @@
   right; the fenced <code>latex</code> blocks beneath them show the <span class="intense">real</span> LaTeX that
   <code>jmarkdown process … --to latex</code> generates for the same source.
 </p>
-<h2 id="toc-gfm-alerts-become-coloured-callouts">GFM alerts become coloured callouts</h2>
-<p>A GitHub-flavoured-Markdown <strong>alert</strong> is a blockquote whose first line is a marker
-  of the form <code>[!NOTE]</code>, <code>[!TIP]</code>, <code>[!IMPORTANT]</code>, <code>[!WARNING]</code>, or <code>[!CAUTION]</code>.
-  On the web JMarkdown renders the familiar GitHub callout: a coloured left border,
-  an icon, and a title. In print, each alert becomes a
-  <a href="https://ctan.org/pkg/tcolorbox"><code>tcolorbox</code></a> — a coloured, titled box — its frame
-  and background tinted to match the alert kind:
-</p>
+<h2 id="toc-alerts-become-tinted-boxes">Alerts become tinted boxes</h2>
+<p>An <strong>alert</strong> — a callout, in Obsidian's terms — is a blockquote whose first line is
+  a marker such as <code>[!NOTE]</code>, <code>[!TIP]</code> or <code>[!WARNING]</code>: any of Obsidian's types, or
+  JMarkdown's own <code>suggestion</code> (see <a href="tables-and-alerts.html">Tables and alerts</a>).
+  On the web JMarkdown renders it as Obsidian does: an accent-coloured left border,
+  a light tint of the accent behind the text, and a title row with the type's icon.
+  In print, each alert becomes a <a href="https://ctan.org/pkg/tcolorbox"><code>tcolorbox</code></a>
+  drawn to the same design — the accent for the left rule, the icon and the title,
+  a 12<!-- Markdown source commented out --></p>
 <div class="markdown-demo-container">
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
@@ -35,82 +36,113 @@
 <span class="hljs-quote">&gt; Urgent information that needs immediate attention to avoid a problem.</span></code></pre>
   </div>
   <div class="markdown-demo-parsed">
-    <div class="markdown-alert markdown-alert-note">
-      <p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
-        </svg>Note</p>
-      <p>Useful information that users should know, even when skimming.</p>
+    <div class="callout markdown-alert markdown-alert-note" data-callout="note">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1 0 32c0 8.8 7.2 16 16 16l32 0zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"></path>
+        </svg><span class="callout-title-inner">Note</span></p>
+      <div class="callout-content">
+        <p>Useful information that users should know, even when skimming.</p>
+      </div>
     </div>
-    <div class="markdown-alert markdown-alert-warning">
-      <p class="markdown-alert-title"><svg class="octicon octicon-alert mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-          <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
-        </svg>Warning</p>
-      <p>Urgent information that needs immediate attention to avoid a problem.</p>
+    <div class="callout markdown-alert markdown-alert-warning" data-callout="warning">
+      <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480L40 480c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24l0 112c0 13.3 10.7 24 24 24s24-10.7 24-24l0-112c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"></path>
+        </svg><span class="callout-title-inner">Warning</span></p>
+      <div class="callout-content">
+        <p>Urgent information that needs immediate attention to avoid a problem.</p>
+      </div>
     </div>
 
   </div>
 </div>
-<p>All five kinds map to a <code>tcolorbox</code> whose <code>colframe</code> and <code>colback</code> encode the
-  alert's colour. The body is rendered as Markdown first, so emphasis, links, and
-  inline math inside an alert come through as normal LaTeX:</p>
-<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=blue,colback=blue!8,title=Note]
+<p>The body is rendered as Markdown first, so emphasis, links, lists, code and maths
+  inside an alert come through as normal LaTeX. The generated LaTeX for the note
+  is below, with the icon's path data shortened to <code>…</code>:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{tcolorbox}[enhanced, breakable, frame hidden,
+  code={<span class="hljs-keyword">\definecolor</span>{jmdcallout}{RGB}{91,141,239}},
+  boxrule=0pt, leftrule=3pt, arc=3.75pt, boxsep=0pt,
+  left=12pt, right=12pt, top=9pt, bottom=9pt,
+  interior code={<span class="hljs-keyword">\fill</span>[jmdcallout!12!white, rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);
+    <span class="hljs-keyword">\begin</span>{scope}<span class="hljs-keyword">\clip</span>[rounded corners=3.75pt] (frame.south west) rectangle (frame.north east);
+    <span class="hljs-keyword">\fill</span>[jmdcallout] (frame.south west) rectangle ([xshift=3pt]frame.north west);<span class="hljs-keyword">\end</span>{scope}}]
+{<span class="hljs-keyword">\color</span>{jmdcallout}<span class="hljs-keyword">\bfseries</span> <span class="hljs-keyword">\raisebox</span>{-0.125em}{<span class="hljs-keyword">\resizebox</span>{!}{1em}{<span class="hljs-keyword">\begin</span>{tikzpicture}[yscale=-1]<span class="hljs-keyword">\useasboundingbox</span> svg {M 0 0 L 512 0 L 512 512 L 0 512 Z};<span class="hljs-keyword">\fill</span> svg {…};<span class="hljs-keyword">\end</span>{tikzpicture}}}<span class="hljs-keyword">\hspace</span>{0.45em}Note}<span class="hljs-keyword">\par</span><span class="hljs-keyword">\vspace</span>{4.5pt}
 Useful information that users should know, even when skimming.
 <span class="hljs-keyword">\end</span>{tcolorbox}
-
-<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=teal,colback=teal!8,title=Tip]
-Helpful advice for doing things better or more easily.
-<span class="hljs-keyword">\end</span>{tcolorbox}
-
-<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=violet,colback=violet!8,title=Important]
-Key information users need to know to achieve their goal.
-<span class="hljs-keyword">\end</span>{tcolorbox}
-
-<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=orange,colback=orange!8,title=Warning]
-Urgent info that needs immediate user attention to avoid problems.
-<span class="hljs-keyword">\end</span>{tcolorbox}
-
-<span class="hljs-keyword">\begin</span>{tcolorbox}[colframe=red,colback=red!8,title=Caution]
-Advises about risks or negative outcomes of certain actions.
-<span class="hljs-keyword">\end</span>{tcolorbox}
 </code></pre>
-<p>The colour for each kind is fixed:</p>
+<p>Each box is self-contained:</p>
+<ul>
+  <li>The <span class="intense">accent</span> is defined inside the box (<code>code={\definecolor…}</code>), so an alert
+    nested in another keeps its own colour without disturbing the outer one.</li>
+  <li>The <span class="intense">icon</span> is the same Font Awesome glyph as on the web, drawn from its outline
+    by TikZ: no icon font is needed, and it prints at any size. It is scaled to the
+    height of the title text.</li>
+  <li>The <span class="intense">frame</span> is not drawn; the tint and the left rule are painted inside the
+    box (<code>interior code</code>), the rule clipped to the same rounded corners, so the left
+    edge curves as the web version's does.</li>
+  <li>A <span class="intense">foldable</span> alert (<code>[!tip]- …</code>) prints expanded: paper cannot fold.</li>
+</ul>
+<p>The boxes are <code>breakable</code>, so a long alert continues onto the next page. A full
+  document loads what they need automatically — <code>tcolorbox</code> with its <code>skins</code> and
+  <code>breakable</code> libraries, <code>tikz</code> with <code>svg.path</code>, and <code>graphicx</code>; a <code>--fragment</code>
+  build leaves that to the surrounding document. The result compiles under
+  pdfLaTeX and LuaLaTeX alike.
+</p>
+<p>Each type has a fixed accent:</p>
 <table>
   <thead>
     <tr>
-      <th>Alert</th>
-      <th>Frame and background</th>
-      <th>Title</th>
+      <th>Type (also written)</th>
+      <th>Accent</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td><code>[!NOTE]</code></td>
-      <td>blue</td>
-      <td>Note</td>
+      <td>note</td>
+      <td><code>#5b8def</code></td>
     </tr>
     <tr>
-      <td><code>[!TIP]</code></td>
-      <td>teal</td>
-      <td>Tip</td>
+      <td>abstract (summary, tldr), tip (hint, important), compatibility</td>
+      <td><code>#00b8a3</code></td>
     </tr>
     <tr>
-      <td><code>[!IMPORTANT]</code></td>
-      <td>violet</td>
-      <td>Important</td>
+      <td>info, todo</td>
+      <td><code>#3b9dd8</code></td>
     </tr>
     <tr>
-      <td><code>[!WARNING]</code></td>
-      <td>orange</td>
-      <td>Warning</td>
+      <td>success (check, done)</td>
+      <td><code>#3fb950</code></td>
     </tr>
     <tr>
-      <td><code>[!CAUTION]</code></td>
-      <td>red</td>
-      <td>Caution</td>
+      <td>question (help, faq)</td>
+      <td><code>#d9a441</code></td>
+    </tr>
+    <tr>
+      <td>warning (caution, attention)</td>
+      <td><code>#e08c3c</code></td>
+    </tr>
+    <tr>
+      <td>failure (fail, missing), danger (error), bug</td>
+      <td><code>#e5534b</code></td>
+    </tr>
+    <tr>
+      <td>example</td>
+      <td><code>#a371f7</code></td>
+    </tr>
+    <tr>
+      <td>quote (cite)</td>
+      <td><code>#8b949e</code></td>
+    </tr>
+    <tr>
+      <td>suggestion</td>
+      <td><code>#db61a2</code></td>
     </tr>
   </tbody>
 </table>
-<p>The <code>!8</code> suffix on the background colour is a <code>tcolorbox</code>/<code>xcolor</code> tint: an 8<!-- Markdown source commented out -->of the frame colour, light enough to keep body text readable.</p>
+<p>A type JMarkdown does not know is drawn as a note. A custom type's colour (the
+  <code>Callouts</code> configuration) is used as given, except that one too pale to read on
+  paper is darkened to a lightness of 0.68 in the OKLCH colour space — the same rule
+  the web stylesheet applies.
+</p>
 <h2 id="toc-description-lists-become-a-description-environment">Description lists become a <code>description</code> environment</h2>
 <p>A <strong>description list</strong> pairs a term with its definition. JMarkdown's syntax is one
   line per entry: the term, a double-colon separator, then the definition (as in the
@@ -273,9 +305,9 @@ graph TD
   </thead>
   <tbody>
     <tr>
-      <td>GFM alert (<code>[!NOTE]</code> …)</td>
-      <td>GitHub-style callout <code>div</code></td>
-      <td><code>tcolorbox</code>, colour by kind</td>
+      <td>Alert / callout (<code>[!NOTE]</code> …)</td>
+      <td>Obsidian-style callout <code>div</code> (or <code>details</code> when foldable), Font Awesome icon</td>
+      <td><code>tcolorbox</code> in the same design, same icon drawn by TikZ</td>
     </tr>
     <tr>
       <td>Description list</td>

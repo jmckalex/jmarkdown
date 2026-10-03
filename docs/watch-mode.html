@@ -70,6 +70,14 @@
       <td><code>--full-reload</code></td>
       <td>Reload the whole page on change instead of patching it in place.</td>
     </tr>
+    <tr>
+      <td><code>--css</code></td>
+      <td>Live-track only stylesheets (see "Editing CSS and JavaScript live").</td>
+    </tr>
+    <tr>
+      <td><code>--js</code></td>
+      <td>Live-track only scripts. Omit both <code>--css</code>/<code>--js</code> to track both kinds.</td>
+    </tr>
   </tbody>
 </table>
 <p>Stop watching with <code>Ctrl-C</code>.</p>
@@ -93,6 +101,81 @@
   metadata keys are loaded as JavaScript modules rather than read as files, so
   edits to <strong>them</strong> are not detected. After changing one of those, restart the
   watcher (<code>Ctrl-C</code>, then the same command again).</p>
+<h2 id="toc-editing-css-and-javascript-live">Editing CSS and JavaScript live</h2>
+<p>A document usually carries its own stylesheet and scripts — named in the <code>CSS</code>
+  and <code>Script</code> metadata keys, which become <code>&lt;link&gt;</code> and <code>&lt;script&gt;</code> tags in the
+  page. Watch mode folds those <strong>local</strong> files into the live loop too, and handles
+  each kind the way that gives the tightest feedback:</p>
+<ul>
+  <li><strong>Stylesheets are injected, not reloaded.</strong> Save a <code>.css</code> file and the new
+    styling appears at once — the page is <span class="intense">not</span> reloaded, your scroll position
+    holds, and rendered mathematics and diagrams stay exactly as they are. (The
+    matching <code>&lt;link&gt;</code> is quietly swapped for a fresh copy and the old one dropped
+    once the new one has loaded, so there is no flash of unstyled content.)</li>
+  <li><strong>Scripts trigger a reload.</strong> Save a <code>.js</code> file the page loads and watch mode
+    reloads the whole page so the new script runs from a clean slate. JavaScript
+    state cannot be hot-swapped the way a stylesheet can, so a reload is the
+    honest choice — your scroll position is still restored.</li>
+</ul>
+<p>Neither kind triggers a document rebuild: changing a stylesheet or a script does
+  not change the generated HTML, so watch mode goes straight to the browser. That
+  makes a CSS tweak essentially instant.</p>
+<h3 id="toc-files-that-are-not-directly-linked">Files that are not directly linked</h3>
+<p>Sometimes the file you are editing is not the one named in <code>CSS:</code>/<code>Script:</code> — a
+  stylesheet that <code>@import</code>s a partial, say, or a module that a linked script
+  imports. List those extra files under a <code>Watch:</code> key and they join the loop,
+  each classified by extension (<code>.css</code> is injected like a stylesheet; anything
+  else triggers a reload):</p>
+<pre><code class="hljs">---
+CSS: site.css
+Script: app.js
+Watch: _typography.css, lib/widgets.js
+---
+</code></pre>
+<p>A change to a non-linked <code>.css</code> partial refreshes every local stylesheet — watch
+  mode cannot know which sheet imported it — which is still reload-free.</p>
+<h3 id="toc-choosing-what-to-track">Choosing what to track</h3>
+<p>These flags only choose which <strong>assets</strong> are watched alongside the document — the
+  document itself is always rebuilt and patched in place on every save, whichever
+  flag you pass (or none). By default watch mode tracks <strong>both</strong> stylesheets and
+  scripts; <code>--css</code> and <code>--js</code> narrow that:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Flags</th>
+      <th>Listed CSS files</th>
+      <th>Listed JS files</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>(neither)</strong></td>
+      <td>injected</td>
+      <td>page reloads</td>
+    </tr>
+    <tr>
+      <td><code>--css</code></td>
+      <td>injected</td>
+      <td><strong>ignored</strong></td>
+    </tr>
+    <tr>
+      <td><code>--js</code></td>
+      <td><strong>ignored</strong></td>
+      <td>page reloads</td>
+    </tr>
+    <tr>
+      <td><code>--css --js</code></td>
+      <td>injected</td>
+      <td>page reloads</td>
+    </tr>
+  </tbody>
+</table>
+<p>So <code>--css</code> is useful when you are only touching styling and would rather a stray
+  save to a script not reload the page; the document still rebuilds and updates in
+  place exactly as always.</p>
+<p>Only assets the preview server can reach — files inside the output directory —
+  are live-tracked; stylesheets and scripts loaded from a CDN or from outside the
+  project are left to the browser as usual.</p>
 <h2 id="toc-how-the-page-updates">How the page updates</h2>
 <p>When a rebuild finishes, the browser does <strong>not</strong> reload. The preview client
   fetches the new build, compares it block by block with the page on screen, and
@@ -153,6 +236,9 @@
     in the served copy.</li>
   <li><strong>Changed a <code>Load …</code> file?</strong> Restart the watcher; those modules are not
     auto-tracked yet.</li>
+  <li><strong>Edit a stylesheet and it injects instantly</strong> (no reload, scroll and rendered
+    math preserved); <strong>edit a script and the page reloads</strong>. Add non-linked partials
+    or modules under <code>Watch:</code>; <code>--css</code>/<code>--js</code> narrow which kinds are tracked.</li>
   <li><code>--no-serve</code> for rebuild-only; <code>--to latex</code> implies it. <code>--full-reload</code> for
     whole-page reloads. <code>--port</code> to pin the server port.</li>
 </ul>

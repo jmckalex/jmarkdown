@@ -33,8 +33,13 @@
   <div class="markdown-demo-code-label">Markdown code</div>
   <div class="markdown-demo-output-label">Markdown output</div>
   <div class="markdown-demo-markdown">
-    <pre><code class="hljs language-markdown">@begin(warning)
-A plain name becomes a <span class="hljs-code">`&lt;div&gt;`</span> whose class is the name.
+    <pre><code class="hljs language-markdown">@begin(aside)
+A <span class="hljs-emphasis">*known*</span> HTML block element — like <span class="hljs-code">`aside`</span>,
+<span class="hljs-code">`nav`</span> or <span class="hljs-code">`header`</span> — renders as itself.
+@end(aside)
+
+@begin(warning)
+Any other plain name becomes a <span class="hljs-code">`&lt;div&gt;`</span> whose class is the name.
 @end(warning)
 
 @begin(pull-quote)
@@ -44,8 +49,13 @@ custom-element name.
 @end(pull-quote)</code></pre>
   </div>
   <div class="markdown-demo-parsed">
+    <aside>
+      <p>A <strong>known</strong> HTML block element — like <code>aside</code>,
+        <code>nav</code> or <code>header</code> — renders as itself.
+      </p>
+    </aside>
     <div class="warning">
-      <p>A plain name becomes a <code>&lt;div&gt;</code> whose class is the name.</p>
+      <p>Any other plain name becomes a <code>&lt;div&gt;</code> whose class is the name.</p>
     </div>
     <pull-quote>
       <p>A <strong>hyphenated</strong> name becomes a custom element instead,
@@ -55,10 +65,14 @@ custom-element name.
 
   </div>
 </div>
-<p>You can force either form with a sigil — <code>@begin(.name)</code> is always a <code>&lt;div&gt;</code>,
-  <code>@begin(&lt;name&gt;)</code> is always an element — or set the document-wide policy with the
-  <code>Block elements</code> metadata key (<code>hyphenated</code> (default) · <code>all</code> · <code>none</code>). In
-  LaTeX, every environment renders as <code>\begin{name}[label]…\end{name}</code> regardless.
+<p>So the rule for a name you have not defined is: a real HTML block-container
+  element renders as itself, a hyphenated name becomes a custom element, and any
+  other plain name becomes a <code>&lt;div&gt;</code> with the name as its class. You can force
+  either form with a sigil — <code>@begin(.name)</code> is always a <code>&lt;div&gt;</code>, <code>@begin(&lt;name&gt;)</code>
+  is always an element — or set the document-wide policy with the <code>Block elements</code>
+  metadata key (<code>hyphenated</code> (default) · <code>all</code> · <code>none</code>; <code>all</code>/<code>none</code> ignore the
+  known-element list). In LaTeX, every environment renders as
+  <code>\begin{name}[label]…\end{name}</code> regardless.
   You do <strong>not</strong> have to define the environment to get a compilable document: the
   assembled preamble automatically provides a guarded no-op definition for any
   undefined name (deferred with <code>\AtBeginDocument</code>, so a real
@@ -320,14 +334,16 @@ The first is :cref[ex:warm].</code></pre>
   names it to match the web wording. (Shared counters use <code>thmtools</code>' <code>sibling=</code>.)
   Supply your own <code>latex</code> renderer and you take over the LaTeX side entirely,
   including its counter. Either way the HTML side is unchanged.</p>
-<div class="markdown-alert markdown-alert-note">
-  <p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-      <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
-    </svg>Note</p>
-  <p>For a numbered environment, let JMarkdown own the <code>id</code> — put it in
-    <code>{id=…}</code> on the <code>@begin</code>, not inside your <code>html</code>. (Sharing a counter with a
-    <strong>built-in</strong> theorem is not supported yet; share among your own environments.)
-  </p>
+<div class="callout markdown-alert markdown-alert-note" data-callout="note">
+  <p class="callout-title markdown-alert-title"><svg class="callout-icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1 0 32c0 8.8 7.2 16 16 16l32 0zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"></path>
+    </svg><span class="callout-title-inner">Note</span></p>
+  <div class="callout-content">
+    <p>For a numbered environment, let JMarkdown own the <code>id</code> — put it in
+      <code>{id=…}</code> on the <code>@begin</code>, not inside your <code>html</code>. (Sharing a counter with a
+      <strong>built-in</strong> theorem is not supported yet; share among your own environments.)
+    </p>
+  </div>
 </div>
 <h2 id="toc-built-in-environments">Built-in environments</h2>
 <p>A handful of names are predefined so that <code>@begin(x)</code> matches its corresponding
