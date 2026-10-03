@@ -101,7 +101,16 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# declarations live in the (absent) preamble, so the wrapper supplies
 		# them. Without a makeindex run \printindex just warns (no .ind file)
 		# — the compile still proves the emitted commands are valid.
-		indexing)          extra='\usepackage{imakeidx}\makeindex\makeindex[name=authors, title={Author Index}]'; needs='imakeidx.sty' ;;
+		indexing)          extra='\usepackage{imakeidx}\makeindex\makeindex[name=authors, title={Author Index}]\usepackage{minted}'; needs='imakeidx.sty minted.sty' ;;
+		# at-directives: inline code (\mintinline), links, a cross-reference,
+		# images (draft: their files are not in the tree), and the generic
+		# environments the fixtures name, given the no-op definitions a full
+		# document auto-provides.
+		at-directives)     extra='\usepackage[draft]{graphicx}\usepackage{minted}\usepackage{hyperref}\usepackage{cleveref}\newenvironment{note}{}{}\newenvironment{thing}{}{}\newenvironment{myblock}{}{}\newenvironment{my-block}{}{}'; needs='minted.sty cleveref.sty' ;;
+		# media: images in draft (figs/*.png are not in the tree), links,
+		# inline code, and video's embed (media9) and attach (attachfile2);
+		# tiny.mp4 and frame.png ARE in the tree, found through TEXINPUTS.
+		media)             extra='\usepackage[draft]{graphicx}\usepackage{hyperref}\usepackage{minted}\usepackage{media9}\usepackage{attachfile2}'; needs='minted.sty media9.sty attachfile2.sty' ;;
 		# generated-headings: its fragment carries an index (\printindex), whose
 		# declaration lives in the (absent) preamble, and retitles the
 		# bibliography with \refname — article's macro, the fixture's default
@@ -112,7 +121,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# preamble, so the wrapper supplies them); game → sgame, callout takes
 		# {mandatory}[optional] (hence \NewDocumentEnvironment), theorem is a
 		# real \newtheorem, \custom is a macro used inside a TeX block.
-		begin-end)         extra='\usepackage{sgame}\usepackage{minted}\newcommand{\custom}[1]{}\newtheorem{theorem}{Theorem}\NewDocumentEnvironment{callout}{m o}{}{}\newenvironment{warning}{}{}\newenvironment{aside}{}{}\newenvironment{note}{}{}\newenvironment{subnote}{}{}\newenvironment{panel}{}{}\newenvironment{pull-quote}{}{}\newenvironment{side-bar}{}{}\newenvironment{outerblock}{}{}\newenvironment{middleblock}{}{}\newenvironment{innerblock}{}{}'; needs='sgame.sty minted.sty' ;;
+		begin-end)         extra='\usepackage{sgame}\usepackage{minted}\newcommand{\custom}[1]{}\newtheorem{theorem}{Theorem}\NewDocumentEnvironment{callout}{m o}{}{}\newenvironment{warning}{}{}\newenvironment{sidebar}[1][]{}{}\newenvironment{aside}{}{}\newenvironment{note}{}{}\newenvironment{subnote}{}{}\newenvironment{panel}{}{}\newenvironment{pull-quote}{}{}\newenvironment{side-bar}{}{}\newenvironment{outerblock}{}{}\newenvironment{middleblock}{}{}\newenvironment{innerblock}{}{}'; needs='sgame.sty minted.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -129,7 +138,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ]; then
+	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ] || [ "$category" = "at-directives" ] || [ "$category" = "indexing" ] || [ "$category" = "media" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
@@ -173,7 +182,9 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		suffix=''
 		[ "$engine" = pdflatex ] || suffix=" [$engine]"
 		[ "$category" = citations ] && suffix=" [full document, $engine]"
-		if (cd "$work" && $engine $shellesc -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+		# The fixture's own folder is on TEXINPUTS, so files it names relative
+		# to itself (media's tiny.mp4 and frame.png) are found from $work.
+		if (cd "$work" && TEXINPUTS="$(dirname "$tex")//:${TEXINPUTS:-}" $engine $shellesc -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
 			echo "PASS  $label$suffix"
 			pass=$((pass + 1))
 			# A callout broken across pages: check the RENDERED pages, since a
