@@ -666,6 +666,27 @@ italicises. Fixtures: `tests/features/inline-syntax/` (`italics-flanking`,
 ### `runInThisContext`
 Script blocks, function extensions, and post-processor scripts share a single VM context (`runInThisContext` from Node's `vm` module, re-exported via `utils.js`). Anything assigned to `global.*` is visible everywhere downstream.
 
+### `Headings: numeric` — what gets a number (`post-processor.js`)
+`add_labels_to_headers` numbers the HTML headings (`1.`, `1.1.`, …) and links each
+back to the contents. Two kinds are left out (fixed 2026-10-03; both used to be
+numbered, and a titled `@endnotes` mid-document pushed every later heading up by
+one):
+
+- **Generated headings** (`GENERATED_HEADINGS`): an endnotes list's title and
+  group headings, a bibliography's title, an index's, and marked-footnote's
+  screen-reader "Footnotes". No number, no effect on the count, no link (the
+  contents doesn't list them). The bibliography and index headings are inserted
+  after the pass, but are listed so they don't depend on that ordering. A new
+  generated heading belongs in that selector.
+- **`{-}` headings** (class `unnumbered`, set by the heading renderer): no number
+  and no effect on the count, as LaTeX's `\section*`, but they keep the contents
+  link, since the contents lists them.
+
+LaTeX already wrote all of these unnumbered (`\section*`, a bold line for an
+endnotes title, thebibliography's `\section*`, `\printindex`,
+`\tableofcontents`). Fixture: `tests/features/generated-headings/numeric` (HTML +
+tex; latex-compile, both engines).
+
 ### Fragment mode
 `--fragment` outputs headerless HTML with no `data-source-line` injection; cheerio runs with `isDocument: false`. Note: `moveBodyStylesToHead` has a special case here to avoid silently dropping `<style>` tags.
 

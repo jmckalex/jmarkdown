@@ -1,0 +1,128 @@
+<style>
+  /* JMarkdown compile-time citations */
+  div.csl-bib-body {
+    line-height: 1.4;
+  }
+
+  div.csl-bib-body div.csl-entry {
+    margin-bottom: 6pt;
+  }
+
+  span.biblify-vancouver {
+    font-weight: bold;
+    vertical-align: super;
+  }
+
+  div.biblify-vancouver-template div.csl-entry {
+    display: grid;
+    grid-template-columns: 18pt 1fr;
+    column-gap: 8pt;
+  }
+
+  div.biblify-vancouver-template div.csl-entry div.csl-right-inline {
+    width: auto;
+  }
+
+  span.biblify-tooltip-host {
+    position: relative;
+    cursor: help;
+    border-bottom: 1px dashed gray;
+  }
+
+  span.biblify-tooltip-host>span.biblify-tooltip {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 1.4em;
+    z-index: 50;
+    width: max-content;
+    max-width: 32em;
+    padding: 6pt 8pt;
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-weight: normal;
+    font-size: 0.85em;
+    white-space: normal;
+  }
+
+  span.biblify-tooltip-host:hover>span.biblify-tooltip {
+    display: block;
+  }
+</style>
+<p></p>
+<div class="toc numeric">
+  <p id="toc">Table of contents</p>
+  <ul>
+    <li><a data-id="toc-introduction" href="#toc-introduction"><span class="header-label h1-label xref">1.</span> Introduction</a>
+      <ul>
+        <li><a data-id="toc-details" href="#toc-details"><span class="header-label h2-label xref">1.1.</span> Details</a></li>
+      </ul>
+    </li>
+    <li><a data-id="toc-aside" href="#toc-aside">Aside</a></li>
+    <li><a data-id="toc-results" href="#toc-results"><span class="header-label h1-label xref">2.</span> Results</a></li>
+    <li><a data-id="toc-discussion" href="#toc-discussion"><span class="header-label h1-label xref">3.</span> Discussion</a></li>
+  </ul>
+</div>
+<p></p>
+<h1 id="toc-introduction"><a href="#toc"><span class="header-label h1-label xref">1.</span> Introduction</a></h1>
+<p>A classic note<sup><a id="footnote-ref-a" href="#footnote-a" data-footnote-ref="" aria-describedby="footnote-label">1</a></sup>, an inline one<sup class="footnote-ref"><a href="#fn-_auto4" id="fnref-_auto4">1</a></sup>, and two grouped<sup class="footnote-ref"><a href="#fn-_auto5" id="fnref-_auto5">1</a></sup> and
+  <sup class="footnote-ref"><a href="#fn-_auto6" id="fnref-_auto6">1</a></sup>. <span class="index-mark" data-entry="apple" id="idx-1"></span>
+</p>
+<h2 id="toc-details"><a href="#toc"><span class="header-label h2-label xref">1.1.</span> Details</a></h2>
+<p>More.</p>
+<h1 class="unnumbered" id="toc-aside"><a href="#toc">Aside</a></h1>
+<p>An unnumbered heading: no number, and the count goes on.</p>
+<h1 id="toc-results"><a href="#toc"><span class="header-label h1-label xref">2.</span> Results</a></h1>
+
+<section class="footnotes" data-endnote-group="g">
+  <h1 class="endnotes-heading">Notes on results</h1>
+  <ol>
+    <li id="fn-_auto5">
+      <p>in g <a href="#fnref-_auto5" class="footnote-backref">↩</a></p>
+    </li>
+  </ol>
+</section>
+
+<p>The section after a titled endnotes list keeps its number.</p>
+<h1 id="toc-discussion"><a href="#toc"><span class="header-label h1-label xref">3.</span> Discussion</a></h1>
+
+<section class="footnotes" data-endnote-group="h">
+  <ol>
+    <li id="fn-_auto6">
+      <p>in h <a href="#fnref-_auto6" class="footnote-backref">↩</a></p>
+    </li>
+  </ol>
+</section>
+
+<section class="footnotes" data-endnote-group="">
+  <h1 class="endnotes-heading">Endnotes</h1>
+  <ol>
+    <li id="fn-_auto4">
+      <p>inline <a href="#fnref-_auto4" class="footnote-backref">↩</a></p>
+    </li>
+  </ol>
+</section>
+
+<h2 class="bibliography-title">References</h2>
+<div class="csl-bib-body biblify-apa-template">
+  <div data-csl-entry-id="Quine:1948" class="csl-entry">Quine, W. V. O. (1948). On What There Is. <i>The Review of Metaphysics</i>, <i>2</i>(5), 21–38.</div>
+</div>
+<nav class="index" aria-label="Index">
+  <h2 class="index-title" id="index">Index</h2>
+  <div class="index-group">
+    <p class="index-group-letter">A</p>
+    <ul class="index-entries">
+      <li id="index-entry-apple"><span class="index-entry-text">apple</span><span class="index-locators">, <a href="#idx-1">§1</a></span></li>
+    </ul>
+  </div>
+</nav>
+<section class="footnotes" data-footnotes="">
+  <h2 id="footnote-label" class="sr-only">Footnotes</h2>
+  <ol>
+    <li id="footnote-a">
+      <p>classic. <a href="#footnote-ref-a" data-footnote-backref="" aria-label="Back to reference a">↩</a></p>
+    </li>
+  </ol>
+</section>

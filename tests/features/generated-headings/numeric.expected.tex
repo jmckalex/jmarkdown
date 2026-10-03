@@ -1,0 +1,56 @@
+\tableofcontents
+
+\section{Introduction}
+
+A classic note\footnote{classic.}, an inline one\textsuperscript{1}, and two grouped\textsuperscript{1} and
+\textsuperscript{1}. \nocite{Quine:1948} \index{apple}
+
+\subsection{Details}
+
+More.
+
+\section*{Aside}
+
+An unnumbered heading: no number, and the count goes on.
+
+\section{Results}
+
+
+
+\bigskip
+\noindent{\large\bfseries Notes on results}\par\nobreak\smallskip
+\begingroup\setlength{\parindent}{0pt}
+\ifcsname c@jmdendnote\endcsname\else\newcounter{jmdendnote}\fi
+\expandafter\def\csname theHjmdendnote\endcsname{g.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~in g\par\smallskip
+\endgroup
+
+The section after a titled endnotes list keeps its number.
+
+\section{Discussion}
+
+
+
+\bigskip
+\begingroup\setlength{\parindent}{0pt}
+\ifcsname c@jmdendnote\endcsname\else\newcounter{jmdendnote}\fi
+\expandafter\def\csname theHjmdendnote\endcsname{h.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~in h\par\smallskip
+\endgroup
+
+
+
+\bigskip
+\noindent{\large\bfseries Endnotes}\par\nobreak\smallskip
+\begingroup\setlength{\parindent}{0pt}
+\ifcsname c@jmdendnote\endcsname\else\newcounter{jmdendnote}\fi
+\expandafter\def\csname theHjmdendnote\endcsname{endnotes.\arabic{jmdendnote}}
+\noindent\setcounter{jmdendnote}{0}\refstepcounter{jmdendnote}\textsuperscript{1}~inline\par\smallskip
+\endgroup
+
+
+\renewcommand{\refname}{References}
+\bibliographystyle{apalike}
+\bibliography{refs}
+\printindex
+

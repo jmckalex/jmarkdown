@@ -102,6 +102,11 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# them. Without a makeindex run \printindex just warns (no .ind file)
 		# — the compile still proves the emitted commands are valid.
 		indexing)          extra='\usepackage{imakeidx}\makeindex\makeindex[name=authors, title={Author Index}]'; needs='imakeidx.sty' ;;
+		# generated-headings: its fragment carries an index (\printindex), whose
+		# declaration lives in the (absent) preamble, and retitles the
+		# bibliography with \refname — article's macro, the fixture's default
+		# class; this wrapper's report class calls it \bibname.
+		generated-headings) extra='\usepackage{imakeidx}\makeindex\providecommand\refname{References}'; needs='imakeidx.sty' ;;
 		# begin-end: the fixtures' generic environments get the same no-op
 		# definitions a full-document build auto-provides (fragments carry no
 		# preamble, so the wrapper supplies them); game → sgame, callout takes

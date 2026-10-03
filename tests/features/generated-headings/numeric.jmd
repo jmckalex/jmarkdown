@@ -1,0 +1,40 @@
+---
+Title: generated headings
+Headings: numeric
+Resolve citations: true
+Bibliography: ../citations/refs.bib
+Bibliography style: apa
+---
+
+{{TOC}}
+
+# Introduction
+
+A classic note[^a], an inline one[fn: inline], and two grouped[fn(g): in g] and
+[fn(h): in h]. \nocite{Quine:1948} @index[apple]
+
+## Details
+
+More.
+
+# Aside {-}
+
+An unnumbered heading: no number, and the count goes on.
+
+# Results
+
+@endnotes(g){title="Notes on results"}
+
+The section after a titled endnotes list keeps its number.
+
+# Discussion
+
+@endnotes(h)
+
+@endnotes{title="Endnotes"}
+
+@bibliography{title="References"}
+
+@index{title="Index"}
+
+[^a]: classic.
