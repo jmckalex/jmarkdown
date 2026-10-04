@@ -1,0 +1,21 @@
+# Code with `<b>x</b>` in a heading
+
+HTML specials in code are shown, never parsed: `</>`, `<b>x</b>`, `a && b`,
+`x < y`, `"quoted"`, and `<img src=x onerror=alert(1)>` stays text.
+
+| case | code |
+|---|---|
+| tags | `<b>x</b>` |
+| operators | `a && b`, `x < y` |
+
+```html
+<b>x</b> & "q" < y
+```
+
+```
+<b>x</b> & "q" < y
+```
+
+```nosuchlang
+<b>x</b> & "q" < y
+```

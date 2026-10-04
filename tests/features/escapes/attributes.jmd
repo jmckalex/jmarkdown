@@ -1,0 +1,25 @@
+# Quotes stay inside attributes
+
+A callout title, a theorem name and a figure caption, each holding a quote and
+an event-handler name, which must end up as text, never as an attribute:
+
+> [!note] t" onclick="z
+> body
+
+@begin(theorem)[x" onmouseover="alert(1)]
+Body.
+@end(theorem)
+
+@begin(figure)[cap " onclick="y]{id=fig:q}
+![alt " onerror="w](x.png)
+@end(figure)
+
+A plain image's alt, and attribute values on directives in both notations:
+
+![a "quoted" & <b> word](x.png) and ![x" onerror="y](z.png)
+
+@span[s]{title='say "hi"'} and :span[c]{title='q" onclick="e'}
+
+@begin(aside){data-y='z" onclick="k'}
+Aside.
+@end(aside)

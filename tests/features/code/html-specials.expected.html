@@ -1,0 +1,25 @@
+<h1 id="toc-code-with-bxb-in-a-heading">Code with <code>&lt;b&gt;x&lt;/b&gt;</code> in a heading</h1>
+<p>HTML specials in code are shown, never parsed: <code>&lt;/&gt;</code>, <code>&lt;b&gt;x&lt;/b&gt;</code>, <code>a &amp;&amp; b</code>,
+  <code>x &lt; y</code>, <code>"quoted"</code>, and <code>&lt;img src=x onerror=alert(1)&gt;</code> stays text.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>case</th>
+      <th>code</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>tags</td>
+      <td><code>&lt;b&gt;x&lt;/b&gt;</code></td>
+    </tr>
+    <tr>
+      <td>operators</td>
+      <td><code>a &amp;&amp; b</code>, <code>x &lt; y</code></td>
+    </tr>
+  </tbody>
+</table><pre><code class="hljs language-html"><span class="hljs-tag">&lt;<span class="hljs-name">b</span>&gt;</span>x<span class="hljs-tag">&lt;/<span class="hljs-name">b</span>&gt;</span> &amp; "q" &lt; y
+</code></pre><pre><code class="hljs">&lt;b&gt;x&lt;/b&gt; &amp; "q" &lt; y
+</code></pre><pre><code class="hljs language-nosuchlang">&lt;b&gt;x&lt;/b&gt; &amp; "q" &lt; y
+</code></pre>

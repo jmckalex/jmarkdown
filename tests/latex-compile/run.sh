@@ -64,7 +64,8 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		scripting)         extra='\usepackage{minted}';                   needs='minted.sty' ;;
 		# headings: inline-code puts inline code in headings (a moving argument).
 		headings)          extra='\usepackage{minted}\usepackage{hyperref}'; needs='minted.sty hyperref.sty' ;;
-		code)              extra='\usepackage{minted}';                   needs='minted.sty' ;;
+		# code: minted, and booktabs for html-specials' table of code spans.
+		code)              extra='\usepackage{minted}\usepackage{booktabs}'; needs='minted.sty booktabs.sty' ;;
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
 		# crossref: label-in-env labels theorem-like environments, so the
 		# wrapper declares the two kinds that fixture uses (shared counter,
