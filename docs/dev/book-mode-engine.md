@@ -2,8 +2,8 @@
 
 *Engine-side note for Clew-app's book/manuscript-mode design. Written
 2026-10-03 against `at-migration` 455cb61; updated 2026-10-04 with the owner's
-decisions (§7), which §5 and §6 now follow. Nothing here is built yet beyond
-§2.*
+decisions (§7), which §5 and §6 now follow. Phase 1 was built 2026-10-04/05;
+§8 says what was built and where it differs from §5 and §6.*
 
 A book build takes an ordered list of chapter files and produces ONE book:
 - numbering that runs across chapters (headings, figures, tables, equations,
@@ -391,3 +391,61 @@ processFile(master, {
 | Footnotes in HTML | At the end of each chapter | G7; §5 item 4 |
 | Where the order lives | A master note, as Clew-app proposed | §6 |
 | References | One list, at the end of the book | §5 item 5 |
+
+---
+
+## 8. Phase 1 as built (2026-10-04/05)
+
+One commit per piece on `at-migration`, each with its own tests
+(`tests/book/run.sh`, gating; 207 assertions at the end). Single files are
+unchanged throughout: every hook is reached only in a book, and
+docs-snapshots and features stayed byte-for-byte.
+
+| Piece | Commit | What |
+|---|---|---|
+| 1 | 0372f23 | Assembly: `chapters` option, `--chapter`, `@chapter+(path)`; front matter stripped, whitelist kept, other engine keys warned; the title rule; per-chapter lexing; `chapter:line` warnings; G10 paths; chapter links |
+| 2 | 8b5a1db | `Numbering: per chapter` (default) / `continuous`, both outputs |
+| — | e407bc6 | Bug fix, single files too: a `\crefname` only with cleveref |
+| — | 4339171 | A chapter's key is silent when the book uses the same value (the owner); the master's `Numbering` matched loosely |
+| 3 | 8356598 | Footnotes close their chapter (HTML); ids scoped per chapter |
+| 4 | 1fdb256 | A chapter's `Bibliography` joins the book's one set; cross-chapter citations and disagreeing files warned |
+| 5a | ea003ec | `Packages`, `LaTeX preamble` joined into one preamble; clashing definitions warned and left out |
+| 5b | 48f4e29 | `Math macros` defined at each chapter's start |
+| 5c | d3d3eb3 | `Lang`: section `lang`, babel + `otherlanguage*`, the language's quotation marks (books only) |
+| 5d | 9220cf6 | A chapter's `<style>` scoped to its section; dropped in LaTeX |
+| 6 | 2ac7048 | `htmlLayout: 'split'`: index, chapter pages, references, index-terms |
+| 7a | 53e0ade | The post-pass's warnings at `chapter:line`; a line-count slip from piece 1 |
+
+Where it differs from §5 and §6, or goes beyond them:
+
+- **The layout's name** is `split` (Clew-app's), with `pages` accepted, and
+  the default is `single`: a book is one page unless asked, so the option is
+  additive. Set by `HTML layout:` in the master, processFile's `htmlLayout`,
+  or `--html-layout`. The pages go in a folder named after the output file
+  (`build/Book.html` → `build/Book/`), and processFile returns `pages`.
+- **`otherlanguage*`, not `otherlanguage`:** the star switches hyphenation
+  but keeps the headings in the book's language ("Chapter 2", not
+  "Kapitel 2"). A master whose own `Lang` is not English loads babel for the
+  whole book.
+- **Bibliography clashes:** one set for the whole book, a later file winning
+  a key everywhere, and the disagreement warned with both chapters named
+  (§6). Clew-app's note has a chapter's own entry winning *in that chapter*;
+  not built.
+- **No References list is added** when the master places none, as a single
+  file gets none. A chapter's own `@bibliography` is warned and ignored.
+- **Footnotes:** a chapter that mixes `[^1]` and `[fn: …]` notes gets two
+  lists in HTML, each from 1, where the PDF numbers one sequence — as a
+  single file does. A book that uses endnote groups or `@endnotes` keeps the
+  author's placements, as one document would.
+- **Math macros in LaTeX** go in as `\providecommand{\X}{}\renewcommand{\X}…`
+  at the chapter's start, so a name defined already cannot stop the build.
+- **`Packages` carry no options**, so packages cannot clash; only one-line
+  `LaTeX preamble` definitions are checked.
+- **Citations are not links** in jmarkdown's HTML, in a single file either,
+  so nothing links a citation to the References page.
+
+Not built in phase 1: the LaTeX `include` layout (G5), option C (G6), and
+paths inside a file that a chapter *includes* from another folder (they
+resolve against the chapter's folder, as any inclusion's against its
+includer).
+
