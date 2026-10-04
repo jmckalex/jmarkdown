@@ -67,6 +67,26 @@ let book = null;
 /** The current build's book plan, or null when the build is not a book. */
 export function getBook() { return book; }
 
+/**
+ * Whether theorem-like counters number within the chapter (Theorem 2.1): a
+ * book numbering per chapter, the default. Outside a book, false — the
+ * declarations stay exactly what they were.
+ */
+export function numberWithinChapter() { return !!book && book.numbering === 'per chapter'; }
+
+// `Numbering:` (the master's header) or processFile's `numbering` option:
+// 'per chapter' (the default — Figure 2.3, as LaTeX's book class does, theorems
+// too) or 'continuous' (Figure 17).
+function numberingPolicy(value) {
+	const raw = Array.isArray(value) ? value.join(' ') : value;
+	if (raw == null || String(raw).trim() === '') return 'per chapter';
+	const v = norm(raw);
+	if (v === 'continuous') return 'continuous';
+	if (v === 'per chapter' || v === 'chapter' || v === 'by chapter') return 'per chapter';
+	addWarning(`book: \`Numbering: ${String(raw).trim()}\` is neither "per chapter" nor "continuous" — numbering per chapter`);
+	return 'per chapter';
+}
+
 export function resetBook() { book = null; }
 
 const START = (n) => `<!-- jmd:chapter ${n} -->`;
@@ -98,8 +118,14 @@ const HEADER_KEYS = [
 	'Smart typography', 'Pandoc citations', 'Block elements', 'Silence warnings',
 	'Document class', 'Class options', 'Heading base', 'Chapters', 'Book',
 ];
-const ENGINE_KEYS = new Set([...Object.keys(DEFAULT_CONFIG), ...HEADER_KEYS].map(norm));
-const isEngineKey = (key) => ENGINE_KEYS.has(norm(key)) || /^extension\b/i.test(String(key).trim());
+// Built on first use, not at load: theorems.js and numbered-environments.js
+// import this module from inside config-manager's own import graph, so
+// DEFAULT_CONFIG is not yet initialised while this module loads.
+let engineKeys = null;
+const isEngineKey = (key) => {
+	engineKeys ??= new Set([...Object.keys(DEFAULT_CONFIG), ...HEADER_KEYS].map(norm));
+	return engineKeys.has(norm(key)) || /^extension\b/i.test(String(key).trim());
+};
 
 /**
  * A chapter's leading header — a `---`-fenced block, or JMarkdown's bare
@@ -204,7 +230,7 @@ function chapterLines(body) {
  * is processFile's option (a host's list); otherwise the body's
  * `@chapter+(path)` lines name them.
  */
-export function prepareBook(body, { chapters: hostChapters = null, masterDir, isLatex = false } = {}) {
+export function prepareBook(body, { chapters: hostChapters = null, masterDir, isLatex = false, numbering = null } = {}) {
 	book = null;
 	const fromHost = Array.isArray(hostChapters) && hostChapters.length > 0;
 	let pieces = chapterLines(body);
@@ -217,7 +243,7 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 		return null;
 	}
 
-	book = { masterDir, chapters: [], isLatex };
+	book = { masterDir, chapters: [], isLatex, numbering: numberingPolicy(numbering ?? configManager.get('Numbering')) };
 	const out = [];
 	for (const piece of pieces) {
 		if (piece.text != null) { out.push(piece.text); continue; }

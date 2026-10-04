@@ -18,6 +18,7 @@ import path from 'path';
 import { configManager } from './config-manager.js';
 import { assemblePreamble, requirePackage, addPreamble, addLatePreamble, requiredPackageNames } from './preamble.js';
 import { checkMathPackages } from './latex-lint.js';
+import { getBook } from './book.js';
 import { escapeLatexText } from './latex-escape.js';
 
 // Metadata values arrive as single-element arrays (from the metadata-header
@@ -101,6 +102,20 @@ export function processLatexTemplate(content) {
 	if (title) pdf.push(`pdftitle={${title}}`);
 	if (author) pdf.push(`pdfauthor={${author}}`);
 	if (pdf.length) addLatePreamble(`\\hypersetup{${pdf.join(', ')}}`);
+
+	// A book numbered `continuous`: the book class numbers figures, tables and
+	// equations per chapter, so take them out of it (listings too, when minted
+	// defined their counter). Footnotes stay per chapter, as the HTML lists them.
+	// Numbering per chapter, the default: the class already does so for those,
+	// but minted's listing counter runs on — put it within the chapter, as the
+	// HTML numbers it (Listing 2.1).
+	const book = getBook();
+	if (book && book.numbering === 'continuous') {
+		addPreamble('\\counterwithout{figure}{chapter}\\counterwithout{table}{chapter}\\counterwithout{equation}{chapter}');
+		addPreamble('\\AtBeginDocument{\\ifcsname c@listing\\endcsname\\counterwithout{listing}{chapter}\\fi}');
+	} else if (book) {
+		addPreamble('\\AtBeginDocument{\\ifcsname c@listing\\endcsname\\counterwithin{listing}{chapter}\\fi}');
+	}
 
 	// Every package the document will load is known now: warn for maths that
 	// needs one it won't (latex-lint.js).

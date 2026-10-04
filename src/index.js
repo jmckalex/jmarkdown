@@ -670,7 +670,8 @@ let markdown_no_metadata = await processYAMLheader(input);
 // --chapter) or by the master's `@chapter+(path)` lines (book.js). For any
 // other document prepareBook returns null and nothing below changes.
 const bookText = prepareBook(markdown_no_metadata, {
-	chapters: options.chapters ?? options.chapter, masterDir: markdownFileDirectory, isLatex });
+	chapters: options.chapters ?? options.chapter, masterDir: markdownFileDirectory, isLatex,
+	numbering: options.numbering });
 if (bookText !== null) {
 	markdown_no_metadata = bookText;
 	// A book's # headings are its chapters: a master naming no class is a book.

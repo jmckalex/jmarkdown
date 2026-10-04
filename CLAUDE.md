@@ -133,6 +133,18 @@ golden is untouched).
   `\phantomsection\label`). Known limit: a file a chapter INCLUDES from a
   subfolder has its paths resolved against the chapter's folder, as any
   inclusion's are against its includer.
+- **Numbering** (`Numbering:` in the master's header, or processFile's
+  `numbering` option): `per chapter` (the default — Figure 2.3, as the book
+  class numbers) or `continuous`. HTML: the post-processor's `numberer($)` gives
+  figures, tables, listings, theorems, equations and numbered user environments
+  `chapter.n`, the chapter being the count of numbered `h1`s before the element
+  (outside a book it is the old plain counter, so single files are unchanged).
+  LaTeX: theorem-likes get `numberwithin=chapter` (`numberWithinChapter()`, read
+  by theorems.js and numbered-environments.js); `continuous` adds
+  `\counterwithout` for figure/table/equation; minted's `listing` counter is
+  per-document by default, so latex-template.js puts it `\counterwithin` chapter
+  (guarded by `\ifcsname c@listing`) for a per-chapter book and out of it for a
+  continuous one. The suite compiles both PDFs and checks they agree with the HTML.
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).

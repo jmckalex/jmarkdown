@@ -114,6 +114,56 @@ if command -v pdflatex >/dev/null 2>&1; then
 	if [ -f "$B/book.pdf" ]; then pass "latex/compiles"; else fail "latex/compiles" "$(grep -m3 '^!' "$B/book.log")"; fi
 fi
 
+# --- numbering: per chapter by default, `continuous` on request, the same in both outputs -------------
+
+cp -R "$HERE/numbering" "$SCRATCH/numbers"
+N="$SCRATCH/numbers"
+nbuild() {   # nbuild NAME MASTER [args…]
+	name=$1; master=$2; shift 2
+	(cd "$N" && HOME="$SCRATCH/home" node "$JMD" process "$master" -o "$name.out" "$@" >/dev/null 2>"$name.err") \
+		|| fail "numbers/$name/exit" "$(cat "$N/$name.err")"
+}
+nbuild per master.md --fragment
+for want in 'Figure 1.1:' 'Figure 2.1:' 'Figure 2.2:' 'Theorem 1.1' 'Lemma 2.1' '(1.1)' '(2.1)' 'Listing 2.1:' 'Exercise 2.1' \
+	'href="#fig:a">1.1' 'href="#fig:c">figure&nbsp;2.2' 'href="#thm:b">lemma&nbsp;2.1' 'href="#lst:a">2.1' 'href="#ex:a">2.1'; do
+	has "numbers/per-chapter/html/$want" "$N/per.out" "$want"
+done
+nbuild perlatex master.md --to latex
+has   "numbers/per-chapter/latex/theorems-within" "$N/perlatex.out" '\declaretheorem[numberwithin=chapter]{theorem}'
+has   "numbers/per-chapter/latex/exercise-within" "$N/perlatex.out" 'numberwithin=chapter]{exercise}'
+has   "numbers/per-chapter/latex/listings-within" "$N/perlatex.out" '\counterwithin{listing}{chapter}'
+sed 's/^Headings: numeric$/Headings: numeric\nNumbering: continuous/' "$N/master.md" >"$N/continuous.md"
+nbuild cont continuous.md --fragment
+for want in 'Figure 1:' 'Figure 3:' 'Theorem 1' 'Lemma 2' '(2)' 'Listing 1:' 'Exercise 1' 'href="#fig:c">figure&nbsp;3'; do
+	has "numbers/continuous/html/$want" "$N/cont.out" "$want"
+done
+nbuild contlatex continuous.md --to latex
+has   "numbers/continuous/latex/plain-theorem" "$N/contlatex.out" '\declaretheorem{theorem}'
+has   "numbers/continuous/latex/counterwithout" "$N/contlatex.out" '\counterwithout{figure}{chapter}'
+(cd "$N" && HOME="$SCRATCH/home" node --input-type=module -e "
+	const { processFile } = await import('$JMD');
+	await processFile('master.md', { to: 'html', fragment: true, output: 'opt.out', numbering: 'continuous' });
+" >/dev/null 2>"$N/opt.err")
+has   "numbers/option/continuous" "$N/opt.out" 'Figure 3:'
+# The PDF reads the same numbers as the HTML, in both modes.
+if command -v pdflatex >/dev/null 2>&1 && command -v pygmentize >/dev/null 2>&1; then
+	for pair in 'perlatex:Figure 2.2:Lemma 2.1:Listing 2.1:Exercise 2.1:See 1.1, figure 2.2, lemma 2.1 and 2.1' \
+		'contlatex:Figure 3:Lemma 2:Listing 1:Exercise 1:See 1, figure 3, lemma 2 and 2'; do
+		name=${pair%%:*}
+		# Its own jobname: with hyperref, pdflatex writes <jobname>.out, which
+		# must not be the build's own $name.out.
+		(cd "$N" && sed -e '/fontspec/d' -e '/setmainfont/d' "$name.out" >"$name-pdf.tex" \
+			&& pdflatex -shell-escape -interaction=nonstopmode -halt-on-error "$name-pdf.tex" >/dev/null 2>&1 \
+			&& pdflatex -shell-escape -interaction=nonstopmode -halt-on-error "$name-pdf.tex" >/dev/null 2>&1 \
+			&& pdftotext "$name-pdf.pdf" "$name.txt")
+		if [ ! -f "$N/$name.txt" ]; then fail "numbers/$name/pdf" "$(grep -m3 '^!' "$N/$name-pdf.log")"; continue; fi
+		rest=${pair#*:}
+		old_ifs=$IFS; IFS=':'
+		for want in $rest; do IFS=$old_ifs; has "numbers/$name/pdf/$want" "$N/$name.txt" "$want"; IFS=':'; done
+		IFS=$old_ifs
+	done
+fi
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"
