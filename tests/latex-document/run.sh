@@ -126,6 +126,25 @@ if render cref-fullwords; then
 	want "cref/Crefname fig"   "$TEX" '\Crefname{figure}{Figure}{Figures}'
 fi
 
+# --- cref-unused.jmd: numbered things that nothing \cref's. A \crefname is a
+#     cleveref command, and every full document loads hyperref — so overrides
+#     gated on either package went out without cleveref and printed their
+#     arguments as text ("equationequationequations"). Now each needs cleveref. ---
+if render cref-unused; then
+	absent "cref-unused/no cleveref"  "$TEX" '\usepackage{cleveref}'
+	absent "cref-unused/no crefname"  "$TEX" '\crefname'
+	absent "cref-unused/no Crefname"  "$TEX" '\Crefname'
+	want   "cref-unused/hyperref"     "$TEX" '\usepackage{hyperref}'
+	want   "cref-unused/hypersetup"   "$TEX" '\hypersetup{pdftitle='
+fi
+
+# --- cref-used.jmd: the same things, \cref'd — cleveref and its overrides. ---
+if render cref-used; then
+	want "cref-used/cleveref"         "$TEX" '\usepackage{cleveref}'
+	want "cref-used/crefname eq"      "$TEX" '\crefname{equation}{equation}{equations}'
+	want "cref-used/crefname table"   "$TEX" '\crefname{table}{table}{tables}'
+fi
+
 # --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
 if render page-setup; then
 	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'

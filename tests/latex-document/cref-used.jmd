@@ -1,0 +1,17 @@
+---
+Title: Numbered and Cref'd
+---
+
+Everything here is numbered, and the last line refers to it.
+
+@begin(equation){id=eq:e}
+E = mc^2
+@end(equation)
+
+@begin(table)[A table]{id=tab:t}
+| a | b |
+|---|---|
+| 1 | 2 |
+@end(table)
+
+See @cref[eq:e] and @cref[tab:t], and [a link](https://example.org).

@@ -56,3 +56,12 @@ The preamble here is a reasonable stand-in, not necessarily byte-identical to
 the `LaTeX preamble` a real book project configures. The point is to confirm
 the emitted structure compiles — that every macro is defined and every
 environment balances — not to reproduce a specific document's styling.
+
+## Full documents
+
+The wrapper above means the engine's *own* preamble is never compiled by the
+golden loop. A short section at the end builds `tests/latex-document`'s
+`cref-unused` and `cref-used` as the full documents jmarkdown writes, compiles
+them, and reads the PDF's text (`pdftotext`; skipped if absent): a `\crefname`
+emitted without cleveref once printed `equationequationequations` at the top
+of every document that numbered something but `\cref`'d nothing.

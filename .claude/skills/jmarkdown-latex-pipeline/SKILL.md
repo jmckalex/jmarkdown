@@ -27,9 +27,13 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
 - **Preamble manager** (`preamble.js`): usage-driven. Features call
   `requirePackage(name, opts)` as they render, so the preamble contains only
   what's used. `addPreamble` (raw lines, e.g. `\newtheorem`/`\usetikzlibrary`),
-  `addLatePreamble` (after the load-order-sensitive hyperref/cleveref, e.g.
-  `\crefname`/`\hypersetup`), `crefName(type,sing,plur)` (force cleveref to spell
-  types out in full to match HTML). Order: engine defaults → feature/user
+  `addLatePreamble(line, needs)` (after the load-order-sensitive
+  hyperref/cleveref, e.g. `\crefname`/`\hypersetup`; emitted only when `needs`,
+  the package the line configures, is loaded — a handler's line with no `needs`
+  goes out with either), `crefName(type,sing,plur)` (force cleveref to spell
+  types out in full to match HTML; only with cleveref, which only a `\cref`
+  loads — every full document loads hyperref, so gating it on either printed
+  the names as text). Order: engine defaults → feature/user
   packages (hyperref/cleveref forced last) → raw lines → late lines → user
   preamble.
 - **Cross-references** (`additional-directives.js` + `crossref.js` + `post-processor.js`):

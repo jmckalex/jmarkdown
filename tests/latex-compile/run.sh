@@ -211,6 +211,51 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 	done
 done
 
+# --- Full documents: the preamble jmarkdown writes itself --------------------------
+# The goldens above compile inside this script's own wrapper, so the engine's
+# preamble is never compiled there. These build FULL documents and read the
+# PDF's text. A \crefname that went out without cleveref — any numbered thing
+# plus hyperref, which every full document loads — printed its arguments at
+# the top of page 1 ("equationequationequations"); with -halt-on-error, it
+# stopped the build. The fixtures are tests/latex-document's.
+if command -v pdftotext >/dev/null 2>&1; then
+	for name in cref-unused cref-used; do
+		label="full-document/$name"
+		work="$SCRATCH/full-$name"
+		mkdir -p "$work"
+		# HOME is the scratch folder, so no global config changes the preamble.
+		if ! HOME="$work" node "$REPO/src/index.js" process "$REPO/tests/latex-document/$name.jmd" --to latex -o "$work/doc.tex" >/dev/null 2>"$work/build.log"; then
+			echo "FAIL  $label  (jmarkdown exited non-zero)"
+			sed 's/^/    | /' "$work/build.log"
+			fail=$((fail + 1))
+			continue
+		fi
+		if ! (cd "$work" && pdflatex -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1 \
+			&& pdflatex -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+			echo "FAIL  $label"
+			grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
+			fail=$((fail + 1))
+			continue
+		fi
+		pdftotext "$work/doc.pdf" "$work/doc.txt"
+		problems=''
+		for doubled in equationequation EquationEquation tabletable TableTable footnotefootnote FootnoteFootnote; do
+			grep -q "$doubled" "$work/doc.txt" && problems="$problems $doubled"
+		done
+		[ "$name" = cref-used ] && ! grep -q 'See equation (1) and table 1' "$work/doc.txt" && problems="$problems no-full-words"
+		if [ -z "$problems" ]; then
+			echo "PASS  $label [pdf text]"
+			pass=$((pass + 1))
+		else
+			echo "FAIL  $label [pdf text]  (found:$problems)"
+			fail=$((fail + 1))
+		fi
+	done
+else
+	echo "SKIP  full-document/*  (pdftotext not installed)"
+	skip=$((skip + 1))
+fi
+
 echo
 echo "latex-compile: $pass passed, $fail failed, $skip skipped"
 [ "$fail" -eq 0 ]

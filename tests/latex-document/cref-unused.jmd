@@ -1,0 +1,19 @@
+---
+Title: Numbered, Never Cref'd
+---
+
+Everything here is numbered, and nothing refers to any of it.
+
+@begin(equation)
+E = mc^2
+@end(equation)
+
+@begin(table)[A table]
+| a | b |
+|---|---|
+| 1 | 2 |
+@end(table)
+
+A grouped note[fn(g): its body] and [a link](https://example.org).
+
+@endnotes(g)

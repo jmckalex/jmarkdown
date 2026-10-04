@@ -101,7 +101,7 @@ export function processLatexTemplate(content) {
 	const pdf = [];
 	if (title) pdf.push(`pdftitle={${title}}`);
 	if (author) pdf.push(`pdfauthor={${author}}`);
-	if (pdf.length) addLatePreamble(`\\hypersetup{${pdf.join(', ')}}`);
+	if (pdf.length) addLatePreamble(`\\hypersetup{${pdf.join(', ')}}`, 'hyperref');
 
 	// A book numbered `continuous`: the book class numbers figures, tables and
 	// equations per chapter, so take them out of it (listings too, when minted
