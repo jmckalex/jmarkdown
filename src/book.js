@@ -424,6 +424,12 @@ function settleFootnotes(tokens) {
 		const { _jmdLoc, ...copy } = first;
 		tokens.push({ ...copy, rawItems: first.rawItems.slice(), items: first.items.slice() });
 	}
+	// marked hands a one-newline space token to the token before it, and this
+	// one is marked-footnote's own, reused by every chapter: a chapter that
+	// opens with a blank line left its newline in `raw`, and every later
+	// chapter counted it — its lines one too many. Its raw is only the list's
+	// heading text (the renderer trims it), so the newline goes.
+	first.raw = String(first.raw).replace(/\s+$/, '');
 }
 
 // Every token array inside a top-level token, mapped to its line.
@@ -940,6 +946,22 @@ function bookWalk(token) {
 		const to = rebase(token.arg.trim(), walkChapter);
 		if (typeof to === 'string') token.arg = to;
 	}
+}
+
+/**
+ * Place the warnings a post-pass raises about an element — an unresolved
+ * @ref, a duplicate label, a citation key no bibliography holds — at its
+ * chapter and line: the chapter's file, and the nearest block parseBook
+ * stamped. An element outside every chapter, or null, places nothing; not a
+ * book, nothing at all.
+ */
+export function placeWarningsAt($, el) {
+	if (!book) return;
+	const $section = el ? $(el).closest('section.jmd-chapter') : null;
+	if (!$section || !$section.length) { setWarningLocation(null); return; }
+	const chapter = book.chapters.find((c) => c.index === Number($section.attr('data-chapter')));
+	const line = Number($(el).closest('[data-source-line]').attr('data-source-line')) || null;
+	setWarningLocation({ file: chapter ? chapter.name : $section.attr('data-file'), line });
 }
 
 /** The chapter a walkTokens hook is in, as it runs (smart typography's quotes). */

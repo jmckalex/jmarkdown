@@ -279,7 +279,7 @@ bbuild html --fragment
 has   "bib/cross-chapter-warned" "$C/html.err" "c1.md:9: book: this chapter cites \`beta\`, which only sub/c2.md's bibliography holds"
 count "bib/own-key-quiet" "$C/html.err" 'this chapter cites' 1
 has   "bib/clash-names-both" "$C/html.err" "bibliography: c2.bib (sub/c2.md's) and c1.bib (c1.md's) disagree on an entry; c2.bib's used: clash"
-has   "bib/chapter-list-ignored" "$C/html.err" "sub/c2.md:10: book: this chapter's \`@bibliography\` is ignored"
+has   "bib/chapter-list-ignored" "$C/html.err" "sub/c2.md:9: book: this chapter's \`@bibliography\` is ignored"
 count "bib/one-list" "$C/html.out" 'bibliography-title">References' 1
 has   "bib/master-entry" "$C/html.out" 'The Shared Book'
 has   "bib/chapter-one-entry" "$C/html.out" 'The Alpha Article'
@@ -494,6 +494,23 @@ has   "split/library-pages" "$X/lib.out" 'index.html a.html b.html references.ht
 has   "split/fragment-one-page" "$X/frag.err" 'needs an output file and a full page — written as one page'
 (cd "$X" && HOME="$SCRATCH/home" node "$JMD" process runtime.md -o out/Runtime.html >/dev/null 2>runtime.err)
 has   "split/runtime-citations-warned" "$X/runtime.err" 'need `Resolve citations: true`'
+
+# --- the post-pass's warnings, at chapter:line ------------------------------------------------------------
+# warn/a.md (front matter, then a blank line) labels eq:x and cites a key no
+# bibliography holds; b.md, after it, labels eq:x again and refers to a label
+# that does not exist. b.md's lines also pin a fixed slip: a chapter opening
+# with a blank line left it in marked-footnote's reused token, and every later
+# chapter's lines came out one too many.
+
+cp -R "$HERE/warn" "$SCRATCH/warn"
+W="$SCRATCH/warn"
+(cd "$W" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o html.out >/dev/null 2>html.err) \
+	|| fail "warn/exit" "$(cat "$W/html.err")"
+has   "warn/duplicate-label" "$W/html.err" "b.md:7: duplicate label 'eq:x'"
+has   "warn/unresolved-ref" "$W/html.err" "b.md:11: unresolved reference 'eq:missing'"
+has   "warn/missing-citation" "$W/html.err" 'a.md:13: citation: no bibliography entry for "nowhere"'
+sed -n '/data-file="b.md"/,$p' "$W/html.out" >"$W/b.part"
+has   "warn/later-chapter-lines" "$W/b.part" '<h1 data-source-line="1"'
 
 # --- not a book: nothing changes ------------------------------------------------------------------
 

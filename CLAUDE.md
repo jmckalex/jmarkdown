@@ -128,9 +128,13 @@ golden is untouched).
 - **Warnings name `chapter:line`** (warnings.js `setWarningLocation`): set while
   lexing (block phase: the chapter; inline phase: the block's line), walking
   (the `bookWalk` walkTokens hook, registered AFTER the lint so it runs first),
-  and rendering (`provideParser` renders one top-level block at a time). Lines
-  are the chapter FILE's (stripped front matter added back, an inserted title
-  taken away). In a book a repeated message is given once, at its first place.
+  and rendering (`provideParser` renders one top-level block at a time), and in
+  the HTML post-pass (`placeWarningsAt($, el)`: the element's chapter and the
+  nearest stamped block's line — duplicate labels, unresolved `@ref`s, missing
+  citation keys). Lines are the chapter FILE's (stripped front matter added
+  back, an inserted title taken away). marked-footnote's reused footnotes
+  token absorbs a chapter's leading blank line into its `raw`;
+  `settleFootnotes` trims it, or every later chapter's lines run one high. In a book a repeated message is given once, at its first place.
   HTML blocks carry `data-source-line` (chapter lines; whole-stream source
   positions and the inverse-search script are off in a book).
 - **Paths (G10)**: `bookWalk` rebases a chapter's relative link/image/`@image`/

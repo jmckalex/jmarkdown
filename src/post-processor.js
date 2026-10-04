@@ -9,7 +9,7 @@ import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
 import { checkMathPackages } from './latex-lint.js';
-import { getBook, scopeChapterFootnotes, scopeChapterStyles } from './book.js';
+import { getBook, scopeChapterFootnotes, scopeChapterStyles, placeWarningsAt } from './book.js';
 import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
 import { addWarning } from './warnings.js';
 import { buildIndexes } from './indexing.js';
@@ -258,6 +258,7 @@ function number_figures($) {
 			$sub.children('figcaption').first()
 				.prepend(`<span class="subfigure-label">(${letter})</span> `);
 			if (subId) {
+				placeWarningsAt($, subelem);
 				recordLabel(subId, { number: `${n}${letter}`, type: 'figure', anchor: subId });
 			}
 		});
@@ -270,6 +271,7 @@ function number_figures($) {
 		$cap.prepend(`<span class="figure-label xref">Figure ${n}:</span> `);
 		figureList.push({ text: $cap.text(), anchor: id });
 		if (id) {
+			placeWarningsAt($, elem);
 			recordLabel(id, { number: `${n}`, type: 'figure', anchor: id });
 		}
 	});
@@ -289,6 +291,7 @@ function number_tables($) {
 		$cap.prepend(`<span class="table-label xref">Table ${n}:</span> `);
 		tableList.push({ text: $cap.text(), anchor: id });
 		if (id) {
+			placeWarningsAt($, elem);
 			recordLabel(id, { number: `${n}`, type: 'table', anchor: id });
 		}
 	});
@@ -308,6 +311,7 @@ function number_listings($) {
 		$cap.prepend(`<span class="listing-label xref">Listing ${n}:</span> `);
 		listingList.push({ text: $cap.text(), anchor: id });
 		if (id) {
+			placeWarningsAt($, elem);
 			recordLabel(id, { number: `${n}`, type: 'listing', anchor: id });
 		}
 	});
@@ -340,6 +344,7 @@ function number_theorems($) {
 		if ($firstP.length) $firstP.prepend(labelHtml);
 		else $env.prepend(labelHtml);
 		if (id) {
+			placeWarningsAt($, elem);
 			recordLabel(id, { number: `${n}`, type: kind, anchor: id });
 		}
 	});
@@ -388,6 +393,7 @@ function number_environments($) {
 		if ($firstP.length) $firstP.prepend(labelHtml);
 		else $env.prepend(labelHtml);
 		if (id) {
+			placeWarningsAt($, elem);
 			recordLabel(id, { number: `${n}`, type: spec.type, anchor: id });
 		}
 	});
@@ -406,6 +412,7 @@ function number_equations($) {
 		$eq.attr('data-xref-number', `${n}`).attr('data-xref-type', 'equation');
 		$eq.append(`<span class="eqn-number">(${n})</span>`);
 		if (id) {
+			placeWarningsAt($, elem);
 			recordLabel(id, { number: `${n}`, type: 'equation', anchor: id });
 		}
 	});
@@ -460,6 +467,8 @@ function process_crossrefs($) {
 		if (number != undefined && number.endsWith('.')) {
 			number = number.slice(0, -1);
 		}
+		// In a book, a duplicate is reported at its chapter and line.
+		placeWarningsAt($, elem);
 		recordLabel(key, { number, anchor, type });
 	});
 
@@ -474,6 +483,7 @@ function process_crossrefs($) {
 		}
 		else {
 			$elem.text('??');
+			placeWarningsAt($, elem);
 			warnUnresolvedRef(key, info);
 		}
 	});
@@ -489,9 +499,11 @@ function process_crossrefs($) {
 		}
 		else {
 			$elem.text('??');
+			placeWarningsAt($, elem);
 			warnUnresolvedRef(key, info);
 		}
 	});
+	placeWarningsAt($, null);
 }
 
 // When writing markdown, it's common to put <style> tags in the body.
