@@ -194,6 +194,16 @@ golden is untouched).
   set for the whole book: a chapter that defines a name differently from the
   master or an earlier chapter is warned, since its definition carries on.
   The lint counts the chapters' macros.
+- **Languages** (a chapter's `Lang`, else the master's; book builds ONLY —
+  the owner, 2026-10-04): HTML puts `lang` on a chapter's section where it
+  differs from the master's. LaTeX loads babel once a book's languages need it
+  (`bookBabel`: the chapters' then the master's, main last; a book wholly in
+  English loads none) and wraps a differing chapter in `otherlanguage*`, whose
+  star keeps headings in the book's language. A tag babel doesn't know, or
+  Cyrillic/Greek under pdfLaTeX, is warned at its chapter. Smart typography
+  takes the language's quotation marks (`currentLanguage()` →
+  smart-typography.js `QUOTES`: „…“ de, «\u00A0…\u00A0» fr, …); English, and
+  every single file whatever its `Lang`, keep `educate()`'s.
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).

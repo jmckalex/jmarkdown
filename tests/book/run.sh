@@ -372,6 +372,59 @@ if command -v pdflatex >/dev/null 2>&1; then
 	fi
 fi
 
+# --- languages: a chapter's Lang — section lang, babel, quotation marks (book builds only) ---------------
+# lang/master.md (English, Smart typography) has chapters in English, German
+# (de), French (fr), Russian (ru: babel needs a Unicode engine) and an unknown
+# tag (xx). german.md is a German master whose one chapter sets no Lang;
+# single.md is not a book, so its `Lang: de` changes no quotation mark.
+
+cp -R "$HERE/lang" "$SCRATCH/lang"
+L="$SCRATCH/lang"
+lbuild() {   # lbuild NAME MASTER [args…]
+	name=$1; master=$2; shift 2
+	(cd "$L" && HOME="$SCRATCH/home" node "$JMD" process "$master" -o "$name.out" "$@" >/dev/null 2>"$name.err") \
+		|| fail "lang/$name/exit" "$(cat "$L/$name.err")"
+}
+lbuild html master.md --fragment
+has   "lang/master-english" "$L/html.out" '“Before,” the master says.'
+has   "lang/english" "$L/html.out" '“Hello,” she said. ‘No’, he said. Don’t.'
+has   "lang/german" "$L/html.out" '„Hallo,“ sagte sie. ‚Nein‘, sagte er. Geht’s?'
+# The post-processor writes the no-break space as an entity.
+has   "lang/french" "$L/html.out" '«&nbsp;Bonjour,&nbsp;» dit-elle. L’homme répond.'
+has   "lang/russian" "$L/html.out" '«Privet,» she said.'
+has   "lang/unknown-english" "$L/html.out" '“Quoted,” as English.'
+has   "lang/section-de" "$L/html.out" 'data-file="de.md" lang="de">'
+has   "lang/section-fr" "$L/html.out" 'data-file="fr.md" lang="fr">'
+hasnt "lang/section-en-none" "$L/html.out" 'data-file="en.md" lang='
+lbuild latex master.md --to latex
+has   "lang/latex/babel" "$L/latex.out" '\usepackage[ngerman,french,english]{babel}'
+has   "lang/latex/otherlanguage" "$L/latex.out" '\begin{otherlanguage*}{ngerman}'
+count "lang/latex/closed" "$L/latex.out" '\end{otherlanguage*}' 2
+has   "lang/latex/russian-warned" "$L/latex.err" "ru.md: book: babel's russian needs a Unicode engine"
+has   "lang/latex/unknown-warned" "$L/latex.err" 'xx.md: book: `Lang: xx` is not a language babel knows'
+if command -v pdflatex >/dev/null 2>&1 && command -v pdftotext >/dev/null 2>&1; then
+	(cd "$L" && sed -e '/fontspec/d' -e '/setmainfont/d' latex.out >lang-pdf.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error lang-pdf.tex >/dev/null 2>&1 \
+		&& pdftotext lang-pdf.pdf lang.txt)
+	if [ -f "$L/lang.txt" ]; then
+		has   "lang/pdf/german" "$L/lang.txt" '„Hallo,“ sagte sie.'
+		hasnt "lang/pdf/headings-english" "$L/lang.txt" 'Kapitel'
+	else
+		fail "lang/pdf" "$(grep -m3 '^!' "$L/lang-pdf.log")"
+	fi
+fi
+# A German master: its chapters are German unless they say otherwise.
+lbuild german german.md --fragment
+has   "lang/german-master/chapter" "$L/german.out" '„Hello,“ she said.'
+lbuild germanlatex german.md --to latex
+has   "lang/german-master/babel" "$L/germanlatex.out" '\usepackage[ngerman]{babel}'
+hasnt "lang/german-master/no-otherlanguage" "$L/germanlatex.out" 'otherlanguage'
+# Not a book: Lang changes no quotation mark, and loads no babel.
+lbuild single single.md --fragment
+has   "lang/single/english-quotes" "$L/single.out" '“Hallo,” sagte sie. ‘Nein’, sagte er.'
+lbuild singlelatex single.md --to latex
+hasnt "lang/single/no-babel" "$L/singlelatex.out" 'babel'
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"

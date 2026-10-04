@@ -317,7 +317,8 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 		return null;
 	}
 
-	book = { masterDir, chapters: [], isLatex, numbering: numberingPolicy(numbering ?? masterSetting('Numbering')) };
+	book = { masterDir, chapters: [], isLatex, numbering: numberingPolicy(numbering ?? masterSetting('Numbering')),
+		lang: languageTag(configManager.get('Lang')) || 'en' };
 	// A book's # headings are its chapters: a master naming no class is a book.
 	// Set before the chapters are read, which compare their own settings with it.
 	if (configManager.get('Document_class') == null) configManager.set('Document class', 'book');
@@ -327,6 +328,7 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 		const chapter = readChapter(piece.chapter, book.chapters.length + 1, masterDir);
 		if (!chapter) continue;
 		chapter.macros = chapterMacros(chapter);
+		chapter.lang = languageTag(chapter.settings.lang);
 		book.chapters.push(chapter);
 		out.push(`\n\n${START(chapter.index)}\n${chapter.text}\n\n${END}\n\n`);
 	}
@@ -559,6 +561,71 @@ export function bookPreamble() {
 	return book.preambleJoin;
 }
 
+/* --- languages --------------------------------------------------------------------------------- */
+
+// A `Lang` value as a BCP 47 tag (`de`, `en-GB`), or null.
+function languageTag(value) {
+	return settingLines(value, /[,\n\s]/)[0] || null;
+}
+
+const sameLanguage = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+
+/**
+ * The language the walk is in: in a book, the chapter's own `Lang`, else the
+ * master's; null outside a book. Smart typography's quotation marks follow it.
+ */
+export function currentLanguage() {
+	if (!book) return null;
+	return currentWalkChapter()?.lang || book.lang;
+}
+
+// BCP 47 → babel. The Cyrillic and Greek ones need a Unicode engine's fonts.
+const BABEL = {
+	en: 'english', 'en-us': 'american', 'en-gb': 'british', 'en-au': 'australian', 'en-ca': 'canadian',
+	'en-nz': 'newzealand', de: 'ngerman', 'de-at': 'naustrian', 'de-ch': 'nswissgerman', fr: 'french',
+	es: 'spanish', it: 'italian', pt: 'portuguese', 'pt-br': 'brazilian', nl: 'dutch', sv: 'swedish',
+	da: 'danish', nb: 'norsk', no: 'norsk', nn: 'nynorsk', fi: 'finnish', is: 'icelandic', pl: 'polish',
+	cs: 'czech', sk: 'slovak', hu: 'magyar', ro: 'romanian', hr: 'croatian', sl: 'slovenian', tr: 'turkish',
+	ca: 'catalan', gl: 'galician', eu: 'basque', ga: 'irish', cy: 'welsh', et: 'estonian', lv: 'latvian',
+	lt: 'lithuanian', la: 'latin', ru: 'russian', uk: 'ukrainian', el: 'greek',
+};
+const NEEDS_UNICODE = new Set(['russian', 'ukrainian', 'greek']);
+
+/**
+ * The book's babel, once a build, when its languages need one: the chapters'
+ * that differ from the master's, then the master's last (babel's main
+ * language). A book wholly in English loads none, as one document does not.
+ * A tag babel does not know, or a Cyrillic or Greek one under pdfLaTeX, is
+ * warned at its chapter and printed as the book's language. Each chapter's
+ * own babel name is left on it (`chapter.babel`), for otherlanguage*.
+ */
+function bookBabel() {
+	if (book.babel !== undefined) return book.babel;
+	const engine = String(configManager.getMeta('LaTeX engine') ?? '').trim().toLowerCase();
+	const unicode = engine === 'lualatex' || engine === 'xelatex';
+	const was = getWarningLocation();
+	const usable = (tag, chapter) => {
+		setWarningLocation(chapter ? { file: chapter.name } : null);
+		const t = tag.toLowerCase();
+		const name = BABEL[t] ?? BABEL[t.split('-')[0]];
+		const whose = chapter ? 'this chapter' : 'the book';
+		if (!name) addWarning(`book: \`Lang: ${tag}\` is not a language babel knows — in print ${whose} is hyphenated as ${chapter ? "the book's" : 'English'}`);
+		else if (NEEDS_UNICODE.has(name) && !unicode) addWarning(`book: babel's ${name} needs a Unicode engine (\`LaTeX engine: lualatex\`) — in print ${whose} is hyphenated as ${chapter ? "the book's" : 'English'}`);
+		else return name;
+		return null;
+	};
+	const main = usable(book.lang, null) || 'english';
+	for (const chapter of book.chapters) {
+		chapter.babel = chapter.lang && !sameLanguage(chapter.lang, book.lang) ? usable(chapter.lang, chapter) : null;
+		if (chapter.babel === main) chapter.babel = null;
+	}
+	setWarningLocation(was);
+	// The main language last; no chapter's is the main one (nulled above).
+	const names = [...new Set([...book.chapters.map((c) => c.babel).filter(Boolean), main])];
+	book.babel = names.length === 1 && main === 'english' ? null : names.join(',');
+	return book.babel;
+}
+
 /* --- a chapter's math macros ------------------------------------------------------------------------ */
 
 /**
@@ -663,14 +730,18 @@ const chapterToken = {
 		if (!c) return '';
 		const macros = c.macros || [];
 		if (global.isLatex) {
-			// An anchor at the chapter's start, for links to it (jmdChapterLink),
-			// after the chapter's own macros.
-			if (token.edge === 'end') return '';
-			requirePackage('hyperref');
-			// MathJax's vocabulary, as the master's macros have (latex-template.js).
+			// The chapter's language, for hyphenation: otherlanguage*, whose star
+			// leaves headings ("Chapter 3") in the book's language.
+			const babel = bookBabel();
+			if (token.edge === 'end') return c.babel ? '\\end{otherlanguage*}\n' : '';
+			if (babel) requirePackage('babel', babel);
+			const language = c.babel ? `\\begin{otherlanguage*}{${c.babel}}\n` : '';
+			// Its macros (MathJax's vocabulary, as the master's have), then an
+			// anchor at its start for links to it (jmdChapterLink).
 			if (macros.length) { requirePackage('amsmath'); requirePackage('amssymb'); }
 			const defined = macros.map((line) => `${latexMacro(line)}\n`).join('');
-			return `${defined}\\phantomsection\\label{jmd-chapter-${c.index}}\n`;
+			requirePackage('hyperref');
+			return `${defined}\\phantomsection\\label{jmd-chapter-${c.index}}\n${language}`;
 		}
 		if (token.edge === 'end') return `${chapterNotesPlaceholder(c.index)}\n</section>\n`;
 		// The chapter's macros, hidden, before any of its maths (as index.js
@@ -678,7 +749,9 @@ const chapterToken = {
 		const defined = macros.length
 			? `<div class="math-macros" style="display:none">\\(\n${macros.map((l) => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n')}\n\\)</div>\n`
 			: '';
-		return `<section class="jmd-chapter" id="jmd-chapter-${c.index}" data-chapter="${c.index}" data-file="${escapeAttr(c.name)}">\n${defined}`;
+		// Its own language, where it differs from the book's (<html lang>).
+		const lang = c.lang && !sameLanguage(c.lang, book.lang) ? ` lang="${escapeAttr(c.lang)}"` : '';
+		return `<section class="jmd-chapter" id="jmd-chapter-${c.index}" data-chapter="${c.index}" data-file="${escapeAttr(c.name)}"${lang}>\n${defined}`;
 	},
 };
 
