@@ -1,0 +1,25 @@
+A \mintinline{text}|<script>| in inline code stays a code span, wherever it sits — a paragraph:
+\mintinline{text}|<script>document.title = 'SWALLOWED'</script>| and \mintinline{text}|</>|.
+
+\begin{itemize}
+\item a list item with \mintinline{text}|<script>alert(1)</script>| in code
+\item a loose item with \mintinline{text}|<script>alert(2)</script>| in code
+\end{itemize}
+
+\begin{quote}
+quoted \mintinline{text}|<script>alert(3)</script>| code
+\end{quote}
+
+\begin{tabular}{ll}
+\toprule
+a & b \\
+\midrule
+cell & \mintinline{text}|<script>alert(4)</script>| \\
+\bottomrule
+\end{tabular}
+
+A compile-time script in code does not run: \mintinline{text}|<script data-type="jmarkdown"> global.output = 'RAN-IN-CODE'; </script>|.
+
+A real script block at a line start passes through to the page (and is left out
+of LaTeX):
+

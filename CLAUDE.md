@@ -32,7 +32,7 @@ All source lives in `src/`. Key files:
 | `syntax-enhancements.js` | Further inline/block syntax |
 | `smart-typography.js` | **Opt-in** (`Smart typography: true`, default off) typographic educator: straight quotes → curly, `---`/`--` → em/en dash, `...` → ellipsis. A `walkTokens` hook on both marked instances mutating only **leaf inline `text` tokens** (code/math/`:::TeX`/escapes never produce those, so protection is free); emits raw **Unicode** so one implementation serves both outputs. Reads the config key lazily at walk time — registration happens before the metadata header is parsed |
 | `note-code.js` | `Run note code`: the one switch over every path by which a document makes the build run code, and the by-name refusal each path emits when it is off; also `noteCodeError`, the in-place marker for code that ran and threw (see below) |
-| `script-blocks.js` | `<script type="jmarkdown">` and `jmarkdown-postprocess` blocks |
+| `script-blocks.js` | `<script type="jmarkdown">` and `jmarkdown-postprocess` blocks, and plain `<script>` blocks passed through to the page (left out of LaTeX). Both block `start()`s report only a LINE START where their tokenizer matches (`scriptBlockStart`): they used to search anywhere, so `<script>…</script>` in inline code cut its paragraph and the script ran (fixed 2026-10-04) |
 | `function-extensions.js` | Acorn-based inline JS expression parsing; `export_to_jmarkdown`. An exported name claims only a call or member expression rooted at it — anything else (`Save the Date. Bring wine.`) is declined and stays prose |
 | `inline-function-extension.js` | `function(…) { … }` blocks (at a line start) and inline `func(…) { … }`: run an anonymous function in place. Claims only a complete function WITH A BODY (`functionSource`), so prose that mentions `func(x)` stays prose; a throw becomes a `noteCodeError` marker |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |
@@ -644,6 +644,13 @@ text still contains it, so a start at the `:` or a `/` of `http://` left the
 URL as plain text. Two starts did exactly that (fixed 2026-10): `/italics/`
 (every `/`) and the label-less inline `:` directive (every `:`). So for inline
 starts too, report only positions where the tokenizer can match.
+
+The worst case of the block rule was a script: both script-block extensions
+searched for `<script` anywhere, so `` `<script>…</script>` `` in inline code cut
+the paragraph (or blockquote) at the tag and the script was emitted as a live
+element — it ran in a trusted Clew vault (fixed 2026-10-04, `scriptBlockStart` in
+script-blocks.js; fixture `features/scripting/script-in-code`, with and without
+`-n`).
 
 ### `/italics/` flanking (`syntax-modifications.js`)
 A slash inside a word, a path or a URL never opens or closes italics. The

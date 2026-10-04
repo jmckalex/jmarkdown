@@ -60,8 +60,9 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# inline-syntax: the italics fixtures carry links (bare URLs are
 		# autolinked) and a booktabs table.
 		inline-syntax)     extra='\usepackage{color}\usepackage{soul}\usepackage{booktabs}\usepackage{hyperref}'; needs='soul.sty booktabs.sty hyperref.sty' ;;
-		# scripting: func's heading holds inline code (\mintinline).
-		scripting)         extra='\usepackage{minted}';                   needs='minted.sty' ;;
+		# scripting: func's heading holds inline code (\mintinline); script-in-code
+		# has a table (booktabs).
+		scripting)         extra='\usepackage{minted}\usepackage{booktabs}'; needs='minted.sty booktabs.sty' ;;
 		# headings: inline-code puts inline code in headings (a moving argument).
 		headings)          extra='\usepackage{minted}\usepackage{hyperref}'; needs='minted.sty hyperref.sty' ;;
 		# code: minted, and booktabs for html-specials' table of code spans.

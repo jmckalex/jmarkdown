@@ -1,0 +1,25 @@
+---
+Title: script in code
+---
+
+A `<script>` in inline code stays a code span, wherever it sits — a paragraph:
+`<script>document.title = 'SWALLOWED'</script>` and `</>`.
+
+- a list item with `<script>alert(1)</script>` in code
+
+- a loose item with `<script>alert(2)</script>` in code
+
+> quoted `<script>alert(3)</script>` code
+
+| a | b |
+|---|---|
+| cell | `<script>alert(4)</script>` |
+
+A compile-time script in code does not run: `<script data-type="jmarkdown"> global.output = 'RAN-IN-CODE'; </script>`.
+
+A real script block at a line start passes through to the page (and is left out
+of LaTeX):
+
+<script>
+console.log('a block script');
+</script>
