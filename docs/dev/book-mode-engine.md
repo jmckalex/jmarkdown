@@ -1,8 +1,9 @@
 # Book mode — what the engine can offer
 
 *Engine-side note for Clew-app's book/manuscript-mode design. Written
-2026-10-03 against `at-migration` 455cb61 (+ the docs and test commits after
-it). A note, not a plan of record: nothing here is built yet beyond §2.*
+2026-10-03 against `at-migration` 455cb61; updated 2026-10-04 with the owner's
+decisions (§7), which §5 and §6 now follow. Nothing here is built yet beyond
+§2.*
 
 A book build takes an ordered list of chapter files and produces ONE book:
 - numbering that runs across chapters (headings, figures, tables, equations,
@@ -15,8 +16,8 @@ This note says:
 - what the engine does for that today (§2);
 - where it falls short, each gap checked against a probe build (§3);
 - three ways to close the gaps, with trade-offs (§4);
-- what I would do, in stages (§5), and an interface Clew could rely on (§6);
-- the questions only the owner can answer (§7).
+- the plan, in phases (§5), and the interface Clew can design against (§6);
+- the owner's decisions (§7, 2026-10-04).
 
 ---
 
@@ -144,6 +145,15 @@ wikilinks between chapter notes must become in-book links (`#chapter-anchor`,
 or `chapter-3.html#…` when split). That is host-side, but it needs the engine
 to give each chapter a stable anchor and to say where each chapter landed.
 
+**G10 — An included chapter's relative paths are not rebased.** A chapter in
+`chapters/one.md` that writes `![a figure](fig.png)` means `chapters/fig.png`.
+Spliced into a master one folder up, it still says `fig.png`, in HTML
+(`src="fig.png"`) and LaTeX (`\includegraphics{fig.png}`). So it points at the
+master's folder, not the chapter's (checked 2026-10-04). Assembly must rewrite
+each chapter's relative image, link and media paths against the chapter's own
+folder. With per-chapter pages it must then rewrite them again, relative to the
+page's output location.
+
 ---
 
 ## 4. Options
@@ -226,68 +236,158 @@ usage-driven packages, which the preamble registry can merge.
 
 ---
 
-## 5. What I would do
+## 5. The plan
 
-1. **Option A first.** It makes a real book exportable now:
-   - the `chapters` input;
-   - strip chapter front matter (G1, needed whatever else happens);
-   - a line map, so warnings and inverse search name the chapter (G4);
-   - `Numbering: per chapter | continuous` in both outputs (G3);
-   - per-chapter footnote lists in HTML (G7): the existing endnote groups,
-     keyed to chapters automatically;
-   - optionally, LaTeX as master + `\include` (G5).
-   Each piece is small, testable on its own, and none breaks single-note
-   builds.
-2. **Option C when size bites:** incremental rebuilds and one page per
-   chapter. It builds on A's inputs and outputs, and doesn't replace them.
-3. **Option B only if Clew needs book numbers inside a single-chapter
-   preview** while the book isn't being built. Even then, a cheaper route is
-   for C's whole-book pass to save a small *book map* (chapter → counter
-   offsets, label → chapter/number/anchor) that a lone-chapter render reads
-   to number from the right place and to link out.
+**Can option A plus a split at chapter boundaries give per-chapter pages in
+phase 1? Yes, and option C need not come sooner.**
+
+In A the whole book is one DOM after the post-processor. One pass has already
+done every number, every cross-reference, the citations, the References list
+and the index. Splitting that finished DOM into pages is one more pass at the
+end. It needs four things, none of them C's:
+- **chapter boundaries:** the assembler wraps each chapter as it splices it,
+  e.g. `<section class="jmd-chapter" data-chapter="2" data-file="…" lang="…">`;
+- **an id → page map**, read off the DOM;
+- **rewritten links:** every `#id` whose target is on another page becomes
+  `page.html#id`. That covers cross-references, the contents, citation links
+  into the References page, and index locators. Footnote refs and backrefs
+  stay on their own page, since notes are per chapter (below);
+- **a head for each page:** the book's template, plus that chapter's
+  whitelisted `<style>` and maths macros.
+
+C is about rebuild speed, not about pages. It makes one chapter's change cheap
+by caching the other chapters' renders. A book export is a one-off action, and
+Clew's everyday preview is a single note, so the whole-book rebuild A costs is
+acceptable in phase 1. C becomes worth it only if a live whole-book preview is
+wanted.
+
+**Phase 1 — option A, with pages** (each item small and testable alone; a
+single-note build is untouched):
+1. **The master note and assembly:** the chapter list from the master note
+   (§6). Each chapter is wrapped, its front matter stripped (G1), and its
+   relative paths rebased (G10). The title is the first `#` heading, else the
+   front matter's `title`, else the file name (§7).
+2. **Per-chapter settings** (G8), from the whitelist in §7; anything else in a
+   chapter's header warns, naming the chapter.
+3. **Numbering per chapter by default**, `continuous` on request, in both
+   outputs (G3):
+   - HTML: the post-processor's counters reset at each chapter and prefix its
+     number (Figure 2.3, Theorem 2.1, (2.4), footnote 2 restarts);
+   - LaTeX: `book`/`report` already number figures, tables, equations and
+     footnotes per chapter, and theorems gain `numberwithin=chapter`;
+   - `continuous`: today's HTML, plus `\counterwithout{…}{chapter}` and no
+     `numberwithin` in LaTeX.
+4. **Footnotes at the end of each chapter in HTML** (G7). The post-pass moves
+   each chapter's notes, classic and inline alike, into a list closing that
+   chapter, numbered from 1. LaTeX's footnotes stay at the foot of the page,
+   numbered per chapter by the class.
+5. **One References list at the end:** the master's `@bibliography`. A
+   chapter's own `@bibliography` warns and is ignored.
+6. **Warnings name the chapter and line** (G4), through a line map kept by
+   the assembler.
+7. **The HTML split:** a contents page, one page per chapter, a References
+   page and an Index page, with links rewritten across them (above).
+   Citations must be resolved at compile time (`Resolve citations`, as Clew
+   already sets): the runtime Biblify client sees one page and cannot build a
+   book-wide list.
+8. **LaTeX:** one `.tex` (as now), or a master plus `\include` per chapter.
+   Either compiles to the same PDF; `\include` allows `\includeonly`.
+
+**Phase 2 — option C, if needed:** cache each chapter's render and rerun only
+the global post-pass. Phase 1's assembly, wrappers, split and outputs all stay.
+A *book map* saved by that pass (chapter → counter offsets, label →
+page/number) would let a single-note preview show book numbers. That is the
+one thing option B was for, so **B is not needed.**
 
 ---
 
-## 6. A possible interface, for Clew to design against
+## 6. The interface, for Clew to design against
+
+**The master note** holds the book's configuration (its header) and its
+order. It is the order's home (§7):
+
+```
+---
+Title: A Short Book
+Document class: book
+Numbering: per chapter          # or: continuous
+Resolve citations: true
+Bibliography: book.bib
+---
+
+{{frontmatter}}
+{{TOC}}
+{{mainmatter}}
+
+@chapter+(chapters/intro.md)
+@chapter+(chapters/methods.md)
+
+{{appendix}}
+@chapter+(chapters/proofs.md)
+
+{{backmatter}}
+@bibliography{title="References"}
+@index{title="Index"}
+```
+
+`@chapter+(path)` is the engine's chapter line. It uses the `@name+(arg)`
+block form, so it never collides with Clew's `[[…]]` wikilinks, and the
+matter markers interleave naturally. A host that resolves its own syntax (say,
+wikilinks to notes) can hand the engine the paths instead:
 
 ```js
 processFile(master, {
-  chapters: ['01-intro.md', '02-methods.md', …],  // order = book order; replaces [[…]] for hosts
-  numbering: 'per chapter',                        // or 'continuous' (a header key too)
-  latexLayout: 'include',                          // or 'single' (today's one .tex)
-  htmlLayout: 'single',                            // or 'split' (later: option C)
-  bibliography: [vaultBib],                        // already exists (455cb61)
+  chapters: ['chapters/intro.md', …],   // instead of @chapter+ lines (one or the other)
+  numbering: 'per chapter',              // overrides the header's Numbering
+  htmlLayout: 'pages',                   // book default; 'single' = one long page
+  latexLayout: 'single',                 // or 'include'
+  bibliography: [vaultBib],              // exists since 455cb61
 })
 ```
 
-- **`chapters`:** paths are relative to the master, or absolute. Each file's
-  front matter is stripped; its `title` (if any) is available as the chapter
-  title when the file starts with no heading (the owner's call, §7).
-- **Warnings** gain a location, as `file:line`, which watch mode's and Clew's
-  banners can show.
-- **Outputs:**
-  - `single`: one `.html` / `.tex`, as today;
-  - `include`: `book.tex` plus `book-ch1.tex`, … beside it;
-  - `split`, later: `book.html` (contents) plus one page per chapter.
-- **A book map**, later: written beside the output (JSON) for a host's
-  previews.
-- **What stays the same:**
-  - the master's header is the book's configuration;
-  - per-note `Bibliography:` in a chapter is not read (G8);
-  - a single-note build ignores all of this.
+- **A chapter's header:** its front matter is stripped from the text. Only
+  these keys are honoured (§7), and every other key warns, naming the chapter:
+
+  | Key | Effect |
+  |---|---|
+  | `Bibliography` | adds its files to the book's set for its citations; one References list |
+  | `Packages`, `LaTeX preamble` | joined into the book's one preamble (deduplicated; a clash warns) |
+  | `Language` | `lang` on its section and page; `otherlanguage` around the chapter in LaTeX |
+  | `Math macros` | added to its page's MathJax macros; in LaTeX, defined at the chapter's start |
+  | `<style>` elements | kept for its page's head; nothing in LaTeX |
+
+  Two details of the table:
+  - **Bibliography:** the book's own files come weakest, then each chapter's in
+    book order. Since there is one list, two chapters whose files disagree on
+    a key get a warning naming both chapters.
+  - **Math macros in LaTeX:** LaTeX has one macro namespace, so a macro two
+    chapters define differently warns: in print the later definition would
+    carry on into the chapters after it.
+- **Chapter titles:** the first `#` heading; else the front matter's `title`,
+  inserted as the chapter heading; else the file name without its extension.
+- **Outputs, `pages`:**
+  - `book/index.html`: the title page and contents;
+  - one `book/<chapter>.html` per chapter, named from its file name;
+  - `book/references.html` and `book/index-terms.html`;
+  - each page has previous, next and contents links;
+  - relative assets are rebased onto the output folder (G10).
+- **Outputs, `single`:** one `.html`, as today, but with chapter wrappers,
+  per-chapter footnotes and per-chapter numbering.
+- **Outputs, LaTeX:** `single` is one `.tex`; `include` is `book.tex` plus
+  `book-<chapter>.tex`.
+- **Warnings:** read `chapter.md:12: …`, for watch mode's and Clew's banners.
+- **Unchanged:** a single-note build ignores all of this.
 
 ---
 
-## 7. Questions for the owner
+## 7. Decisions (the owner, 2026-10-04)
 
-1. **Numbering policy:** per chapter (Figure 2.3, the LaTeX book default) or
-   continuous (Figure 7, today's HTML)? Should theorems follow it?
-2. **Chapter title source:** the chapter's first `#` heading (as now), its
-   front-matter `title`, or its file name?
-3. **Per-chapter settings (G8):** none (one book configuration), or a short
-   whitelist (e.g. a chapter's own `Bibliography` only)?
-4. **HTML shape:** one long page first, or per-chapter pages from the start?
-5. **Footnotes in HTML:** a list at the end of each chapter, or at the end of
-   the book?
-6. **Where the order lives:** a Clew-side manifest handed to the engine (my
-   assumption), or a master note the author edits?
+| Question | Decision | Where |
+|---|---|---|
+| Numbering | **Per chapter** (Figure 2.3), theorems included; `continuous` available | G3; §5 item 3 |
+| Chapter title | The first `#` heading, else the front matter's `title`, else the file name | §5 item 1; §6 |
+| Per-chapter settings | A short whitelist: its own `Bibliography` (added, for its citations), LaTeX packages and preamble, `Language`, `Math macros`, `<style>` elements. Anything else warns, naming the chapter | G8; §6 |
+| HTML shape | **Per-chapter pages from the start**: option A plus a split at chapter boundaries, in phase 1. Option C is not needed for it | G5; §5 |
+| Footnotes in HTML | At the end of each chapter | G7; §5 item 4 |
+| Where the order lives | A master note, as Clew-app proposed | §6 |
+| References | One list, at the end of the book | §5 item 5 |
