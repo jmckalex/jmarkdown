@@ -167,6 +167,17 @@ golden is untouched).
   referred to twice keys its `\label` by chapter. HTML still gives classic and
   inline notes two lists, each from 1, where the PDF numbers them as one
   sequence — as a single file does.
+- **Bibliographies** (plan §6): a chapter's `Bibliography:` adds its files
+  after the master's, in book order, resolved against the chapter's folder
+  (`bibliographies.js` `namedFiles`, origin `chapter`) — one set, so every
+  consumer (compile-time HTML, natbib, the runtime client, `\citefile`) sees
+  the book's. Two files that disagree on a key are warned naming their
+  chapters; a `\cite` of a key that only ANOTHER chapter's files hold is
+  warned at the citation (`warnCrossChapterCitations`, from
+  `renderCiteCommand`). One References list, the master's `@bibliography`; a
+  chapter's own is warned and ignored. In LaTeX a book whose chapters add files
+  always gets the merged `<output>-bibliography.bib`, since the chapters'
+  files sit off bibtex's search path.
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).

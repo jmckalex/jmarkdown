@@ -57,7 +57,8 @@ import { attachmentsFor } from './bib-attachments.js';
 import { addWarning } from './warnings.js';
 import { requirePackage, addPreamble } from './preamble.js';
 import { cslCitationFormat } from './biblify-compile.js';
-import { bibliographyFiles, readBibliographies, bibEntries, repeatedKeys, warnShadowedEntries, writeMergedBibliography } from './bibliographies.js';
+import { bibliographyFiles, readBibliographies, bibEntries, repeatedKeys, warnShadowedEntries, writeMergedBibliography, chaptersAddBibliographies, warnCrossChapterCitations } from './bibliographies.js';
+import { currentRenderChapter } from './book.js';
 
 // The canonical \cite-family grammar, shared with the post-pass. Anchored so it
 // can be used to re-parse a single stored command.
@@ -126,6 +127,10 @@ function latexNumeric(style) {
 
 export function renderCiteCommand(cmd) {
 	{
+		// In a book, a key only another chapter's bibliography holds (book.js).
+		const keys = /\{([^}]*)\}\s*$/.exec(cmd);
+		if (keys) warnCrossChapterCitations(keys[1].split(','));
+
 		if (global.isLatex) {
 			// Native natbib: hand the command through unchanged — and load natbib,
 			// usage-driven like every other package (preamble.js), or a full
@@ -376,7 +381,9 @@ function latexBibliographyNames() {
 		.map((file) => ({ file, entries: new Map(bibEntries(file.content).map(({ key, start, end }) => [key, file.content.slice(start, end)])) }));
 	warnShadowedEntries(indexed);
 	const strongestFirst = [...(readable.length ? readable : read)].reverse();
-	if (repeatedKeys(read).size === 0) return strongestFirst.map(base);
+	// A book whose chapters add files: those sit in the chapters' folders, off
+	// bibtex's search path, so the book's set goes in as the one merged file.
+	if (repeatedKeys(read).size === 0 && !chaptersAddBibliographies()) return strongestFirst.map(base);
 
 	const merged = writeMergedBibliography(read, 'bibtex will stop on a key that is in more than one of them');
 	return merged ? [merged.name] : strongestFirst.map(base);
@@ -404,6 +411,11 @@ export const bibliography = {
 		}
 	},
 	renderer(token) {
+		// A book has one References list, which the master places (book.js).
+		if (currentRenderChapter()) {
+			addWarning('book: this chapter\'s `@bibliography` is ignored — a book has one References list, placed by its master');
+			return '';
+		}
 		const { title, style, scope, all } = parseBibAttrs(token.attrsRaw);
 
 		if (global.isLatex) {

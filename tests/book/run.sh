@@ -262,6 +262,54 @@ if command -v pdflatex >/dev/null 2>&1; then
 	fi
 fi
 
+# --- bibliographies: the chapters' files join the book's one set, for one References list ---------------
+# bib/master.md names book.bib and places the one @bibliography. c1.md adds
+# c1.bib and also cites `beta`, which only sub/c2.md's c2.bib holds; the two
+# chapters' files define `clash` differently; sub/c2.md has its own
+# @bibliography. Compile-time HTML, pinned to apa.
+
+cp -R "$HERE/bib" "$SCRATCH/bib"
+C="$SCRATCH/bib"
+bbuild() {   # bbuild NAME [args…]
+	name=$1; shift
+	(cd "$C" && HOME="$SCRATCH/home" node "$JMD" process master.md -o "$name.out" "$@" >/dev/null 2>"$name.err") \
+		|| fail "bib/$name/exit" "$(cat "$C/$name.err")"
+}
+bbuild html --fragment
+has   "bib/cross-chapter-warned" "$C/html.err" "c1.md:9: book: this chapter cites \`beta\`, which only sub/c2.md's bibliography holds"
+count "bib/own-key-quiet" "$C/html.err" 'this chapter cites' 1
+has   "bib/clash-names-both" "$C/html.err" "bibliography: c2.bib (sub/c2.md's) and c1.bib (c1.md's) disagree on an entry; c2.bib's used: clash"
+has   "bib/chapter-list-ignored" "$C/html.err" "sub/c2.md:10: book: this chapter's \`@bibliography\` is ignored"
+count "bib/one-list" "$C/html.out" 'bibliography-title">References' 1
+has   "bib/master-entry" "$C/html.out" 'The Shared Book'
+has   "bib/chapter-one-entry" "$C/html.out" 'The Alpha Article'
+count "bib/chapter-two-entry" "$C/html.out" 'The Beta Article' 1
+has   "bib/later-wins" "$C/html.out" 'Clash, the Second'
+hasnt "bib/earlier-loses" "$C/html.out" 'Clash, the First'
+
+# LaTeX: the chapters' files sit off bibtex's search path, so the book's set
+# goes in as one merged file beside the output; the chapter's list is dropped.
+bbuild latex --to latex
+count "bib/latex/one-bibliography" "$C/latex.out" '\bibliography{' 1
+has   "bib/latex/merged" "$C/latex.out" '\bibliography{latex-bibliography}'
+has   "bib/latex/merged-has-chapter-two" "$C/latex-bibliography.bib" 'The Beta Article'
+hasnt "bib/latex/merged-one-clash" "$C/latex-bibliography.bib" 'Clash, the First'
+if command -v pdflatex >/dev/null 2>&1 && command -v bibtex >/dev/null 2>&1 && command -v pdftotext >/dev/null 2>&1; then
+	(cd "$C" && sed -e '/fontspec/d' -e '/setmainfont/d' latex.out >bib-pdf.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error bib-pdf.tex >/dev/null 2>&1 \
+		&& bibtex bib-pdf >/dev/null 2>&1 \
+		&& pdflatex -interaction=nonstopmode -halt-on-error bib-pdf.tex >/dev/null 2>&1 \
+		&& pdflatex -interaction=nonstopmode -halt-on-error bib-pdf.tex >/dev/null 2>&1 \
+		&& pdftotext bib-pdf.pdf bib.txt)
+	if [ -f "$C/bib.txt" ]; then
+		has "bib/pdf/cited" "$C/bib.txt" 'It cites Ta (2004) and Ash (2003).'
+		has "bib/pdf/listed" "$C/bib.txt" 'Ta, B. (2004). The beta article. Journal.'
+		has "bib/pdf/clash" "$C/bib.txt" 'Clash, the second.'
+	else
+		fail "bib/pdf" "$(grep -m3 '^!' "$C/bib-pdf.log")"
+	fi
+fi
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"
