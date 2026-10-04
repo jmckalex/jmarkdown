@@ -4,7 +4,7 @@ import fs from 'fs';
 import path, { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { configManager } from './config-manager.js';
-import { resetWarnings, reportWarnings } from './warnings.js';
+import { resetWarnings, reportWarnings, addWarning } from './warnings.js';
 import { smartTypography } from './smart-typography.js';
 import { Command } from 'commander';
 import { initialise } from './init.js';
@@ -32,7 +32,9 @@ import { calloutBlock } from './callouts.js';
 import { tabbingFence, tabbing } from './tabbing.js';
 import { escapedCharacters } from './escapes.js';
 import { latexLint, resetLatexLint } from './latex-lint.js';
-import { prepareBook, resetBook, getBook, bookExtension } from './book.js';
+import { prepareBook, resetBook, getBook, bookExtension, bookLayout } from './book.js';
+import { writeBookPages } from './book-pages.js';
+import { bibliographyFiles } from './bibliographies.js';
 import createMarkdownDemo from './markdown-demo.js';
 import strategicFormGame from './strategic-form-games.js';
 import createTiKZ from './tikz.js';
@@ -650,6 +652,8 @@ configManager.set('Output file', outFile ? path.resolve(outFile) : null);
 // `bibliography` option of processFile): treated as configured ones, after the
 // config files' (bibliographies.js). Set every build, so none outlives it.
 configManager.set('Biblify.host bibliography', [options.bibliography ?? []].flat().filter(Boolean));
+// A split book's pages (book-pages.js), when it writes them instead of outFile.
+let pages = null;
 
 function writeOutput(text) {
 	if (outFile === null) {
@@ -671,7 +675,7 @@ let markdown_no_metadata = await processYAMLheader(input);
 // other document prepareBook returns null and nothing below changes.
 const bookText = prepareBook(markdown_no_metadata, {
 	chapters: options.chapters ?? options.chapter, masterDir: markdownFileDirectory, isLatex,
-	numbering: options.numbering });
+	numbering: options.numbering, htmlLayout: options.htmlLayout });
 if (bookText !== null) markdown_no_metadata = bookText;
 const inBook = getBook() !== null;
 // A book stamps its own chapter lines (book.js): the spliced stream's lines —
@@ -850,15 +854,24 @@ if (isLatex) {
 		html = html.replace('</body>', inverseSearchScript + '</body>');
 	}
 
-	html = PostProcessor.beautifyHTML(html);
-	writeOutput(html);
+	// A book laid out as pages (book-pages.js): cut from this one document.
+	if (bookLayout() === 'split' && !options.fragment && outFile !== null) {
+		if (!configManager.get('Biblify.resolve') && bibliographyFiles().length) {
+			addWarning('book: a split book\'s citations need `Resolve citations: true` — in the browser, each page would list only its own');
+		}
+		pages = writeBookPages(html, outFile);
+	} else {
+		if (bookLayout() === 'split') addWarning('book: `HTML layout: split` needs an output file and a full page — written as one page');
+		html = PostProcessor.beautifyHTML(html);
+		writeOutput(html);
+	}
 }
 
 	// Build-quality warnings (unresolved :refs, duplicate labels, …) collected
 	// during the run — a short stderr summary, like LaTeX's end-of-run nags.
 	reportWarnings();
 
-	return { outFile, isLatex };
+	return pages ? { outFile, isLatex, pages } : { outFile, isLatex };
 }
 
 // ===========================================================================
@@ -921,6 +934,7 @@ if (isCliEntry) {
 		.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension; stdout in stdin mode)')
 		.option('--bibliography <file>', 'Add a bibliography file for this build, as a configured one (repeatable)', collectOption, [])
 		.option('--chapter <file>', 'Build a book: a chapter file, in order (repeatable; instead of the master\'s @chapter+ lines)', collectOption, [])
+		.option('--html-layout <layout>', 'A book\'s HTML: single (one page, the default) or split (a page per chapter, in a folder named after the output)')
 		.action(async (filename, options) => {
 			await processFile(filename, { ...program.opts(), ...options });
 		});

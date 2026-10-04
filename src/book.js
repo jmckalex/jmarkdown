@@ -86,6 +86,22 @@ function numberingPolicy(value) {
 	return 'per chapter';
 }
 
+// `HTML layout:` (the master's header) or processFile's `htmlLayout` option:
+// 'single' (one page, the default) or 'split' (book-pages.js; 'pages' too, the
+// plan's first name for it).
+function layoutPolicy(value) {
+	const raw = Array.isArray(value) ? value.join(' ') : value;
+	if (raw == null || String(raw).trim() === '') return 'single';
+	const v = norm(raw);
+	if (v === 'split' || v === 'pages') return 'split';
+	if (v === 'single') return 'single';
+	addWarning(`book: \`HTML layout: ${String(raw).trim()}\` is neither "single" nor "split" — one page`);
+	return 'single';
+}
+
+/** 'split' when a book is to be written as pages (book-pages.js), else 'single'. */
+export function bookLayout() { return book ? book.layout : 'single'; }
+
 // A `Numbering` value read, or null when it is neither policy. Unset is the default.
 function parseNumbering(raw) {
 	if (raw == null || String(raw).trim() === '') return 'per chapter';
@@ -151,7 +167,7 @@ const HEADER_KEYS = [
 	'Biblify defer', 'Headings', 'Numbering', 'Load extensions', 'Load directives',
 	'Load javascript', 'Load environments', 'Optionals', 'Inline comment', 'Custom element',
 	'Smart typography', 'Pandoc citations', 'Block elements', 'Silence warnings',
-	'Document class', 'Class options', 'Heading base', 'Chapters', 'Book',
+	'Document class', 'Class options', 'Heading base', 'Chapters', 'Book', 'HTML layout',
 ];
 // Built on first use, not at load: theorems.js and numbered-environments.js
 // import this module from inside config-manager's own import graph, so
@@ -304,7 +320,7 @@ function chapterLines(body) {
  * is processFile's option (a host's list); otherwise the body's
  * `@chapter+(path)` lines name them.
  */
-export function prepareBook(body, { chapters: hostChapters = null, masterDir, isLatex = false, numbering = null } = {}) {
+export function prepareBook(body, { chapters: hostChapters = null, masterDir, isLatex = false, numbering = null, htmlLayout = null } = {}) {
 	book = null;
 	const fromHost = Array.isArray(hostChapters) && hostChapters.length > 0;
 	let pieces = chapterLines(body);
@@ -318,7 +334,8 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 	}
 
 	book = { masterDir, chapters: [], isLatex, numbering: numberingPolicy(numbering ?? masterSetting('Numbering')),
-		lang: languageTag(configManager.get('Lang')) || 'en' };
+		lang: languageTag(configManager.get('Lang')) || 'en',
+		layout: layoutPolicy(htmlLayout ?? masterSetting('HTML layout')) };
 	// A book's # headings are its chapters: a master naming no class is a book.
 	// Set before the chapters are read, which compare their own settings with it.
 	if (configManager.get('Document_class') == null) configManager.set('Document class', 'book');
@@ -870,6 +887,8 @@ export function scopeChapterStyles($) {
 		const scope = `#${$(section).attr('id')}`;
 		$(section).find('style').not('svg style').each((j, style) => {
 			$(style).text(scopeCss($(style).text(), scope));
+			// Its chapter's, for a split book's pages (book-pages.js).
+			$(style).attr('data-jmd-chapter', $(section).attr('data-chapter'));
 		});
 	});
 }

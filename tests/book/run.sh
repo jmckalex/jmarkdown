@@ -448,6 +448,53 @@ has   "style/fragment-in-section" "$Y/one.part" '#jmd-chapter-1 {'
 (cd "$Y" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o latex.out >/dev/null 2>&1)
 hasnt "style/latex-dropped" "$Y/latex.out" 'color: red'
 
+# --- split: a page per chapter, cut from the one document (htmlLayout 'split') ----------------------------
+# split/master.md (`HTML layout: split`) has math macros, parts/a.md (a figure,
+# a <style>, a citation, an index mark) and b.md (an @ref to a's figure, a link
+# to a's file), then the master's @bibliography and @index. Written to
+# out/Split.html, so the pages go in out/Split/.
+
+cp -R "$HERE/split" "$SCRATCH/split"
+X="$SCRATCH/split"
+(cd "$X" && HOME="$SCRATCH/home" node "$JMD" process master.md -o out/Split.html >/dev/null 2>split.err) \
+	|| fail "split/exit" "$(cat "$X/split.err")"
+O="$X/out/Split"
+for page in index a b references index-terms; do
+	if [ -f "$O/$page.html" ]; then pass "split/page/$page"; else fail "split/page/$page" "no $page.html"; fi
+done
+if [ -f "$X/out/Split.html" ]; then fail "split/no-single-page" "Split.html was written too"; else pass "split/no-single-page"; fi
+has   "split/index/master-text" "$O/index.html" '<p>Before the chapters.</p>'
+has   "split/index/contents" "$O/index.html" '<li><a href="a.html">Alpha</a></li>'
+has   "split/index/contents-references" "$O/index.html" '<li><a href="references.html">References</a></li>'
+hasnt "split/index/no-chapter" "$O/index.html" 'class="jmd-chapter"'
+has   "split/a/chapter" "$O/a.html" 'id="jmd-chapter-1"'
+hasnt "split/a/only-its-own" "$O/a.html" 'id="jmd-chapter-2"'
+has   "split/a/title" "$O/a.html" '<title>Alpha — Split</title>'
+has   "split/a/nav" "$O/a.html" '<a class="prev" rel="prev" href="index.html">← Split</a><a class="contents" href="index.html">Contents</a><a class="next" rel="next" href="b.html">Beta →</a>'
+has   "split/a/own-style" "$O/a.html" 'data-jmd-chapter="1"'
+hasnt "split/b/not-a's-style" "$O/b.html" 'data-jmd-chapter'
+has   "split/a/asset-rebased" "$O/a.html" '<img src="../../parts/f.png"'
+has   "split/b/ref-across" "$O/b.html" 'href="a.html#fig:a">1.1</a>'
+has   "split/b/chapter-link" "$O/b.html" '<a href="a.html#jmd-chapter-1">alpha</a>'
+has   "split/b/macros" "$O/b.html" '\newcommand{\R}{\mathbb{R}}'
+has   "split/references/list" "$O/references.html" 'The Shared Book'
+has   "split/references/next" "$O/references.html" 'href="index-terms.html">Index →</a>'
+has   "split/terms/locator" "$O/index-terms.html" 'href="a.html#idx-1"'
+# The option, from the CLI and the library, beats the header; the library
+# returns the pages.
+(cd "$X" && HOME="$SCRATCH/home" node "$JMD" process master.md -o out/One.html --html-layout single >/dev/null 2>&1)
+if [ -f "$X/out/One.html" ] && [ ! -d "$X/out/One" ]; then pass "split/cli-single"; else fail "split/cli-single" "no single page"; fi
+(cd "$X" && HOME="$SCRATCH/home" node --input-type=module -e "
+	import { processFile } from '$JMD';
+	const r = await processFile('master.md', { to: 'html', output: 'out/Lib.html', htmlLayout: 'split' });
+	console.log(r.pages.map((p) => p.split('/').pop()).join(' '));
+" >lib.out 2>/dev/null)
+has   "split/library-pages" "$X/lib.out" 'index.html a.html b.html references.html index-terms.html'
+(cd "$X" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o out/frag.html >/dev/null 2>frag.err)
+has   "split/fragment-one-page" "$X/frag.err" 'needs an output file and a full page — written as one page'
+(cd "$X" && HOME="$SCRATCH/home" node "$JMD" process runtime.md -o out/Runtime.html >/dev/null 2>runtime.err)
+has   "split/runtime-citations-warned" "$X/runtime.err" 'need `Resolve citations: true`'
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"

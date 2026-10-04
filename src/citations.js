@@ -58,7 +58,7 @@ import { addWarning } from './warnings.js';
 import { requirePackage, addPreamble } from './preamble.js';
 import { cslCitationFormat } from './biblify-compile.js';
 import { bibliographyFiles, readBibliographies, bibEntries, repeatedKeys, warnShadowedEntries, writeMergedBibliography, chaptersAddBibliographies, warnCrossChapterCitations } from './bibliographies.js';
-import { currentRenderChapter } from './book.js';
+import { currentRenderChapter, getBook } from './book.js';
 
 // The canonical \cite-family grammar, shared with the post-pass. Anchored so it
 // can be used to re-parse a single stored command.
@@ -448,6 +448,9 @@ export const bibliography = {
 		if (style) attrs += ` data-style="${escapeAttr(style)}"`;
 		if (scope) attrs += ` data-scope="${escapeAttr(scope)}"`;
 		if (all) attrs += ` data-all="true"`;
+		// A book's one References list, which a split book gives a page of its
+		// own (book-pages.js).
+		if (getBook()) return `<section class="jmd-book-references">\n<div class="biblify-bibliography"${attrs}></div>\n</section>\n`;
 		return `<div class="biblify-bibliography"${attrs}></div>\n`;
 	}
 };

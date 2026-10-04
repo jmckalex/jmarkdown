@@ -19,6 +19,7 @@ All source lives in `src/`. Key files:
 |---|---|
 | `index.js` | Exports `processFile(filename, options)` (the whole per-file build); the CLI (commander: `process`/`init`/`options`/`watch`) is **guarded behind a main-module check** so importing index.js warms the module graph without building. Extension registration + pipeline orchestration live inside `processFile`. |
 | `book.js` | Book mode: a master and its chapters built as one document (`chapters` option / `--chapter` / the master's `@chapter+(path)` lines). See "Book mode" |
+| `book-pages.js` | A book's `htmlLayout: 'split'`: the finished single document cut into pages — `index.html` (the master's text, the contents), one page per chapter with previous / contents / next, `references.html`, `index-terms.html` — with cross-page links and relative URLs rewritten. See "Book mode" |
 | `watch.js` | `jmarkdown watch`: the watcher — standby manager, generation-guarded dispatch, chokidar, static server + SSE live-reload. See "Watch mode". |
 | `watch-worker.js` | One-shot warm build worker (forked): imports index.js (warm), reports `ready`, does exactly ONE `processFile` on a `build` message, then exits. |
 | `watch-fs-preload.cjs` | CJS `-r` preload for the worker — patches `fs` reads before any ESM links `fs` (so even `import { readFileSync }` named imports are tracked) to record a build's file dependencies. |
@@ -210,6 +211,21 @@ golden is untouched).
   → `&`), global at-rules (`@font-face`, `@keyframes`, `@import`, …) kept
   outside. LaTeX: a chapter's style-only HTML block is dropped in `bookWalk`
   (a single file's, and the master's, still reach the .tex as text).
+- **Split layout** (`book-pages.js`; `HTML layout: split` in the master,
+  processFile's `htmlLayout`, the CLI's `--html-layout`; `pages` accepted;
+  default `single`): AFTER the whole post-process — so every number, label
+  and citation is the book's — the one document is cut into
+  `<output without extension>/`: `index.html` (the master's own text, with a
+  contents list where the chapters stood), `<chapter file>.html` per chapter
+  (previous / contents / next above and below, `<title>` "Chapter — Book"),
+  `references.html` (the master's `@bibliography`, which a book wraps in
+  `section.jmd-book-references`) and `index-terms.html` (its `nav.index`).
+  Every page keeps the head, the master's macros and the closing scripts; a
+  chapter's scoped `<style>` (`data-jmd-chapter`) only its own page. Links to
+  an id on another page become `page.html#id`; a relative URL (base: the
+  master's folder) is rewritten from the page's folder. processFile returns
+  `pages`. No output file, or `--fragment`, falls back to one page with a
+  warning; runtime citations warn (each page would list only its own).
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).
