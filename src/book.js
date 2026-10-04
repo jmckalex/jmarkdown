@@ -811,6 +811,72 @@ export function scopeChapterFootnotes($) {
 	});
 }
 
+/* --- a chapter's <style> --------------------------------------------------------------------------- */
+
+// At-rules that hold no style rules, or are global by nature: they cannot be
+// nested in a scope, and stay outside it.
+const GLOBAL_AT_RULES = /^@(?:import|charset|namespace|font-face|(?:-[a-z]+-)?keyframes|page|property|counter-style|font-feature-values|font-palette-values)\b/i;
+
+/**
+ * A chapter's CSS confined to its section with CSS nesting: `h1 { … }` becomes
+ * `#jmd-chapter-2 { h1 { … } }`, and a rule for the page itself (`body`,
+ * `html`, `:root`) becomes one for the section (`&`). Global at-rules
+ * (@font-face, @keyframes, @import, …) cannot nest and are kept outside it.
+ */
+export function scopeCss(css, scope) {
+	const source = css.replace(/\/\*[\s\S]*?\*\//g, '');
+	const outside = [];
+	const inside = [];
+	let i = 0;
+	while (i < source.length) {
+		while (i < source.length && /\s/.test(source[i])) i++;
+		if (i >= source.length) break;
+		// The statement's end: a `;` before any block, or its block's closing brace.
+		let j = i;
+		let depth = 0;
+		let quote = null;
+		for (; j < source.length; j++) {
+			const c = source[j];
+			if (quote) { if (c === '\\') j++; else if (c === quote) quote = null; continue; }
+			if (c === '"' || c === "'") quote = c;
+			else if (c === '{') depth++;
+			else if (c === '}') { if (--depth <= 0) { j++; break; } }
+			else if (c === ';' && depth === 0) { j++; break; }
+		}
+		const statement = source.slice(i, j).trim();
+		i = j;
+		if (!statement) continue;
+		if (statement.startsWith('@')) {
+			(GLOBAL_AT_RULES.test(statement) || !statement.includes('{') ? outside : inside).push(statement);
+			continue;
+		}
+		const brace = statement.indexOf('{');
+		const selectors = statement.slice(0, brace).split(',')
+			.map((selector) => selector.trim().replace(/^(?:html|body|:root)(?![\w-])/i, '&'))
+			.join(', ');
+		inside.push(`${selectors} ${statement.slice(brace)}`);
+	}
+	if (inside.length) outside.push(`${scope} {\n${inside.join('\n')}\n}`);
+	return `\n${outside.join('\n')}\n`;
+}
+
+/**
+ * Each chapter's `<style>` elements, scoped to its section (HTML), so one
+ * chapter's CSS does not restyle the book: the post-processor then hoists
+ * them into the head with every other. Called before that hoisting.
+ */
+export function scopeChapterStyles($) {
+	$('section.jmd-chapter').each((i, section) => {
+		const scope = `#${$(section).attr('id')}`;
+		$(section).find('style').not('svg style').each((j, style) => {
+			$(style).text(scopeCss($(style).text(), scope));
+		});
+	});
+}
+
+// A raw HTML block that is nothing but <style> elements.
+const STYLE_BLOCK = /^\s*(?:<style\b[^>]*>[\s\S]*?<\/style>\s*)+$/i;
+
 /* --- the walk: chapter context and paths ---------------------------------------------------- */
 
 let walkChapter = null;
@@ -837,6 +903,11 @@ function bookWalk(token) {
 	}
 	if (token._jmdLoc) setWarningLocation(token._jmdLoc);
 	if (!walkChapter) return;
+	// A chapter's <style> is for its HTML; LaTeX has no use for it.
+	if (book.isLatex && token.type === 'html' && STYLE_BLOCK.test(token.raw || '')) {
+		token.type = 'space';
+		return;
+	}
 	if ((token.type === 'link' || token.type === 'image') && token.href) {
 		const to = rebase(token.href, walkChapter);
 		if (typeof to === 'string') token.href = to;

@@ -9,7 +9,7 @@ import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
 import { checkMathPackages } from './latex-lint.js';
-import { getBook, scopeChapterFootnotes } from './book.js';
+import { getBook, scopeChapterFootnotes, scopeChapterStyles } from './book.js';
 import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
 import { addWarning } from './warnings.js';
 import { buildIndexes } from './indexing.js';
@@ -87,6 +87,8 @@ export function postProcessHTML(html, options = {}) {
 	// A book's footnote ids, unique per chapter — last, since the passes above
 	// find a note's heading and list items by their ids (book.js).
 	if (getBook()) scopeChapterFootnotes($);
+	// Each chapter's <style>, confined to its section before the hoisting below.
+	if (getBook()) scopeChapterStyles($);
 
 	// Only hoist styles to <head> in full-document mode; in fragment mode there's no <head>.
 	if (!options.fragment) {

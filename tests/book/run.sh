@@ -425,6 +425,29 @@ has   "lang/single/english-quotes" "$L/single.out" '“Hallo,” sagte sie. ‘N
 lbuild singlelatex single.md --to latex
 hasnt "lang/single/no-babel" "$L/singlelatex.out" 'babel'
 
+# --- a chapter's <style>: confined to its section (HTML), dropped in LaTeX -------------------------------
+# style/a.md styles h1 and body and declares a @font-face; b.md has none; the
+# master's own <style> stays the whole page's.
+
+cp -R "$HERE/style" "$SCRATCH/style"
+Y="$SCRATCH/style"
+(cd "$Y" && HOME="$SCRATCH/home" node "$JMD" process master.md -o page.out >/dev/null 2>page.err) \
+	|| fail "style/exit" "$(cat "$Y/page.err")"
+sed -n '/<head>/,/<\/head>/p' "$Y/page.out" >"$Y/head.part"
+sed -n '/<body/,$p' "$Y/page.out" >"$Y/body.part"
+has   "style/scoped" "$Y/head.part" '#jmd-chapter-1 {'
+has   "style/page-rule-to-section" "$Y/head.part" '& {'
+count "style/one-scope" "$Y/head.part" '#jmd-chapter-' 1
+sed -n '/@font-face/,/#jmd-chapter-1 {/p' "$Y/head.part" >"$Y/order.part"
+has   "style/font-face-outside" "$Y/order.part" '#jmd-chapter-1 {'
+has   "style/master-unscoped" "$Y/head.part" '.master-rule {'
+hasnt "style/hoisted" "$Y/body.part" '<style'
+(cd "$Y" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o fragment.out >/dev/null 2>&1)
+sed -n '/id="jmd-chapter-1"/,/id="jmd-chapter-2"/p' "$Y/fragment.out" >"$Y/one.part"
+has   "style/fragment-in-section" "$Y/one.part" '#jmd-chapter-1 {'
+(cd "$Y" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o latex.out >/dev/null 2>&1)
+hasnt "style/latex-dropped" "$Y/latex.out" 'color: red'
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"
