@@ -113,6 +113,22 @@ const END = '<!-- jmd:end-chapter -->';
 const MARKERS = /^<!-- jmd:(chapter \d+|end-chapter) -->$/m;
 const MARKERS_SPLIT = /^<!-- jmd:(chapter \d+|end-chapter) -->$/gm;
 
+/**
+ * Whether `text` holds a chapter boundary — for a pass over the assembled
+ * stream that must not carry state from one chapter into the next
+ * (inline-footnotes.js's ambient groups and multi-paragraph notes).
+ */
+export function hasChapterMarker(text) { return MARKERS.test(text); }
+
+/**
+ * Where a chapter's inline `[fn: …]` notes are listed: the HTML renderer puts
+ * this placeholder just before a chapter's `</section>`, and
+ * inline-footnotes.js's fillEndnotes replaces it with that chapter's list (or
+ * nothing). The `@endnotes` / `@bibliography` placeholder pattern.
+ */
+export const chapterNotesPlaceholder = (n) => `<div class="jmd-chapter-notes" data-chapter="${n}"></div>`;
+export const CHAPTER_NOTES = /<div class="jmd-chapter-notes" data-chapter="(\d+)"><\/div>/g;
+
 /* --- a chapter's header ------------------------------------------------------------- */
 
 const norm = (key) => String(key).trim().toLowerCase().replace(/[\s_-]+/g, ' ');
@@ -472,20 +488,30 @@ const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;
 // One top-level block at a time, with its place set; in HTML each block's
 // first tag carries its chapter line (data-source-line), which the post-pass
 // reads to place its own warnings, and a host can use to jump to the source.
+let renderChapter = null;
+
+/** The chapter being rendered, or null (outside a chapter, or not a book). */
+export function currentRenderChapter() { return renderChapter; }
+
 function parseBook(tokens, options) {
 	let out = '';
 	for (const token of tokens) {
 		if (token._jmdLoc) setWarningLocation(token._jmdLoc);
-		else if (token.type === 'jmdChapter') setWarningLocation(token.edge === 'start' && token.chapter ? { file: token.chapter.name } : null);
+		else if (token.type === 'jmdChapter') {
+			renderChapter = token.edge === 'start' ? token.chapter : null;
+			setWarningLocation(renderChapter ? { file: renderChapter.name } : null);
+		}
 		let html = marked.Parser.parse([token], options);
 		if (token._jmdLoc && !book.isLatex && !/^\s*<[a-zA-Z][^>]*\bdata-source-line=/.test(html)) {
 			html = html.replace(/^(\s*<[a-zA-Z][a-zA-Z0-9-]*)/, `$1 data-source-line="${token._jmdLoc.line}"`);
 		}
 		out += html;
 	}
+	renderChapter = null;
 	setWarningLocation(null);
 	return out;
 }
+
 
 // A link to another chapter. In HTML an ordinary link to the chapter's anchor;
 // in LaTeX \hyperref to its label — an \href to `#…` goes nowhere in a PDF.
@@ -509,10 +535,66 @@ const chapterToken = {
 			requirePackage('hyperref');
 			return `\\phantomsection\\label{jmd-chapter-${c.index}}\n`;
 		}
-		if (token.edge === 'end') return '</section>\n';
+		if (token.edge === 'end') return `${chapterNotesPlaceholder(c.index)}\n</section>\n`;
 		return `<section class="jmd-chapter" id="jmd-chapter-${c.index}" data-chapter="${c.index}" data-file="${escapeAttr(c.name)}">\n`;
 	},
 };
+
+/**
+ * Footnote ids made unique per chapter (HTML). Each chapter is lexed on its
+ * own, so its notes number from 1, and marked-footnote's `footnote-1` and
+ * `footnote-label`, or a labelled inline note's `fn-<label>`, would repeat
+ * from chapter to chapter. A note listed in its chapter, and referred to only
+ * from there, gains a `ch<N>-` prefix with its references, and whatever points
+ * at them there follows: refs, backrefs, aria-describedby, an author's own
+ * `#footnote-1` link. A note an `@endnotes` placement lists elsewhere keeps its
+ * ids, which that list's backrefs name. Called last by the post-processor,
+ * which finds marked-footnote's heading (`#footnote-label`) and a note's list
+ * item (`li#footnote-…`, `li#fn-…`) by their ids.
+ */
+export function scopeChapterFootnotes($) {
+	const REFS = 'a[data-footnote-ref], sup.footnote-ref > a';
+	const NOTES = 'section.footnotes > ol > li[id]';
+	const chapterOf = (el) => $(el).closest('section.jmd-chapter').get(0) || null;
+	// The notes listed in each chapter (null: outside every chapter).
+	const listed = new Map();
+	$(NOTES).each((i, el) => {
+		const c = chapterOf(el);
+		if (!listed.has(c)) listed.set(c, new Set());
+		listed.get(c).add($(el).attr('id'));
+	});
+	// A reference resolves to its own chapter's note; one whose note is listed
+	// elsewhere reaches out, and that note keeps its ids.
+	const reachedFromOutside = new Set();
+	$(REFS).each((i, el) => {
+		const to = ($(el).attr('href') || '').slice(1);
+		if (!listed.get(chapterOf(el))?.has(to)) reachedFromOutside.add(to);
+	});
+	$('section.jmd-chapter').each((i, section) => {
+		const $section = $(section);
+		const prefix = `ch${$section.attr('data-chapter')}-`;
+		const ids = new Map();
+		const scope = (el) => {
+			const id = $(el).attr('id');
+			if (!id) return;
+			ids.set(id, prefix + id);
+			$(el).attr('id', prefix + id);
+		};
+		const own = [...(listed.get(section) || [])].filter((id) => !reachedFromOutside.has(id));
+		if (!own.length) return;
+		$section.find(NOTES).each((j, el) => { if (own.includes($(el).attr('id'))) scope(el); });
+		$section.find(REFS).each((j, el) => { if (own.includes(($(el).attr('href') || '').slice(1))) scope(el); });
+		$section.find('section[data-footnotes] > h2[id]').each((j, el) => scope(el));
+		$section.find('a[href^="#"]').each((j, el) => {
+			const to = ids.get($(el).attr('href').slice(1));
+			if (to) $(el).attr('href', `#${to}`);
+		});
+		$section.find('[aria-describedby]').each((j, el) => {
+			const refs = $(el).attr('aria-describedby').split(/\s+/);
+			$(el).attr('aria-describedby', refs.map((id) => ids.get(id) || id).join(' '));
+		});
+	});
+}
 
 /* --- the walk: chapter context and paths ---------------------------------------------------- */
 

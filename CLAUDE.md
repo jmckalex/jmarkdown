@@ -151,6 +151,22 @@ golden is untouched).
   per-document by default, so latex-template.js puts it `\counterwithin` chapter
   (guarded by `\ifcsname c@listing`) for a per-chapter book and out of it for a
   continuous one. The suite compiles both PDFs and checks they agree with the HTML.
+- **Footnotes** (HTML; plan §5 item 4): classic `[^a]` notes already close
+  their chapter (per-chapter lexing). Inline `[fn: …]` notes do too, numbered
+  from 1: the renderer files a note under `currentRenderChapter()` (set by
+  `parseBook`), the chapter's end renders a placeholder
+  (`chapterNotesPlaceholder`), and `fillEndnotes` puts that chapter's list
+  there, with an `h2` heading, since `#` is the chapter's. A book that uses
+  any grouping or `@endnotes` placement keeps the author's layout, as in one
+  document; an ambient `@endnoteGroup` ends with its chapter, and a
+  multi-paragraph note never runs across a boundary. `scopeChapterFootnotes`
+  (the post-processor's last pass) prefixes `ch<N>-` to the ids of every note
+  listed in its chapter and referred to only from there, with their refs,
+  backrefs and `aria-describedby`. A note listed elsewhere keeps its ids.
+  LaTeX: `\footnote`, numbered per chapter by the class; a classic note
+  referred to twice keys its `\label` by chapter. HTML still gives classic and
+  inline notes two lists, each from 1, where the PDF numbers them as one
+  sequence — as a single file does.
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).

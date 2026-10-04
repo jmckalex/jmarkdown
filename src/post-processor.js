@@ -9,7 +9,7 @@ import { configManager } from './config-manager.js';
 import { replaceTargetsBySources } from './sources-and-targets.js';
 import { resolveCitations } from './biblify-compile.js';
 import { checkMathPackages } from './latex-lint.js';
-import { getBook } from './book.js';
+import { getBook, scopeChapterFootnotes } from './book.js';
 import { resetCrossrefs, recordLabel, lookupLabel, typedRefText } from './crossref.js';
 import { addWarning } from './warnings.js';
 import { buildIndexes } from './indexing.js';
@@ -83,6 +83,10 @@ export function postProcessHTML(html, options = {}) {
 	if (configManager.get('Biblify.resolve') && !global.isLatex) {
 		resolveCitations($, { fragment: !!options.fragment, outBase: options.outBase });
 	}
+
+	// A book's footnote ids, unique per chapter — last, since the passes above
+	// find a note's heading and list items by their ids (book.js).
+	if (getBook()) scopeChapterFootnotes($);
 
 	// Only hoist styles to <head> in full-document mode; in fragment mode there's no <head>.
 	if (!options.fragment) {

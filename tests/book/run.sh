@@ -185,6 +185,83 @@ has   "settings/unset-off-default" "$T/settings.err" 'off-default.md: book: this
 has   "settings/master-lowercase-numbering" "$T/settings.out" '<span class="eqn-number">(2)</span>'
 hasnt "settings/not-per-chapter" "$T/settings.out" '(2.1)'
 
+# --- footnotes: each chapter's close it (HTML), ids unique per chapter ---------------------------------
+# notes/master.md: two chapters, each with classic [^1]/[^x] notes and inline
+# [fn: …]/[^q: …] ones (the same labels in both), a multi-paragraph note, an
+# author's own #footnote-1 link, and an inline note in the master's own text.
+# notes/grouped.md: g.md sets an ambient @endnoteGroup, and the master places
+# the groups — the author's own layout, kept as in one document.
+
+cp -R "$HERE/notes" "$SCRATCH/notes"
+F="$SCRATCH/notes"
+fbuild() {   # fbuild NAME MASTER [args…]
+	name=$1; master=$2; shift 2
+	(cd "$F" && HOME="$SCRATCH/home" node "$JMD" process "$master" -o "$name.out" "$@" >/dev/null 2>"$name.err") \
+		|| fail "notes/$name/exit" "$(cat "$F/$name.err")"
+}
+dupes() {    # dupes LABEL FILE — no id appears twice, but for marked-footnote's
+	# own: a note referred to twice gives both references one id, in any document.
+	d=$(grep -o ' id="[^"]*"' "$2" | grep -v 'footnote-ref-' | sort | uniq -d | head -3)
+	if [ -z "$d" ]; then pass "$1"; else fail "$1" "repeated: $d"; fi
+}
+
+fbuild html master.md --fragment
+H="$F/html.out"
+sed -n '/id="jmd-chapter-1"/,/id="jmd-chapter-2"/p' "$H" >"$F/one.part"
+sed -n '/id="jmd-chapter-2"/,$p' "$H" >"$F/two.part"
+dupes "notes/ids-unique" "$H"
+count "notes/a-list-per-chapter" "$H" '<h2 class="endnotes-heading">Endnotes</h2>' 2
+has   "notes/one/inline-listed" "$F/one.part" 'alpha inline two'
+has   "notes/one/long-listed" "$F/one.part" 'first paragraph'
+hasnt "notes/one/not-two's" "$F/one.part" 'beta inline one'
+has   "notes/one/numbered" "$F/one.part" 'href="#ch1-fn-q" id="ch1-fnref-q">3</a>'
+has   "notes/two/restarts" "$F/two.part" 'href="#ch2-fn-q" id="ch2-fnref-q">2</a>'
+has   "notes/two/classic-scoped" "$F/two.part" '<li id="ch2-footnote-1">'
+has   "notes/two/backref" "$F/two.part" 'href="#ch2-footnote-ref-1" data-footnote-backref'
+has   "notes/two/aria" "$F/two.part" 'aria-describedby="ch2-footnote-label"'
+has   "notes/two/author-link" "$F/two.part" '<a href="#ch2-footnote-1">the note</a>'
+hasnt "notes/no-placeholder" "$H" 'jmd-chapter-notes'
+# The master's own note is in no chapter: listed at the end, as in one document.
+count "notes/master-note-at-end" "$H" '<h1 class="endnotes-heading">Endnotes</h1>' 1
+has   "notes/master-note-unscoped" "$H" '<li id="fn-_auto'
+
+# LaTeX: \footnote, which the book class numbers per chapter; a note
+# referred to twice keys its \label by chapter.
+fbuild latex master.md --to latex
+has   "notes/latex/label-scoped" "$F/latex.out" '\footnote{\label{jmdfn:ch1-1}alpha classic one.}'
+has   "notes/latex/ref-scoped" "$F/latex.out" '\textsuperscript{\ref{jmdfn:ch1-1}}'
+if command -v pdflatex >/dev/null 2>&1 && command -v pdftotext >/dev/null 2>&1; then
+	(cd "$F" && sed -e '/fontspec/d' -e '/setmainfont/d' latex.out >notes-pdf.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error notes-pdf.tex >/dev/null 2>&1 \
+		&& pdflatex -interaction=nonstopmode -halt-on-error notes-pdf.tex >/dev/null 2>&1 \
+		&& pdftotext notes-pdf.pdf notes.txt)
+	if [ -f "$F/notes.txt" ]; then
+		has "notes/pdf/one" "$F/notes.txt" 'Classic1 , again1 , and labelled2 . Inline3 and4 , labelled5 .'
+		has "notes/pdf/two-restarts" "$F/notes.txt" 'Classic1 and labelled2 . Inline3 , labelled4 .'
+	else
+		fail "notes/pdf" "$(grep -m3 '^!' "$F/notes-pdf.log")"
+	fi
+fi
+
+# Grouped: the author's placements hold; an ambient group ends with its chapter.
+fbuild grouped grouped.md --fragment
+G="$F/grouped.out"
+sed -n '/endnotes-heading">Sources/,/endnotes-heading">Notes/p' "$G" >"$F/sources.part"
+has   "notes/grouped/source-placed" "$F/sources.part" 'a source'
+hasnt "notes/grouped/ambient-ends" "$F/sources.part" 'beta inline one'
+has   "notes/grouped/ref-keeps-id" "$G" 'href="#fn-q" id="fnref-q"'
+has   "notes/grouped/note-keeps-id" "$G" '<li id="fn-q">'
+dupes "notes/grouped/ids-unique" "$G"
+fbuild glatex grouped.md --to latex
+if command -v pdflatex >/dev/null 2>&1; then
+	if (cd "$F" && sed -e '/fontspec/d' -e '/setmainfont/d' glatex.out >grouped-pdf.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error grouped-pdf.tex >/dev/null 2>&1); then
+		pass "notes/grouped/pdf-compiles"
+	else
+		fail "notes/grouped/pdf-compiles" "$(grep -m3 '^!' "$F/grouped-pdf.log")"
+	fi
+fi
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"
