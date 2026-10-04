@@ -341,6 +341,37 @@ fi
 (cd "$P" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o html.out >/dev/null 2>html.err)
 hasnt "preamble/lint-counts-chapters" "$P/html.err" 'needs the amssymb package'
 
+# --- math macros: each chapter's defined at its start -----------------------------------------------------
+# macros/master.md defines \R; a.md repeats it and adds \N and \argmax; b.md
+# (a YAML list) redefines \N — warned, since it carries on — and adds \Z.
+
+cp -R "$HERE/macros" "$SCRATCH/macros"
+M="$SCRATCH/macros"
+(cd "$M" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o latex.out >/dev/null 2>latex.err) \
+	|| fail "macros/exit" "$(cat "$M/latex.err")"
+(cd "$M" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o html.out >/dev/null 2>html.err) \
+	|| fail "macros/html-exit" "$(cat "$M/html.err")"
+has   "macros/redefined-warned" "$M/latex.err" "b.md: book: this chapter's \`Math macros\` define \\N differently from a.md's"
+count "macros/one-warning" "$M/latex.err" 'Math macros' 1
+has   "macros/latex/chapter" "$M/latex.out" '\providecommand{\N}{}\renewcommand{\N}{\mathbb{N}}'
+has   "macros/latex/operator" "$M/latex.out" '\providecommand{\argmax}{}\renewcommand{\argmax}{\operatorname*{arg\,max}}'
+has   "macros/latex/redefinition" "$M/latex.out" '\providecommand{\N}{}\renewcommand{\N}{\mathbf{N}}'
+hasnt "macros/latex/master-not-repeated" "$M/latex.out" '\providecommand{\R}'
+sed -n '/renewcommand{\\Z}/,/label{jmd-chapter-2}/p' "$M/latex.out" >"$M/order.part"
+has   "macros/latex/before-chapter" "$M/order.part" '\phantomsection\label{jmd-chapter-2}'
+count "macros/html/blocks" "$M/html.out" 'class="math-macros"' 3
+count "macros/html/master-once" "$M/html.out" '\newcommand{\R}' 1
+sed -n '/id="jmd-chapter-2"/,$p' "$M/html.out" >"$M/two.part"
+has   "macros/html/in-chapter" "$M/two.part" '\renewcommand{\N}{\mathbf{N}}'
+if command -v pdflatex >/dev/null 2>&1; then
+	if (cd "$M" && sed -e '/fontspec/d' -e '/setmainfont/d' latex.out >mac-pdf.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error mac-pdf.tex >/dev/null 2>&1); then
+		pass "macros/pdf-compiles"
+	else
+		fail "macros/pdf-compiles" "$(grep -m3 '^!' "$M/mac-pdf.log")"
+	fi
+fi
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"

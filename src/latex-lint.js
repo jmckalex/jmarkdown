@@ -44,7 +44,7 @@
 import { configManager } from './config-manager.js';
 import { addWarning, getWarnings } from './warnings.js';
 import { MATH_PACKAGE_COMMANDS } from './math-packages.js';
-import { bookPreamble } from './book.js';
+import { bookPreamble, bookMathMacros } from './book.js';
 
 /* --- silencing ------------------------------------------------------------------ */
 
@@ -264,6 +264,13 @@ export function checkMathPackages(loaded = []) {
 	}
 	for (const line of Array.isArray(meta('LaTeX preamble')) ? meta('LaTeX preamble') : [meta('LaTeX preamble') ?? '']) definitions(line);
 	for (const line of chapters.preamble) definitions(line);
+	// A book's chapters define their own macros at their starts (book.js).
+	const chapterMacros = bookMathMacros();
+	if (chapterMacros.length) {
+		have.add('amsmath');
+		have.add('amssymb');
+		for (const line of chapterMacros) definitions(line);
+	}
 
 	const missing = new Map();   // package to suggest → [examples]
 	for (const [name, example] of used) {

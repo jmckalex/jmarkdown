@@ -186,6 +186,14 @@ golden is untouched).
   (`warnPreambleClashes`, from latex-template.js): a second `\newcommand`
   stops LaTeX. Only one-line definitions (braces balanced) are checked. The
   LaTeX-export lint counts the chapters' packages and definitions as loaded.
+- **Math macros** (`chapterMacros`, as each chapter is read): a chapter's own
+  lines, less those the master's hold, are defined at its START — HTML a hidden
+  `div.math-macros` inside its section (the master's block's twin); LaTeX each
+  as `\providecommand{\X}{}\renewcommand{\X}…` (`\DeclareMathOperator` via
+  `\operatorname`), so a name already defined can't stop the build. One macro
+  set for the whole book: a chapter that defines a name differently from the
+  master or an earlier chapter is warned, since its definition carries on.
+  The lint counts the chapters' macros.
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).

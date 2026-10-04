@@ -326,6 +326,7 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 		if (piece.text != null) { out.push(piece.text); continue; }
 		const chapter = readChapter(piece.chapter, book.chapters.length + 1, masterDir);
 		if (!chapter) continue;
+		chapter.macros = chapterMacros(chapter);
 		book.chapters.push(chapter);
 		out.push(`\n\n${START(chapter.index)}\n${chapter.text}\n\n${END}\n\n`);
 	}
@@ -558,6 +559,50 @@ export function bookPreamble() {
 	return book.preambleJoin;
 }
 
+/* --- a chapter's math macros ------------------------------------------------------------------------ */
+
+/**
+ * A chapter's `Math macros`, less any line the master's already holds: they
+ * are defined at the chapter's start (chapterToken). LaTeX and MathJax each
+ * keep one set of macros for the whole book, so a chapter that defines a name
+ * differently from the master or an earlier chapter is warned — its
+ * definition carries on into the chapters after it (§6). Called as each
+ * chapter is read, before the next.
+ */
+function chapterMacros(chapter) {
+	const master = (configManager.get('Math macros') || []).map((line) => String(line).trim());
+	const earlier = [...master.map((line) => ({ line, by: null })),
+		...book.chapters.flatMap((c) => c.macros.map((line) => ({ line, by: c })))];
+	const own = settingLines(chapter.settings.mathMacros, '\n').filter((line) => !master.includes(line));
+	const was = getWarningLocation();
+	setWarningLocation({ file: chapter.name });
+	for (const line of own) {
+		const name = definedName(line);
+		const other = name && [...earlier].reverse().find((e) => definedName(e.line) === name);
+		if (other && other.line !== line) {
+			addWarning(`book: this chapter's \`Math macros\` define ${name} differently from ${other.by ? `${other.by.name}'s` : "the master's"} — a book has one set of macros, so the chapters after this one get this chapter's`);
+		}
+	}
+	setWarningLocation(was);
+	return own;
+}
+
+// A macro line as LaTeX defines it mid-document: whether or not the name
+// exists yet (a \newcommand of a defined name stops the build), so \provide
+// then \renew. MathJax takes the lines as written, redefining as it goes.
+function latexMacro(line) {
+	const m = /^\\(newcommand|renewcommand|providecommand|DeclareMathOperator)(\*?)\s*\{?\s*(\\[A-Za-z@]+)\s*\}?([\s\S]*)$/.exec(line);
+	if (!m) return line;
+	const [, command, star, name, rest] = m;
+	if (command === 'DeclareMathOperator') return `\\providecommand{${name}}{}\\renewcommand{${name}}{\\operatorname${star}${rest.trim()}}`;
+	return `\\providecommand{${name}}{}\\renewcommand${star}{${name}}${rest}`;
+}
+
+/** Every chapter's own macro lines, for the LaTeX-export lint. */
+export function bookMathMacros() {
+	return (book?.chapters || []).flatMap((chapter) => chapter.macros || []);
+}
+
 /** Warn, each at its chapter, what bookPreamble left out. */
 export function warnPreambleClashes() {
 	const was = getWarningLocation();
@@ -616,14 +661,24 @@ const chapterToken = {
 	renderer(token) {
 		const c = token.chapter;
 		if (!c) return '';
+		const macros = c.macros || [];
 		if (global.isLatex) {
-			// An anchor at the chapter's start, for links to it (jmdChapterLink).
+			// An anchor at the chapter's start, for links to it (jmdChapterLink),
+			// after the chapter's own macros.
 			if (token.edge === 'end') return '';
 			requirePackage('hyperref');
-			return `\\phantomsection\\label{jmd-chapter-${c.index}}\n`;
+			// MathJax's vocabulary, as the master's macros have (latex-template.js).
+			if (macros.length) { requirePackage('amsmath'); requirePackage('amssymb'); }
+			const defined = macros.map((line) => `${latexMacro(line)}\n`).join('');
+			return `${defined}\\phantomsection\\label{jmd-chapter-${c.index}}\n`;
 		}
 		if (token.edge === 'end') return `${chapterNotesPlaceholder(c.index)}\n</section>\n`;
-		return `<section class="jmd-chapter" id="jmd-chapter-${c.index}" data-chapter="${c.index}" data-file="${escapeAttr(c.name)}">\n`;
+		// The chapter's macros, hidden, before any of its maths (as index.js
+		// puts the master's at the top of the body).
+		const defined = macros.length
+			? `<div class="math-macros" style="display:none">\\(\n${macros.map((l) => l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')).join('\n')}\n\\)</div>\n`
+			: '';
+		return `<section class="jmd-chapter" id="jmd-chapter-${c.index}" data-chapter="${c.index}" data-file="${escapeAttr(c.name)}">\n${defined}`;
 	},
 };
 
