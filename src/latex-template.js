@@ -18,7 +18,7 @@ import path from 'path';
 import { configManager } from './config-manager.js';
 import { assemblePreamble, requirePackage, addPreamble, addLatePreamble, requiredPackageNames } from './preamble.js';
 import { checkMathPackages } from './latex-lint.js';
-import { getBook } from './book.js';
+import { getBook, bookPreamble, warnPreambleClashes } from './book.js';
 import { escapeLatexText } from './latex-escape.js';
 
 // Metadata values arrive as single-element arrays (from the metadata-header
@@ -42,8 +42,12 @@ export function processLatexTemplate(content) {
 	const docClass = asString(meta('Document class')) || 'article';
 	const classOptions = asString(meta('Class options'));
 	const engine = (asString(meta('LaTeX engine')) || 'pdflatex').toLowerCase();
-	const userPackages = asList(meta('Packages'));
-	const userPreamble = asList(meta('LaTeX preamble'));
+	// A book's chapters add their Packages and LaTeX preamble after the
+	// master's, each once; a definition that clashes is warned and left out.
+	const chapters = bookPreamble();
+	warnPreambleClashes();
+	const userPackages = [...asList(meta('Packages')), ...chapters.packages];
+	const userPreamble = [...asList(meta('LaTeX preamble')), ...chapters.preamble];
 
 	const documentclass = classOptions
 		? `\\documentclass[${classOptions}]{${docClass}}`

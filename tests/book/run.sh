@@ -310,6 +310,37 @@ if command -v pdflatex >/dev/null 2>&1 && command -v bibtex >/dev/null 2>&1 && c
 	fi
 fi
 
+# --- one preamble: the chapters' Packages and LaTeX preamble join the master's --------------------------
+# preamble/master.md loads amsmath and defines \R; a.md adds amssymb and
+# tikz-cd, repeats \R and defines \N and \argmax; b.md (a YAML list) repeats
+# amssymb, adds mathtools and \Z, and redefines \N and \R — clashes, left out.
+
+cp -R "$HERE/preamble" "$SCRATCH/preamble"
+P="$SCRATCH/preamble"
+(cd "$P" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o latex.out >/dev/null 2>latex.err) \
+	|| fail "preamble/exit" "$(cat "$P/latex.err")"
+count "preamble/package-once" "$P/latex.out" '\usepackage{amssymb}' 1
+has   "preamble/chapter-package" "$P/latex.out" '\usepackage{tikz-cd}'
+has   "preamble/yaml-list-package" "$P/latex.out" '\usepackage{mathtools}'
+count "preamble/line-once" "$P/latex.out" '\newcommand{\R}' 1
+has   "preamble/chapter-line" "$P/latex.out" '\DeclareMathOperator{\argmax}{arg\,max}'
+has   "preamble/yaml-list-line" "$P/latex.out" '\newcommand{\Z}{\mathbb{Z}}'
+hasnt "preamble/clash-left-out" "$P/latex.out" '\mathbf{N}'
+hasnt "preamble/master-wins" "$P/latex.out" '\mathcal{R}'
+has   "preamble/clash-chapter" "$P/latex.err" "b.md: book: this chapter's \`LaTeX preamble\` defines \\N differently from a.md — a book has one preamble, so a.md's is used"
+has   "preamble/clash-master" "$P/latex.err" "b.md: book: this chapter's \`LaTeX preamble\` defines \\R differently from the master"
+if command -v pdflatex >/dev/null 2>&1; then
+	if (cd "$P" && sed -e '/fontspec/d' -e '/setmainfont/d' latex.out >pre-pdf.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error pre-pdf.tex >/dev/null 2>&1); then
+		pass "preamble/pdf-compiles"
+	else
+		fail "preamble/pdf-compiles" "$(grep -m3 '^!' "$P/pre-pdf.log")"
+	fi
+fi
+# The LaTeX-export lint counts what the chapters load.
+(cd "$P" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o html.out >/dev/null 2>html.err)
+hasnt "preamble/lint-counts-chapters" "$P/html.err" 'needs the amssymb package'
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"

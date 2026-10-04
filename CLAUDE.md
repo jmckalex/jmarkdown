@@ -178,6 +178,14 @@ golden is untouched).
   chapter's own is warned and ignored. In LaTeX a book whose chapters add files
   always gets the merged `<output>-bibliography.bib`, since the chapters'
   files sit off bibtex's search path.
+- **One preamble** (`bookPreamble`, once a build): the chapters' `Packages`
+  and `LaTeX preamble` follow the master's, in book order, each name or line
+  once (YAML dressing — `[…]`, `- `, quotes, `|` — taken off). A chapter line
+  that defines a command or environment the master or an earlier chapter
+  defines differently is left out and warned at that chapter
+  (`warnPreambleClashes`, from latex-template.js): a second `\newcommand`
+  stops LaTeX. Only one-line definitions (braces balanced) are checked. The
+  LaTeX-export lint counts the chapters' packages and definitions as loaded.
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).

@@ -481,6 +481,93 @@ function lexBook(src, options) {
 	return tokens;
 }
 
+/* --- the book's one preamble: the chapters' Packages and LaTeX preamble ------------------------------ */
+
+// A chapter's list or lines as written in front matter, with YAML's dressing
+// (`[…]`, `- `, quotes, a lone `|`) taken off.
+function settingLines(value, split) {
+	if (value == null) return [];
+	return (Array.isArray(value) ? value : [value])
+		.flatMap((v) => String(v).split(split))
+		.map((line) => line.trim().replace(/^\[|\]$/g, '').trim().replace(/^-\s+/, '').replace(/^(["'])(.*)\1$/, '$2').trim())
+		.filter((line) => line && line !== '|' && line !== '>');
+}
+
+// The command or environment a preamble line defines (`\R`, `environment
+// proof`), when the line holds the whole definition: its braces balance. A
+// definition over several lines is kept as written, unchecked.
+function definedName(line) {
+	let depth = 0;
+	for (const c of line.replace(/\\[{}]/g, '')) {
+		if (c === '{') depth++;
+		else if (c === '}' && --depth < 0) return null;
+	}
+	if (depth !== 0) return null;
+	const command = /^\\(?:(?:new|renew|provide)command|DeclareMathOperator|DeclareRobustCommand)\*?\s*\{?\s*(\\[A-Za-z@]+)/.exec(line)
+		|| /^\\def\s*(\\[A-Za-z@]+)/.exec(line);
+	if (command) return command[1];
+	const env = /^\\(?:(?:new|renew)environment|newtheorem|declaretheorem)\*?\s*(?:\[[^\]]*\])?\s*\{([^}]+)\}/.exec(line);
+	return env ? `environment ${env[1].trim()}` : null;
+}
+
+/**
+ * What the chapters add to the book's one preamble: `packages` they name that
+ * the master does not, and `preamble` lines it lacks, in book order. A line
+ * already present goes in once. A chapter line that defines what the master
+ * or an earlier chapter defines differently is left out and listed in
+ * `clashes` ({ chapter, message }): LaTeX has one preamble, where a second
+ * \newcommand of a name stops the build. Outside a book, nothing. Computed
+ * once a build; latex-template.js warns the clashes, latex-lint.js counts the
+ * rest as loaded.
+ */
+export function bookPreamble() {
+	if (!book) return { packages: [], preamble: [], clashes: [] };
+	if (book.preambleJoin) return book.preambleJoin;
+	const meta = (key) => configManager.getMeta(key);
+	const packages = [];
+	const have = new Set(settingLines(meta('Packages'), /[,\n]/));
+	const preamble = [];
+	const master = settingLines(meta('LaTeX preamble'), '\n');
+	const seen = new Set(master.map((line) => line.replace(/\s+/g, ' ')));
+	const defined = new Map();
+	for (const line of master) {
+		const name = definedName(line);
+		if (name && !defined.has(name)) defined.set(name, null);
+	}
+	const clashes = [];
+	for (const chapter of book.chapters) {
+		for (const name of settingLines(chapter.settings.packages, /[,\n]/)) {
+			if (!have.has(name)) { have.add(name); packages.push(name); }
+		}
+		for (const line of settingLines(chapter.settings.preamble, '\n')) {
+			const squashed = line.replace(/\s+/g, ' ');
+			if (seen.has(squashed)) continue;
+			const name = definedName(line);
+			if (name && defined.has(name)) {
+				const by = defined.get(name);
+				const owner = by ? by.name : 'the master';
+				clashes.push({ chapter, message: `book: this chapter's \`LaTeX preamble\` defines ${name} differently from ${owner} — a book has one preamble, so ${by ? `${by.name}'s` : "the master's"} is used` });
+				continue;
+			}
+			if (name) defined.set(name, chapter);
+			seen.add(squashed);
+			preamble.push(line);
+		}
+	}
+	book.preambleJoin = { packages, preamble, clashes };
+	return book.preambleJoin;
+}
+
+/** Warn, each at its chapter, what bookPreamble left out. */
+export function warnPreambleClashes() {
+	const was = getWarningLocation();
+	for (const { chapter, message } of bookPreamble().clashes) {
+		setWarningLocation({ file: chapter.name });
+		addWarning(message);
+	}
+	setWarningLocation(was);
+}
+
 /* --- rendering --------------------------------------------------------------------------- */
 
 const escapeAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
