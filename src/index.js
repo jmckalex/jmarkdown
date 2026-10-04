@@ -32,6 +32,7 @@ import { calloutBlock } from './callouts.js';
 import { tabbingFence, tabbing } from './tabbing.js';
 import { escapedCharacters } from './escapes.js';
 import { latexLint, resetLatexLint } from './latex-lint.js';
+import { prepareBook, resetBook, getBook, bookExtension } from './book.js';
 import createMarkdownDemo from './markdown-demo.js';
 import strategicFormGame from './strategic-form-games.js';
 import createTiKZ from './tikz.js';
@@ -101,6 +102,7 @@ global.isLatex = isLatex;
 resetWarnings();
 resetLatexLint();
 resetIndexing();
+resetBook();
 const markdownFile = filename;
 // In stdin mode, [[file.md]] inclusions and the "Markdown file directory"
 // config (used by mathematica/tikz/template/metadata-header) resolve against
@@ -443,6 +445,11 @@ registerExtension(escapedCharacters);
 // renders in HTML but breaks a LaTeX export. Main parser only.
 marked.use({ walkTokens: latexLint });
 
+// Book mode (book.js): its walkTokens hook places warnings, so it is
+// registered after the hooks whose warnings it places (marked runs the last
+// registered first). Every part of it declines in a build that is not a book.
+marked.use(bookExtension);
+
 // This extension has to be registered after the directives in order for it to work.
 registerExtensions([
 	jmarkdownSyntaxEnhancements.emojis
@@ -655,9 +662,25 @@ function writeOutput(text) {
 // The inverse-search click handler embeds an absolute path to the source file,
 // so it's only meaningful when we have a real input file and a full HTML
 // document to inject the script into.
-const skipInverseSearch = options.fragment || isLatex || isStdin;
+let skipInverseSearch = options.fragment || isLatex || isStdin;
 
-const markdown_no_metadata = await processYAMLheader(input);
+let markdown_no_metadata = await processYAMLheader(input);
+
+// A book: chapters named by the host (processFile's `chapters`, the CLI's
+// --chapter) or by the master's `@chapter+(path)` lines (book.js). For any
+// other document prepareBook returns null and nothing below changes.
+const bookText = prepareBook(markdown_no_metadata, {
+	chapters: options.chapters ?? options.chapter, masterDir: markdownFileDirectory, isLatex });
+if (bookText !== null) {
+	markdown_no_metadata = bookText;
+	// A book's # headings are its chapters: a master naming no class is a book.
+	if (configManager.get('Document_class') == null) configManager.set('Document class', 'book');
+}
+const inBook = getBook() !== null;
+// A book stamps its own chapter lines (book.js): the spliced stream's lines —
+// for the source positions and the inverse-search script alike — would name
+// no chapter.
+if (inBook) skipInverseSearch = true;
 
 // Decide whether citations are resolved at compile time (this run) or left
 // literal for the runtime Biblify client. Read after the metadata header has
@@ -900,6 +923,7 @@ if (isCliEntry) {
 		.option('--to <format>', 'Output format: html (default) or latex', 'html')
 		.option('-o, --output <file>', 'Output file path (default: input filename with .html or .tex extension; stdout in stdin mode)')
 		.option('--bibliography <file>', 'Add a bibliography file for this build, as a configured one (repeatable)', collectOption, [])
+		.option('--chapter <file>', 'Build a book: a chapter file, in order (repeatable; instead of the master\'s @chapter+ lines)', collectOption, [])
 		.action(async (filename, options) => {
 			await processFile(filename, { ...program.opts(), ...options });
 		});

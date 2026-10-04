@@ -18,6 +18,7 @@ All source lives in `src/`. Key files:
 | File | Role |
 |---|---|
 | `index.js` | Exports `processFile(filename, options)` (the whole per-file build); the CLI (commander: `process`/`init`/`options`/`watch`) is **guarded behind a main-module check** so importing index.js warms the module graph without building. Extension registration + pipeline orchestration live inside `processFile`. |
+| `book.js` | Book mode: a master and its chapters built as one document (`chapters` option / `--chapter` / the master's `@chapter+(path)` lines). See "Book mode" |
 | `watch.js` | `jmarkdown watch`: the watcher — standby manager, generation-guarded dispatch, chokidar, static server + SSE live-reload. See "Watch mode". |
 | `watch-worker.js` | One-shot warm build worker (forked): imports index.js (warm), reports `ready`, does exactly ONE `processFile` on a `build` message, then exits. |
 | `watch-fs-preload.cjs` | CJS `-r` preload for the worker — patches `fs` reads before any ESM links `fs` (so even `import { readFileSync }` named imports are tracked) to record a build's file dependencies. |
@@ -90,6 +91,51 @@ All source lives in `src/`. Key files:
 10. Output divergence:
    - **LaTeX:** write `.tex` directly, no post-processing.
    - **HTML:** cheerio post-processing → template wrapping → inverse-search script injection → js-beautify → write `.html`.
+
+## Book mode (`book.js`)
+
+Phase 1 of `docs/dev/book-mode-engine.md` (the plan; `§7` the owner's
+decisions). A build is a BOOK when its chapters are named — by a host through
+processFile's `chapters` option (Clew reads its master note's `chapters:` and
+passes paths), the CLI's repeatable `--chapter`, or the master's own
+`@chapter+(path)` lines (text between them stays in the flow, in no chapter).
+Otherwise `prepareBook` returns null and NOTHING changes (every single-file
+golden is untouched).
+
+- **Assembly** (`prepareBook`, called from index.js after the master's header):
+  each chapter's front matter is stripped (`splitChapterHeader`, the master's own
+  detection rules) — whitelisted keys (Bibliography, Packages, LaTeX preamble,
+  Lang, Math macros) kept on the chapter, any other ENGINE key warned ("this
+  chapter sets `X` — a book takes that from its master"); its own data (title,
+  status, aliases, tags, unknown keys) is never warned. Title rule: first `#`
+  heading, else front-matter `title`, else the file name, inserted as `# …`;
+  text before the first `#` and a second `#` are warned. A chapter's `[[file]]`
+  inclusions resolve against ITS folder. Chapters are joined between marker
+  lines (`<!-- jmd:chapter N -->` … `<!-- jmd:end-chapter -->`); a master
+  naming no `Document class` becomes `book`.
+- **Per-chapter lexing** (`provideLexer` → `BookLexer`): each chapter is lexed
+  on its own, so marked-footnote keys `[^1]` per chapter (one combined lex gave
+  the second chapter the first's note) and each chapter's notes list at its end.
+  marked-footnote's per-instance state (a flag, a running counter, one REUSED
+  footnotes token) is reset between chapters (`resetFootnoteState`,
+  `settleFootnotes` copies the token).
+- **Warnings name `chapter:line`** (warnings.js `setWarningLocation`): set while
+  lexing (block phase: the chapter; inline phase: the block's line), walking
+  (the `bookWalk` walkTokens hook, registered AFTER the lint so it runs first),
+  and rendering (`provideParser` renders one top-level block at a time). Lines
+  are the chapter FILE's (stripped front matter added back, an inserted title
+  taken away). In a book a repeated message is given once, at its first place.
+  HTML blocks carry `data-source-line` (chapter lines; whole-stream source
+  positions and the inverse-search script are off in a book).
+- **Paths (G10)**: `bookWalk` rebases a chapter's relative link/image/`@image`/
+  `@video` paths onto the master's folder; a link to another chapter's FILE
+  becomes a chapter link (`#jmd-chapter-N`; LaTeX `\hyperref` to the chapter's
+  `\phantomsection\label`). Known limit: a file a chapter INCLUDES from a
+  subfolder has its paths resolved against the chapter's folder, as any
+  inclusion's are against its includer.
+- **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
+  id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
+  `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).
 
 ## Watch mode (`jmarkdown watch <file>`)
 
