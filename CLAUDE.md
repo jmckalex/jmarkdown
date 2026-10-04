@@ -106,8 +106,13 @@ golden is untouched).
   each chapter's front matter is stripped (`splitChapterHeader`, the master's own
   detection rules) — whitelisted keys (Bibliography, Packages, LaTeX preamble,
   Lang, Math macros) kept on the chapter, any other ENGINE key warned ("this
-  chapter sets `X` — a book takes that from its master"); its own data (title,
-  status, aliases, tags, unknown keys) is never warned. Title rule: first `#`
+  chapter sets `X` — a book takes that from its master") unless its value is
+  the one the book uses — the master's, else the default (the owner,
+  2026-10-04). `sameAsBook` reads it as the engine does: mergeMetadata merges
+  the key, in its engine spelling, into a COPY of the book's config, so `True`
+  matches `true` but `yes` (false to the engine) does not; a key the copy gains
+  must equal what `getMeta` reads in its place. Its own data (title, status,
+  aliases, tags, unknown keys) is never warned. Title rule: first `#`
   heading, else front-matter `title`, else the file name, inserted as `# …`;
   text before the first `#` and a second `#` are warned. A chapter's `[[file]]`
   inclusions resolve against ITS folder. Chapters are joined between marker
@@ -133,8 +138,9 @@ golden is untouched).
   `\phantomsection\label`). Known limit: a file a chapter INCLUDES from a
   subfolder has its paths resolved against the chapter's folder, as any
   inclusion's are against its includer.
-- **Numbering** (`Numbering:` in the master's header, or processFile's
-  `numbering` option): `per chapter` (the default — Figure 2.3, as the book
+- **Numbering** (`Numbering:` in the master's header — its key matched loosely,
+  so YAML's `numbering:` counts, in a book only — or processFile's `numbering`
+  option): `per chapter` (the default — Figure 2.3, as the book
   class numbers) or `continuous`. HTML: the post-processor's `numberer($)` gives
   figures, tables, listings, theorems, equations and numbered user environments
   `chapter.n`, the chapter being the count of numbered `h1`s before the element

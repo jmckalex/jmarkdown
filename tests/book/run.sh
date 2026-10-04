@@ -164,6 +164,27 @@ if command -v pdflatex >/dev/null 2>&1 && command -v pygmentize >/dev/null 2>&1;
 	done
 fi
 
+# --- a chapter's engine keys: silent when the book uses the same value (the owner, 2026-10-04) -----
+# settings/master.md sets `Resolve citations: true`, `Bibliography style: apa`
+# and a lowercase `numbering: continuous`. same.md repeats them (`True`);
+# differ.md sets `yes` (false, as the engine reads it), chicago and per chapter;
+# defaults.md sets keys the master leaves unset, at their defaults (one in
+# lowercase); off-default.md sets one that is not.
+
+cp -R "$HERE/settings" "$SCRATCH/settings"
+T="$SCRATCH/settings"
+(cd "$T" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o settings.out >/dev/null 2>settings.err) \
+	|| fail "settings/exit" "$(cat "$T/settings.err")"
+hasnt "settings/equal-silent" "$T/settings.err" 'same.md:'
+has   "settings/different-resolve" "$T/settings.err" 'differ.md: book: this chapter sets `Resolve citations`'
+has   "settings/different-style" "$T/settings.err" 'differ.md: book: this chapter sets `Bibliography style`'
+has   "settings/different-numbering" "$T/settings.err" 'differ.md: book: this chapter sets `Numbering`'
+hasnt "settings/unset-default-silent" "$T/settings.err" 'defaults.md:'
+has   "settings/unset-off-default" "$T/settings.err" 'off-default.md: book: this chapter sets `Citation tooltips`'
+# The master's lowercase `numbering:` is the book's Numbering: continuous.
+has   "settings/master-lowercase-numbering" "$T/settings.out" '<span class="eqn-number">(2)</span>'
+hasnt "settings/not-per-chapter" "$T/settings.out" '(2.1)'
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"

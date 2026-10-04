@@ -672,11 +672,7 @@ let markdown_no_metadata = await processYAMLheader(input);
 const bookText = prepareBook(markdown_no_metadata, {
 	chapters: options.chapters ?? options.chapter, masterDir: markdownFileDirectory, isLatex,
 	numbering: options.numbering });
-if (bookText !== null) {
-	markdown_no_metadata = bookText;
-	// A book's # headings are its chapters: a master naming no class is a book.
-	if (configManager.get('Document_class') == null) configManager.set('Document class', 'book');
-}
+if (bookText !== null) markdown_no_metadata = bookText;
 const inBook = getBook() !== null;
 // A book stamps its own chapter lines (book.js): the spliced stream's lines —
 // for the source positions and the inverse-search script alike — would name

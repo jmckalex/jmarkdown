@@ -54,6 +54,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { isDeepStrictEqual } from 'util';
 import { marked } from 'marked';
 import { configManager, DEFAULT_CONFIG } from './config-manager.js';
 import { addWarning, setWarningLocation, getWarningLocation } from './warnings.js';
@@ -79,12 +80,30 @@ export function numberWithinChapter() { return !!book && book.numbering === 'per
 // too) or 'continuous' (Figure 17).
 function numberingPolicy(value) {
 	const raw = Array.isArray(value) ? value.join(' ') : value;
+	const policy = parseNumbering(raw);
+	if (policy) return policy;
+	addWarning(`book: \`Numbering: ${String(raw).trim()}\` is neither "per chapter" nor "continuous" — numbering per chapter`);
+	return 'per chapter';
+}
+
+// A `Numbering` value read, or null when it is neither policy. Unset is the default.
+function parseNumbering(raw) {
 	if (raw == null || String(raw).trim() === '') return 'per chapter';
 	const v = norm(raw);
 	if (v === 'continuous') return 'continuous';
 	if (v === 'per chapter' || v === 'chapter' || v === 'by chapter') return 'per chapter';
-	addWarning(`book: \`Numbering: ${String(raw).trim()}\` is neither "per chapter" nor "continuous" — numbering per chapter`);
-	return 'per chapter';
+	return null;
+}
+
+// A setting of the master's, however its key is written. A header's keys are
+// merged as written, so `numbering:` (as YAML and Clew write keys) lands under
+// its own spelling where the engine reads `Numbering`; a book's own keys are
+// matched as loosely as a chapter's whitelist. Single files are untouched.
+function masterSetting(name) {
+	const exact = configManager.get(name);
+	if (exact != null) return exact;
+	const key = Object.keys(configManager.config || {}).find((k) => norm(k) === norm(name));
+	return key === undefined ? undefined : configManager.config[key];
 }
 
 export function resetBook() { book = null; }
@@ -122,10 +141,49 @@ const HEADER_KEYS = [
 // import this module from inside config-manager's own import graph, so
 // DEFAULT_CONFIG is not yet initialised while this module loads.
 let engineKeys = null;
-const isEngineKey = (key) => {
-	engineKeys ??= new Set([...Object.keys(DEFAULT_CONFIG), ...HEADER_KEYS].map(norm));
-	return engineKeys.has(norm(key)) || /^extension\b/i.test(String(key).trim());
+// A key in the engine's own spelling (`resolve citations` → `Resolve
+// citations`), or null when the engine has no such key.
+const engineKey = (key) => {
+	engineKeys ??= new Map([...Object.keys(DEFAULT_CONFIG), ...HEADER_KEYS].map((k) => [norm(k), k]));
+	if (engineKeys.has(norm(key))) return engineKeys.get(norm(key));
+	return /^extension\b/i.test(String(key).trim()) ? String(key).trim() : null;
 };
+const isEngineKey = (key) => engineKey(key) !== null;
+
+/**
+ * Whether a chapter's `key: value` is what the book already uses — the
+ * master's setting, else the engine's default — so a chapter that only
+ * repeats it (for its own reading view, say) is not warned. Read as the engine
+ * reads it: mergeMetadata itself merges the key, in its engine spelling, into
+ * a copy of the book's configuration, so `True` and `true` agree exactly where
+ * the engine reads them alike, and nothing is applied. A key the copy gains
+ * (one the book leaves unset) must equal the value the engine reads in its
+ * place: a header's `Document_class` overrides DEFAULT_CONFIG's spaced
+ * `Document class` (configManager.getMeta).
+ */
+function sameAsBook(key, value) {
+	const canonical = engineKey(key);
+	if (norm(canonical) === 'numbering') return parseNumbering(value) === book.numbering;
+	const before = configManager.config;
+	let after;
+	try {
+		const trial = Object.create(configManager);
+		trial.config = structuredClone(before);
+		trial.loaded = true;
+		trial.mergeMetadata({ [canonical]: [value] });
+		after = trial.config;
+	} catch {
+		return false;
+	}
+	for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) {
+		if (isDeepStrictEqual(before[k], after[k])) continue;
+		if (k in before) return false;
+		const twin = Object.keys(before).find((b) => norm(b) === norm(k));
+		const word = (v) => norm(Array.isArray(v) ? v.join(' ') : String(v));
+		if (twin === undefined || word(after[k]) !== word(before[twin])) return false;
+	}
+	return true;
+}
 
 /**
  * A chapter's leading header — a `---`-fenced block, or JMarkdown's bare
@@ -169,7 +227,7 @@ function chapterSettings(data, name) {
 	for (const [key, value] of Object.entries(data)) {
 		const n = norm(key);
 		if (WHITELIST.has(n)) settings[WHITELIST.get(n)] = value;
-		else if (!CHAPTER_DATA.has(n) && isEngineKey(key)) {
+		else if (!CHAPTER_DATA.has(n) && isEngineKey(key) && !sameAsBook(key, value)) {
 			addWarning(`book: this chapter sets \`${key}\` — a book takes that from its master, so it is not applied`);
 		}
 	}
@@ -243,7 +301,10 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 		return null;
 	}
 
-	book = { masterDir, chapters: [], isLatex, numbering: numberingPolicy(numbering ?? configManager.get('Numbering')) };
+	book = { masterDir, chapters: [], isLatex, numbering: numberingPolicy(numbering ?? masterSetting('Numbering')) };
+	// A book's # headings are its chapters: a master naming no class is a book.
+	// Set before the chapters are read, which compare their own settings with it.
+	if (configManager.get('Document_class') == null) configManager.set('Document class', 'book');
 	const out = [];
 	for (const piece of pieces) {
 		if (piece.text != null) { out.push(piece.text); continue; }
