@@ -219,10 +219,11 @@ done
 # PDF's text. A \crefname that went out without cleveref — any numbered thing
 # plus hyperref, which every full document loads — printed its arguments at
 # the top of page 1 ("equationequationequations"); with -halt-on-error, it
-# stopped the build. And a <style> block printed its CSS. The fixtures are
+# stopped the build. A <style> block printed its CSS; a list item's `&`
+# stopped the build too, and its inline `#` printed as `\#`. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block; do
+	for name in cref-unused cref-used style-block list-specials; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -233,8 +234,9 @@ if command -v pdftotext >/dev/null 2>&1; then
 			fail=$((fail + 1))
 			continue
 		fi
-		if ! (cd "$work" && pdflatex -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1 \
-			&& pdflatex -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+		# -shell-escape: list-specials' inline code is minted.
+		if ! (cd "$work" && pdflatex -shell-escape -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1 \
+			&& pdflatex -shell-escape -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
 			echo "FAIL  $label"
 			grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
 			fail=$((fail + 1))
@@ -249,6 +251,14 @@ if command -v pdftotext >/dev/null 2>&1; then
 		# A <style> block prints nothing (it used to print its CSS).
 		[ "$name" = style-block ] && grep -q 'color\|margin\|font-style' "$work/doc.txt" && problems="$problems css-printed"
 		[ "$name" = style-block ] && ! grep -q 'The prose after it prints.' "$work/doc.txt" && problems="$problems prose-missing"
+		# `&`, `#` and code in list items print as written, once escaped.
+		if [ "$name" = list-specials ]; then
+			grep -q 'Prose with an ampersand & and a hash # in it.' "$work/doc.txt" || problems="$problems list-prose"
+			grep -q 'A hash in code #, and #project/clew.' "$work/doc.txt" || problems="$problems list-code"
+			grep -q 'Loose code #.' "$work/doc.txt" || problems="$problems list-loose"
+			grep -q '#include & more' "$work/doc.txt" || problems="$problems raw-html"
+			grep -qF '\#' "$work/doc.txt" && problems="$problems backslash-printed"
+		fi
 		if [ -z "$problems" ]; then
 			echo "PASS  $label [pdf text]"
 			pass=$((pass + 1))

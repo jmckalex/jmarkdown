@@ -81,6 +81,19 @@ const latexRenderer = {
 	},
 
 	paragraph(token) {
+		// marked's parser wraps a list item's text, which it has ALREADY
+		// rendered, in a paragraph of its own: one text token flagged `escaped`
+		// (Parser.parse, `top`). Print that text as it stands. Run through
+		// text() it was escaped twice: every `&` and `#` in a list item became
+		// `\\&` / `\\#` (a line break, then an alignment tab, which stops
+		// pdfLaTeX), and a `#` in its inline code printed as `\#`.
+		// Only that paragraph is matched: marked also flags the text inside an
+		// inline <code>, <kbd>, <pre> or <script> `escaped`, and that text is
+		// NOT yet LaTeX, so text() must go on escaping it.
+		const [only, ...rest] = token.tokens ?? [];
+		if (rest.length === 0 && only?.type === 'text' && only.escaped && !only.tokens) {
+			return `${only.text}\n\n`;
+		}
 		return `${this.parser.parseInline(token.tokens)}\n\n`;
 	},
 

@@ -1,0 +1,18 @@
+---
+Title: Specials in Lists
+---
+
+A tight list:
+
+- Prose with an ampersand & and a hash # in it.
+- A hash in code `#`, and `#project/clew`.
+- More code: `$` `%` `&` `_` `{ }` `~` `^` and `a#b & c_d`.
+- A [link with a fragment](https://example.org/page#part).
+
+A loose list:
+
+- Loose prose & more #.
+
+- Loose code `#`.
+
+Raw inline HTML keeps its escaping: <code>#include & more</code>.

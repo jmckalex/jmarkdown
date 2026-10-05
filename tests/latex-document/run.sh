@@ -153,6 +153,21 @@ if render style-block; then
 	want   "style/prose-kept"  "$TEX" 'The prose after it prints.'
 fi
 
+# --- list-specials.jmd: `&`, `#` and code in list items, escaped ONCE. A list
+#     item's rendered text was escaped again (prose `&` → `\\&`, which stops
+#     pdfLaTeX; `#` in inline code printed as `\#`). ---
+if render list-specials; then
+	want   "list/prose"        "$TEX" '\item Prose with an ampersand \& and a hash \# in it.'
+	want   "list/code-hash"    "$TEX" '\item A hash in code \mintinline{text}|#|, and \mintinline{text}|#project/clew|.'
+	want   "list/code-specials" "$TEX" '\mintinline{text}|a#b & c_d|'
+	want   "list/href"         "$TEX" '\href{https://example.org/page\#part}{link with a fragment}'
+	want   "list/loose"        "$TEX" '\item Loose prose \& more \#.'
+	absent "list/no-double"    "$TEX" '\\&'
+	# marked flags the text inside inline <code> `escaped` too, but it is not
+	# yet LaTeX: it must still be escaped (only the list item's wrap is not).
+	want   "list/raw-html"     "$TEX" '<code>\#include \& more</code>'
+fi
+
 # --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
 if render page-setup; then
 	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'
