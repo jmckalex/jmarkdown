@@ -340,8 +340,9 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 	// Set before the chapters are read, which compare their own settings with it.
 	if (configManager.get('Document_class') == null) configManager.set('Document class', 'book');
 	const out = [];
+	const backMatter = [];
 	for (const piece of pieces) {
-		if (piece.text != null) { out.push(piece.text); continue; }
+		if (piece.text != null) { out.push(takeBackMatter(piece.text, backMatter)); continue; }
 		const chapter = readChapter(piece.chapter, book.chapters.length + 1, masterDir);
 		if (!chapter) continue;
 		chapter.macros = chapterMacros(chapter);
@@ -349,7 +350,32 @@ export function prepareBook(body, { chapters: hostChapters = null, masterDir, is
 		book.chapters.push(chapter);
 		out.push(`\n\n${START(chapter.index)}\n${chapter.text}\n\n${END}\n\n`);
 	}
+	// The References and the index follow the last chapter (the owner's D11).
+	if (backMatter.length) out.push(`\n\n${backMatter.join('\n\n')}\n`);
 	return out.join('\n');
+}
+
+// The master's @bibliography and @index placement lines (and their legacy
+// spellings), outside code fences: a book's one References list and its
+// index come after its last chapter, in the order written, however the
+// chapters were given — host-given chapters put the master's whole text
+// before chapter 1, and its closing @bibliography with it. Each line is
+// taken out of `text` (left blank) and added to `into`.
+const PLACEMENT = /^[ \t]{0,3}(?:@bibliography|::Bibliography|@index|::Index)[ \t]*(?:\{[^}\n]*\})?[ \t]*$/;
+
+function takeBackMatter(text, into) {
+	let fence = null;
+	return text.split('\n').map((line) => {
+		const opener = /^[ \t]*(`{3,}|~{3,})/.exec(line);
+		if (opener) {
+			if (!fence) fence = opener[1][0];
+			else if (opener[1][0] === fence) fence = null;
+			return line;
+		}
+		if (fence || !PLACEMENT.test(line)) return line;
+		into.push(line.trim());
+		return '';
+	}).join('\n');
 }
 
 function readChapter(name, index, masterDir) {

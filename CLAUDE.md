@@ -119,7 +119,13 @@ golden is untouched).
   text before the first `#` and a second `#` are warned. A chapter's `[[file]]`
   inclusions resolve against ITS folder. Chapters are joined between marker
   lines (`<!-- jmd:chapter N -->` … `<!-- jmd:end-chapter -->`); a master
-  naming no `Document class` becomes `book`.
+  naming no `Document class` becomes `book`. The master's `@bibliography` and
+  `@index` placement lines (and `::Bibliography`/`::Index`; not in code
+  fences) are moved after the LAST chapter, in the order written
+  (`takeBackMatter`; the owner's D11) — however the chapters were given: with
+  host-given chapters the master's whole text is the prelude, and its closing
+  `@bibliography` used to land before `\chapter{…}` (References on page 1,
+  every citation "?").
 - **Per-chapter lexing** (`provideLexer` → `BookLexer`): each chapter is lexed
   on its own, so marked-footnote keys `[^1]` per chapter (one combined lex gave
   the second chapter the first's note) and each chapter's notes list at its end.

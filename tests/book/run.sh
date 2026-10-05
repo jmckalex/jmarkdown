@@ -310,6 +310,53 @@ if command -v pdflatex >/dev/null 2>&1 && command -v bibtex >/dev/null 2>&1 && c
 	fi
 fi
 
+# --- back matter: the master's @bibliography and @index follow the last chapter (D11) -------------------
+# bib/host.md is a master whose chapters a HOST gives (processFile `chapters`),
+# so its whole text used to come before chapter 1, and its closing
+# @bibliography with it — in print, the References on page 1 and every
+# citation "?". Its fenced `@bibliography` is code and stays. bib/early.md
+# places its @bibliography above its @chapter+ lines.
+
+hostbuild() {   # hostbuild NAME FORMAT OUTPUT [extra js options]
+	(cd "$C" && HOME="$SCRATCH/home" node --input-type=module -e "
+		import { processFile } from '$JMD';
+		const r = await processFile('host.md', { to: '$2', output: '$3', chapters: ['c1.md', 'sub/c2.md'] ${4:-} });
+		if (r.pages) console.log(r.pages.map((p) => p.split('/').pop()).join(' '));
+	" >"$1.log" 2>&1) || fail "back/$1/exit" "$(cat "$C/$1.log")"
+}
+line_of() { grep -nF -- "$2" "$1" | head -1 | cut -d: -f1; }
+after() {   # after LABEL FILE FIRST SECOND — SECOND's first line is below FIRST's last
+	a=$(grep -nF -- "$3" "$2" | tail -1 | cut -d: -f1); b=$(line_of "$2" "$4")
+	if [ -n "$a" ] && [ -n "$b" ] && [ "$b" -gt "$a" ]; then pass "$1"; else fail "$1" "\`$4\` (line ${b:-none}) is not after \`$3\` (line ${a:-none})"; fi
+}
+hostbuild hostlatex latex host.tex
+after "back/latex/bibliography-last" "$C/host.tex" '\chapter{' '\bibliography{'
+after "back/latex/index-last" "$C/host.tex" '\chapter{' '\printindex'
+after "back/latex/preface-first" "$C/host.tex" 'The preface' '\chapter{One}'
+has   "back/latex/fenced-stays" "$C/host.tex" '\begin{minted}{text}'
+if command -v pdflatex >/dev/null 2>&1 && command -v bibtex >/dev/null 2>&1 && command -v pdftotext >/dev/null 2>&1; then
+	(cd "$C" && sed -e '/fontspec/d' -e '/setmainfont/d' host.tex >host-pdf.tex \
+		&& pdflatex -shell-escape -interaction=nonstopmode -halt-on-error host-pdf.tex >/dev/null 2>&1 \
+		&& bibtex host-pdf >/dev/null 2>&1 \
+		&& pdflatex -shell-escape -interaction=nonstopmode -halt-on-error host-pdf.tex >/dev/null 2>&1 \
+		&& pdflatex -shell-escape -interaction=nonstopmode -halt-on-error host-pdf.tex >/dev/null 2>&1 \
+		&& pdftotext host-pdf.pdf host.txt)
+	if [ -f "$C/host.txt" ]; then
+		has   "back/pdf/citations-resolve" "$C/host.txt" 'It cites Author (2001) and Pha (2002).'
+		after "back/pdf/references-after-chapters" "$C/host.txt" 'It cites Ta (2004)' 'Author, A. (2001). The Shared Book. Press.'
+	else
+		fail "back/pdf" "$(grep -m3 '^!' "$C/host-pdf.log")"
+	fi
+fi
+hostbuild hostsplit html out/Host.html ", htmlLayout: 'split'"
+has   "back/split/pages" "$C/hostsplit.log" 'index.html c1.html c2.html references.html index-terms.html'
+has   "back/split/contents" "$C/out/Host/index.html" '<li><a href="references.html">References</a></li>'
+has   "back/split/references" "$C/out/Host/references.html" 'The Shared Book'
+has   "back/split/preface" "$C/out/Host/index.html" 'The preface, with a term'
+(cd "$C" && HOME="$SCRATCH/home" node "$JMD" process early.md --to latex -o early.tex >/dev/null 2>&1)
+after "back/early/moved-after" "$C/early.tex" '\chapter{' '\bibliography{'
+after "back/early/closing-text-kept" "$C/early.tex" '\chapter{Two}' 'The closing words.'
+
 # --- one preamble: the chapters' Packages and LaTeX preamble join the master's --------------------------
 # preamble/master.md loads amsmath and defines \R; a.md adds amssymb and
 # tikz-cd, repeats \R and defines \N and \argmax; b.md (a YAML list) repeats

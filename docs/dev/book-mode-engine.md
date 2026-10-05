@@ -415,6 +415,8 @@ docs-snapshots and features stayed byte-for-byte.
 | 5d | 9220cf6 | A chapter's `<style>` scoped to its section; dropped in LaTeX |
 | 6 | 2ac7048 | `htmlLayout: 'split'`: index, chapter pages, references, index-terms |
 | 7a | 53e0ade | The post-pass's warnings at `chapter:line`; a line-count slip from piece 1 |
+| — | 5a69dcd | Bug fix, single files too: a `<style>` element prints nothing in LaTeX |
+| — | — | D11 for host-given chapters: the master's `@bibliography` and `@index` follow the last chapter, however the chapters are given |
 
 Where it differs from §5 and §6, or goes beyond them:
 
