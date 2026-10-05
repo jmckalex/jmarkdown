@@ -416,7 +416,8 @@ docs-snapshots and features stayed byte-for-byte.
 | 6 | 2ac7048 | `htmlLayout: 'split'`: index, chapter pages, references, index-terms |
 | 7a | 53e0ade | The post-pass's warnings at `chapter:line`; a line-count slip from piece 1 |
 | — | 5a69dcd | Bug fix, single files too: a `<style>` element prints nothing in LaTeX |
-| — | — | D11 for host-given chapters: the master's `@bibliography` and `@index` follow the last chapter, however the chapters are given |
+| — | 3d9e65d | Obsidian `[[links]]` and `![[image]]` embeds, off by default (`obsidianLinks`); in a book, a `[[link]]` to a chapter is a chapter link |
+| — | cf998a0 | D11 for host-given chapters: the master's `@bibliography` and `@index` follow the last chapter, however the chapters are given |
 
 Where it differs from §5 and §6, or goes beyond them:
 
