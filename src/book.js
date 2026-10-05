@@ -899,9 +899,6 @@ export function scopeChapterStyles($) {
 	});
 }
 
-// A raw HTML block that is nothing but <style> elements.
-const STYLE_BLOCK = /^\s*(?:<style\b[^>]*>[\s\S]*?<\/style>\s*)+$/i;
-
 /* --- the walk: chapter context and paths ---------------------------------------------------- */
 
 let walkChapter = null;
@@ -928,11 +925,6 @@ function bookWalk(token) {
 	}
 	if (token._jmdLoc) setWarningLocation(token._jmdLoc);
 	if (!walkChapter) return;
-	// A chapter's <style> is for its HTML; LaTeX has no use for it.
-	if (book.isLatex && token.type === 'html' && STYLE_BLOCK.test(token.raw || '')) {
-		token.type = 'space';
-		return;
-	}
 	if ((token.type === 'link' || token.type === 'image') && token.href) {
 		const to = rebase(token.href, walkChapter);
 		if (typeof to === 'string') token.href = to;

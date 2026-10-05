@@ -145,6 +145,14 @@ if render cref-used; then
 	want "cref-used/crefname table"   "$TEX" '\crefname{table}{table}{tables}'
 fi
 
+# --- style-block.jmd: a <style> is the page's CSS — none of it reaches the
+#     .tex (it used to print in the PDF as text). ---
+if render style-block; then
+	absent "style/no-element"  "$TEX" '<style'
+	absent "style/no-css"      "$TEX" 'color: red'
+	want   "style/prose-kept"  "$TEX" 'The prose after it prints.'
+fi
+
 # --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
 if render page-setup; then
 	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'

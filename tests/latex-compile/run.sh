@@ -217,9 +217,10 @@ done
 # PDF's text. A \crefname that went out without cleveref — any numbered thing
 # plus hyperref, which every full document loads — printed its arguments at
 # the top of page 1 ("equationequationequations"); with -halt-on-error, it
-# stopped the build. The fixtures are tests/latex-document's.
+# stopped the build. And a <style> block printed its CSS. The fixtures are
+# tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used; do
+	for name in cref-unused cref-used style-block; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -243,6 +244,9 @@ if command -v pdftotext >/dev/null 2>&1; then
 			grep -q "$doubled" "$work/doc.txt" && problems="$problems $doubled"
 		done
 		[ "$name" = cref-used ] && ! grep -q 'See equation (1) and table 1' "$work/doc.txt" && problems="$problems no-full-words"
+		# A <style> block prints nothing (it used to print its CSS).
+		[ "$name" = style-block ] && grep -q 'color\|margin\|font-style' "$work/doc.txt" && problems="$problems css-printed"
+		[ "$name" = style-block ] && ! grep -q 'The prose after it prints.' "$work/doc.txt" && problems="$problems prose-missing"
 		if [ -z "$problems" ]; then
 			echo "PASS  $label [pdf text]"
 			pass=$((pass + 1))

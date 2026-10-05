@@ -213,8 +213,8 @@ golden is untouched).
   styles into the head): a chapter's CSS is nested under its section's id
   (`scopeCss`: `h1 {…}` → `#jmd-chapter-2 { h1 {…} }`, `body`/`html`/`:root`
   → `&`), global at-rules (`@font-face`, `@keyframes`, `@import`, …) kept
-  outside. LaTeX: a chapter's style-only HTML block is dropped in `bookWalk`
-  (a single file's, and the master's, still reach the .tex as text).
+  outside. LaTeX: every `<style>` element is left out (latex-renderer.js
+  `html`, single files too).
 - **Split layout** (`book-pages.js`; `HTML layout: split` in the master,
   processFile's `htmlLayout`, the CLI's `--html-layout`; `pages` accepted;
   default `single`): AFTER the whole post-process — so every number, label

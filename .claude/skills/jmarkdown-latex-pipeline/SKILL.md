@@ -147,7 +147,9 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   in a **single pass** — parse all chapters into memory, number across them,
   resolve, emit pages (no `crossrefs.json`, no rerun; the in-memory model
   sidesteps TeX's streaming two-pass). HTML appendix lettering (A, B…) also TODO.
-- Raw-HTML suppression in LaTeX — remaining edge cases.
+- Raw-HTML suppression in LaTeX — remaining edge cases. `<style>` elements are
+  left out (latex-renderer.js `html`, 2026-10-05); other raw HTML still reaches
+  the .tex as written.
 - Consider disabling marked's built-in GFM table tokenizer so the
   `marked-extended-tables-headerless` extensions are the sole table path (one
   canonical syntax; lets us delete the `table()` fallback in `latex-renderer.js`).

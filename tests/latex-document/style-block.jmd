@@ -1,0 +1,14 @@
+---
+Title: Styled Page
+---
+
+The page's own CSS, which a PDF has no use for.
+
+<style>
+h1 { color: red; }
+</style>
+
+<style>p { margin: 0 }</style>
+<style>em { font-style: normal }</style>
+
+The prose after it prints.

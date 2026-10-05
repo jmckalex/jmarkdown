@@ -65,7 +65,20 @@ function headingCode(lang, code) {
 	return `\\texttt{${escapeTexText(code)}}`;
 }
 
+// A <style> element is the page's CSS, with nothing to print.
+const STYLE_ELEMENT = /<style\b[^>]*>[\s\S]*?<\/style>[ \t]*\n?/gi;
+
 const latexRenderer = {
+
+	// Raw HTML reaches the .tex as written (marked's own rule), but for its
+	// <style> elements: a document's CSS printed as text in the PDF (and a book
+	// chapter's, before it). A block that held nothing else renders nothing.
+	html(token) {
+		const text = String(token.text ?? '');
+		if (!/<style\b/i.test(text)) return text;
+		const left = text.replace(STYLE_ELEMENT, '');
+		return left.trim() ? left : '';
+	},
 
 	paragraph(token) {
 		return `${this.parser.parseInline(token.tokens)}\n\n`;
