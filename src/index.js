@@ -30,6 +30,7 @@ import markedAlert from 'marked-alert';
 import { renderAlertLatex } from './alerts.js';
 import { calloutBlock } from './callouts.js';
 import { tabbingFence, tabbing } from './tabbing.js';
+import { obsidianLinks, obsidianText, obsidianEmbed, setObsidianLinks } from './obsidian-links.js';
 import { escapedCharacters } from './escapes.js';
 import { latexLint, resetLatexLint } from './latex-lint.js';
 import { prepareBook, resetBook, getBook, bookExtension, bookLayout } from './book.js';
@@ -105,6 +106,9 @@ resetWarnings();
 resetLatexLint();
 resetIndexing();
 resetBook();
+// Obsidian links and embeds (obsidian-links.js): off unless this option, the
+// CLI's --obsidian-links, or an `Obsidian links: true` key turns them on.
+setObsidianLinks(options.obsidianLinks);
 const markdownFile = filename;
 // In stdin mode, [[file.md]] inclusions and the "Markdown file directory"
 // config (used by mathematica/tikz/template/metadata-header) resolve against
@@ -406,6 +410,10 @@ registerExtension(calloutBlock);
 // `Environments` entries did.
 registerExtension(tabbingFence);
 defineEnvironment('tabbing', tabbing);
+
+// Obsidian's [[links]] and ![[embeds]] (obsidian-links.js), off by default:
+// unless turned on, they claim nothing and cut no text.
+registerExtensions([obsidianLinks, obsidianText, obsidianEmbed]);
 
 
 const markdownDemos = [
@@ -935,6 +943,7 @@ if (isCliEntry) {
 		.option('--bibliography <file>', 'Add a bibliography file for this build, as a configured one (repeatable)', collectOption, [])
 		.option('--chapter <file>', 'Build a book: a chapter file, in order (repeatable; instead of the master\'s @chapter+ lines)', collectOption, [])
 		.option('--html-layout <layout>', 'A book\'s HTML: single (one page, the default) or split (a page per chapter, in a folder named after the output)')
+		.option('--obsidian-links', 'Read Obsidian [[links]] and ![[image]] embeds (off by default)')
 		.action(async (filename, options) => {
 			await processFile(filename, { ...program.opts(), ...options });
 		});

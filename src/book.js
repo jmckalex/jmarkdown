@@ -924,8 +924,19 @@ function bookWalk(token) {
 		return;
 	}
 	if (token._jmdLoc) setWarningLocation(token._jmdLoc);
+	// An Obsidian [[link]] to a chapter is a chapter link (obsidian-links.js),
+	// from the master's own text too.
+	if (token.type === 'obsidianLink' && token.name) {
+		const other = chapterNamed(token.name);
+		if (other) {
+			token.type = 'jmdChapterLink';
+			token.href = `#jmd-chapter-${other.index}`;
+			token.chapterIndex = other.index;
+			return;
+		}
+	}
 	if (!walkChapter) return;
-	if ((token.type === 'link' || token.type === 'image') && token.href) {
+	if ((token.type === 'link' || token.type === 'image' || token.type === 'obsidianEmbed') && token.href) {
 		const to = rebase(token.href, walkChapter);
 		if (typeof to === 'string') token.href = to;
 		else if (token.type === 'link') {
@@ -954,6 +965,17 @@ export function placeWarningsAt($, el) {
 	const chapter = book.chapters.find((c) => c.index === Number($section.attr('data-chapter')));
 	const line = Number($(el).closest('[data-source-line]').attr('data-source-line')) || null;
 	setWarningLocation({ file: chapter ? chapter.name : $section.attr('data-file'), line });
+}
+
+// The chapter an Obsidian link names, as Obsidian matches a note: its file's
+// path or name, without `.md`, in any case.
+function chapterNamed(name) {
+	const bare = (p) => String(p).replace(/\\/g, '/').replace(/\.md$/i, '').toLowerCase();
+	const wanted = bare(name);
+	return book.chapters.find((c) => {
+		const own = bare(c.name);
+		return own === wanted || own.endsWith(`/${wanted}`) || bare(path.basename(c.name)) === wanted;
+	}) || null;
 }
 
 /** The chapter a walkTokens hook is in, as it runs (smart typography's quotes). */

@@ -98,7 +98,16 @@ sh "$REPO/tests/book/run.sh"
 book_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ]; then
+# 12. obsidian — Obsidian [[links]] and ![[embeds]] (src/obsidian-links.js), off
+#     by default: the host's resolvers through a library call, which switch
+#     wins, a book's chapter links, and a full document through to a PDF.
+#     Gates CI.
+echo "------ obsidian ------"
+sh "$REPO/tests/obsidian/run.sh"
+obsidian_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ] || [ "$obsidian_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi

@@ -8,7 +8,7 @@ JMarkdown is a Node.js Markdown authoring system built on **marked.js v16**. A s
 
 - **Language:** JavaScript (ES modules — `"type": "module"` in `package.json`).
 - **Entry point:** `src/index.js`, exposed as the `jmarkdown` binary via the `bin` field.
-- **CLI:** `jmarkdown process <file.md> [--to html|latex] [--fragment] [-n] [--bibliography <file>]…`, plus `jmarkdown init`, `jmarkdown options`, and `jmarkdown watch <file.md>` (live rebuild + browser reload — see "Watch mode").
+- **CLI:** `jmarkdown process <file.md> [--to html|latex] [--fragment] [-n] [--bibliography <file>]… [--obsidian-links]`, plus `jmarkdown init`, `jmarkdown options`, and `jmarkdown watch <file.md>` (live rebuild + browser reload — see "Watch mode").
 - **No build step.** Source runs directly under Node. No test suite at present (`npm test` is a placeholder).
 
 ## Repository layout
@@ -20,6 +20,7 @@ All source lives in `src/`. Key files:
 | `index.js` | Exports `processFile(filename, options)` (the whole per-file build); the CLI (commander: `process`/`init`/`options`/`watch`) is **guarded behind a main-module check** so importing index.js warms the module graph without building. Extension registration + pipeline orchestration live inside `processFile`. |
 | `book.js` | Book mode: a master and its chapters built as one document (`chapters` option / `--chapter` / the master's `@chapter+(path)` lines). See "Book mode" |
 | `book-pages.js` | A book's `htmlLayout: 'split'`: the finished single document cut into pages — `index.html` (the master's text, the contents), one page per chapter with previous / contents / next, `references.html`, `index-terms.html` — with cross-page links and relative URLs rewritten. See "Book mode" |
+| `obsidian-links.js` | Obsidian `[[links]]` and `![[image]]` embeds, **off by default**; on through processFile's `obsidianLinks` (`true`, or the host's resolvers), `--obsidian-links`, or `Obsidian links: true`. See "Obsidian links and embeds" |
 | `watch.js` | `jmarkdown watch`: the watcher — standby manager, generation-guarded dispatch, chokidar, static server + SSE live-reload. See "Watch mode". |
 | `watch-worker.js` | One-shot warm build worker (forked): imports index.js (warm), reports `ready`, does exactly ONE `processFile` on a `build` message, then exits. |
 | `watch-fs-preload.cjs` | CJS `-r` preload for the worker — patches `fs` reads before any ESM links `fs` (so even `import { readFileSync }` named imports are tracked) to record a build's file dependencies. |
@@ -567,6 +568,41 @@ pasted from a `.tex` file needs no rewriting. One source line is one row.
   pdfLaTeX and LuaLaTeX) and the gating **`tests/tabbing/run.sh`** — Clew's unit
   tests (parser, layout worked by hand from latex.ltx, LaTeX, HTML) plus the
   accents, import-freedom, and `docs/tabbing-layout.js` being current.
+
+### Obsidian links and embeds (`obsidian-links.js`)
+
+**Off by default** (the owner, 2026-10-05: "teach it, Clew switches it on"):
+until switched on the extension claims nothing and its `start()` cuts no
+text, so every document reads exactly as before (the `obsidian/off` fixture's
+goldens were made by the engine before it existed). On through processFile's
+`obsidianLinks` — `true`, or `{ resolveLink, resolveEmbed }` — which wins over
+`--obsidian-links` and an `Obsidian links: true` header or config key (read
+lazily, as `Smart typography` is); `obsidianLinks: false` turns it off whatever
+the header says.
+
+- `[[Note]]`, `[[Note|alias]]`, `[[Note#Heading]]`, `[[Note#^block]]`,
+  `[[#Heading]]` print as their text: the alias, else the name (no `.md`) and
+  its headings joined as Obsidian shows them (`Note > Heading`); a block id is
+  not shown. HTML: `<a class="internal-link" data-href="Note" href>` when the
+  host's `resolveLink(name, { heading, block, target })` returns an href, else
+  text. LaTeX: text (`escapeTexText`). In a book, a link naming a chapter (its
+  path or file name, case aside) becomes a chapter link in both outputs
+  (book.js `chapterNamed`), from the master's text too.
+- `![[x.png]]`, `![[x.png|300]]`, `![[x.png|300x200]]`, `![[x.png|alt|300]]`:
+  an image as a Markdown image renders — `<img src alt>` (with `width`/
+  `height`), `latexGraphic` → `\includegraphics[width=\textwidth]`, or a pixel
+  width as `@image` reads it (300 → 225bp). The name goes through the host's
+  `resolveEmbed(name)`, else stays as written (relative to the file); a book
+  rebases it like any image.
+- Any other embed (`![[Note]]`, a PDF, …) is not transcluded: its text, and a
+  warning naming it.
+- Untouched: code spans and blocks, maths (their tokenizers claim them first),
+  `\[[`. A `[[x.md]]` alone on its line is still a FILE INCLUSION while
+  `File inclusion` is on — that splice runs before parsing; Clew turns it off.
+- Tests: `tests/features/obsidian/` (`links` HTML/tex/stderr, `off` — both
+  compiled by latex-compile with real images) and the gating
+  **`tests/obsidian/run.sh`** (resolvers, switches, a book's links, a full
+  document through to a PDF with the embed and the links).
 
 ### Grouped endnotes (`inline-footnotes.js`)
 Footnotes can be collected into named **groups** and each group **placed** at a

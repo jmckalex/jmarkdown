@@ -124,6 +124,8 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# {mandatory}[optional] (hence \NewDocumentEnvironment), theorem is a
 		# real \newtheorem, \custom is a macro used inside a TeX block.
 		begin-end)         extra='\usepackage{sgame}\usepackage{minted}\newcommand{\custom}[1]{}\newtheorem{theorem}{Theorem}\NewDocumentEnvironment{callout}{m o}{}{}\newenvironment{warning}{}{}\newenvironment{sidebar}[1][]{}{}\newenvironment{aside}{}{}\newenvironment{note}{}{}\newenvironment{subnote}{}{}\newenvironment{panel}{}{}\newenvironment{pull-quote}{}{}\newenvironment{side-bar}{}{}\newenvironment{outerblock}{}{}\newenvironment{middleblock}{}{}\newenvironment{innerblock}{}{}'; needs='sgame.sty minted.sty' ;;
+		# obsidian: ![[embeds]] are real images (frame.png beside the fixture).
+		obsidian)          extra='\usepackage{graphicx}\usepackage{minted}'; needs='graphicx.sty minted.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -140,7 +142,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ] || [ "$category" = "at-directives" ] || [ "$category" = "indexing" ] || [ "$category" = "media" ]; then
+	if [ "$category" = "obsidian" ] || [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ] || [ "$category" = "at-directives" ] || [ "$category" = "indexing" ] || [ "$category" = "media" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
