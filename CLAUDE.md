@@ -17,7 +17,7 @@ All source lives in `src/`. Key files:
 
 | File | Role |
 |---|---|
-| `index.js` | Exports `processFile(filename, options)` (the whole per-file build); the CLI (commander: `process`/`init`/`options`/`watch`) is **guarded behind a main-module check** so importing index.js warms the module graph without building. Extension registration + pipeline orchestration live inside `processFile`. |
+| `index.js` | Exports `processFile(filename, options)` (the whole per-file build); the CLI (commander: `process`/`init`/`options`/`watch`) is **guarded behind a main-module check** so importing index.js warms the module graph without building. Extension registration + pipeline orchestration live inside `processFile`. **One build per process, by design** (the owner, 2026-10-06): watch mode forks a fresh worker per build, and Clew's export worker and iOS's engine worker are one build per process too. A second call in the same process is unsupported — marked's registrations, the header's config, post-process scripts and the shared script context all carry over — so a test that calls it as a library runs each build in its own `node` process. |
 | `book.js` | Book mode: a master and its chapters built as one document (`chapters` option / `--chapter` / the master's `@chapter+(path)` lines). See "Book mode" |
 | `book-pages.js` | A book's `htmlLayout: 'split'`: the finished single document cut into pages — `index.html` (the master's text, the contents), one page per chapter with previous / contents / next, `references.html`, `index-terms.html` — with cross-page links and relative URLs rewritten. See "Book mode" |
 | `obsidian-links.js` | Obsidian `[[links]]` and `![[image]]` embeds, **off by default**; on through processFile's `obsidianLinks` (`true`, or the host's resolvers), `--obsidian-links`, or `Obsidian links: true`. See "Obsidian links and embeds" |
@@ -623,11 +623,7 @@ the header says.
   compiled by latex-compile with real images) and the gating
   **`tests/obsidian/run.sh`** (resolvers and the `file` they are given,
   switches, a book's links, a book's image paths from `build/` and from split
-  pages, a full document through to a PDF with the embed and the links). It
-  builds each new case in a process of its own, as watch mode's worker does:
-  a `processFile` call after a LaTeX build in the same process keeps the
-  LaTeX renderer and rebases a book's paths a second time (seen 2026-10-06;
-  not fixed).
+  pages, a full document through to a PDF with the embed and the links).
 
 ### Grouped endnotes (`inline-footnotes.js`)
 Footnotes can be collected into named **groups** and each group **placed** at a

@@ -52,8 +52,10 @@ RESOLVERS="const obsidianLinks = {
 		: name.toLowerCase() + '.html' + (heading ? '#' + heading.toLowerCase().replace(/ /g, '-') : ''),
 	resolveEmbed: (name) => path.resolve('images', name),
 };"
-lib resolved "$RESOLVERS
-	await processFile('note.md', { to: 'html', fragment: true, output: 'resolved.html', obsidianLinks });
+# One build per process (processFile's design; CLAUDE.md), so one lib run each.
+lib resolved-html "$RESOLVERS
+	await processFile('note.md', { to: 'html', fragment: true, output: 'resolved.html', obsidianLinks });"
+lib resolved-tex "$RESOLVERS
 	await processFile('note.md', { to: 'latex', fragment: true, output: 'resolved.tex', obsidianLinks });"
 has   "resolver/link" "$V/resolved.html" '<a class="internal-link" data-href="Welcome" href="welcome.html#the-guide">Welcome &gt; The guide</a>'
 has   "resolver/declined-is-text" "$V/resolved.html" 'and Missing.'
@@ -77,7 +79,7 @@ has   "file/note-relative" "$V/file-note.html" 'src="images/frame.png"'
 # --- a book's paths (pictures.md). The resolver answers relative to the chapter, and every image (the
 #     master's own, the chapter's embed, its Markdown image) reaches the right file from where each
 #     output is read: from build/, where a host writes and compiles the .tex, and from each split
-#     page. No absolute path in either. Each build in a process of its own (see CLAUDE.md). ----------
+#     page. No absolute path in either. ------------------------------------------------------------
 mkdir -p "$V/build" "$V/site"
 lib paths-tex "$FILES
 	await processFile('pictures.md', { to: 'latex', output: 'build/Book.tex', obsidianLinks });
