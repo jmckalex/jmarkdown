@@ -10,15 +10,24 @@
 	    really is, so a lexical count missed whenever a symlink stood on either
 	    side (an output under os.tmpdir(): /var/folders/… is /private/var/…). On
 	    stdout there is no folder: the absolute path, with a warning.
-	  - HTML (htmlCachePath): relative to the output's folder AS GIVEN. A
-	    browser resolves `..` on the page's URL, lexically, so here the lexical
-	    count is the right one. A split book's are the master's, since
-	    book-pages.js rebases every relative URL onto each page's folder from
-	    the master's; on stdout, the note's, as they always were.
+	  - HTML (htmlCachePath): relative to the output's folder, counted from
+	    real paths too. The two ends can arrive by different routes to the
+	    same place — the output's folder from the working directory, which
+	    Node reports by its real path (/private/var/…), a configured cache as
+	    written (/var/…) — and a lexical count between them climbed to the
+	    root and named every folder on the way. A split book's are the
+	    master's, since book-pages.js rebases every relative URL onto each
+	    page's folder from the master's; on stdout, the note's, as they always
+	    were.
 
 	With the output beside the note both give `<kind>/<file>`, as before. Written
 	elsewhere, an HTML page used to point at `<kind>/<file>` beside ITSELF, where
 	nothing was: its images were broken.
+
+	Where the cache is (cacheDir): `<Cache directory>/<kind>/`, the `Cache
+	directory` being the note's folder (a book's: the master's) unless the
+	config or a host names another — so a host can keep what the engine makes
+	out of the user's folders. A header cannot set it (config-manager.js).
 */
 
 import fs from 'fs';
@@ -41,6 +50,20 @@ function realPath(p) {
 }
 
 const slashes = (p) => p.split(path.sep).join('/');
+
+/**
+ * The cache folder for one kind of file ('MetaPost', 'TiKZ', 'mermaid',
+ * 'Video', 'Mathematica'), created if need be: under the `Cache directory`
+ * when one is set (a relative one against the working directory), else
+ * beside the note.
+ */
+export function cacheDir(kind) {
+	const configured = configManager.get('Cache directory');
+	const root = configured ? path.resolve(process.cwd(), String(configured)) : noteDir();
+	const dir = path.join(root, kind);
+	fs.mkdirSync(dir, { recursive: true });
+	return dir;
+}
 
 /** `target` as found from the folder of the .tex at `out`, counted from real paths. */
 export function texRelative(out, target) {
@@ -72,7 +95,7 @@ export function htmlCachePath(abs) {
 	const out = configManager.get('Output file');
 	const split = getBook() && bookLayout() === 'split';
 	const from = out && !split ? path.dirname(out) : noteDir();
-	return urlPath(slashes(path.relative(from, abs)));
+	return urlPath(slashes(path.relative(realPath(from), realPath(abs))));
 }
 
 /**

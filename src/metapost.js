@@ -32,13 +32,9 @@ import { requirePackage } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { addWarning } from './warnings.js';
 import { escapeLatexPath } from './latex-graphics.js';
-import { texCachePath, htmlCachePath, compileInRunDir } from './figure-cache.js';
+import { texCachePath, htmlCachePath, compileInRunDir, cacheDir } from './figure-cache.js';
 
 const MP_DIR_NAME = 'MetaPost';
-
-function ensureDirectoryExists(dirPath) {
-	if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
 
 function generateHash(string) {
 	return crypto.createHash('md5').update(string).digest('hex');
@@ -46,10 +42,7 @@ function generateHash(string) {
 
 // The cache directory ('MetaPost/' next to the markdown file), created on demand.
 function metapostDir() {
-	const home = configManager.get('Markdown file directory');
-	const dir = path.join(home, MP_DIR_NAME);
-	ensureDirectoryExists(dir);
-	return dir;
+	return cacheDir(MP_DIR_NAME);
 }
 
 // The cached outputs for a hash: files "<hash>-N.<ext>" in document (figure) order.

@@ -6,7 +6,7 @@ import { execFileSync } from 'child_process';
 import crypto from 'crypto';
 import { configManager } from './config-manager.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
-import { htmlCachePath } from './figure-cache.js';
+import { htmlCachePath, cacheDir } from './figure-cache.js';
 import Mustache from 'mustache';
 import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
 
@@ -84,8 +84,7 @@ export function createMathematica(marker) {
 				token['InlineMath'] = true;
 			}
 			text = mathematica_code_header + text; //.replace("\n", '');
-			const home_directory = configManager.get('Markdown file directory');
-			const mathematica_directory = path.join(home_directory, "Mathematica");
+			const mathematica_directory = cacheDir('Mathematica');
 			const hash = generateHash(text);
 			const file_name = path.join(mathematica_directory, `${hash}.m`);
 			const svg_name = file_name.replace('.m', '.svg');
@@ -186,8 +185,7 @@ export function createMathematica(marker) {
 				        </div>`;
 				}
 				else {
-					const home_directory = configManager.get('Markdown file directory');
-					const mathematica_directory = path.join(home_directory, "Mathematica");
+					const mathematica_directory = cacheDir('Mathematica');
 					const svg_file_name = path.basename(token['file name']).replace('.m', '.svg');
 					const svg_full_path = path.join(mathematica_directory, svg_file_name);
 					const png_file_name = path.basename(token['file name']).replace('.m', '.png');
@@ -341,8 +339,7 @@ export const inlineMathematica = {
 					text: ''
 				};
 			}
-			const home_directory = configManager.get('Markdown file directory');
-			const mathematica_directory = path.join(home_directory, "Mathematica");
+			const mathematica_directory = cacheDir('Mathematica');
 			const opts = { cwd: mathematica_directory };
 			//const file_name = path.join(mathematica_directory, `file-${file_index++}.m`);
 			
@@ -446,8 +443,7 @@ export const inlineMathematica = {
 		        </div>`;
 		}
 		else {
-			const home_directory = configManager.get('Markdown file directory');
-			const mathematica_directory = path.join(home_directory, "Mathematica");
+			const mathematica_directory = cacheDir('Mathematica');
 			const svg_file_name = path.basename(token['file name']).replace('.m', '.svg');
 			const svg_full_path = path.join(mathematica_directory, svg_file_name);
 			const png_file_name = path.basename(token['file name']).replace('.m', '.png');

@@ -79,7 +79,7 @@ import { requirePackage } from './preamble.js';
 import { escapeLatexText } from './latex-escape.js';
 import { latexGraphic, resolveGraphic, isRemote, markdownDir, escapeLatexPath, texPath } from './latex-graphics.js';
 import { addWarning } from './warnings.js';
-import { compileInRunDir } from './figure-cache.js';
+import { compileInRunDir, cacheDir, texCachePath } from './figure-cache.js';
 
 const VIDEO_DIR_NAME = 'Video';
 
@@ -365,9 +365,10 @@ function extractPoster(file) {
 	const stamp = crypto.createHash('md5')
 		.update(`${path.resolve(file)}|${st.size}|${st.mtimeMs}`)
 		.digest('hex').slice(0, 16);
-	const rel = `${VIDEO_DIR_NAME}/${stamp}-poster.png`;
-	const out = path.join(markdownDir(), rel);
-	if (fs.existsSync(out)) return rel;
+	// In the cache (figure-cache.js cacheDir), by its absolute path: the
+	// .tex refers to it through texCachePath.
+	const out = path.join(cacheDir(VIDEO_DIR_NAME), `${stamp}-poster.png`);
+	if (fs.existsSync(out)) return out;
 
 	if (!hasFFmpeg()) {
 		addWarning('@video: no poster given and ffmpeg is not installed — the LaTeX output has no still frame');
@@ -385,7 +386,7 @@ function extractPoster(file) {
 			return [];
 		}
 	});
-	if (fs.existsSync(out)) return rel;
+	if (fs.existsSync(out)) return out;
 	if (failure) addWarning(`@video: could not extract a poster frame from ${path.basename(file)} (${failure.message.split('\n')[0]})`);
 	return null;
 }
@@ -439,6 +440,9 @@ function videoLatex(ctx) {
 	// The poster: an explicit {poster=…}/{tex-poster=…}, else a cached still.
 	const posterAttr = own.poster ?? pass.poster;
 	let poster = posterAttr ? String(posterAttr) : (exists ? extractPoster(file) : null);
+	// An extracted still is the engine's, in its cache (an absolute path); an
+	// author's poster is a path as written, like any image's.
+	const cachedPoster = !posterAttr && poster !== null;
 	if (poster && !fs.existsSync(path.resolve(markdownDir(), poster))) {
 		addWarning(`@video: poster ${poster} was not found`);
 		poster = null;
@@ -455,7 +459,7 @@ function videoLatex(ctx) {
 	// (latex-graphics.js texPath). The checks above read the master's.
 	const opts = latexOptions(dims, own, 'video');
 	const posterBox = poster
-		? `\\includegraphics${opts.length ? `[${opts.join(',')}]` : ''}{${escapeLatexPath(texPath(poster))}}`
+		? `\\includegraphics${opts.length ? `[${opts.join(',')}]` : ''}{${escapeLatexPath(cachedPoster ? texCachePath(poster) : texPath(poster))}}`
 		: null;
 	if (posterBox) requirePackage('graphicx');
 	const caption = escapeLatexText(alt || src);

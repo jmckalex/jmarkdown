@@ -130,7 +130,10 @@ dotlabel.rt(btex $x^2 + y^2$ etex, (40,25));
 When JMarkdown meets a `metapost` block, it runs a small, deterministic pipeline. The
 working directory for all of it is a folder named `MetaPost/`, created automatically
 **beside the Markdown file being processed** (not the directory you ran the command
-from). The steps, for the **web/SVG** path, are:
+from) — or, if the `Cache directory` configuration key names a folder, inside that
+one instead (set in `.jmarkdown/config.json`, never in a document header, so that
+what JMarkdown makes can be kept out of your own folders). The steps, for the
+**web/SVG** path, are:
 
 1. **Assemble the program** described above, prefixed with the two lines that tell
    MetaPost to emit SVG:

@@ -143,7 +143,9 @@ Two things follow from this template:
 When JMarkdown meets a `TiKZ` block, it runs a small, deterministic pipeline. The
 working directory for all of it is a folder named `TiKZ/`, created automatically
 **beside the Markdown file being processed** (not the directory you ran the
-command from). The steps are:
+command from) — or, if the `Cache directory` configuration key names a folder,
+inside that one instead (set in `.jmarkdown/config.json`, never in a document
+header). The steps are:
 
 1. **Build the standalone document** shown above and compute an MD5 **hash** of
    its complete contents. That hash is the diagram's identity — change a single

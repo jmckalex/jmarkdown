@@ -12,7 +12,7 @@ import crypto from 'crypto';
 import { configManager } from './config-manager.js';
 import { requirePackage, addPreamble } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
-import { htmlCachePath, compileInRunDir } from './figure-cache.js';
+import { htmlCachePath, compileInRunDir, cacheDir } from './figure-cache.js';
 import Mustache from 'mustache';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -81,8 +81,7 @@ function createTiKZ(marker) {
 			const opts = { 'TiKZ': text, 'LaTeX_preamble': configManager.get('LaTeX preamble') };
 			const file_contents = Mustache.render(LaTeX_template, opts);
 
-			const home_directory = configManager.get('Markdown file directory');
-			const TiKZ_directory = path.join(home_directory, "TiKZ");
+			const TiKZ_directory = cacheDir('TiKZ');
 			const hash = generateHash(file_contents);
 			const file_name = path.join(TiKZ_directory, `${hash}.tex`);
 			const svg_name = file_name.replace('.tex', '.svg');
@@ -170,8 +169,7 @@ function createTiKZ(marker) {
 				        </div>`;
 				}
 				else {
-					const home_directory = configManager.get('Markdown file directory');
-					const TiKZ_directory = path.join(home_directory, "TiKZ");
+					const TiKZ_directory = cacheDir('TiKZ');
 					const svg_file_name = path.basename(token['file name']).replace('.tex', '.svg');
 					const svg_full_path = path.join(TiKZ_directory, svg_file_name);
 

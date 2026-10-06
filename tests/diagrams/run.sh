@@ -61,6 +61,8 @@ have_tex=no
 command -v pdflatex >/dev/null 2>&1 && have_tex=yes
 have_tikz=no
 command -v lualatex >/dev/null 2>&1 && command -v dvisvgm >/dev/null 2>&1 && have_tikz=yes
+have_ffmpeg=no
+command -v ffmpeg >/dev/null 2>&1 && have_ffmpeg=yes
 
 # srcs FILE — every <img src> in FILE that is a path, one per line.
 srcs() { grep -o '<img[^>]* src="[^"]*"' "$1" | sed 's/.* src="//; s/"$//' | grep -v '^data:'; }
@@ -252,6 +254,52 @@ EOF2
 
 else
 	skip "runs/side-writes-discarded" "no mpost/mptopdf or no lualatex/dvisvgm"
+fi
+
+# --- `Cache directory` (config only): the cache kept outside the note's folder ---------------------
+#     A project config names it; nothing is written beside the note, the HTML's images and the
+#     .tex's \includegraphics reach into it, and the .tex still compiles where it is written.
+
+if [ "$have_mp" = yes ] && [ "$have_tikz" = yes ]; then
+	C="$SCRATCH/cachedir"
+	mkdir -p "$C/vault/.jmarkdown" "$C/vault/build" "$C/store"
+	printf '{ "Cache directory": "%s" }\n' "$C/store" >"$C/vault/.jmarkdown/config.json"
+	cp "$SCRATCH/html/note.md" "$C/vault/note.md"
+	[ -f "$REPO/tests/features/media/tiny.mp4" ] && cp "$REPO/tests/features/media/tiny.mp4" "$C/vault/tiny.mp4"
+	printf '\n@video+(tiny.mp4)[A clip]{tex-mode=poster}\n' >>"$C/vault/note.md"
+	jmd "$C/vault" process note.md --fragment -o note.html || fail "cache-dir/html-exit" "$(cat "$C/vault/err.txt")"
+	jmd "$C/vault" process note.md --to latex -o build/note.tex || fail "cache-dir/latex-exit" "$(cat "$C/vault/err.txt")"
+	beside=$(ls -d "$C/vault/MetaPost" "$C/vault/TiKZ" "$C/vault/Video" "$C/vault/mermaid" 2>/dev/null)
+	if [ -z "$beside" ]; then pass "cache-dir/nothing-beside-the-note"; else fail "cache-dir/nothing-beside-the-note" "$beside"; fi
+	if [ -d "$C/store/MetaPost" ] && [ -d "$C/store/TiKZ" ]; then pass "cache-dir/kept-there"; else fail "cache-dir/kept-there" "$(ls "$C/store")"; fi
+	has      "cache-dir/html-src" "$C/vault/note.html" '<img src="../store/MetaPost/'
+	resolves "cache-dir/html-resolves" "$C/vault/note.html"
+	has      "cache-dir/tex-relative" "$C/vault/build/note.tex" '{../../store/MetaPost/'
+	hasnt    "cache-dir/tex-no-absolute" "$C/vault/build/note.tex" "$REAL"
+	if [ "$have_ffmpeg" = yes ]; then
+		has "cache-dir/poster-in-cache" "$C/vault/build/note.tex" '{../../store/Video/'
+	fi
+	if [ "$have_tex" = yes ]; then
+		if (cd "$C/vault/build" && pdflatex -interaction=nonstopmode -halt-on-error note.tex >/dev/null 2>&1); then
+			pass "cache-dir/compiles-where-written"
+		else
+			fail "cache-dir/compiles-where-written" "$(grep -m3 '^!' "$C/vault/build/note.log")"
+		fi
+	fi
+	# A relative Cache directory is the working directory's.
+	mkdir -p "$C/rel/.jmarkdown"
+	printf '{ "Cache directory": "kept" }\n' >"$C/rel/.jmarkdown/config.json"
+	printf -- '---\nTitle: Relative\n---\n\n@begin(metapost)\ndraw unitsquare scaled 4cm;\n@end(metapost)\n' >"$C/rel/note.md"
+	jmd "$C/rel" process note.md --fragment -o note.html || fail "cache-dir/relative-exit" "$(cat "$C/rel/err.txt")"
+	if [ -d "$C/rel/kept/MetaPost" ]; then pass "cache-dir/relative-to-cwd"; else fail "cache-dir/relative-to-cwd" "$(ls "$C/rel")"; fi
+	# A header cannot move it: ignored, with a warning.
+	mkdir -p "$C/hdr"
+	printf -- '---\nTitle: Header\nCache directory: %s\n---\n\n@begin(metapost)\ndraw unitsquare scaled 5cm;\n@end(metapost)\n' "$C/elsewhere" >"$C/hdr/note.md"
+	jmd "$C/hdr" process note.md --fragment -o note.html || fail "cache-dir/header-exit" "$(cat "$C/hdr/err.txt")"
+	has "cache-dir/header-warned" "$C/hdr/err.txt" 'Cache directory: where the engine keeps the figures it makes is set in .jmarkdown/config.json or by the host'
+	if [ -d "$C/hdr/MetaPost" ] && [ ! -e "$C/elsewhere" ]; then pass "cache-dir/header-ignored"; else fail "cache-dir/header-ignored" "$(ls "$C/hdr") / elsewhere: $(ls "$C/elsewhere" 2>&1)"; fi
+else
+	skip "cache-dir/nothing-beside-the-note" "no mpost/mptopdf or no lualatex/dvisvgm"
 fi
 
 # --- mmdc missing: the diagram is left out, with a build warning naming it -------------------------

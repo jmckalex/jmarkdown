@@ -13,7 +13,7 @@ import { requirePackage } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { addWarning } from './warnings.js';
 import { escapeLatexPath } from './latex-graphics.js';
-import { texCachePath, compileInRunDir } from './figure-cache.js';
+import { texCachePath, compileInRunDir, cacheDir } from './figure-cache.js';
 
 // Run mmdc without a shell where a shell is the danger: the paths are under the
 // document's own folder, whose name is the document's to choose, and a POSIX
@@ -79,8 +79,7 @@ function renderMermaidLatex(source) {
 		addWarning(`mermaid: ${diagramName(source)} left out of the LaTeX — mermaid-cli (mmdc) was not found; install @mermaid-js/mermaid-cli to render mermaid for print`);
 		return '';
 	}
-	const dir = path.join(configManager.get('Markdown file directory'), 'mermaid');
-	if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+	const dir = cacheDir('mermaid');
 	const hash = crypto.createHash('sha1').update(source).digest('hex').slice(0, 16);
 	const pdf = path.join(dir, `${hash}.pdf`);
 	if (!fs.existsSync(pdf)) {
