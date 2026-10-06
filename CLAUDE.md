@@ -149,7 +149,14 @@ golden is untouched).
   becomes a chapter link (`#jmd-chapter-N`; LaTeX `\hyperref` to the chapter's
   `\phantomsection\label`). Known limit: a file a chapter INCLUDES from a
   subfolder has its paths resolved against the chapter's folder, as any
-  inclusion's are against its includer.
+  inclusion's are against its includer. Each output then reads them from
+  where it is read: a split book's pages from their folder (book-pages.js),
+  and a book's LaTeX from the `.tex`'s folder, since LaTeX runs there and
+  kpathsea never searches TEXINPUTS for a `./`/`../` name (`texPath`,
+  latex-graphics.js — markdown images, `@image`, `@video`'s file and poster,
+  embeds; a host builds into `build/`). A book on stdout keeps the master's
+  paths, with a warning; single files print their paths as given. Mermaid and
+  MetaPost include their cached PDFs by absolute path, so they never needed it.
 - **Numbering** (`Numbering:` in the master's header — its key matched loosely,
   so YAML's `numbering:` counts, in a book only — or processFile's `numbering`
   option): `per chapter` (the default — Figure 2.3, as the book
@@ -598,8 +605,13 @@ the header says.
   an image as a Markdown image renders — `<img src alt>` (with `width`/
   `height`), `latexGraphic` → `\includegraphics[width=\textwidth]`, or a pixel
   width as `@image` reads it (300 → 225bp). The name goes through the host's
-  `resolveEmbed(name)`, else stays as written (relative to the file); a book
-  rebases it like any image.
+  `resolveEmbed(name, { file })`, else stays as written (relative to the
+  file). `file` is the absolute path of the file the embed is written in —
+  the note, or in a book the chapter (book.js `currentLexChapter`); null on
+  stdin. A RELATIVE answer is relative to that file and is then handled as a
+  Markdown image written there: a book rebases it (G10, the split pages, the
+  `.tex`'s folder). So a host can keep its users' absolute paths out of the
+  files they export.
 - Any other embed (`![[Note]]`, a PDF, …) is not transcluded: its text, and a
   warning naming it.
 - Untouched: code spans and blocks, maths (their tokenizers claim them first),
@@ -607,8 +619,13 @@ the header says.
   `File inclusion` is on — that splice runs before parsing; Clew turns it off.
 - Tests: `tests/features/obsidian/` (`links` HTML/tex/stderr, `off` — both
   compiled by latex-compile with real images) and the gating
-  **`tests/obsidian/run.sh`** (resolvers, switches, a book's links, a full
-  document through to a PDF with the embed and the links).
+  **`tests/obsidian/run.sh`** (resolvers and the `file` they are given,
+  switches, a book's links, a book's image paths from `build/` and from split
+  pages, a full document through to a PDF with the embed and the links). It
+  builds each new case in a process of its own, as watch mode's worker does:
+  a `processFile` call after a LaTeX build in the same process keeps the
+  LaTeX renderer and rebases a book's paths a second time (seen 2026-10-06;
+  not fixed).
 
 ### Grouped endnotes (`inline-footnotes.js`)
 Footnotes can be collected into named **groups** and each group **placed** at a

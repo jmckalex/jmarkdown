@@ -23,8 +23,14 @@
 	resolveEmbed }`) each take the name as written and return a string, or
 	nothing to decline:
 	  resolveLink(name, { heading, block, target })  → an href
-	  resolveEmbed(name)                              → a path (absolute, or
-	                                                    relative to the file) or URL
+	  resolveEmbed(name, { file })                    → a path or URL
+	`file` is the ABSOLUTE path of the file the embed is written in: the note,
+	or in a book the chapter (null for stdin). A relative path returned is
+	relative to that file, and is then handled exactly as a Markdown image's
+	path written there: rebased onto the master's folder in a book (book.js),
+	then onto each page's folder in a split book (book-pages.js) or the .tex's
+	folder in a book's LaTeX (latex-graphics.js texPath). A host that returns
+	relative paths keeps its own absolute paths out of the files it exports.
 
 	Code spans and blocks and maths are never seen: their tokenizers claim them
 	first. `\[[` is literal. A `[[x.md]]` alone on its line is still a file
@@ -36,6 +42,8 @@ import { configManager } from './config-manager.js';
 import { addWarning } from './warnings.js';
 import { escapeTexText } from './latex-escape.js';
 import { latexGraphic } from './latex-graphics.js';
+import { currentLexChapter } from './book.js';
+import path from 'path';
 
 // The build's processFile option: undefined when it gave none.
 let hostOption;
@@ -88,6 +96,15 @@ function embedOptions(alias, name) {
 	return { width, height, alt: alt ?? name.split('/').pop() };
 }
 
+// The file an embed is written in, for the host's resolveEmbed: the chapter
+// being lexed in a book, else the note itself — absolute, or null on stdin.
+function embedFile() {
+	const chapter = currentLexChapter();
+	if (chapter) return chapter.abs;
+	const note = global.current_file;
+	return note && note !== '<stdin>' ? path.resolve(note) : null;
+}
+
 // Screen pixels in print, as media.js reads them: 96 to the inch, so 3/4 bp.
 const bp = (px) => `${Math.round(px * 75) / 100}bp`;
 
@@ -107,7 +124,7 @@ export const obsidianLinks = {
 		const alias = m[3] ?? null;
 		if (m[1] && IMAGE.test(target.name)) {
 			const { width, height, alt } = embedOptions(alias, target.name);
-			const href = resolver('resolveEmbed')?.(target.name) || target.name;
+			const href = resolver('resolveEmbed')?.(target.name, { file: embedFile() }) || target.name;
 			return { type: 'obsidianEmbed', raw: m[0], href: String(href), alt, width, height };
 		}
 		const text = linkText(target, m[1] ? null : alias);

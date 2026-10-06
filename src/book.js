@@ -122,7 +122,7 @@ function masterSetting(name) {
 	return key === undefined ? undefined : configManager.config[key];
 }
 
-export function resetBook() { book = null; }
+export function resetBook() { book = null; lexChapter = null; }
 
 const START = (n) => `<!-- jmd:chapter ${n} -->`;
 const END = '<!-- jmd:end-chapter -->';
@@ -470,6 +470,13 @@ function mapArrays(value, line, map) {
 	}
 }
 
+// The chapter being lexed, for a tokenizer that needs its file (an Obsidian
+// embed's, for the host's resolveEmbed); null in the master's own text.
+let lexChapter = null;
+
+/** The chapter whose text is being lexed, as a tokenizer runs; else null. */
+export function currentLexChapter() { return lexChapter; }
+
 class BookLexer extends marked.Lexer {
 	constructor(options, chapter) {
 		super(options);
@@ -481,6 +488,7 @@ class BookLexer extends marked.Lexer {
 	// each block's inline content at that block's line.
 	lex(src) {
 		src = src.replace(/\r\n|\r/g, '\n');
+		lexChapter = this.chapter;
 		const where = this.chapter ? { file: this.chapter.name } : null;
 		setWarningLocation(where);
 		this.blockTokens(src, this.tokens);
@@ -500,6 +508,7 @@ class BookLexer extends marked.Lexer {
 		}
 		this.inlineQueue = [];
 		setWarningLocation(null);
+		lexChapter = null;
 		return this.tokens;
 	}
 }

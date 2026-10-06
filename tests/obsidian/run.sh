@@ -7,7 +7,9 @@
 #
 # vault/ is a small vault: notes/Welcome.md and notes/Second.md, an image in
 # images/ (where only a resolver finds it), book.md (a master over the two
-# notes) and note.md (a single note).
+# notes) and note.md (a single note). pictures.md is a master with an image
+# of its own over notes/Pictures.md, which embeds one image through the
+# resolver and links another as a Markdown image, for a book's paths.
 #
 # Usage:  sh tests/obsidian/run.sh
 
@@ -59,6 +61,47 @@ has   "resolver/embed" "$V/resolved.html" "src=\"$VREAL/images/frame.png\""
 has   "resolver/latex-link-is-text" "$V/resolved.tex" 'See Welcome \textgreater{} The guide and Missing.'
 has   "resolver/latex-embed" "$V/resolved.tex" "\\includegraphics[width=90bp]{$VREAL/images/frame.png}"
 
+# --- the file an embed is written in: the note, or in a book the chapter (absolute) ----------------------
+FILES="import fs from 'fs';
+const seen = [];
+const obsidianLinks = {
+	resolveEmbed: (name, { file }) => { seen.push(file); return path.relative(path.dirname(file), path.resolve('images', name)); },
+};"
+lib file-note "$FILES
+	await processFile('note.md', { to: 'html', fragment: true, output: 'file-note.html', obsidianLinks });
+	fs.writeFileSync('file-note.txt', seen.join('\\n') + '\\n');"
+has   "file/note" "$V/file-note.txt" "$VREAL/note.md"
+# A relative answer is the note's, as a Markdown image's path written there.
+has   "file/note-relative" "$V/file-note.html" 'src="images/frame.png"'
+
+# --- a book's paths (pictures.md). The resolver answers relative to the chapter, and every image (the
+#     master's own, the chapter's embed, its Markdown image) reaches the right file from where each
+#     output is read: from build/, where a host writes and compiles the .tex, and from each split
+#     page. No absolute path in either. Each build in a process of its own (see CLAUDE.md). ----------
+mkdir -p "$V/build" "$V/site"
+lib paths-tex "$FILES
+	await processFile('pictures.md', { to: 'latex', output: 'build/Book.tex', obsidianLinks });
+	fs.writeFileSync('file-book.txt', seen.join('\\n') + '\\n');"
+has   "file/chapter" "$V/file-book.txt" "$VREAL/notes/Pictures.md"
+has   "paths/tex-master-image" "$V/build/Book.tex" 'The cover: \includegraphics[width=\textwidth]{../images/cover.png}'
+has   "paths/tex-embed" "$V/build/Book.tex" 'Embedded: \includegraphics[width=225bp]{../images/frame.png}'
+has   "paths/tex-image" "$V/build/Book.tex" 'Linked: \includegraphics[width=\textwidth]{../images/shot.png}'
+hasnt "paths/tex-no-absolute" "$V/build/Book.tex" "$VREAL"
+lib paths-split "$FILES
+	await processFile('pictures.md', { to: 'html', output: 'site/pictures.html', htmlLayout: 'split', obsidianLinks });"
+has   "paths/split-master-image" "$V/site/pictures/index.html" '<img src="../../images/cover.png" alt="The cover">'
+has   "paths/split-embed" "$V/site/pictures/Pictures.html" '<img src="../../images/frame.png" alt="frame.png" width="300">'
+has   "paths/split-image" "$V/site/pictures/Pictures.html" '<img src="../../images/shot.png" alt="A shot">'
+hasnt "paths/split-no-absolute" "$V/site/pictures/Pictures.html" "$VREAL"
+# A book's LaTeX on stdout has no folder to rebase onto: the master's paths, and a warning saying so.
+(cd "$V" && HOME="$SCRATCH/home" node "$JMD" process - --to latex --obsidian-links <pictures.md >stdout.tex 2>stdout.err) \
+	|| fail "paths/stdout-exit" "$(cat "$V/stdout.err")"
+has   "paths/stdout-master-relative" "$V/stdout.tex" 'Linked: \includegraphics[width=\textwidth]{images/shot.png}'
+has   "paths/stdout-warned" "$V/stdout.err" 'the LaTeX goes to stdout'
+# A single file's LaTeX writes its paths as given, wherever it is written.
+(cd "$V" && HOME="$SCRATCH/home" node "$JMD" process note.md --to latex --fragment --obsidian-links -o build/note.tex >/dev/null 2>&1)
+has   "paths/single-file-as-given" "$V/build/note.tex" '\includegraphics[width=90bp]{frame.png}'
+
 # --- which switch wins: the option, then the header or config --------------------------------------------
 lib off "await processFile('book.md', { to: 'html', fragment: true, output: 'off.html', obsidianLinks: false });"
 has   "switch/option-false-beats-header" "$V/off.html" 'Start with [[Welcome]].'
@@ -96,6 +139,18 @@ if command -v pdflatex >/dev/null 2>&1 && command -v pdftotext >/dev/null 2>&1; 
 		if [ "${images:-0}" -ge 1 ]; then pass "pdf/image-included"; else fail "pdf/image-included" "no image in the PDF"; fi
 	else
 		fail "pdf/compiles" "$(grep -m3 '^!' "$V/pdf.log")"
+	fi
+fi
+
+# --- the book compiled where its .tex is: build/. All three images are found and included -------------
+if command -v pdflatex >/dev/null 2>&1 && command -v pdfimages >/dev/null 2>&1; then
+	if (cd "$V/build" && sed -e '/fontspec/d' -e '/setmainfont/d' Book.tex >book-pdf.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error book-pdf.tex >/dev/null 2>&1); then
+		pass "paths/pdf-compiles-in-build"
+		images=$(pdfimages -list "$V/build/book-pdf.pdf" 2>/dev/null | tail -n +3 | wc -l | tr -d ' ')
+		if [ "${images:-0}" -ge 3 ]; then pass "paths/pdf-all-images"; else fail "paths/pdf-all-images" "$images image(s) in the PDF, 3 expected"; fi
+	else
+		fail "paths/pdf-compiles-in-build" "$(grep -m3 '^!' "$V/build/book-pdf.log")"
 	fi
 fi
 

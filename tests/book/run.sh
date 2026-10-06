@@ -114,6 +114,28 @@ if command -v pdflatex >/dev/null 2>&1; then
 	if [ -f "$B/book.pdf" ]; then pass "latex/compiles"; else fail "latex/compiles" "$(grep -m3 '^!' "$B/book.log")"; fi
 fi
 
+# --- LaTeX written to another folder: LaTeX runs beside the .tex, so a book's paths are given from
+#     there (latex-graphics.js texPath). Beside the master they are as before. -----------------------
+
+has   "latex/paths-beside-master" "$L" '\includegraphics[width=\textwidth]{chapters/img/f.png}'
+mkdir -p "$B/build"
+build build/latex --to latex
+BL="$B/build/latex.out"
+has   "latex-elsewhere/image" "$BL" 'a figure \includegraphics[width=\textwidth]{../chapters/img/f.png}, another'
+has   "latex-elsewhere/at-image" "$BL" 'another \includegraphics[width=0.2\linewidth]{../chapters/img/f.png}'
+has   "latex-elsewhere/included-image" "$BL" "the including chapter's: \\includegraphics[width=\\textwidth]{../chapters/img/f.png}"
+hasnt "latex-elsewhere/none-master-relative" "$BL" '{chapters/img/f.png}'
+if command -v pdflatex >/dev/null 2>&1; then
+	(cd "$B/build" && cp latex.out book.tex && pdflatex -shell-escape -interaction=nonstopmode -halt-on-error book.tex >/dev/null 2>&1)
+	if [ -f "$B/build/book.pdf" ]; then pass "latex-elsewhere/compiles-in-build"; else fail "latex-elsewhere/compiles-in-build" "$(grep -m3 '^!' "$B/build/book.log")"; fi
+fi
+# @video's file too (link mode: a launch action, read from the PDF beside the .tex).
+mkdir -p "$SCRATCH/media/notes" "$SCRATCH/media/build"
+printf -- '---\nTitle: Media\nVideo poster: none\n---\n\n@chapter+(notes/clip.md)\n' >"$SCRATCH/media/master.md"
+printf '# Clip\n\n@video+(clip.mp4)[A clip]\n' >"$SCRATCH/media/notes/clip.md"
+(cd "$SCRATCH/media" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o build/media.tex >/dev/null 2>&1)
+has   "latex-elsewhere/video" "$SCRATCH/media/build/media.tex" '\href{run:../notes/clip.mp4}{A clip}'
+
 # --- numbering: per chapter by default, `continuous` on request, the same in both outputs -------------
 
 cp -R "$HERE/numbering" "$SCRATCH/numbers"
