@@ -59,6 +59,18 @@ have_mp=no
 command -v mpost >/dev/null 2>&1 && command -v mptopdf >/dev/null 2>&1 && have_mp=yes
 have_tex=no
 command -v pdflatex >/dev/null 2>&1 && have_tex=yes
+have_tikz=no
+command -v lualatex >/dev/null 2>&1 && command -v dvisvgm >/dev/null 2>&1 && have_tikz=yes
+
+# srcs FILE — every <img src> in FILE that is a path, one per line.
+srcs() { grep -o '<img[^>]* src="[^"]*"' "$1" | sed 's/.* src="//; s/"$//' | grep -v '^data:'; }
+# resolves NAME FILE — every image FILE refers to is a file, from FILE's folder.
+resolves() {
+	list=$(srcs "$2")
+	if [ -z "$list" ]; then fail "$1" "no <img src> in $(basename "$2")"; return; fi
+	missing=$(printf '%s\n' "$list" | while read -r s; do [ -f "$(dirname "$2")/$s" ] || echo "$s"; done)
+	if [ -z "$missing" ]; then pass "$1"; else fail "$1" "not found from $(basename "$(dirname "$2")")/: $missing"; fi
+}
 
 # --- a single file, its .tex written into build/ -------------------------------------------------
 
@@ -166,6 +178,32 @@ if [ "$have_mp" = yes ]; then
 	hasnt "book/no-absolute-path" "$B/build/Book.tex" "$REAL"
 else
 	skip "book/metapost-from-build" "no mpost/mptopdf"
+fi
+
+# --- HTML: a cached figure is referred to from where the page is read -------------------------------
+
+if [ "$have_mp" = yes ] && [ "$have_tikz" = yes ]; then
+	H="$SCRATCH/html"
+	mkdir -p "$H/xn"
+	printf -- '---\nTitle: HTML figures\n---\n\n@begin(metapost)\ndraw fullcircle scaled 1cm;\n@end(metapost)\n\n:::TiKZ\n\\draw (0,0) -- (1,1);\n:::\n' >"$H/note.md"
+	jmd "$H" process note.md --fragment -o note.html || fail "html/beside-exit" "$(cat "$H/err.txt")"
+	# Beside the note, as they always were.
+	has      "html/beside-metapost" "$H/note.html" '<img src="MetaPost/'
+	has      "html/beside-tikz" "$H/note.html" '<img src="TiKZ/'
+	# Written elsewhere: the page's own folder is where they are looked for (they
+	# used to be `MetaPost/…` beside the PAGE, where nothing was).
+	jmd "$H" process note.md --fragment -o xn/diagrams.html || fail "html/elsewhere-exit" "$(cat "$H/err.txt")"
+	has      "html/elsewhere-metapost" "$H/xn/diagrams.html" '<img src="../MetaPost/'
+	resolves "html/elsewhere-resolves" "$H/xn/diagrams.html"
+	# A split book: master-relative before book-pages.js rebases them per page.
+	S="$SCRATCH/split"
+	mkdir -p "$S/chapters" "$S/site"
+	printf -- '---\nTitle: Split\n---\n\n@chapter+(chapters/one.md)\n' >"$S/master.md"
+	printf '# One\n\n@begin(metapost)\ndraw unitsquare scaled 1cm;\n@end(metapost)\n' >"$S/chapters/one.md"
+	jmd "$S" process master.md -o site/book.html --html-layout split || fail "html/split-exit" "$(cat "$S/err.txt")"
+	resolves "html/split-page-resolves" "$S/site/book/one.html"
+else
+	skip "html/elsewhere-resolves" "no mpost/mptopdf or no lualatex/dvisvgm"
 fi
 
 # --- mmdc missing: the diagram is left out, with a build warning naming it -------------------------

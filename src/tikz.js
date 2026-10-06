@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { configManager } from './config-manager.js';
 import { requirePackage, addPreamble } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
+import { htmlCachePath } from './figure-cache.js';
 import Mustache from 'mustache';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -215,10 +216,10 @@ function createTiKZ(marker) {
 						} catch (error) {
 							console.error(`Error embedding SVG: ${error.message}`);
 							// Fall back to normal image reference
-							return `<img src='TiKZ/${svg_file_name}'${scaleStyle}>`;
+							return `<img src='${htmlCachePath(svg_full_path)}'${scaleStyle}>`;
 						}
 					} else {
-						return `<img src='TiKZ/${svg_file_name}'${scaleStyle}>`;
+						return `<img src='${htmlCachePath(svg_full_path)}'${scaleStyle}>`;
 					}
 				}
 			}

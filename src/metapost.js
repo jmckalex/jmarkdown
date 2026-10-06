@@ -31,7 +31,8 @@ import { configManager } from './config-manager.js';
 import { requirePackage } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { addWarning } from './warnings.js';
-import { texCachePath, escapeLatexPath } from './latex-graphics.js';
+import { escapeLatexPath } from './latex-graphics.js';
+import { texCachePath, htmlCachePath } from './figure-cache.js';
 
 const MP_DIR_NAME = 'MetaPost';
 
@@ -136,7 +137,7 @@ function imgTag(dir, svgName, attrs) {
 			// fall through to a file reference
 		}
 	}
-	return `<img src='${MP_DIR_NAME}/${svgName}'${styleAttr}>`;
+	return `<img src='${htmlCachePath(path.join(dir, svgName))}'${styleAttr}>`;
 }
 
 // HTML: compile the source to SVG (cached), return the <img>(s).

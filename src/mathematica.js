@@ -6,6 +6,7 @@ import { execFileSync } from 'child_process';
 import crypto from 'crypto';
 import { configManager } from './config-manager.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
+import { htmlCachePath } from './figure-cache.js';
 import Mustache from 'mustache';
 import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
 
@@ -220,10 +221,10 @@ export function createMathematica(marker) {
 							} catch (error) {
 								console.error(`Error embedding SVG: ${error.message}`);
 								// Fall back to normal image reference
-								obj = `<img  ${classes} ${id} ${style} src='Mathematica/${svg_file_name}'>`;
+								obj = `<img  ${classes} ${id} ${style} src='${htmlCachePath(svg_full_path)}'>`;
 							}
 						} else {
-							obj = `<img  ${classes} ${id} ${style}  src='Mathematica/${svg_file_name}'>`;
+							obj = `<img  ${classes} ${id} ${style}  src='${htmlCachePath(svg_full_path)}'>`;
 						}
 					}
 					else if (token.attrs?.output?.toLowerCase() == "png") {
@@ -237,10 +238,10 @@ export function createMathematica(marker) {
 							} catch (error) {
 								console.error(`Error embedding PNG: ${error.message}`);
 								// Fall back to normal image reference
-								obj = `<img ${classes} ${id} ${style} src='Mathematica/${png_file_name}'>`;
+								obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(png_full_path)}'>`;
 							}
 						} else {
-							obj = `<img ${classes} ${id} ${style} src='Mathematica/${png_file_name}'>`;
+							obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(png_full_path)}'>`;
 						}
 					}
 					else if (token.attrs?.output?.toLowerCase() == "jpg" || token.attrs?.output?.toLowerCase() == "jpeg") {
@@ -254,10 +255,10 @@ export function createMathematica(marker) {
 							} catch (error) {
 								console.error(`Error embedding JPG: ${error.message}`);
 								// Fall back to normal image reference
-								obj = `<img ${classes} ${id} ${style} src='Mathematica/${jpg_file_name}'>`;
+								obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(jpg_full_path)}'>`;
 							}
 						} else {
-							obj = `<img ${classes} ${id} ${style} src='Mathematica/${jpg_file_name}'>`;
+							obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(jpg_full_path)}'>`;
 						}
 					}
 					else {
@@ -480,10 +481,10 @@ export const inlineMathematica = {
 					} catch (error) {
 						console.error(`Error embedding SVG: ${error.message}`);
 						// Fall back to normal image reference
-						obj = `<img  ${classes} ${id} ${style} src='Mathematica/${svg_file_name}'>`;
+						obj = `<img  ${classes} ${id} ${style} src='${htmlCachePath(svg_full_path)}'>`;
 					}
 				} else {
-					obj = `<img  ${classes} ${id} ${style}  src='Mathematica/${svg_file_name}'>`;
+					obj = `<img  ${classes} ${id} ${style}  src='${htmlCachePath(svg_full_path)}'>`;
 				}
 			}
 			else if (token.attrs?.output?.toLowerCase() == "png") {
@@ -497,10 +498,10 @@ export const inlineMathematica = {
 					} catch (error) {
 						console.error(`Error embedding PNG: ${error.message}`);
 						// Fall back to normal image reference
-						obj = `<img ${classes} ${id} ${style} src='Mathematica/${png_file_name}'>`;
+						obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(png_full_path)}'>`;
 					}
 				} else {
-					obj = `<img ${classes} ${id} ${style} src='Mathematica/${png_file_name}'>`;
+					obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(png_full_path)}'>`;
 				}
 			}
 			else if (token.attrs?.output?.toLowerCase() == "jpg" || token.attrs?.output?.toLowerCase() == "jpeg") {
@@ -514,10 +515,10 @@ export const inlineMathematica = {
 					} catch (error) {
 						console.error(`Error embedding JPG: ${error.message}`);
 						// Fall back to normal image reference
-						obj = `<img ${classes} ${id} ${style} src='Mathematica/${jpg_file_name}'>`;
+						obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(jpg_full_path)}'>`;
 					}
 				} else {
-					obj = `<img ${classes} ${id} ${style} src='Mathematica/${jpg_file_name}'>`;
+					obj = `<img ${classes} ${id} ${style} src='${htmlCachePath(jpg_full_path)}'>`;
 				}
 			}
 			else {

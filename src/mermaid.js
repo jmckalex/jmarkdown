@@ -12,7 +12,8 @@ import { configManager } from './config-manager.js';
 import { requirePackage } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { addWarning } from './warnings.js';
-import { texCachePath, escapeLatexPath } from './latex-graphics.js';
+import { escapeLatexPath } from './latex-graphics.js';
+import { texCachePath } from './figure-cache.js';
 
 // Run mmdc without a shell where a shell is the danger: the paths are under the
 // document's own folder, whose name is the document's to choose, and a POSIX
