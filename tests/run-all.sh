@@ -107,7 +107,17 @@ sh "$REPO/tests/obsidian/run.sh"
 obsidian_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ] || [ "$obsidian_status" -ne 0 ]; then
+# 13. diagrams — cached mermaid/MetaPost PDFs in LaTeX: included relative to
+#     the .tex (never by absolute path), compiled where the .tex stands, and a
+#     mermaid diagram mmdc can't render warned by name. A suite because each
+#     case writes a cache folder beside its document; parts whose tools are
+#     missing are skipped. Gates CI.
+echo "------ diagrams ------"
+sh "$REPO/tests/diagrams/run.sh"
+diagrams_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ] || [ "$obsidian_status" -ne 0 ] || [ "$diagrams_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi

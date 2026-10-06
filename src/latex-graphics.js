@@ -22,6 +22,12 @@
 	into build/ — so they are rebased onto the .tex's own folder, as a split
 	book's pages are onto theirs (book-pages.js). kpathsea never searches
 	TEXINPUTS for a `./` or `../` name, so nothing else would find them.
+
+	A file the ENGINE made — a cached diagram PDF (mermaid.js, metapost.js),
+	known by its absolute path — is printed relative to the .tex's folder too,
+	in a single file as in a book (texCachePath): as an absolute path it put the
+	user's folders into the .tex, and under pdfLaTeX into the PDF as well
+	(/PTEX.FileName).
 */
 
 import fs from 'fs';
@@ -62,6 +68,20 @@ export function texPath(src) {
 	}
 	const rel = path.relative(path.dirname(out), path.resolve(markdownDir(), src));
 	return rel.split(path.sep).join('/') || '.';
+}
+
+/**
+ * A file the engine made, by its absolute path, as the .tex prints it (see
+ * above): relative to the output's folder. On stdout there is no folder, so
+ * the absolute path stays, with a warning.
+ */
+export function texCachePath(abs) {
+	const out = configManager.get('Output file');
+	if (!out) {
+		addWarning('the LaTeX goes to stdout, so its cached diagrams are included by absolute path (which names your folders) — give an output file to make them relative');
+		return abs;
+	}
+	return path.relative(path.dirname(out), abs).split(path.sep).join('/') || '.';
 }
 
 /**

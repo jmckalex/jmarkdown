@@ -67,9 +67,9 @@ All source lives in `src/`. Key files:
 | `tabbing.js` | LaTeX's `tabbing` as a ```` ```tabbing ```` fence or `@begin(tabbing)`: parser, `layoutTabbing` (latex.ltx's tab logic over measured widths), HTML and LaTeX renderers. Ported from Clew-app; HTML byte-identical to Clew's. **No imports** (Clew's browser bundle imports it), so `index.js` registers it. See "Tabbing" |
 | `tabbing-page.js` | The page script that lays tabbing out in the browser — `tabbingPageScript()`, shipped as source text, placed by the default template's `{{#Tabbing_script}}`; `docsTabbingLayout()` for `docs/tabbing-layout.js` |
 | `inline-footnotes.js` | `[^label: body]` / `[fn: body]` inline footnotes with multi-paragraph support, plus **grouped endnotes**: per-note `(group)` (`[fn(g): …]`), the ambient `@endnoteGroup(name)` directive, and `@endnotes` / `@endnotes(name)` placement. See "Grouped endnotes" |
-| `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc). Each also registers a `@begin(name)` parity handler (byte-identical to its `:::` twin — see "graphics parity" under begin-end); the inline `⟦…⟧` Mathematica form is unchanged |
+| `tikz.js`, `mermaid.js`, `mathematica.js` | Diagram / computation directives (TikZ → native `tikzpicture` in LaTeX; Mermaid → cached PDF via mmdc, left out with a build warning naming the diagram when mmdc is missing or fails; suite `tests/diagrams/run.sh`). Each also registers a `@begin(name)` parity handler (byte-identical to its `:::` twin — see "graphics parity" under begin-end); the inline `⟦…⟧` Mathematica form is unchanged |
 | `metapost.js` | `@begin(metapost)…@end(metapost)` block environment (registry-only, no `:::` form). Verbatim MetaPost source, compiled once and cached by content hash under a `MetaPost/` dir next to the source. HTML → `mpost` (`outputformat:="svg"`) → `<img src='MetaPost/<hash>-N.svg'>` (same `{scale/width/embed/empty-cache}` attrs as TiKZ); LaTeX → `mptopdf` → cached PDF via `\includegraphics[max width=\linewidth]` (mermaid's engine-agnostic model — works with the default pdflatex, no luamplib). Compile happens at RENDER time (not tokenize); failures → inline error box (HTML) / dropped + warning (LaTeX), and the error path deletes any partial figure so it never caches. No fixture (needs `mpost`/`mptopdf` + would write a cache dir into the tree) |
-| `latex-graphics.js` | An author's image into LaTeX, for every route (markdown `![]()`, `@image`, `@video`'s poster): `\includegraphics`, or — for a remote image, or an SVG with no `.pdf`/`.png` beside it, which LaTeX cannot read — a `\href` link plus a warning (`latexGraphic`, `resolveGraphic`) |
+| `latex-graphics.js` | An author's image into LaTeX, for every route (markdown `![]()`, `@image`, `@video`'s poster): `\includegraphics`, or — for a remote image, or an SVG with no `.pdf`/`.png` beside it, which LaTeX cannot read — a `\href` link plus a warning (`latexGraphic`, `resolveGraphic`). Where a path is printed from: `texPath` (a book's author paths, onto the `.tex`'s folder) and `texCachePath` (an engine-cached diagram PDF, by absolute path, made relative to the `.tex`'s folder; on stdout absolute, with a warning) |
 | `media.js` | `@image(path)[alt]{attrs}` / `@video(path)[alt]{attrs}` — images and video in both formats. One semantic attribute vocabulary (`width`/`height`/`scale`/`align`) translated per format, `tex-`/`web-` scoped overrides, everything else passed through as HTML attributes. Video degrades in LaTeX under `Video mode` (link · embed · attach · poster) |
 | `strategic-form-games.js` | Game-theoretic payoff matrix directive |
 | `marked-extended-tables-headerless.js` | Custom table tokenizer (auto-flips `tabular`→`longtable` past 20 rows; also the seed for the future `:::grid` directive) |
@@ -155,8 +155,10 @@ golden is untouched).
   kpathsea never searches TEXINPUTS for a `./`/`../` name (`texPath`,
   latex-graphics.js — markdown images, `@image`, `@video`'s file and poster,
   embeds; a host builds into `build/`). A book on stdout keeps the master's
-  paths, with a warning; single files print their paths as given. Mermaid and
-  MetaPost include their cached PDFs by absolute path, so they never needed it.
+  paths, with a warning; single files print their paths as given. Mermaid's
+  and MetaPost's cached PDFs, single file or book, are printed relative to the
+  `.tex` too (`texCachePath`; they used to be absolute, naming the user's
+  folders in the `.tex` and in a pdfLaTeX PDF's `/PTEX.FileName`).
 - **Numbering** (`Numbering:` in the master's header — its key matched loosely,
   so YAML's `numbering:` counts, in a book only — or processFile's `numbering`
   option): `per chapter` (the default — Figure 2.3, as the book
