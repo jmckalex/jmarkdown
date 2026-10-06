@@ -13,7 +13,7 @@ import { requirePackage } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { addWarning } from './warnings.js';
 import { escapeLatexPath } from './latex-graphics.js';
-import { texCachePath } from './figure-cache.js';
+import { texCachePath, compileInRunDir } from './figure-cache.js';
 
 // Run mmdc without a shell where a shell is the danger: the paths are under the
 // document's own folder, whose name is the document's to choose, and a POSIX
@@ -84,17 +84,24 @@ function renderMermaidLatex(source) {
 	const hash = crypto.createHash('sha1').update(source).digest('hex').slice(0, 16);
 	const pdf = path.join(dir, `${hash}.pdf`);
 	if (!fs.existsSync(pdf)) {
-		const mmd = path.join(dir, `${hash}.mmd`);
-		try {
-			fs.writeFileSync(mmd, source);
-			runMmdc(mmdc, ['-i', mmd, '-o', pdf]);
-		} catch (e) {
-			// Don't cache a partial figure from a failed run.
-			try { fs.unlinkSync(pdf); } catch { /* none was written */ }
-			addWarning(`mermaid: ${diagramName(source)} left out of the LaTeX — mmdc failed: ${mmdcReason(e)}`);
+		// Rendered in a run folder of its own (figure-cache.js): only the PDF
+		// is kept, renamed into place, so a failed or half-written render is
+		// never cached and two builds at once never read a partial file.
+		let failure = null;
+		compileInRunDir(dir, (run) => {
+			const mmd = path.join(run, `${hash}.mmd`);
+			try {
+				fs.writeFileSync(mmd, source);
+				runMmdc(mmdc, ['-i', mmd, '-o', path.join(run, `${hash}.pdf`)]);
+				return [`${hash}.pdf`];
+			} catch (e) {
+				failure = e;
+				return [];
+			}
+		});
+		if (failure || !fs.existsSync(pdf)) {
+			addWarning(`mermaid: ${diagramName(source)} left out of the LaTeX — mmdc failed: ${failure ? mmdcReason(failure) : 'it wrote no PDF'}`);
 			return '';
-		} finally {
-			try { fs.unlinkSync(mmd); } catch { /* ignore */ }
 		}
 	}
 	// `export` makes adjustbox's keys (max width) \includegraphics keys; without

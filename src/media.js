@@ -79,6 +79,7 @@ import { requirePackage } from './preamble.js';
 import { escapeLatexText } from './latex-escape.js';
 import { latexGraphic, resolveGraphic, isRemote, markdownDir, escapeLatexPath, texPath } from './latex-graphics.js';
 import { addWarning } from './warnings.js';
+import { compileInRunDir } from './figure-cache.js';
 
 const VIDEO_DIR_NAME = 'Video';
 
@@ -372,14 +373,20 @@ function extractPoster(file) {
 		addWarning('@video: no poster given and ffmpeg is not installed — the LaTeX output has no still frame');
 		return null;
 	}
-	try {
-		fs.mkdirSync(path.dirname(out), { recursive: true });
-		execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', file, '-frames:v', '1', out], { stdio: 'ignore' });
-		if (fs.existsSync(out)) return rel;
-	} catch (error) {
-		try { fs.unlinkSync(out); } catch { /* nothing to clean up */ }
-		addWarning(`@video: could not extract a poster frame from ${path.basename(file)} (${error.message.split('\n')[0]})`);
-	}
+	// Extracted in a run folder of its own (figure-cache.js) and renamed into
+	// place: a half-written frame is never cached, nor read by another build.
+	let failure = null;
+	compileInRunDir(path.dirname(out), (run) => {
+		try {
+			execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', file, '-frames:v', '1', path.join(run, path.basename(out))], { stdio: 'ignore' });
+			return [path.basename(out)];
+		} catch (error) {
+			failure = error;
+			return [];
+		}
+	});
+	if (fs.existsSync(out)) return rel;
+	if (failure) addWarning(`@video: could not extract a poster frame from ${path.basename(file)} (${failure.message.split('\n')[0]})`);
 	return null;
 }
 

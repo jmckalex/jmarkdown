@@ -12,7 +12,7 @@ import crypto from 'crypto';
 import { configManager } from './config-manager.js';
 import { requirePackage, addPreamble } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
-import { htmlCachePath } from './figure-cache.js';
+import { htmlCachePath, compileInRunDir } from './figure-cache.js';
 import Mustache from 'mustache';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -50,20 +50,7 @@ function generateHash(string) {
 	return crypto.createHash('md5').update(string).digest('hex');
 }
 
-// Given an array of file names, delete them.
-function deleteFiles(filesToDelete) {
-	filesToDelete.forEach(file => {
-		try {
-			if (fs.existsSync(file)) {
-				fs.unlinkSync(file);
-				console.log(`Deleted: ${file}`);
-			}
-		} catch (deleteError) {
-			console.error(`Error deleting ${file}: ${deleteError.message}`);
-		}
-	});
-}
-
+// Files only: a run folder another build is compiling in is left alone.
 function emptyCache(TiKZ_directory) {
 	const files = fs.readdirSync(TiKZ_directory);
 
@@ -98,59 +85,50 @@ function createTiKZ(marker) {
 			const TiKZ_directory = path.join(home_directory, "TiKZ");
 			const hash = generateHash(file_contents);
 			const file_name = path.join(TiKZ_directory, `${hash}.tex`);
-			const aux_name = file_name.replace('.tex', '.aux');
-			const dvi_name = file_name.replace('.tex', '.dvi');
-			const log_name = file_name.replace('.tex', '.log');
 			const svg_name = file_name.replace('.tex', '.svg');
-			//const hash_name = file_name.replace('.tex', '.hash');
-			
+
 			ensureDirectoryExists(TiKZ_directory);
 			if (token?.attrs?.['empty-cache'] == 'true' || token?.attrs?.['empty-cache'] == 'empty-cache') {
 				console.log("Removing all cached TiKZ files...");
 				emptyCache(TiKZ_directory);
 			}
-			
+
 			token['file name'] = file_name;
 			token['has_error'] = false;
 			token['error_log'] = '';
 
 			if (fs.existsSync(svg_name) == false) {
-				try {
-					fs.writeFileSync(file_name, file_contents);
-					const opts = { cwd: TiKZ_directory };
-					// Argument arrays, no shell: the paths sit under the
-					// document's own folder, whose name is the document's to
-					// choose — in a shell string, `$(…)` in it ran as a command.
-					let args = ['--output-format=dvi', file_name];
-					//console.log(`Trying to process the TiKZ file with options ${opts}`);
-					console.log(`Executing: lualatex ${args.join(' ')}`);
-					execFileSync('lualatex', args, opts);
-					args = ['--bbox=min', LIBGS, '--no-fonts=1', OPTIMISE, dvi_name];
-					console.log(`Executing: dvisvgm ${args.join(' ')}`);
-					execFileSync('dvisvgm', args, opts);
-					console.log("Cleaning up temporary files...")
-					const filesToDelete = [file_name, aux_name, dvi_name, log_name];
-					deleteFiles(filesToDelete);
-				}
-				catch (error) {
-					token['has_error'] = true;
-					// Try to read the log file
+				// Compiled in a run folder of its own (figure-cache.js): only
+				// the SVG is kept; the .aux/.dvi/.log, and anything the
+				// document's TeX wrote (\openout), go with the folder.
+				compileInRunDir(TiKZ_directory, (run) => {
+					const tex = path.join(run, `${hash}.tex`);
 					try {
-						if (fs.existsSync(log_name)) {
-							token['error_log'] = fs.readFileSync(log_name, 'utf8');
-						} else {
-							token['error_log'] = error.message || 'Unknown error';
-						}
-					} catch (logError) {
-						token['error_log'] = error.message || 'Unknown error, unable to read log file';
+						fs.writeFileSync(tex, file_contents);
+						const opts = { cwd: run };
+						// Argument arrays, no shell: the paths sit under the
+						// document's own folder, whose name is the document's to
+						// choose — in a shell string, `$(…)` in it ran as a command.
+						let args = ['--output-format=dvi', tex];
+						console.log(`Executing: lualatex ${args.join(' ')}`);
+						execFileSync('lualatex', args, opts);
+						args = ['--bbox=min', LIBGS, '--no-fonts=1', OPTIMISE, tex.replace(/\.tex$/, '.dvi')];
+						console.log(`Executing: dvisvgm ${args.join(' ')}`);
+						execFileSync('dvisvgm', args, opts);
+						return [`${hash}.svg`];
 					}
-
-					// Delete the generated files
-					const filesToDelete = [file_name, dvi_name, svg_name];
-					deleteFiles(filesToDelete);
-					
-					console.error(`Error processing TikZ: ${error.message}`);
-				}
+					catch (error) {
+						token['has_error'] = true;
+						const log = path.join(run, `${hash}.log`);
+						try {
+							token['error_log'] = fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : (error.message || 'Unknown error');
+						} catch {
+							token['error_log'] = error.message || 'Unknown error, unable to read log file';
+						}
+						console.error(`Error processing TikZ: ${error.message}`);
+						return [];
+					}
+				});
 			}
 
 			return token;

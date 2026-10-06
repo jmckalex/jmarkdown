@@ -206,6 +206,54 @@ else
 	skip "html/elsewhere-resolves" "no mpost/mptopdf or no lualatex/dvisvgm"
 fi
 
+# --- each figure compiles in a run folder of its own (figure-cache.js compileInRunDir) --------------
+#     Only the figure is kept: what a document's own code writes (MetaPost's `write`, TeX's
+#     \openout) goes with the folder, as does a failed run; no run folder outlives the build.
+
+if [ "$have_mp" = yes ] && [ "$have_tikz" = yes ]; then
+	R="$SCRATCH/runs"
+	mkdir -p "$R"
+	cat >"$R/plant.md" <<'EOF2'
+---
+Title: Side writes
+---
+
+@begin(metapost)
+write "planted" to "planted-mp.txt";
+write EOF to "planted-mp.txt";
+draw fullcircle scaled 1cm;
+@end(metapost)
+
+:::TiKZ
+\newwrite\jmdplant
+\immediate\openout\jmdplant=planted-tikz.txt
+\immediate\write\jmdplant{planted}
+\immediate\closeout\jmdplant
+\draw (0,0) -- (1,1);
+:::
+EOF2
+	jmd "$R" process plant.md --fragment -o plant.html || fail "runs/exit" "$(cat "$R/err.txt")"
+	jmd "$R" process plant.md --to latex -o plant.tex || fail "runs/latex-exit" "$(cat "$R/err.txt")"
+	resolves "runs/figures-kept" "$R/plant.html"
+	planted=$(find "$R" -name 'planted-*' | sed "s|$R/||")
+	if [ -z "$planted" ]; then pass "runs/side-writes-discarded"; else fail "runs/side-writes-discarded" "$planted"; fi
+	leftover=$(find "$R" -name '.run-*' | sed "s|$R/||")
+	if [ -z "$leftover" ]; then pass "runs/no-run-folder-left"; else fail "runs/no-run-folder-left" "$leftover"; fi
+	extra=$(ls "$R/MetaPost" "$R/TiKZ" | grep -v -e '-[0-9]*\.svg$' -e '-[0-9]*\.pdf$' -e '^[0-9a-f]*\.svg$' -e ':$' -e '^$')
+	if [ -z "$extra" ]; then pass "runs/only-figures-cached"; else fail "runs/only-figures-cached" "$extra"; fi
+
+	# A failed compile caches nothing.
+	printf -- '---\nTitle: Broken\n---\n\n@begin(metapost)\ndraw fullcircle scaled;\n@end(metapost)\n' >"$R/broken.md"
+	before=$(ls "$R/MetaPost" | wc -l | tr -d ' ')
+	jmd "$R" process broken.md --fragment -o broken.html || fail "runs/broken-exit" "$(cat "$R/err.txt")"
+	has "runs/failure-reported" "$R/broken.html" 'metapost-error'
+	after=$(ls "$R/MetaPost" | wc -l | tr -d ' ')
+	if [ "$before" = "$after" ]; then pass "runs/failure-caches-nothing"; else fail "runs/failure-caches-nothing" "$before files before, $after after"; fi
+
+else
+	skip "runs/side-writes-discarded" "no mpost/mptopdf or no lualatex/dvisvgm"
+fi
+
 # --- mmdc missing: the diagram is left out, with a build warning naming it -------------------------
 
 M="$SCRATCH/nommdc"

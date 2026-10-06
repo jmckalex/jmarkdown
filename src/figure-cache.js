@@ -74,3 +74,27 @@ export function htmlCachePath(abs) {
 	const from = out && !split ? path.dirname(out) : noteDir();
 	return urlPath(slashes(path.relative(from, abs)));
 }
+
+/**
+ * Compile a figure in a folder of its own. `work(run)` runs with `run`, a
+ * fresh folder inside the cache folder `dir`, as its working folder, and
+ * returns the names of the files it made there that the cache keeps (or
+ * nothing). Those that exist are renamed into `dir` — one atomic step, on the one
+ * filesystem — and then the run folder goes, with everything else in it:
+ * whatever the document's own code wrote (MetaPost's `write`, TeX's
+ * `\openout`), the tools' working files, and anything a failed run left
+ * half-written. So a document can plant nothing in the cache, two builds
+ * rendering the same figure at once never read a partial file, and a failed
+ * run caches nothing.
+ */
+export function compileInRunDir(dir, work) {
+	fs.mkdirSync(dir, { recursive: true });
+	const run = fs.mkdtempSync(path.join(dir, '.run-'));
+	try {
+		const keep = (work(run) || []).filter((name) => fs.existsSync(path.join(run, name)));
+		for (const name of keep) fs.renameSync(path.join(run, name), path.join(dir, name));
+		return keep;
+	} finally {
+		fs.rmSync(run, { recursive: true, force: true });
+	}
+}

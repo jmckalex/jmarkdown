@@ -149,11 +149,14 @@ from). The steps, for the **web/SVG** path, are:
    skipped and the file reused. This is what makes re-processing a document with many
    diagrams fast — only diagrams you have edited are recompiled.
 
-3. **Compile, if needed.** On a cache miss, JMarkdown writes `MetaPost/{hash}.mp` and
-   runs `mpost` on it in the `MetaPost/` directory.
+3. **Compile, if needed.** On a cache miss, JMarkdown writes `{hash}.mp` into a fresh
+   working folder of its own inside `MetaPost/`, and runs `mpost` on it there.
 
-4. **Clean up.** The intermediate `.mp`, `.log`, and other working files are deleted,
-   leaving just the `MetaPost/{hash}-N.svg` output(s) in the cache.
+4. **Keep the figure.** The SVG output(s) are moved into the cache as
+   `MetaPost/{hash}-N.svg`, and the working folder is deleted with everything else in
+   it: the `.mp`, the `.log` and the other working files, and any file the program
+   itself wrote (with `write`). A diagram that fails to compile leaves nothing in the
+   cache.
 
 5. **Emit the image.** The environment renders an `<img>` pointing at (or embedding)
    that SVG (see [Sizing and embedding](#sizing-and-embedding)).
@@ -236,9 +239,12 @@ to a cached **PDF** with `mptopdf` and includes it:
 
 ```latex
 \begin{center}
-\includegraphics[max width=\linewidth]{…/MetaPost/{hash}-1.pdf}
+\includegraphics[max width=\linewidth]{MetaPost/{hash}-1.pdf}
 \end{center}
 ```
+
+The path is relative to the folder the `.tex` is written to (here, beside the
+document), so the `.tex` compiles where it stands and names none of your folders.
 
 The PDF route is deliberately **engine-agnostic**: it works with the default
 `pdflatex` (as well as `xelatex` / `lualatex`) with no extra packages beyond

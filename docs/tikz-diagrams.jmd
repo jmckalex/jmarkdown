@@ -156,8 +156,8 @@ command from). The steps are:
    document with many diagrams fast: only diagrams you have edited are
    re-compiled.
 
-3. **Compile, if needed.** On a cache miss, JMarkdown writes `TiKZ/{hash}.tex` and
-   runs, in the `TiKZ/` directory:
+3. **Compile, if needed.** On a cache miss, JMarkdown writes `{hash}.tex` into a
+   fresh working folder of its own inside `TiKZ/`, and runs there:
 
    ```
    lualatex --output-format=dvi {hash}.tex
@@ -168,8 +168,10 @@ command from). The steps are:
    font-outlined, optimised SVG (`--bbox=min` crops to the drawing's bounding box,
    `--no-fonts=1` converts text to outlines so the figure needs no web fonts).
 
-4. **Clean up.** The intermediate `.tex`, `.aux`, `.dvi`, and `.log` files are
-   deleted, leaving just `TiKZ/{hash}.svg` in the cache.
+4. **Keep the figure.** The SVG is moved into the cache as `TiKZ/{hash}.svg`, and the
+   working folder is deleted with everything else in it: the `.tex`, `.aux`, `.dvi`
+   and `.log`, and any file the TeX code itself wrote (with `\openout`). A diagram
+   that fails to compile leaves nothing in the cache.
 
 5. **Emit the image.** The directive renders an `<img>` pointing at (or embedding)
    that SVG (see [Sizing and embedding](#sizing-and-embedding)).
