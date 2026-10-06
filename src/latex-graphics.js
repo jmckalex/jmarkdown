@@ -53,6 +53,24 @@ export function isRemote(src) {
 	return /^[a-z][a-z0-9+.-]*:\/\//i.test(src) || src.startsWith('//');
 }
 
+// A path as found from the folder of the .tex at `out`. Both ends are REAL
+// paths: TeX climbs `..` physically, from where the .tex really is, so a
+// relative path worked out lexically missed whenever a symlink stood on
+// either side — an output under os.tmpdir() (/var/folders/… is really
+// /private/var/…), or a vault reached through a link — and LaTeX could not
+// find the file. A path that does not exist (yet) keeps its missing tail on
+// the real path of the part that does.
+function realPath(p) {
+	try { return fs.realpathSync(p); } catch { /* not there yet */ }
+	const parent = path.dirname(p);
+	return parent === p ? p : path.join(realPath(parent), path.basename(p));
+}
+
+function fromTexFolder(out, target) {
+	const rel = path.relative(realPath(path.dirname(out)), realPath(target));
+	return rel.split(path.sep).join('/') || '.';
+}
+
 /**
  * A local path as the .tex prints it (see above): in a book with an output
  * file, a relative path (relative to the master, markdownDir()) made relative
@@ -66,8 +84,7 @@ export function texPath(src) {
 		addWarning('book: the LaTeX goes to stdout, so its image and media paths are relative to the master\'s folder — compile it there, or give an output file');
 		return src;
 	}
-	const rel = path.relative(path.dirname(out), path.resolve(markdownDir(), src));
-	return rel.split(path.sep).join('/') || '.';
+	return fromTexFolder(out, path.resolve(markdownDir(), src));
 }
 
 /**
@@ -81,7 +98,7 @@ export function texCachePath(abs) {
 		addWarning('the LaTeX goes to stdout, so its cached diagrams are included by absolute path (which names your folders) — give an output file to make them relative');
 		return abs;
 	}
-	return path.relative(path.dirname(out), abs).split(path.sep).join('/') || '.';
+	return fromTexFolder(out, abs);
 }
 
 /**

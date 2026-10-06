@@ -121,6 +121,25 @@ else
 	skip "single/compiles-in-build" "no pdflatex or no diagram tools"
 fi
 
+# Into a folder reached through a link to another depth (an output under
+# os.tmpdir() is one), given absolute through the link: TeX climbs `..`
+# physically, so the path is counted from the real folders, and it compiles there.
+mkdir -p "$SCRATCH/out-real/x/y/z"
+ln -s "$SCRATCH/out-real/x/y/z" "$SCRATCH/linked"
+jmd "$D" process note.md --to latex -o "$SCRATCH/linked/note.tex" || fail "symlink/exit" "$(cat "$D/err.txt")"
+if [ "$have_mp" = yes ]; then
+	has "symlink/counted-from-real" "$SCRATCH/linked/note.tex" '{../../../../note/MetaPost/'
+	if [ "$have_tex" = yes ]; then
+		if (cd "$SCRATCH/linked" && pdflatex -interaction=nonstopmode -halt-on-error note.tex >/dev/null 2>&1); then
+			pass "symlink/compiles-there"
+		else
+			fail "symlink/compiles-there" "$(grep -m3 '^!' "$SCRATCH/linked/note.log")"
+		fi
+	fi
+else
+	skip "symlink/counted-from-real" "no mpost/mptopdf"
+fi
+
 # Beside the note, the paths are the cache folders' own (cached: nothing re-renders).
 jmd "$D" process note.md --to latex -o note.tex || fail "beside/exit" "$(cat "$D/err.txt")"
 [ "$have_mmdc" = yes ] && has "beside/mermaid" "$D/note.tex" '{mermaid/'

@@ -154,5 +154,36 @@ if command -v pdflatex >/dev/null 2>&1 && command -v pdfimages >/dev/null 2>&1; 
 	fi
 fi
 
+# --- symlinks: a book whose master folder is reached through a link, built into a build/ that is a
+#     link to a folder at another depth, every path given absolute through the links (as a host
+#     gives them; an output under os.tmpdir() is one: /var/folders/… is /private/var/…). TeX climbs
+#     `..` physically, from where the .tex really is, so the paths are counted from REAL folders
+#     (latex-graphics.js): four `..` here, where the lexical count is one. --------------------------
+mkdir -p "$SCRATCH/real/a/b" "$SCRATCH/out-real/x/y/z"
+cp -R "$HERE/vault" "$SCRATCH/real/a/b/vault"
+ln -s "$SCRATCH/real/a/b/vault" "$SCRATCH/linked-vault"
+ln -s "$SCRATCH/out-real/x/y/z" "$SCRATCH/build"
+(cd "$SCRATCH" && HOME="$SCRATCH/home" node --input-type=module -e "
+	import { processFile } from '$JMD';
+	import path from 'path';
+	const V = '$SCRATCH/linked-vault';
+	const obsidianLinks = { resolveEmbed: (name, { file }) => path.relative(path.dirname(file), path.join(V, 'images', name)) };
+	await processFile(V + '/pictures.md', { to: 'latex', output: '$SCRATCH/build/Book.tex', obsidianLinks });
+" >"$SCRATCH/linked.log" 2>&1) || fail "symlinks/exit" "$(cat "$SCRATCH/linked.log")"
+LT="$SCRATCH/build/Book.tex"
+has   "symlinks/master-image" "$LT" '{../../../../real/a/b/vault/images/cover.png}'
+has   "symlinks/embed" "$LT" '{../../../../real/a/b/vault/images/frame.png}'
+has   "symlinks/image" "$LT" '{../../../../real/a/b/vault/images/shot.png}'
+if command -v pdflatex >/dev/null 2>&1 && command -v pdfimages >/dev/null 2>&1; then
+	if (cd "$SCRATCH/build" && sed -e '/fontspec/d' -e '/setmainfont/d' Book.tex >linked.tex \
+		&& pdflatex -interaction=nonstopmode -halt-on-error linked.tex >/dev/null 2>&1); then
+		pass "symlinks/compiles-in-build"
+		images=$(pdfimages -list "$SCRATCH/build/linked.pdf" 2>/dev/null | tail -n +3 | wc -l | tr -d ' ')
+		if [ "${images:-0}" -ge 3 ]; then pass "symlinks/pdf-all-images"; else fail "symlinks/pdf-all-images" "$images image(s) in the PDF, 3 expected"; fi
+	else
+		fail "symlinks/compiles-in-build" "$(grep -m3 '^!' "$SCRATCH/build/linked.log")"
+	fi
+fi
+
 echo "obsidian: $passed passed, $failed failed"
 [ "$failed" -eq 0 ]
