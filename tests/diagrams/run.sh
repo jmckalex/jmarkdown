@@ -302,6 +302,66 @@ else
 	skip "cache-dir/nothing-beside-the-note" "no mpost/mptopdf or no lualatex/dvisvgm"
 fi
 
+# --- `Copy figures` (config only): what the output refers to, copied into `<output>-figures/` ----------
+#     A kept .tex or .html then stands on its own: the cache can go and it still compiles / loads.
+
+if [ "$have_mp" = yes ] && [ "$have_tikz" = yes ]; then
+	F="$SCRATCH/copy"
+	mkdir -p "$F/vault/.jmarkdown" "$F/vault/build" "$F/store"
+	printf '{ "Cache directory": "%s", "Copy figures": true }\n' "$F/store" >"$F/vault/.jmarkdown/config.json"
+	cp "$C/vault/note.md" "$F/vault/note.md"
+	[ -f "$C/vault/tiny.mp4" ] && cp "$C/vault/tiny.mp4" "$F/vault/tiny.mp4"
+	jmd "$F/vault" process note.md --to latex -o build/note.tex || fail "copy/latex-exit" "$(cat "$F/vault/err.txt")"
+	jmd "$F/vault" process note.md -o build/note.html || fail "copy/html-exit" "$(cat "$F/vault/err.txt")"
+	B2="$F/vault/build"
+	has "copy/tex-refers-to-copy" "$B2/note.tex" '{note-figures/MetaPost/'
+	[ "$have_ffmpeg" = yes ] && has "copy/poster-copied" "$B2/note.tex" '{note-figures/Video/'
+	has "copy/html-refers-to-copy" "$B2/note.html" '<img src="note-figures/TiKZ/'
+	if [ -f "$B2/note-figures/.jmarkdown-figures" ]; then pass "copy/marked-as-jmarkdowns"; else fail "copy/marked-as-jmarkdowns" "$(ls -a "$B2/note-figures")"; fi
+	hasnt "copy/tex-not-into-cache" "$B2/note.tex" 'store/'
+	# The cache can go: the kept outputs still stand.
+	rm -rf "${F:?}/store"
+	resolves "copy/html-stands-alone" "$B2/note.html"
+	if [ "$have_tex" = yes ]; then
+		if (cd "$B2" && pdflatex -interaction=nonstopmode -halt-on-error note.tex >/dev/null 2>&1); then
+			pass "copy/tex-stands-alone"
+		else
+			fail "copy/tex-stands-alone" "$(grep -m3 '^!' "$B2/note.log")"
+		fi
+	fi
+	# Copied only when missing or different: rebuilding (into a fresh cache,
+	# with the same figures) rewrites none of them.
+	touch "$F/stamp"
+	sleep 1
+	jmd "$F/vault" process note.md -o build/note.html || fail "copy/rebuild-exit" "$(cat "$F/vault/err.txt")"
+	rewritten=$(find "$B2/note-figures" -type f -newer "$F/stamp" | sed "s|$B2/||")
+	if [ -z "$rewritten" ]; then pass "copy/unchanged-not-rewritten"; else fail "copy/unchanged-not-rewritten" "$rewritten"; fi
+	# A folder of that name the engine did not make is left alone.
+	mkdir -p "$B2/mine-figures"
+	jmd "$F/vault" process note.md --to latex -o build/mine.tex || fail "copy/foreign-exit" "$(cat "$F/vault/err.txt")"
+	has "copy/foreign-folder-warned" "$F/vault/err.txt" 'Copy figures: mine-figures/ was not made by jmarkdown'
+	n=$(find "$B2/mine-figures" -type f | wc -l | tr -d ' ')
+	if [ "$n" = 0 ]; then pass "copy/foreign-folder-untouched"; else fail "copy/foreign-folder-untouched" "$n files written into it"; fi
+	has "copy/foreign-refers-to-cache" "$B2/mine.tex" '{../../store/MetaPost/'
+	# A split book's pages refer to the book's figures folder, beside the pages' folder.
+	S2="$F/split"
+	mkdir -p "$S2/chapters" "$S2/site" "$S2/.jmarkdown"
+	printf '{ "Copy figures": true }\n' >"$S2/.jmarkdown/config.json"
+	printf -- '---\nTitle: Split\n---\n\n@chapter+(chapters/one.md)\n' >"$S2/master.md"
+	printf '# One\n\n@begin(metapost)\ndraw unitsquare scaled 6cm;\n@end(metapost)\n' >"$S2/chapters/one.md"
+	jmd "$S2" process master.md -o site/book.html --html-layout split || fail "copy/split-exit" "$(cat "$S2/err.txt")"
+	has      "copy/split-page-refers-to-copy" "$S2/site/book/one.html" ' src="../book-figures/MetaPost/'
+	resolves "copy/split-page-resolves" "$S2/site/book/one.html"
+	# A header cannot turn it on.
+	mkdir -p "$F/hdr"
+	printf -- '---\nTitle: Header\nCopy figures: true\n---\n\n@begin(metapost)\ndraw unitsquare scaled 7cm;\n@end(metapost)\n' >"$F/hdr/note.md"
+	jmd "$F/hdr" process note.md --fragment -o out.html || fail "copy/header-exit" "$(cat "$F/hdr/err.txt")"
+	has "copy/header-warned" "$F/hdr/err.txt" 'Copy figures: copying the figures beside the output is set in .jmarkdown/config.json'
+	if [ ! -e "$F/hdr/out-figures" ]; then pass "copy/header-ignored"; else fail "copy/header-ignored" "out-figures/ was made"; fi
+else
+	skip "copy/tex-stands-alone" "no mpost/mptopdf or no lualatex/dvisvgm"
+fi
+
 # --- mmdc missing: the diagram is left out, with a build warning naming it -------------------------
 
 M="$SCRATCH/nommdc"

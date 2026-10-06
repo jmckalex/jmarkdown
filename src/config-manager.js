@@ -126,7 +126,11 @@ export const DEFAULT_CONFIG = {
 	// under this one. null: beside the note (a book's: the master), as always.
 	// A relative path resolves against the working directory. Config or host
 	// only — where the engine writes is not a document's to say.
-	'Cache directory': null
+	'Cache directory': null,
+	// Copy each cached figure an output refers to into `<output>-figures/`
+	// beside it, and refer to the copy (figure-cache.js), so a kept .tex or
+	// .html stands on its own wherever the cache is. Config or host only.
+	'Copy figures': false
 };
 
 class ConfigManager {
@@ -367,6 +371,10 @@ class ConfigManager {
 				// Config or host only (figure-cache.js): where the engine writes
 				// is the host's to say, not the document's.
 				addWarning('Cache directory: where the engine keeps the figures it makes is set in .jmarkdown/config.json or by the host, not in a document header — ignored');
+				break;
+			case "Copy_figures":
+				// Config or host only (figure-cache.js), like Cache directory.
+				addWarning('Copy figures: copying the figures beside the output is set in .jmarkdown/config.json or by the host, not in a document header — ignored');
 				break;
 			case "Callouts":
 				// Config only (src/callouts.js): a definition is an object, which

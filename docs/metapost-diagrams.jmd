@@ -132,8 +132,12 @@ working directory for all of it is a folder named `MetaPost/`, created automatic
 **beside the Markdown file being processed** (not the directory you ran the command
 from) — or, if the `Cache directory` configuration key names a folder, inside that
 one instead (set in `.jmarkdown/config.json`, never in a document header, so that
-what JMarkdown makes can be kept out of your own folders). The steps, for the
-**web/SVG** path, are:
+what JMarkdown makes can be kept out of your own folders). With `Copy figures: true`
+as well, each figure the output uses is copied into a folder beside the output,
+`<output name>-figures/`, and the output refers to the copy — so a kept `.html` or
+`.tex` stands on its own wherever the cache is. JMarkdown marks that folder with a
+`.jmarkdown-figures` file, never deletes anything in it, and leaves a folder of that
+name alone if it did not make it. The steps, for the **web/SVG** path, are:
 
 1. **Assemble the program** described above, prefixed with the two lines that tell
    MetaPost to emit SVG:

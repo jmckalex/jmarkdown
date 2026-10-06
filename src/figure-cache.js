@@ -28,12 +28,21 @@
 	directory` being the note's folder (a book's: the master's) unless the
 	config or a host names another — so a host can keep what the engine makes
 	out of the user's folders. A header cannot set it (config-manager.js).
+
+	`Copy figures` (config or host only): with an output file, each cached file
+	the output refers to is copied into `<output without extension>-figures/
+	<kind>/` beside it — when missing or different, never deleting anything
+	there — and the output refers to the copy. A kept .tex or .html then stands
+	on its own, wherever the cache is and whether or not it survives. The
+	folder carries a marker file, FIGURES_MARKER, so a host can tell it from a
+	folder of the user's; one of that name without the marker is left alone
+	(warned; the output then refers to the cache).
 */
 
 import fs from 'fs';
 import path from 'path';
 import { configManager } from './config-manager.js';
-import { addWarning } from './warnings.js';
+import { addWarning, getWarnings } from './warnings.js';
 import { getBook, bookLayout } from './book.js';
 
 // The note's folder (a book's: the master's).
@@ -65,6 +74,49 @@ export function cacheDir(kind) {
 	return dir;
 }
 
+export const FIGURES_MARKER = '.jmarkdown-figures';
+const MARKER_TEXT = 'This folder was made by jmarkdown (`Copy figures`): copies of the figures '
+	+ 'the file beside it refers to. jmarkdown adds and updates files here and never deletes any.\n';
+
+function warnOnce(message) {
+	if (!getWarnings().some((w) => w.endsWith(message))) addWarning(message);
+}
+
+// The output's figures folder, when `Copy figures` is on and there is an
+// output file; created and marked if need be. null otherwise, or when a folder
+// of that name is not jmarkdown's.
+function figuresDir() {
+	const on = configManager.get('Copy figures');
+	if (!(on === true || String(on).toLowerCase() === 'true')) return null;
+	const out = configManager.get('Output file');
+	if (!out) return null;
+	const dir = `${out.replace(/\.[^./\\]+$/, '')}-figures`;
+	const marker = path.join(dir, FIGURES_MARKER);
+	if (fs.existsSync(marker)) return dir;
+	if (fs.existsSync(dir)) {
+		warnOnce(`Copy figures: ${path.basename(dir)}/ was not made by jmarkdown (it has no ${FIGURES_MARKER}), so nothing is copied into it — the output refers to the cache instead`);
+		return null;
+	}
+	fs.mkdirSync(dir, { recursive: true });
+	fs.writeFileSync(marker, MARKER_TEXT);
+	return dir;
+}
+
+// A cached file as the output should refer to it: its copy in the figures
+// folder (made or updated now) when `Copy figures` is on, else itself.
+function referenced(abs) {
+	const dir = figuresDir();
+	if (!dir || !fs.existsSync(abs)) return abs;
+	const dest = path.join(dir, path.basename(path.dirname(abs)), path.basename(abs));
+	let same = false;
+	try { same = fs.readFileSync(dest).equals(fs.readFileSync(abs)); } catch { /* not copied yet */ }
+	if (!same) {
+		fs.mkdirSync(path.dirname(dest), { recursive: true });
+		fs.copyFileSync(abs, dest);
+	}
+	return dest;
+}
+
 /** `target` as found from the folder of the .tex at `out`, counted from real paths. */
 export function texRelative(out, target) {
 	return slashes(path.relative(realPath(path.dirname(out)), realPath(target))) || '.';
@@ -80,7 +132,7 @@ export function texCachePath(abs) {
 		addWarning('the LaTeX goes to stdout, so its cached diagrams are included by absolute path (which names your folders) — give an output file to make them relative');
 		return abs;
 	}
-	return texRelative(out, abs);
+	return texRelative(out, referenced(abs));
 }
 
 // A relative path as a URL in an attribute: encoded as a URL (a space, a
@@ -95,7 +147,7 @@ export function htmlCachePath(abs) {
 	const out = configManager.get('Output file');
 	const split = getBook() && bookLayout() === 'split';
 	const from = out && !split ? path.dirname(out) : noteDir();
-	return urlPath(slashes(path.relative(realPath(from), realPath(abs))));
+	return urlPath(slashes(path.relative(realPath(from), realPath(out ? referenced(abs) : abs))));
 }
 
 /**
