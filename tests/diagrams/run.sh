@@ -362,6 +362,25 @@ else
 	skip "copy/tex-stands-alone" "no mpost/mptopdf or no lualatex/dvisvgm"
 fi
 
+# --- the same two settings from a host: processFile's cacheDir / copyFigures, and the CLI's flags ------
+
+if [ "$have_mp" = yes ]; then
+	O="$SCRATCH/options"
+	mkdir -p "$O/vault/build"
+	printf -- '---\nTitle: Options\n---\n\n@begin(metapost)\ndraw unitsquare scaled 8cm;\n@end(metapost)\n' >"$O/vault/note.md"
+	(cd "$O/vault" && HOME="$SCRATCH/home" "$NODE" --input-type=module -e "
+		import { processFile } from '$JMD';
+		await processFile('note.md', { to: 'latex', output: 'build/lib.tex', cacheDir: '$O/libcache', copyFigures: true });
+	" >"$O/lib.log" 2>&1) || fail "options/library-exit" "$(cat "$O/lib.log")"
+	if [ -d "$O/libcache/MetaPost" ] && [ ! -e "$O/vault/MetaPost" ]; then pass "options/library-cache-dir"; else fail "options/library-cache-dir" "$(ls "$O" "$O/vault")"; fi
+	has "options/library-copy-figures" "$O/vault/build/lib.tex" '{lib-figures/MetaPost/'
+	jmd "$O/vault" process note.md --to latex -o build/cli.tex --cache-dir ../clicache --copy-figures || fail "options/cli-exit" "$(cat "$O/vault/err.txt")"
+	if [ -d "$O/clicache/MetaPost" ]; then pass "options/cli-cache-dir"; else fail "options/cli-cache-dir" "$(ls "$O")"; fi
+	has "options/cli-copy-figures" "$O/vault/build/cli.tex" '{cli-figures/MetaPost/'
+else
+	skip "options/library-cache-dir" "no mpost/mptopdf"
+fi
+
 # --- mmdc missing: the diagram is left out, with a build warning naming it -------------------------
 
 M="$SCRATCH/nommdc"
