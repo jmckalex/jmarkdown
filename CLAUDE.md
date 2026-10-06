@@ -40,7 +40,7 @@ All source lives in `src/`. Key files:
 | `inline-function-extension.js` | `function(…) { … }` blocks (at a line start) and inline `func(…) { … }`: run an anonymous function in place. Claims only a complete function WITH A BODY (`functionSource`), so prose that mentions `func(x)` stays prose; a throw becomes a `noteCodeError` marker |
 | `source-positions.js` | Stamps `data-source-line` attributes for Cmd+click inverse search to Sublime Text |
 | `post-processor.js` | Cheerio DOM manipulation, cross-reference resolution, beautification |
-| `latex-renderer.js` | LaTeX renderer for marked's built-in tokens (paragraphs, headings → class-aware sectioning, lists, code → minted, links, images → plain `\includegraphics`, …) |
+| `latex-renderer.js` | LaTeX renderer for marked's built-in tokens (paragraphs, headings → class-aware sectioning, lists, code → minted, links, images → plain `\includegraphics`, …). Also `blockText`, a `text` extension renderer (LaTeX only, module scope): block-level text — a list item's, or a callout's or `@begin` body's nested in one — becomes a paragraph before marked renders it and wraps the result, which escaped every `&`/`#` twice. Don't trust marked's `escaped` flag for that: it also marks text after an unclosed inline `<code>` (fixed 2026-10-06) |
 | `latex-template.js` | Full-document assembly: `\documentclass` + preamble + frontmatter + body. Page setup (geometry/setspace/fancyhdr) + hyperref/PDF metadata from metadata keys. Peer of `html-template.js` |
 | `html-template.js` | HTML full-document assembly (Mustache + config merge); peer of `latex-template.js` |
 | `default-template.tex.mustache` | The `.tex` document skeleton (triple-brace; peer of `default-template.html.mustache`) |

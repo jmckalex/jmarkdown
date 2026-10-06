@@ -1,0 +1,23 @@
+---
+Title: Blocks Inside List Items
+---
+
+- A callout in an item:
+
+  > [!note]
+  > Callout prose & a hash # and code `#tag`.
+
+- A theorem in an item:
+
+  @begin(theorem)
+  Theorem prose & a hash #.
+  @end(theorem)
+
+- A generic environment in an item:
+
+  @begin(aside-note)
+  Aside prose & a hash #.
+  @end(aside-note)
+
+- A tight item & #
+  - nested & # too

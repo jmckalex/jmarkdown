@@ -221,10 +221,11 @@ done
 # the top of page 1 ("equationequationequations"); with -halt-on-error, it
 # stopped the build. A <style> block printed its CSS; a list item's `&`
 # stopped the build too, and its inline `#` printed as `\#`; so did a `&` in
-# the paragraphs after an inline tag left open. The fixtures are
+# the paragraphs after an inline tag left open, and in a block nested in a
+# list item. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block list-specials unclosed-tag; do
+	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -258,6 +259,13 @@ if command -v pdftotext >/dev/null 2>&1; then
 			grep -q 'A hash in code #, and #project/clew.' "$work/doc.txt" || problems="$problems list-code"
 			grep -q 'Loose code #.' "$work/doc.txt" || problems="$problems list-loose"
 			grep -q '#include & more' "$work/doc.txt" || problems="$problems raw-html"
+			grep -qF '\#' "$work/doc.txt" && problems="$problems backslash-printed"
+		fi
+		# Blocks nested in list items print their `&` and `#` as written.
+		if [ "$name" = list-nested ]; then
+			grep -q 'Callout prose & a hash # and code #tag.' "$work/doc.txt" || problems="$problems nested-callout"
+			grep -q 'Theorem prose & a hash #.' "$work/doc.txt" || problems="$problems nested-theorem"
+			grep -q 'Aside prose & a hash #.' "$work/doc.txt" || problems="$problems nested-generic"
 			grep -qF '\#' "$work/doc.txt" && problems="$problems backslash-printed"
 		fi
 		# Text after an inline tag left open is escaped like any other.

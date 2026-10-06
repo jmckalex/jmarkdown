@@ -17,6 +17,7 @@ import { PYGMENTS_LEXERS } from './pygments-lexers.js';
 import { addWarning, getWarnings } from './warnings.js';
 import { escapeLatexText as escapeLatex, escapeTexText } from './latex-escape.js';
 import { commandForDepth } from './sectioning.js';
+import { marked } from './utils.js';
 
 // Candidate \mintinline delimiters, tried in order. \mintinline takes its code
 // verbatim between a delimiter pair (like \verb), so the delimiter just has to
@@ -68,36 +69,30 @@ function headingCode(lang, code) {
 // A <style> element is the page's CSS, with nothing to print.
 const STYLE_ELEMENT = /<style\b[^>]*>[\s\S]*?<\/style>[ \t]*\n?/gi;
 
-// A list item's text, wrapped in a paragraph BEFORE it is rendered. Left to
-// marked's parser, its block-level text tokens are rendered first and the
-// result is then wrapped in a paragraph as one text token flagged `escaped`
-// (Parser.parse, `top`), which text() escaped a second time: every `&` and `#`
-// in a list item became `\\&` / `\\#` (a line break, then an alignment tab,
-// which stops pdfLaTeX), and a `#` in its inline code printed as `\#`. The
-// `escaped` flag can't be trusted to mark that wrap: marked flags ordinary
-// text `escaped` too, inside an inline <code>, <kbd>, <pre> or <script> and
-// in every paragraph after one left open, and that text is not yet LaTeX.
-// Consecutive text tokens make one paragraph, joined by a newline, as marked
-// joins them.
-function itemBlocks(tokens) {
-	const blocks = [];
-	let paragraph = null;
-	for (const t of tokens) {
-		if (t.type !== 'text') {
-			blocks.push(t);
-			paragraph = null;
-			continue;
-		}
-		const inline = t.tokens ?? [{ type: 'text', raw: t.raw, text: t.text }];
-		if (paragraph) {
-			paragraph.tokens.push({ type: 'text', raw: '\n', text: '\n' }, ...inline);
-		} else {
-			paragraph = { type: 'paragraph', raw: t.raw, text: t.text, tokens: [...inline] };
-			blocks.push(paragraph);
-		}
-	}
-	return blocks;
-}
+// Block-level text, rendered as the paragraph marked would wrap it in — ONCE.
+// Text inside a list item is lexed as `text` tokens, not paragraphs (marked's
+// lexer is not at the top level there), and so is the body of any block
+// nested in one: a callout, an @begin environment. marked's parser renders
+// such a token and then wraps the RESULT in a paragraph, as one text token
+// flagged `escaped` (Parser.parse, `top`), which text() escaped a second time:
+// every `&` and `#` became `\\&` / `\\#` (a line break, then an alignment tab,
+// which stops pdfLaTeX), and a `#` in inline code printed as `\#`. The
+// `escaped` flag can't mark that wrap: marked flags ordinary text `escaped`
+// too, inside an inline <code>, <kbd>, <pre> or <script> and in every
+// paragraph after one left open, and that text is not yet LaTeX.
+// An extension renderer is consulted before marked's own handling, so the
+// token becomes a paragraph here, unrendered, and is escaped once. Block-level
+// text is the kind that carries inline `tokens` (as smart-typography.js and
+// latex-lint.js also tell it apart). Everything else — HTML, inline text —
+// returns false and goes on to the renderer, unchanged.
+const blockText = {
+	name: 'text',
+	renderer(token) {
+		if (!global.isLatex || !Array.isArray(token.tokens)) return false;
+		return this.parser.renderer.paragraph({ type: 'paragraph', raw: token.raw, text: token.text, tokens: token.tokens });
+	},
+};
+marked.use({ extensions: [blockText] });
 
 const latexRenderer = {
 
@@ -199,7 +194,7 @@ const latexRenderer = {
 	},
 
 	listitem(token) {
-		const content = this.parser.parse(itemBlocks(token.tokens));
+		const content = this.parser.parse(token.tokens);
 		return `\\item ${content.trim()}\n`;
 	},
 

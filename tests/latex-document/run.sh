@@ -178,6 +178,18 @@ if render unclosed-tag; then
 	want   "unclosed/list"     "$TEX" '\item A list item \& \# after it.'
 fi
 
+# --- list-nested.jmd: a block nested in a list item (a callout, a theorem, a
+#     generic environment) is lexed as the item is, its text as `text`
+#     tokens, which marked rendered and then escaped again. Once, now. ---
+if render list-nested; then
+	want   "nested/callout"    "$TEX" 'Callout prose \& a hash \# and code \mintinline{text}|#tag|.'
+	want   "nested/theorem"    "$TEX" 'Theorem prose \& a hash \#.'
+	want   "nested/generic"    "$TEX" 'Aside prose \& a hash \#.'
+	want   "nested/tight"      "$TEX" '\item A tight item \& \#'
+	want   "nested/sublist"    "$TEX" '\item nested \& \# too'
+	absent "nested/no-double"  "$TEX" '\\&'
+fi
+
 # --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
 if render page-setup; then
 	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'
