@@ -1,0 +1,9 @@
+---
+Title: An Unclosed Tag
+---
+
+Use <code>a & b in an unclosed tag.
+
+Next paragraph & with # specials.
+
+- A list item & # after it.

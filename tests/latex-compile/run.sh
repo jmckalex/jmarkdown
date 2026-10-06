@@ -220,10 +220,11 @@ done
 # plus hyperref, which every full document loads — printed its arguments at
 # the top of page 1 ("equationequationequations"); with -halt-on-error, it
 # stopped the build. A <style> block printed its CSS; a list item's `&`
-# stopped the build too, and its inline `#` printed as `\#`. The fixtures are
+# stopped the build too, and its inline `#` printed as `\#`; so did a `&` in
+# the paragraphs after an inline tag left open. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block list-specials; do
+	for name in cref-unused cref-used style-block list-specials unclosed-tag; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -258,6 +259,11 @@ if command -v pdftotext >/dev/null 2>&1; then
 			grep -q 'Loose code #.' "$work/doc.txt" || problems="$problems list-loose"
 			grep -q '#include & more' "$work/doc.txt" || problems="$problems raw-html"
 			grep -qF '\#' "$work/doc.txt" && problems="$problems backslash-printed"
+		fi
+		# Text after an inline tag left open is escaped like any other.
+		if [ "$name" = unclosed-tag ]; then
+			grep -q 'Next paragraph & with # specials.' "$work/doc.txt" || problems="$problems after-unclosed"
+			grep -q 'A list item & # after it.' "$work/doc.txt" || problems="$problems list-after-unclosed"
 		fi
 		if [ -z "$problems" ]; then
 			echo "PASS  $label [pdf text]"

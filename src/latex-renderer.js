@@ -68,6 +68,37 @@ function headingCode(lang, code) {
 // A <style> element is the page's CSS, with nothing to print.
 const STYLE_ELEMENT = /<style\b[^>]*>[\s\S]*?<\/style>[ \t]*\n?/gi;
 
+// A list item's text, wrapped in a paragraph BEFORE it is rendered. Left to
+// marked's parser, its block-level text tokens are rendered first and the
+// result is then wrapped in a paragraph as one text token flagged `escaped`
+// (Parser.parse, `top`), which text() escaped a second time: every `&` and `#`
+// in a list item became `\\&` / `\\#` (a line break, then an alignment tab,
+// which stops pdfLaTeX), and a `#` in its inline code printed as `\#`. The
+// `escaped` flag can't be trusted to mark that wrap: marked flags ordinary
+// text `escaped` too, inside an inline <code>, <kbd>, <pre> or <script> and
+// in every paragraph after one left open, and that text is not yet LaTeX.
+// Consecutive text tokens make one paragraph, joined by a newline, as marked
+// joins them.
+function itemBlocks(tokens) {
+	const blocks = [];
+	let paragraph = null;
+	for (const t of tokens) {
+		if (t.type !== 'text') {
+			blocks.push(t);
+			paragraph = null;
+			continue;
+		}
+		const inline = t.tokens ?? [{ type: 'text', raw: t.raw, text: t.text }];
+		if (paragraph) {
+			paragraph.tokens.push({ type: 'text', raw: '\n', text: '\n' }, ...inline);
+		} else {
+			paragraph = { type: 'paragraph', raw: t.raw, text: t.text, tokens: [...inline] };
+			blocks.push(paragraph);
+		}
+	}
+	return blocks;
+}
+
 const latexRenderer = {
 
 	// Raw HTML reaches the .tex as written (marked's own rule), but for its
@@ -81,19 +112,6 @@ const latexRenderer = {
 	},
 
 	paragraph(token) {
-		// marked's parser wraps a list item's text, which it has ALREADY
-		// rendered, in a paragraph of its own: one text token flagged `escaped`
-		// (Parser.parse, `top`). Print that text as it stands. Run through
-		// text() it was escaped twice: every `&` and `#` in a list item became
-		// `\\&` / `\\#` (a line break, then an alignment tab, which stops
-		// pdfLaTeX), and a `#` in its inline code printed as `\#`.
-		// Only that paragraph is matched: marked also flags the text inside an
-		// inline <code>, <kbd>, <pre> or <script> `escaped`, and that text is
-		// NOT yet LaTeX, so text() must go on escaping it.
-		const [only, ...rest] = token.tokens ?? [];
-		if (rest.length === 0 && only?.type === 'text' && only.escaped && !only.tokens) {
-			return `${only.text}\n\n`;
-		}
 		return `${this.parser.parseInline(token.tokens)}\n\n`;
 	},
 
@@ -181,7 +199,7 @@ const latexRenderer = {
 	},
 
 	listitem(token) {
-		const content = this.parser.parse(token.tokens);
+		const content = this.parser.parse(itemBlocks(token.tokens));
 		return `\\item ${content.trim()}\n`;
 	},
 

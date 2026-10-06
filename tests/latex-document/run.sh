@@ -168,6 +168,16 @@ if render list-specials; then
 	want   "list/raw-html"     "$TEX" '<code>\#include \& more</code>'
 fi
 
+# --- unclosed-tag.jmd: marked flags the text after an inline <code> left open
+#     `escaped`, in every later paragraph too. That text is not yet LaTeX and
+#     must still be escaped (list-specials' fix once trusted the flag, which
+#     left a bare `&` and `#` here). ---
+if render unclosed-tag; then
+	want   "unclosed/inside"   "$TEX" 'Use <code>a \& b in an unclosed tag.'
+	want   "unclosed/after"    "$TEX" 'Next paragraph \& with \# specials.'
+	want   "unclosed/list"     "$TEX" '\item A list item \& \# after it.'
+fi
+
 # --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
 if render page-setup; then
 	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'
