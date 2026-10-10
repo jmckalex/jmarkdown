@@ -186,6 +186,71 @@ if command -v pdflatex >/dev/null 2>&1 && command -v pygmentize >/dev/null 2>&1;
 	done
 fi
 
+# --- the book map (book-map.js): every label's number, as the references print it ------------------
+#     Clew's shape: numbering + labels.<label>{number|null, type, kind, file, line, id}. Asked for
+#     only (--book-map / bookMap); never computed or written otherwise.
+
+# mapcheck NAME FILE.json FILE.html — the map's fields for the fixture's labels, and every number an
+# @ref / @cref prints in the HTML equal to the map's number for the label it links to.
+mapcheck() {
+	node -e "
+		const fs = require('fs');
+		const m = JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));
+		const html = fs.readFileSync(process.argv[2], 'utf8');
+		const byId = Object.fromEntries(Object.values(m.labels).map((e) => [e.id, e]));
+		const bad = [];
+		for (const [, id, text] of html.matchAll(/<a class=\"xref-c?ref\" href=\"#([^\"]+)\">([^<]*)<\/a>/g)) {
+			const e = byId[id];
+			const printed = text.replace(/^[A-Za-z]+(&#160;|&nbsp;|\\u00a0)/, '').replace(/^\((.*)\)$/, '\$1');
+			if (!e || e.number !== printed) bad.push(id + ': printed ' + printed + ', map ' + (e && e.number));
+		}
+		console.log(bad.length ? 'MISMATCH ' + bad.join('; ') : 'refs-match');
+	" "$2" "$3" >"$N/$1-check.txt" 2>&1
+}
+nbuild map master.md --fragment --book-map
+has   "book-map/written" "$N/map-bookmap.json" '"numbering": "per chapter"'
+node -e "
+	const m = require(process.argv[1]);
+	const want = { 'fig:a': ['1.1', 'figure', 'figure', 'one.md', 3], 'thm:a': ['1.1', 'theorem', 'theorem', 'one.md', 7],
+		'eq:a': ['1.1', 'equation', 'equation', 'one.md', 11], 'fig:c': ['2.2', 'figure', 'figure', 'two.md', 7],
+		'thm:b': ['2.1', 'lemma', 'lemma', 'two.md', 11], 'lst:a': ['2.1', 'listing', 'listing', 'two.md', 21],
+		'ex:a': ['2.1', 'exercise', 'exercise', 'two.md', 31] };
+	const bad = Object.entries(want).filter(([k, [n, t, kd, f, l]]) => {
+		const e = m.labels[k]; return !e || e.number !== n || e.type !== t || e.kind !== kd || e.file !== f || e.line !== l || e.id !== k; });
+	console.log(bad.length ? 'BAD ' + bad.map((b) => b[0]).join(' ') : 'fields-ok');
+" "$N/map-bookmap.json" >"$N/map-fields.txt" 2>&1
+has   "book-map/fields" "$N/map-fields.txt" 'fields-ok'
+mapcheck map "$N/map-bookmap.json" "$N/map.out"
+has   "book-map/refs-match-per-chapter" "$N/map-check.txt" 'refs-match'
+nbuild contmap continuous.md --fragment --book-map
+has   "book-map/continuous" "$N/contmap-bookmap.json" '"numbering": "continuous"'
+mapcheck contmap "$N/contmap-bookmap.json" "$N/contmap.out"
+has   "book-map/refs-match-continuous" "$N/contmap-check.txt" 'refs-match'
+if [ ! -e "$N/per-bookmap.json" ]; then pass "book-map/off-by-default"; else fail "book-map/off-by-default" "per-bookmap.json was written"; fi
+# A label in plain prose prints ?? and maps to null; a note's label takes its reference's line.
+mkdir -p "$SCRATCH/map"
+printf -- '---\nTitle: Edge\nHeadings: numeric\n---\n\n@chapter+(a.md)\n' >"$SCRATCH/map/master.md"
+printf '# Alpha\n\n## A section @label[sec:two]\n\nPlain words @label[plain:one] here.\n\nA note[fn: with a label @label[fn:one] inside].\n\nSee @ref[sec:two] and @ref[fn:one].\n' >"$SCRATCH/map/a.md"
+(cd "$SCRATCH/map" && HOME="$SCRATCH/home" node "$JMD" process master.md --fragment -o edge.html --book-map >/dev/null 2>edge.err) || fail "book-map/edge-exit" "$(cat "$SCRATCH/map/edge.err")"
+node -e "
+	const l = require(process.argv[1]).labels;
+	const ok = l['plain:one'].number === null && l['plain:one'].kind === 'plain'
+		&& l['sec:two'].number === '1.1' && l['sec:two'].kind === 'heading' && l['sec:two'].type === 'section'
+		&& l['fn:one'].kind === 'footnote' && l['fn:one'].line === 7;
+	console.log(ok ? 'edge-ok' : 'BAD ' + JSON.stringify(l));
+" "$SCRATCH/map/edge-bookmap.json" >"$SCRATCH/map/edge-check.txt" 2>&1
+has   "book-map/plain-null-heading-footnote" "$SCRATCH/map/edge-check.txt" 'edge-ok'
+# The library returns it; a LaTeX build writes none, and says why.
+(cd "$N" && HOME="$SCRATCH/home" node --input-type=module -e "
+	const { processFile } = await import('$JMD');
+	const r = await processFile('master.md', { to: 'html', fragment: true, output: 'lib.out', bookMap: true });
+	console.log(r.bookMap && r.bookMap.labels['fig:c'].number === '2.2' ? 'returned' : 'NOT RETURNED');
+" >"$N/lib-map.txt" 2>&1)
+has   "book-map/returned-by-processFile" "$N/lib-map.txt" 'returned'
+nbuild latexmap master.md --to latex --book-map
+has   "book-map/latex-says-none" "$N/latexmap.err" 'book map: a LaTeX build writes none'
+if [ ! -e "$N/latexmap-bookmap.json" ]; then pass "book-map/latex-writes-none"; else fail "book-map/latex-writes-none" "written"; fi
+
 # --- a chapter's engine keys: silent when the book uses the same value (the owner, 2026-10-04) -----
 # settings/master.md sets `Resolve citations: true`, `Bibliography style: apa`
 # and a lowercase `numbering: continuous`. same.md repeats them (`True`);

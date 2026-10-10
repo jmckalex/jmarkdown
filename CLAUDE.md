@@ -250,6 +250,22 @@ golden is untouched).
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).
+- **Book map** (`book-map.js`; processFile's `bookMap: true`, the CLI's
+  `--book-map`; off by default, nothing computed otherwise): after the
+  post-processor's one numbering pass, every label with the number its
+  references print, in CLEW's own book-map shape so Clew's parity scenario can
+  compare them field for field — `{ numbering, labels: { <label>: { number
+  (null where @ref prints ??), type (@cref's word), kind (the environment's
+  name, 'heading', 'footnote' or 'plain'), file (the chapter path as handed
+  in; the master's own name for its text), line (in that file; a note's label
+  takes its reference's line), id } } }`. Returned by processFile and written
+  as `<output>-bookmap.json`; HTML builds only (LaTeX warns and writes none).
+- **A contract with Clew's print PDF** (Clew-app, 2026-10-10): its whole-book
+  print relies on these selectors — `section.jmd-chapter`,
+  `section.jmd-book-references`, `nav.index`, and `h1.unnumbered` (a further
+  numbered `#` inside a chapter breaks the page: `section.jmd-chapter > h1 ~
+  h1:not(.unnumbered)`). Never rename or restructure them without telling
+  Clew-app first.
 
 ## Watch mode (`jmarkdown watch <file>`)
 

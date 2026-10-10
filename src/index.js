@@ -34,6 +34,7 @@ import { obsidianLinks, obsidianText, obsidianEmbed, setObsidianLinks } from './
 import { escapedCharacters } from './escapes.js';
 import { latexLint, resetLatexLint } from './latex-lint.js';
 import { prepareBook, resetBook, getBook, bookExtension, bookLayout } from './book.js';
+import { getBookMap, warnNoLatexBookMap } from './book-map.js';
 import { writeBookPages } from './book-pages.js';
 import { bibliographyFiles } from './bibliographies.js';
 import createMarkdownDemo from './markdown-demo.js';
@@ -118,6 +119,12 @@ if (options.cacheDir != null && options.cacheDir !== '') {
 	configManager.set('Cache directory', path.resolve(process.cwd(), String(options.cacheDir)));
 }
 if (options.copyFigures != null) configManager.set('Copy figures', options.copyFigures === true || String(options.copyFigures).toLowerCase() === 'true');
+// The book map (book-map.js): processFile's `bookMap`, the CLI's --book-map.
+// Off unless asked; an HTML build's (LaTeX numbers its own book).
+if (options.bookMap === true || String(options.bookMap).toLowerCase() === 'true') {
+	configManager.set('Book map', true);
+	if (isLatex) warnNoLatexBookMap();
+}
 const markdownFile = filename;
 // In stdin mode, [[file.md]] inclusions and the "Markdown file directory"
 // config (used by mathematica/tikz/template/metadata-header) resolve against
@@ -888,7 +895,9 @@ if (isLatex) {
 	// during the run — a short stderr summary, like LaTeX's end-of-run nags.
 	reportWarnings();
 
-	return pages ? { outFile, isLatex, pages } : { outFile, isLatex };
+	const result = pages ? { outFile, isLatex, pages } : { outFile, isLatex };
+	if (getBookMap()) result.bookMap = getBookMap();
+	return result;
 }
 
 // ===========================================================================
@@ -955,6 +964,7 @@ if (isCliEntry) {
 		.option('--obsidian-links', 'Read Obsidian [[links]] and ![[image]] embeds (off by default)')
 		.option('--cache-dir <dir>', 'Keep the figures the engine makes (MetaPost/, TiKZ/, mermaid/, …) under this folder instead of beside the note')
 		.option('--copy-figures', 'Copy each figure the output uses into <output>-figures/ beside it, and refer to the copy')
+		.option('--book-map', 'Write every label\'s number to <output>-bookmap.json (HTML builds)')
 		.action(async (filename, options) => {
 			await processFile(filename, { ...program.opts(), ...options });
 		});
