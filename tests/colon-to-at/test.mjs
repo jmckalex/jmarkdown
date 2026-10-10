@@ -73,6 +73,10 @@ check('header', 'Title: a :ref[x]\n---\n:ref[y]', 'Title: a :ref[x]\n---\n@ref[y
 check('fenced code', '```\n:::note\n:ref[x]\n```\n:ref[y]', '```\n:::note\n:ref[x]\n```\n@ref[y]', 'same');
 check('inline code and maths', '`:ref[x]` and $a:b[1]$ and \\(f:x[1]\\) and :ref[y]', '`:ref[x]` and $a:b[1]$ and \\(f:x[1]\\) and @ref[y]', 'same');
 check('HTML comments and tags', '<!-- :ref[x] -->\n<span style="a:b[1]">:ref[y]</span>', '<!-- :ref[x] -->\n<span style="a:b[1]">@ref[y]</span>', 'same');
+check('the inline comment', '\nSee :ref[a]. % a note :ref[b] and Meta:x\nThen :ref[c] %% kanban:settings %%',
+	'\nSee @ref[a]. % a note :ref[b] and Meta:x\nThen @ref[c] %% kanban:settings %%', 'same,same');
+check('a header sets the comment marker', 'Inline comment: ## true\n---\nA :ref[a] ## :ref[b]\n50% :ref[c]',
+	'Inline comment: ## true\n---\nA @ref[a] ## :ref[b]\n50% @ref[c]', 'same,same');
 check('a multi-line comment', '<!--\n:::note\nx\n:::\n-->', '<!--\n:::note\nx\n:::\n-->', '');
 check('display maths', '$$\na:b[1]\n$$', '$$\na:b[1]\n$$', '');
 check('a verbatim @begin body', '@begin(TeX)\n:ref[x]\n@end(TeX)', '@begin(TeX)\n:ref[x]\n@end(TeX)', '');

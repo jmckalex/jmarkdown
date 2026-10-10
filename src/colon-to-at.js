@@ -53,7 +53,8 @@
 	Lines are 1-based, in the source as given.
 
 	Left alone: the metadata header, fenced code, inline code, maths ($…$, $$…$$,
-	\(…\), \[…\]), HTML comments, <script>/<style> blocks, raw HTML tags, URLs,
+	\(…\), \[…\]), HTML comments, the inline comment (`%` to the end of the line,
+	or the header's `Inline comment` marker — so Obsidian's one-line `%% … %%`), <script>/<style> blocks, raw HTML tags, URLs,
 	link destinations, and the bodies of verbatim environments (TeX, TiKZ,
 	mermaid, Mathematica, game, metapost, tabbing). A second run changes nothing.
 
@@ -117,6 +118,7 @@ export function convertColonDirectives(source, options = {}) {
 		optionals: new Set(),
 		loaded: new Set(options.customDirectives || []),
 		keep: new Set(options.keep || []),
+		comment: '%',
 		loadsAll: false
 	};
 	readHeader(header, ctx);
@@ -158,6 +160,8 @@ function readHeader(header, ctx) {
 			}
 		}
 		if (key === 'block elements') ctx.ownPolicy = true;
+		// The inline comment marker (metadata-header.js): `Inline comment: ## true`.
+		if (key.startsWith('inline comment') && m[2].trim()) ctx.comment = m[2].trim().split(/\s+/)[0];
 		if (key === 'load directives') {
 			const from = m[2].match(/^(.*?)\s+from\s+/);
 			if (from) from[1].split(',').map(s => s.trim()).filter(Boolean).forEach(n => ctx.loaded.add(n));
@@ -506,6 +510,13 @@ function convertInline(s, firstLine, ctx) {
 			const d = r.startsWith('$$') ? '$$' : '$';
 			const end = s.indexOf(d, i + d.length);
 			copyTo(end === -1 ? i + d.length : end + d.length);
+			continue;
+		}
+		// The inline comment (`%` unless the header says otherwise) runs to the end
+		// of its line, and nothing in it is rendered: no directive is read there.
+		if (ctx.comment && r.startsWith(ctx.comment)) {
+			const end = s.indexOf('\n', i);
+			copyTo(end === -1 ? s.length : end);
 			continue;
 		}
 		if (r.startsWith('<!--')) {
