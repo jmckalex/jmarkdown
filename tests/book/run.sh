@@ -136,6 +136,59 @@ printf '# Clip\n\n@video+(clip.mp4)[A clip]\n' >"$SCRATCH/media/notes/clip.md"
 (cd "$SCRATCH/media" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o build/media.tex >/dev/null 2>&1)
 has   "latex-elsewhere/video" "$SCRATCH/media/build/media.tex" '\href{run:../notes/clip.mp4}{A clip}'
 
+# --- the LaTeX include layout (book-latex.js): a master .tex and a file per chapter; \includeonly -----
+#     Off by default: the single .tex carries no trace of it. A full run gives the same words as the
+#     single .tex (pagination aside: \include starts each chapter file on a fresh page, so the master's
+#     text between chapters sits on a page of its own). --include-only proofs the named chapters.
+
+hasnt "include/single-untouched" "$L" 'jmd:include'
+mkdir -p "$B/incl"
+build incl/master --to latex --latex-layout include
+IL="$B/incl/master.out"
+for n in 1 2 3; do
+	if [ -f "$B/incl/master-ch-$n.tex" ]; then pass "include/chapter-file-$n"; else fail "include/chapter-file-$n" "$(ls "$B/incl")"; fi
+	has "include/master-includes-$n" "$IL" "\\include{master-ch-$n}"
+	has "include/chapter-$n-anchor" "$B/incl/master-ch-$n.tex" "\\phantomsection\\label{jmd-chapter-$n}"
+done
+hasnt "include/no-brackets-left" "$IL" 'jmd:include'
+hasnt "include/master-has-no-chapter" "$IL" '\phantomsection\label{jmd-chapter-1}'
+if command -v pdflatex >/dev/null 2>&1 && command -v pdftotext >/dev/null 2>&1; then
+	# The words of a PDF's text, sorted, less page furniture: page numbers, and
+	# running heads (CHAPTER 1. THE FIRST CHAPTER), which the extra pages carry.
+	words() { tr '\f' '\n' <"$1" | grep -v -E '^CHAPTER [0-9]+\. ' | tr -s ' \n' '\n' | grep -v -E '^[0-9ivx]*$' | sort; }
+	# Typeset under another job name: hyperref writes its outline to <job>.out.
+	(cd "$B/incl" && cp master.out typeset.tex && pdflatex -shell-escape -interaction=nonstopmode -halt-on-error typeset.tex >/dev/null 2>&1 \
+		&& pdflatex -shell-escape -interaction=nonstopmode -halt-on-error typeset.tex >/dev/null 2>&1 && pdftotext typeset.pdf book.txt)
+	if [ -f "$B/incl/book.txt" ] && [ -f "$B/book.pdf" ]; then
+		(cd "$B" && pdftotext book.pdf single.txt)
+		words "$B/single.txt" >"$B/incl/single.words"; words "$B/incl/book.txt" >"$B/incl/include.words"
+		if cmp -s "$B/incl/single.words" "$B/incl/include.words"; then pass "include/same-words-as-single"
+		else fail "include/same-words-as-single" "$(diff "$B/incl/single.words" "$B/incl/include.words" | head -8)"; fi
+		# A proof of chapter two alone: its text, numbered 2 from the .aux; none of chapter one's.
+		build incl/master --to latex --latex-layout include --include-only chapters/two.md
+		has "include/includeonly-written" "$IL" '\includeonly{master-ch-2}'
+		(cd "$B/incl" && cp master.out typeset.tex && pdflatex -shell-escape -interaction=nonstopmode -halt-on-error typeset.tex >/dev/null 2>&1 && pdftotext typeset.pdf proof.txt)
+		has   "include/proof-has-chapter-two" "$B/incl/proof.txt" 'Its own note'
+		has   "include/proof-keeps-its-number" "$B/incl/proof.txt" 'CHAPTER 2. TWO'
+		hasnt "include/proof-leaves-out-chapter-one" "$B/incl/proof.txt" 'No heading here'
+	else
+		fail "include/compiles" "$(grep -m3 '^!' "$B/incl/typeset.log" 2>/dev/null)"
+	fi
+fi
+build incl/x --to latex --latex-layout include --include-only nosuch
+has   "include/unknown-chapter-warned" "$B/incl/x.err" '--include-only names "nosuch", which is no chapter of this book'
+build incl/frag --to latex --fragment --latex-layout include
+has   "include/fragment-warned" "$B/incl/frag.err" '`LaTeX layout: include` needs an output file and a full document'
+hasnt "include/fragment-no-brackets" "$B/incl/frag.out" 'jmd:include'
+build incl/single-only --to latex --include-only chapters/two.md
+has   "include/includeonly-needs-layout" "$B/incl/single-only.err" '--include-only needs `LaTeX layout: include`'
+(cd "$B" && HOME="$SCRATCH/home" node --input-type=module -e "
+	const { processFile } = await import('$JMD');
+	const r = await processFile('master.md', { to: 'latex', output: 'incl/lib.tex', latexLayout: 'include' });
+	console.log(r.latexFiles && r.latexFiles.length === 3 ? 'returned' : 'NOT RETURNED ' + JSON.stringify(r.latexFiles));
+" >"$B/incl/lib.txt" 2>&1)
+has   "include/returned-by-processFile" "$B/incl/lib.txt" 'returned'
+
 # --- numbering: per chapter by default, `continuous` on request, the same in both outputs -------------
 
 cp -R "$HERE/numbering" "$SCRATCH/numbers"

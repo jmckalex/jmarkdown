@@ -33,7 +33,8 @@ import { tabbingFence, tabbing } from './tabbing.js';
 import { obsidianLinks, obsidianText, obsidianEmbed, setObsidianLinks } from './obsidian-links.js';
 import { escapedCharacters } from './escapes.js';
 import { latexLint, resetLatexLint } from './latex-lint.js';
-import { prepareBook, resetBook, getBook, bookExtension, bookLayout } from './book.js';
+import { prepareBook, resetBook, getBook, bookExtension, bookLayout, bookLatexLayout } from './book.js';
+import { writeLatexInclude, unbracket } from './book-latex.js';
 import { getBookMap, warnNoLatexBookMap } from './book-map.js';
 import { writeBookPages } from './book-pages.js';
 import { bibliographyFiles } from './bibliographies.js';
@@ -678,6 +679,8 @@ configManager.set('Output file', outFile ? path.resolve(outFile) : null);
 configManager.set('Biblify.host bibliography', [options.bibliography ?? []].flat().filter(Boolean));
 // A split book's pages (book-pages.js), when it writes them instead of outFile.
 let pages = null;
+// A book's LaTeX a file per chapter (book-latex.js), when it writes them.
+let latexFiles = null;
 
 function writeOutput(text) {
 	if (outFile === null) {
@@ -699,7 +702,7 @@ let markdown_no_metadata = await processYAMLheader(input);
 // other document prepareBook returns null and nothing below changes.
 const bookText = prepareBook(markdown_no_metadata, {
 	chapters: options.chapters ?? options.chapter, masterDir: markdownFileDirectory, isLatex,
-	numbering: options.numbering, htmlLayout: options.htmlLayout });
+	numbering: options.numbering, htmlLayout: options.htmlLayout, latexLayout: options.latexLayout });
 if (bookText !== null) markdown_no_metadata = bookText;
 const inBook = getBook() !== null;
 // A book stamps its own chapter lines (book.js): the spliced stream's lines —
@@ -826,7 +829,17 @@ if (isLatex) {
 	// document uses grouping/placement — otherwise notes were plain \footnote{}s).
 	const latexBody = fillEndnotes(content, 'latex');
 	const latex = options.fragment ? latexBody : processLatexTemplate(latexBody);
-	writeOutput(latex);
+	// A book in the include layout (book-latex.js): a master .tex and a file
+	// per chapter. Without an output file or a full document, one .tex as
+	// always, its chapter brackets taken out.
+	const includeOnly = [options.includeOnly ?? []].flat().filter(Boolean);
+	if (bookLatexLayout() === 'include' && !options.fragment && outFile !== null) {
+		latexFiles = writeLatexInclude(latex, outFile, includeOnly);
+	} else {
+		if (bookLatexLayout() === 'include') addWarning('book: `LaTeX layout: include` needs an output file and a full document — written as one .tex');
+		if (includeOnly.length) addWarning('book: --include-only needs `LaTeX layout: include` — ignored');
+		writeOutput(bookLatexLayout() === 'include' ? unbracket(latex) : latex);
+	}
 } else {
 	// HTML output: full pipeline with post-processing, template, and inverse search.
 
@@ -897,6 +910,7 @@ if (isLatex) {
 
 	const result = pages ? { outFile, isLatex, pages } : { outFile, isLatex };
 	if (getBookMap()) result.bookMap = getBookMap();
+	if (latexFiles) result.latexFiles = latexFiles;
 	return result;
 }
 
@@ -965,6 +979,8 @@ if (isCliEntry) {
 		.option('--cache-dir <dir>', 'Keep the figures the engine makes (MetaPost/, TiKZ/, mermaid/, …) under this folder instead of beside the note')
 		.option('--copy-figures', 'Copy each figure the output uses into <output>-figures/ beside it, and refer to the copy')
 		.option('--book-map', 'Write every label\'s number to <output>-bookmap.json (HTML builds)')
+		.option('--latex-layout <layout>', 'A book\'s LaTeX: single (one .tex, the default) or include (a master .tex that \\include\'s a file per chapter)')
+		.option('--include-only <chapter>', 'With --latex-layout include: typeset only this chapter (repeatable), for a quick proof', collectOption, [])
 		.action(async (filename, options) => {
 			await processFile(filename, { ...program.opts(), ...options });
 		});

@@ -250,6 +250,21 @@ golden is untouched).
 - **Output**: HTML wraps each chapter in `<section class="jmd-chapter"
   id="jmd-chapter-N" data-chapter data-file>`; LaTeX's `#` headings are its
   `\chapter`s. Suite: **`tests/book/run.sh`** (gating; HOME isolated).
+- **LaTeX include layout** (`book-latex.js`; `LaTeX layout: include` in the
+  master, processFile's `latexLayout`, the CLI's `--latex-layout`; default
+  `single`, byte-identical): the master `<output>.tex` (preamble, the master's
+  own text, back matter) `\include{<name>-ch-N}`s one `<name>-ch-N.tex` per
+  chapter (a name `\include` can take: spaces and the like become hyphens).
+  The chapter renderer (book.js) brackets each chapter's LaTeX with
+  `%% jmd:include-start/end N` lines ONLY in this layout, and the writer cuts
+  at them; a fragment or stdout build writes one .tex, brackets removed, with
+  a warning. A full run gives the single .tex's words, but `\include` starts
+  each chapter file on a fresh page, so the master's text between chapters
+  (and text before a chapter's first `#`) sits on a page of its own.
+  `includeOnly` / `--include-only <chapter>` (repeatable: a chapter's path as
+  handed in, its file name or its number; unknown names warned) writes
+  `\includeonly{…}` for a proof — LaTeX keeps the other chapters' numbers from
+  the last full run's .aux. processFile returns `latexFiles`.
 - **Book map** (`book-map.js`; processFile's `bookMap: true`, the CLI's
   `--book-map`; off by default, nothing computed otherwise): after the
   post-processor's one numbering pass, every label with the number its
