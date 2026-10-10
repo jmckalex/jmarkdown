@@ -125,7 +125,16 @@ sh "$REPO/tests/figure-engine/run.sh"
 figure_engine_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ] || [ "$obsidian_status" -ne 0 ] || [ "$diagrams_status" -ne 0 ] || [ "$figure_engine_status" -ne 0 ]; then
+# 15. colon-to-at — the converter from the retired colon directives to the @
+#     forms (src/colon-to-at.js): its cases, idempotence, `keep`, import
+#     freedom (Clew bundles it) and agreement with begin-end-core's element
+#     list. Unit tests; no engine run. Gates CI.
+echo "------ colon-to-at ------"
+sh "$REPO/tests/colon-to-at/run.sh"
+colon_to_at_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ] || [ "$obsidian_status" -ne 0 ] || [ "$diagrams_status" -ne 0 ] || [ "$figure_engine_status" -ne 0 ] || [ "$colon_to_at_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi

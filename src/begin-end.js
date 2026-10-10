@@ -57,10 +57,14 @@ registerBlockEnvironment('HTML', {
 // Conditional content (the @begin parity of :::print / :::web): markdown prose
 // emitted in one output only — e.g. a static figure for print vs. an interactive
 // widget for the web, from a single source.
+// LaTeX restores the paragraph break after the body: the core trims ctx.inner
+// (right for a wrapped environment), and :::print's output kept it, so without
+// it the next paragraph ran on from the body's last line (`Print only.After.`),
+// as comment/optionals once did (metadata-header.js).
 registerBlockEnvironment('print', {
 	mode: 'markdown',
 	html: () => '',
-	latex: (ctx) => ctx.inner
+	latex: (ctx) => ctx.inner + '\n\n'
 });
 registerBlockEnvironment('web', {
 	mode: 'markdown',
