@@ -137,7 +137,10 @@ as well, each figure the output uses is copied into a folder beside the output,
 `<output name>-figures/`, and the output refers to the copy — so a kept `.html` or
 `.tex` stands on its own wherever the cache is. JMarkdown marks that folder with a
 `.jmarkdown-figures` file, never deletes anything in it, and leaves a folder of that
-name alone if it did not make it. The steps, for the **web/SVG** path, are:
+name alone if it did not make it. A host can have the figures drawn by
+mp-tikz-wasm instead, in-process (`Figure engine: auto` or `wasm`, with `MP-TikZ
+dist`); the default, `external`, is the pipeline below. The steps, for the
+**web/SVG** path, are:
 
 1. **Assemble the program** described above, prefixed with the two lines that tell
    MetaPost to emit SVG:

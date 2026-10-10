@@ -35,6 +35,7 @@ import { escapedCharacters } from './escapes.js';
 import { latexLint, resetLatexLint } from './latex-lint.js';
 import { prepareBook, resetBook, getBook, bookExtension, bookLayout, bookLatexLayout } from './book.js';
 import { writeLatexInclude, unbracket } from './book-latex.js';
+import { figureEngineWanted, withFigureEngine } from './figure-engine.js';
 import { getBookMap, warnNoLatexBookMap } from './book-map.js';
 import { writeBookPages } from './book-pages.js';
 import { bibliographyFiles } from './bibliographies.js';
@@ -120,6 +121,11 @@ if (options.cacheDir != null && options.cacheDir !== '') {
 	configManager.set('Cache directory', path.resolve(process.cwd(), String(options.cacheDir)));
 }
 if (options.copyFigures != null) configManager.set('Copy figures', options.copyFigures === true || String(options.copyFigures).toLowerCase() === 'true');
+// What draws TikZ and MetaPost (figure-engine.js): processFile's
+// `figureEngine` / `mpTikzDist`, the CLI's --figure-engine / --mp-tikz-dist,
+// over the config files' for this build. Unset, the installed tools, as always.
+if (options.figureEngine) configManager.set('Figure engine', String(options.figureEngine));
+if (options.mpTikzDist) configManager.set('MP-TikZ dist', path.resolve(process.cwd(), String(options.mpTikzDist)));
 // The book map (book-map.js): processFile's `bookMap`, the CLI's --book-map.
 // Off unless asked; an HTML build's (LaTeX numbers its own book).
 if (options.bookMap === true || String(options.bookMap).toLowerCase() === 'true') {
@@ -812,7 +818,12 @@ if (isLatex) {
 	marked.use({ renderer: latexRenderer });
 }
 
-const content = marked.parse(text);
+// With mp-tikz-wasm as the figure engine, the parse is asynchronous, so its
+// walk can fill each figure before rendering (figure-engine.js). Otherwise
+// exactly the parse there always was.
+const content = figureEngineWanted()
+	? await withFigureEngine(() => marked.parse(text, { async: true }))
+	: marked.parse(text);
 
 // Index marks whose index never prints are silently lost in both outputs —
 // collect the warning now that the whole document has been parsed.
@@ -981,6 +992,8 @@ if (isCliEntry) {
 		.option('--book-map', 'Write every label\'s number to <output>-bookmap.json (HTML builds)')
 		.option('--latex-layout <layout>', 'A book\'s LaTeX: single (one .tex, the default) or include (a master .tex that \\include\'s a file per chapter)')
 		.option('--include-only <chapter>', 'With --latex-layout include: typeset only this chapter (repeatable), for a quick proof', collectOption, [])
+		.option('--figure-engine <engine>', 'What draws TikZ and MetaPost: external (the installed tools, the default), auto or wasm (mp-tikz-wasm)')
+		.option('--mp-tikz-dist <dir>', 'The mp-tikz-wasm release dist/ folder, for --figure-engine auto or wasm')
 		.action(async (filename, options) => {
 			await processFile(filename, { ...program.opts(), ...options });
 		});
@@ -1000,6 +1013,8 @@ if (isCliEntry) {
 		.option('--bibliography <file>', 'Add a bibliography file for every build, as a configured one (repeatable)', collectOption, [])
 		.option('--cache-dir <dir>', 'Keep the figures the engine makes under this folder instead of beside the note')
 		.option('--copy-figures', 'Copy each figure the output uses into <output>-figures/ beside it, and refer to the copy')
+		.option('--figure-engine <engine>', 'What draws TikZ and MetaPost: external (the installed tools, the default), auto or wasm (mp-tikz-wasm)')
+		.option('--mp-tikz-dist <dir>', 'The mp-tikz-wasm release dist/ folder, for --figure-engine auto or wasm')
 		.action(async (filename, options) => {
 			const { startWatch } = await import('./watch.js');
 			await startWatch(filename, options);

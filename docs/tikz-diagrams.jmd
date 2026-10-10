@@ -145,7 +145,10 @@ working directory for all of it is a folder named `TiKZ/`, created automatically
 **beside the Markdown file being processed** (not the directory you ran the
 command from) — or, if the `Cache directory` configuration key names a folder,
 inside that one instead (set in `.jmarkdown/config.json`, never in a document
-header). `Copy figures: true` copies each figure the output uses into
+header). A host can also have the figures drawn by mp-tikz-wasm, in-process, with
+no TeX installation (`Figure engine: auto` or `wasm`, with `MP-TikZ dist` naming
+its release `dist/` folder); the default, `external`, is the pipeline below.
+`Copy figures: true` copies each figure the output uses into
 `<output name>-figures/` beside it, as described for
 [MetaPost](metapost-diagrams.html#how-the-diagram-becomes-an-image). The steps are:
 
