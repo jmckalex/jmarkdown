@@ -150,8 +150,10 @@ function readHeader(header, ctx) {
 		if (!m) continue;
 		const key = m[1].trim().toLowerCase();
 		if (key === 'optionals') {
-			for (const item of m[2].split(',')) {
-				const name = item.trim().replace(/\[.*$/, '').trim();
+			// As metadata-header.js parseOptionalString reads it: names split on
+			// whitespace, each with an optional `[true]`/`[false]`.
+			for (const item of m[2].trim().split(/\s+/)) {
+				const name = item.replace(/\[.*\]$/, '');
 				if (name) ctx.optionals.add(name);
 			}
 		}

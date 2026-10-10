@@ -37,6 +37,8 @@ check('no closing line is left', ':::note\nx', ':::note\nx', 'needs-you');
 check('four-colon TeX is generic in the colon syntax', '::::TeX\nx\n::::', '@begin(TeX)\nx\n@end(TeX)', 'changes-output');
 check('comment at any count', '::::comment\nprivate\n::::', '@begin(comment)\nprivate\n@end(comment)', 'same');
 check('Optionals from the header', 'Optionals: draft\n---\n:::draft{include=true}\nx\n:::', 'Optionals: draft\n---\n@begin(draft){include=true}\nx\n@end(draft)', 'same');
+check('Optionals are space-separated', 'Optionals: answers directions[true]\n---\n:::answers\nx\n:::\n\n:::directions\ny\n:::',
+	'Optionals: answers directions[true]\n---\n@begin(answers)\nx\n@end(answers)\n\n@begin(directions)\ny\n@end(directions)', 'same,same');
 check('Load directives names are left', 'Load directives: box from defs.js\n---\n:::box\nx\n:::', 'Load directives: box from defs.js\n---\n:::box\nx\n:::', 'needs-you');
 check('in a blockquote', '> :::note\n> x\n> :::', '> @begin(<note>)\n> x\n> @end(note)', 'same');
 check('in a list item', '- item\n\n    :::note\n    x\n    :::', '- item\n\n    @begin(<note>)\n    x\n    @end(note)', 'changes-output');
