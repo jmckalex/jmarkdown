@@ -19,6 +19,7 @@
 */
 import { requirePackage, addPreamble } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
+import { escapeLatexText } from './latex-escape.js';
 
 export function renderAbstract(inner) {
 	if (global.isLatex) return `\\begin{abstract}\n${inner.trim()}\n\\end{abstract}\n\n`;
@@ -45,6 +46,38 @@ export function renderHTMLEnv(innerHtml) {
 	return global.isLatex ? '' : innerHtml;
 }
 
+/*
+	The title-page directives — title, subtitle, author, institution, date, and
+	today inside them — in LaTeX. They used to receive their HTML, `<div
+	class="title">…</div>` and so on. Each is now a line of its own, left-aligned
+	and sized as the stylesheet sizes it (title bold and large, author and date
+	a step up, subtitle and institution as body text), in kernel commands only,
+	so a --fragment compiles anywhere. The content is what the HTML shows:
+	inline markdown where the directive parses it, the bracket as written where
+	it does not (escapeLatexText, as prose is escaped), an institution's line
+	breaks as \\, and today's date as the same text.
+
+	A document's `Title`/`Author`/`Date` header keys still give \maketitle in a
+	full LaTeX document, as before; these are separate, in the body.
+*/
+const titlePageLatex = {
+	title:       (content) => `{\\noindent\\LARGE\\bfseries ${content.trim()}\\par}\n\n`,
+	subtitle:    (content) => `{\\noindent ${content.trim()}\\par}\n\n`,
+	author:      (content) => `{\\noindent\\large ${content.trim()}\\par}\n\n`,
+	institution: (content) => `{\\noindent ${content.trim()}\\par}\n\n`,
+	// The date closes the block in nearly every document: the gap after it is
+	// the margin the next paragraph has in the HTML.
+	date:        (content) => `{\\noindent\\large ${content.trim()}\\par}\\medskip\n\n`
+};
+
+// The date `today` prints: "11 October 2026".
+function todayText() {
+	const months = ['January', 'February', 'March', 'April', 'May', 'June',
+		'July', 'August', 'September', 'October', 'November', 'December'];
+	const today = new Date();
+	return `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+}
+
 const additionalDirectives = [
 	{
 		'level': 'block',
@@ -52,6 +85,7 @@ const additionalDirectives = [
 		label: "title",
 		renderer(token) {
 			if (token.meta.name === "title") {
+				if (global.isLatex) return titlePageLatex.title(this.parser.parseInline(token.tokens));
 				let html = marked.parser(token.tokens);
 				html = html.replace(/<\/?p>/g, '');
 				return `<div class="title">${html}</div>`;
@@ -65,6 +99,7 @@ const additionalDirectives = [
 		label: "subtitle",
 		renderer(token) {
 			if (token.meta.name === "subtitle") {
+				if (global.isLatex) return titlePageLatex.subtitle(this.parser.parseInline(token.tokens));
 				let html = marked.parser(token.tokens);
 				html = html.replace(/<\/?p>/g, '');
 				return `<div class="subtitle">${html}</div>`;
@@ -78,6 +113,7 @@ const additionalDirectives = [
 		label: "author",
 		renderer(token) {
 			if (token.meta.name === "author") {
+				if (global.isLatex) return titlePageLatex.author(escapeLatexText(token.text));
 				return `<div class="author">${token.text}</div>`;
 			}
 			return false;
@@ -94,6 +130,10 @@ const additionalDirectives = [
 		},
 		renderer(token) {
 			if (token.meta.name === "institution") {
+				// The tokenizer made each line break a <br>, which LaTeX writes \\.
+				if (global.isLatex) {
+					return titlePageLatex.institution(this.parser.parseInline(token.tokens).replaceAll('<br>', '\\\\'));
+				}
 				let html = marked.parser(token.tokens);
 				html = html.replace(/<\/?p>/g, '');
 				return `<div class="institution">${html}</div>`;
@@ -108,6 +148,7 @@ const additionalDirectives = [
 		renderer(token) {
 			if (token.meta.name === "date") {
 				const content = this.parser.parseInline(token.tokens);
+				if (global.isLatex) return titlePageLatex.date(content);
 				return `<div class="date">${content}</div>`;
 				// return `<div class="date">${token.text}</div>`;
 			}
@@ -120,14 +161,8 @@ const additionalDirectives = [
 		label: "today",
 		renderer(token) {
 			if (token.meta.name === "today") {
-			    const months = ["January", "February", "March", "April", "May", "June", 
-			                   "July", "August", "September", "October", "November", "December"];
-			    const today = new Date();
-			    const day = String(today.getDate());
-			    const month = months[today.getMonth()];
-			    const year = today.getFullYear();
-			    const date = `${day} ${month} ${year}`;
-				return `<span class="date">${date}</span>`;
+				if (global.isLatex) return todayText();
+				return `<span class="date">${todayText()}</span>`;
 			}
 			return false;
 		}
@@ -438,24 +473,32 @@ const pass_through = {
 	block <div>s) except @today, which is inline (a <span>, used bare). Output matches
 	the colon twins: title/subtitle/date use the parsed inner (inline-parsed here — the
 	<p>-stripped equivalent of the originals' block parse); author uses the raw bracket
-	text; institution turns newlines into <br>; today regenerates the date. Like the
-	colon originals none of these branch on global.isLatex (the metadata header +
-	\maketitle is the real LaTeX title path), so the html renderer serves both formats.
+	text; institution turns newlines into <br>; today regenerates the date. LaTeX, as
+	the colon twins print it (titlePageLatex, above).
 */
-registerBlockEnvironment('title',     { html: (ctx) => `<div class="title">${ctx.inner}</div>` });
-registerBlockEnvironment('subtitle',  { html: (ctx) => `<div class="subtitle">${ctx.inner}</div>` });
-registerBlockEnvironment('author',    { html: (ctx) => `<div class="author">${ctx.text}</div>` });
-registerBlockEnvironment('institution', {
-	html: (ctx) => `<div class="institution">${ctx.text.trim().replaceAll('\n', '<br>')}</div>`
+registerBlockEnvironment('title', {
+	html: (ctx) => `<div class="title">${ctx.inner}</div>`,
+	latex: (ctx) => titlePageLatex.title(ctx.inner)
 });
-registerBlockEnvironment('date',      { html: (ctx) => `<div class="date">${ctx.inner}</div>` });
+registerBlockEnvironment('subtitle', {
+	html: (ctx) => `<div class="subtitle">${ctx.inner}</div>`,
+	latex: (ctx) => titlePageLatex.subtitle(ctx.inner)
+});
+registerBlockEnvironment('author', {
+	html: (ctx) => `<div class="author">${ctx.text}</div>`,
+	latex: (ctx) => titlePageLatex.author(escapeLatexText(ctx.text))
+});
+registerBlockEnvironment('institution', {
+	html: (ctx) => `<div class="institution">${ctx.text.trim().replaceAll('\n', '<br>')}</div>`,
+	latex: (ctx) => titlePageLatex.institution(escapeLatexText(ctx.text.trim()).replaceAll('\n', '\\\\'))
+});
+registerBlockEnvironment('date', {
+	html: (ctx) => `<div class="date">${ctx.inner}</div>`,
+	latex: (ctx) => titlePageLatex.date(ctx.inner)
+});
 registerBlockEnvironment('today', {
-	html: () => {
-		const months = ['January', 'February', 'March', 'April', 'May', 'June',
-			'July', 'August', 'September', 'October', 'November', 'December'];
-		const today = new Date();
-		return `<span class="date">${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}</span>`;
-	}
+	html: () => `<span class="date">${todayText()}</span>`,
+	latex: () => todayText()
 });
 registerBlockEnvironment('title-box', {
 	mode: 'custom',
