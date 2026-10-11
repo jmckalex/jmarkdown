@@ -91,7 +91,9 @@ const AT_KNOWN = new Set(['abstract', 'author', 'cref', 'Cref', 'date', 'equatio
 	'definition', 'example', 'remark', 'comment', 'tabbing']);
 
 // Bodies kept verbatim: neither the colon nor the @ form reads them as markdown.
-const VERBATIM = new Set(['TeX', 'TiKZ', 'mermaid', 'Mathematica', 'game', 'metapost', 'tabbing']);
+// (Not `game`: its strategy labels and its row/column/caption lines are read
+// as Markdown, so a directive there is converted.)
+const VERBATIM = new Set(['TeX', 'TiKZ', 'mermaid', 'Mathematica', 'metapost', 'tabbing']);
 
 // The HTML container elements a block @ form renders as themselves
 // (begin-end-core.js BLOCK_CONTAINER_ELEMENTS, less div: there `div` means the
@@ -600,6 +602,13 @@ function convertInlineDirective(s, i, line, ctx) {
 	}
 	if (head.names.length > 1) { record(ctx, line, 'needs-you', name, raw, undefined, `more than one name (the colon syntax uses the last, \`${name}\`)`); return null; }
 
+	// `:target{…}` with no [text] names no target: the colon form printed it as
+	// written (sources-and-targets.js), where @target{…} would render an empty
+	// target. Left as it stands; it prints the same once the syntax is gone.
+	if (name === 'target' && head.text === undefined) {
+		record(ctx, line, 'prose', name, raw, undefined, 'a :target with no [text] printed as written; it still will');
+		return null;
+	}
 	const cls = classify(name, SPECIAL_INLINE.has(name), ctx, false);
 	if (cls.kind === 'needs-you') { record(ctx, line, 'needs-you', name, raw, undefined, cls.note); return null; }
 	if (ctx.keep.has(line)) return kept(name, raw);

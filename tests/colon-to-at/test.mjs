@@ -28,6 +28,9 @@ check('a document with its own Block elements keeps the sigil',
 check('nesting by colon count', '::::outer\n:::inner\nx\n:::\n::::', '@begin(<outer>)\n@begin(<inner>)\nx\n@end(inner)\n@end(outer)', 'same,same');
 check('special container', ':::abstract\nWe show.\n:::', '@begin(abstract)\nWe show.\n@end(abstract)', 'same');
 check('verbatim body untouched', ':::TeX\n\\foo :ref[x] a:b[1]\n:::', '@begin(TeX)\n\\foo :ref[x] a:b[1]\n@end(TeX)', 'same');
+check('a game body is markdown', ':::game\n   L & R\nU & (1,1) & (0,0)\n\ncaption: :span[A game]{.big}\n:::',
+	'@begin(game)\n   L & R\nU & (1,1) & (0,0)\n\ncaption: @span[A game]{.big}\n@end(game)', 'same,same');
+check('a target with no text is left', '\nSee :target{x=1} and :target[t1].', '\nSee :target{x=1} and @target[t1].', 'prose,same');
 check('TiKZ body untouched', ':::TiKZ{scale=2}\n\\draw (0,0) -- (1,1);\n:::', '@begin(TiKZ){scale=2}\n\\draw (0,0) -- (1,1);\n@end(TiKZ)', 'same');
 check('known name becomes the real environment', ':::theorem[Pythagoras]{#t}\nx\n:::', '@begin(theorem)[Pythagoras]{#t}\nx\n@end(theorem)', 'changes-output');
 check('a generic label is kept, and said', ':::note[A title]\nx\n:::', '@begin(<note>)[A title]\nx\n@end(note)', 'changes-output');
