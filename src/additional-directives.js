@@ -17,7 +17,7 @@
 	tags and all). Because the directive and @begin(name) forms share these
 	bodies, the branch keeps them in parity automatically.
 */
-import { requirePackage } from './preamble.js';
+import { requirePackage, addPreamble } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 
 export function renderAbstract(inner) {
@@ -383,6 +383,19 @@ export const titleBox = {
 		},
 		renderer(token) {
 			if (token.meta.name === "title-box") {
+				// LaTeX: a tcolorbox with the title in its title bar — the box the
+				// stylesheet draws (a coloured title bar over a bordered body) —
+				// breakable, so a long body runs onto the next page. The same
+				// tcolorbox libraries as the callouts, so the preamble line is one.
+				// It used to receive the HTML divs.
+				if (global.isLatex) {
+					requirePackage('tcolorbox');
+					addPreamble('\\tcbuselibrary{skins,breakable}');
+					const title = this.parser.parse(token['title']).trim();
+					const body = this.parser.parse(token['body']).trim();
+					const options = title ? `breakable, title={${title}}` : 'breakable';
+					return `\\begin{tcolorbox}[${options}]\n${body}\n\\end{tcolorbox}\n\n`;
+				}
 				const title = this.parser.parse(token['title']);
 				const body = this.parser.parse(token['body']);
 				return `<div class="title-box"><div class='title'>${title}</div><div class='body'>${body}</div></div>`;

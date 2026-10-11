@@ -1,0 +1,13 @@
+Before the box.
+
+@begin(title-box)
+A plain *title*
+***
+Body & more.
+@end(title-box)
+
+@begin(title-box)
+No separator: all body.
+@end(title-box)
+
+After the box.
