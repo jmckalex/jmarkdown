@@ -1,0 +1,36 @@
+# sources and targets
+
+Insert here: @target[foo]
+
+@begin(source){target=foo}
+This is **sourced** content with a [link](https://example.com).
+@end(source)
+
+A target before its source, alone on its line:
+
+@target[later]
+
+And the emoji form: 🎯later in a sentence.
+
+@begin(source){target=later}
+The *later* source, with a list:
+
+- one
+- two
+@end(source)
+
+@begin(source){target=nowhere}
+A source with no target is gone.
+@end(source)
+
+@begin(source){target=foo}
+A second source for foo is gone too.
+@end(source)
+
+@target[missing] has no source.
+
+@begin(source){target=self}
+Itself: @target[self] (nothing).
+@end(source)
+
+@target[self]
