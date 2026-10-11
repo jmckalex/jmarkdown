@@ -15,7 +15,7 @@ export const targets = {
 			if (typeof token.text !== 'string') {
 				return this.parser.renderer.text({ type: 'text', raw: token.raw, text: token.raw });
 			}
-			if (global.isLatex) return latexTarget(this.parser, token.text, token.jmdCellColumns);
+			if (global.isLatex) return latexTarget(this.parser, token);
 			return `<span data-target-id='${token.text.trim()}'></span>`;
 		}
 		return false;
@@ -58,7 +58,7 @@ export const inlineTarget = {
 		}
 	},
 	renderer(token) {
-		if (global.isLatex) return latexTarget(this.parser, token.text, token.jmdCellColumns);
+		if (global.isLatex) return latexTarget(this.parser, token);
 		return `<span data-target-id='${token.text}'></span>`;
 	}
 };
@@ -80,7 +80,7 @@ registerBlockEnvironment('source', {
 registerBlockEnvironment('target', {
 	mode: 'verbatim',
 	html: (ctx) => `<span data-target-id='${ctx.text.trim()}'></span>`,
-	latex: (ctx) => latexTarget(ctx.parser, ctx.text, ctx.token.jmdCellColumns)
+	latex: (ctx) => latexTarget(ctx.parser, ctx.token)
 });
 
 
@@ -90,28 +90,32 @@ registerBlockEnvironment('target', {
 	such pass — so a LaTeX build used to print the markers themselves
 	(`<div data-target='X'>…</div>`, `<span data-target-id='X'></span>`), with the
 	source's content where it was written. The move is made in the tokens instead:
-	every token is lexed before any is rendered, so a walkTokens hook records the
-	FIRST source for each target name, in document order, and each target then
-	renders that source's content where it stands, while a source renders nothing
-	where it was written. That is what the HTML shows: the first source with a name
-	fills each of its targets, and a source with no target — or a second source with
-	the same name — is gone. A target with no source is nothing in both.
+	every token is lexed before any is rendered, so a processAllTokens hook walks
+	the parse's whole token tree once, finds the FIRST source for each target name
+	in document order, and links each target token to it (`jmdSource`). A target
+	then renders its source's content where it stands, and a source renders
+	nothing where it was written. That is what the HTML shows: the first source
+	with a name fills each of its targets, and a source with no target — or a
+	second source with the same name — is gone. A target with no source is nothing
+	in both. A book is one parse, so its sources reach targets in any chapter, as
+	in the HTML, where the DOM pass runs over the whole book before any split.
 
-	LaTeX builds only (the HTML path is untouched). A target inside its own source
-	would render the source inside itself forever, so a source being rendered gives
-	nothing to a target within it.
+	The links live on the token tree, so nothing carries from one parse to the
+	next. LaTeX builds only (the HTML path is untouched). A target inside its own
+	source would render the source inside itself forever, so a source being
+	rendered gives nothing to a target within it (`rendering`, emptied by a
+	finally even when a render throws).
 
 	A table cell is where a source matters most — a Markdown table cannot hold a
 	code block or two paragraphs, and a target puts them there — and LaTeX cannot
-	set a listing or a paragraph break in a tabular cell either. So the hook also
-	marks every target in a table's cells with the table's column count, and block
-	content (a blank line, or an environment) for such a target is set in a top-
-	aligned minipage, an equal share of the line wide: \linewidth over the columns,
-	less the cell's padding. (varwidth would fit the box to its content, but a
-	listing is always \linewidth wide, which pushes the next column off the page.)
+	set a listing or a paragraph break in a tabular cell either. So a target in a
+	table's cells is also given the table's column count (`jmdCellColumns`), and
+	block content (a blank line, or an environment) for it is set in a top-aligned
+	minipage, an equal share of the line wide: \linewidth over the columns, less
+	the cell's padding. (varwidth would fit the box to its content, but a listing
+	is always \linewidth wide, which pushes the next column off the page.)
 */
-const latexSources = new Map();
-const latexRendering = new Set();
+const TABLES = new Set(['table', 'spanTable', 'headerlessTable']);
 
 function sourceName(token) {
 	const isSource = (token.type === 'beginEnd' && token.name === 'source')
@@ -120,49 +124,64 @@ function sourceName(token) {
 	return target === undefined || target === null ? null : String(target).trim();
 }
 
-const TABLES = new Set(['table', 'spanTable', 'headerlessTable']);
+// :target[X], @target[X] (or @target+[X]) and 🎯X; a :target with no [X] is prose.
+function targetName(token) {
+	const isTarget = token.type === 'inlineTarget'
+		|| ((token.type === 'atInline' || token.type === 'atBlock') && token.name === 'target')
+		|| (token.meta?.level === 'inline' && token.meta?.name === 'target');
+	return isTarget && typeof token.text === 'string' ? token.text.trim() : null;
+}
 
-const isTarget = (token) => token.type === 'inlineTarget'
-	|| (token.type === 'atInline' && token.name === 'target')
-	|| (token.meta?.level === 'inline' && token.meta?.name === 'target');
+// Tokens are plain objects and arrays; nothing else in a tree holds tokens.
+const isPlain = (value) => Array.isArray(value)
+	|| (value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype);
 
-// Every target anywhere inside a table token (its header and rows hold cells,
-// each with its inline tokens), marked with the table's column count.
-function markCellTargets(value, columns, seen = new Set()) {
-	if (!value || typeof value !== 'object' || seen.has(value)) return;
-	seen.add(value);
-	if (!Array.isArray(value) && isTarget(value)) value.jmdCellColumns = columns;
-	for (const child of Array.isArray(value) ? value : Object.values(value)) {
-		markCellTargets(child, columns, seen);
+export function linkSourcesAndTargets(tokens) {
+	if (!global.isLatex) return tokens;
+	const sources = new Map();
+	const targets = [];
+	const seen = new Set();
+	const visit = (value, columns) => {
+		if (!isPlain(value) || seen.has(value)) return;
+		seen.add(value);
+		if (!Array.isArray(value)) {
+			const target = targetName(value);
+			if (target !== null) targets.push({ token: value, name: target, columns });
+			const source = sourceName(value);
+			if (source !== null && !sources.has(source)) sources.set(source, value.tokens || []);
+			if (TABLES.has(value.type)) columns = value.align?.length || 1;
+		}
+		for (const child of Array.isArray(value) ? value : Object.values(value)) visit(child, columns);
+	};
+	visit(tokens, 0);
+	for (const { token, name, columns } of targets) {
+		token.jmdSource = sources.get(name) ?? null;
+		if (columns) token.jmdCellColumns = columns;
 	}
+	return tokens;
 }
 
-function recordLatexSource(token) {
-	if (!global.isLatex) return;
-	if (TABLES.has(token.type)) markCellTargets(token, token.align?.length || 1);
-	const name = sourceName(token);
-	if (name !== null && !latexSources.has(name)) latexSources.set(name, token.tokens || []);
-}
+const rendering = new WeakSet();
 
-function latexTarget(parser, name, cellColumns) {
-	const key = String(name).trim();
-	const tokens = latexSources.get(key);
-	if (!tokens || latexRendering.has(key)) return '';
-	latexRendering.add(key);
+function latexTarget(parser, token) {
+	const tokens = token.jmdSource;
+	if (!tokens || rendering.has(tokens)) return '';
+	rendering.add(tokens);
 	let content;
 	try {
 		content = parser.parse(tokens).trim();
 	} finally {
-		latexRendering.delete(key);
+		rendering.delete(tokens);
 	}
-	if (cellColumns && /\n[ \t]*\n|\\begin\{/.test(content)) {
-		return `\\begin{minipage}[t]{\\dimexpr\\linewidth/${cellColumns}-2\\tabcolsep\\relax}\n${content}\n\\end{minipage}`;
+	const columns = token.jmdCellColumns;
+	if (columns && /\n[ \t]*\n|\\begin\{/.test(content)) {
+		return `\\begin{minipage}[t]{\\dimexpr\\linewidth/${columns}-2\\tabcolsep\\relax}\n${content}\n\\end{minipage}`;
 	}
 	return content;
 }
 
-marked.use({ walkTokens: recordLatexSource });
-marked_copy.use({ walkTokens: recordLatexSource });
+marked.use({ hooks: { processAllTokens: linkSourcesAndTargets } });
+marked_copy.use({ hooks: { processAllTokens: linkSourcesAndTargets } });
 
 
 export function replaceTargetsBySources($) {

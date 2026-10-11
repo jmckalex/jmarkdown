@@ -380,9 +380,12 @@ byte-identical to their colon twins where one exists:
   **Their LaTeX (2026-10-11):** feedback, sources/targets, markdown-demo,
   title-box and the title page used to write their HTML into the `.tex`, in both
   syntaxes. Each now has a LaTeX rendering of what its HTML shows: feedback a bold
-  label over the body; a source's content moved to its targets by a walkTokens
-  hook (sources-and-targets.js — the DOM pass that moves it in HTML never runs for
-  LaTeX); markdown-demo the code as a minted listing, then the output, stacked;
+  label over the body; a source's content moved to its targets by a
+  processAllTokens hook that links each target token to its parse's first source
+  (`linkSourcesAndTargets`, sources-and-targets.js — the DOM pass that moves it in
+  HTML never runs for LaTeX; the links live on the token tree, so nothing carries
+  between builds; suite `tests/sources-targets`), block content in a table cell set
+  in a minipage; markdown-demo the code as a minted listing, then the output, stacked;
   title-box a breakable titled tcolorbox; the title page a line each, sized as the
   stylesheet sizes it, `@today` its text. HTML unchanged. Fixtures:
   `at-directives/at-feedback`, `at-sources-targets-moves`,

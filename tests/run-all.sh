@@ -134,7 +134,16 @@ sh "$REPO/tests/colon-to-at/run.sh"
 colon_to_at_status=$?
 echo
 
-if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ] || [ "$obsidian_status" -ne 0 ] || [ "$diagrams_status" -ne 0 ] || [ "$figure_engine_status" -ne 0 ] || [ "$colon_to_at_status" -ne 0 ]; then
+# 16. sources-targets — sources and targets in LaTeX (src/sources-and-targets.js):
+#     each parse links its targets to its OWN sources, so nothing carries from
+#     one build to the next; first source wins; table cells get their column
+#     count. Unit tests on token trees; no engine run. Gates CI.
+echo "------ sources-targets ------"
+sh "$REPO/tests/sources-targets/run.sh"
+sources_targets_status=$?
+echo
+
+if [ "$snapshot_status" -ne 0 ] || [ "$features_status" -ne 0 ] || [ "$latex_document_status" -ne 0 ] || [ "$citefile_status" -ne 0 ] || [ "$note_code_status" -ne 0 ] || [ "$callouts_status" -ne 0 ] || [ "$tabbing_status" -ne 0 ] || [ "$bibliographies_status" -ne 0 ] || [ "$latex_lint_status" -ne 0 ] || [ "$book_status" -ne 0 ] || [ "$obsidian_status" -ne 0 ] || [ "$diagrams_status" -ne 0 ] || [ "$figure_engine_status" -ne 0 ] || [ "$colon_to_at_status" -ne 0 ] || [ "$sources_targets_status" -ne 0 ]; then
 	echo "FAILED: at least one regression suite reported failure."
 	exit 1
 fi
