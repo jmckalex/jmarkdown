@@ -10,11 +10,12 @@
 	identically to `:::abstract`.  abstract/feedback delegate to these; the
 	trivial :::TeX / :::HTML bodies are mirrored here for begin-end's use.
 
-	Note: renderAbstract now branches — LaTeX gets the standard `abstract`
+	Note: renderAbstract branches — LaTeX gets the standard `abstract`
 	environment (so it compiles), HTML keeps the labelled div. renderFeedback
-	still has no LaTeX branch (no standard LaTeX env; it emits HTML in both modes,
-	deferred). Because the directive and @begin(name) forms share these bodies,
-	the branch keeps them in parity automatically.
+	branches too: LaTeX has no feedback environment, so it gets what the HTML
+	shows, a bold "Feedback" line over the body (it used to be given the HTML,
+	tags and all). Because the directive and @begin(name) forms share these
+	bodies, the branch keeps them in parity automatically.
 */
 import { requirePackage } from './preamble.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
@@ -25,6 +26,12 @@ export function renderAbstract(inner) {
 }
 
 export function renderFeedback(innerHtml) {
+	// LaTeX: the label, kept with the body's first line, then the body. Plain
+	// kernel commands, so a --fragment compiles in any document. The body is
+	// trimmed, as the abstract's is, so :::feedback and @begin(feedback) agree.
+	if (global.isLatex) {
+		return `\\par\\medskip\\noindent\\textbf{Feedback}\\par\\nopagebreak\n${innerHtml.trim()}\n\\par\\medskip\n\n`;
+	}
 	return `<p class='feedback'>Feedback</p><section class="feedback">${innerHtml}</section>`;
 }
 
