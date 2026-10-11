@@ -89,6 +89,16 @@ has   "strict/latex/exit-0" "$W/exit.txt" '0'
 if [ -s "$SCRATCH/ran.txt" ]; then fail "strict/latex/no-tool-run" "$(cat "$SCRATCH/ran.txt")"; else pass "strict/latex/no-tool-run"; fi
 hasnt "strict/latex/no-metapost-pdf" "$W/note.tex" 'MetaPost/'
 has   "strict/latex/tikz-native" "$W/note.tex" '\begin{tikzpicture}'
+# A full page: the marker's words are for a reader (the reason is the warning's),
+# and the page carries the marker's quiet style (html-template.js).
+W="$SCRATCH/strict-page"
+mkdir -p "$W"
+figures "$W"
+guarded "$W" process note.md -o note.html --figure-engine wasm
+has   "strict/page/tikz-words" "$W/note.html" '[TiKZ figure not drawn]'
+has   "strict/page/metapost-words" "$W/note.html" '[MetaPost figure not drawn]'
+hasnt "strict/page/reason-not-on-page" "$W/note.html" 'never runs the installed tools'
+has   "strict/page/refusal-style" "$W/note.html" '.jmd-refused {'
 # The control: auto, the same library failure, and the stand-ins are reached.
 W="$SCRATCH/strict-control"
 mkdir -p "$W"
@@ -141,6 +151,7 @@ has "html/exit-0" "$D/exit.txt" '0'
 if ls "$D/TiKZ/"*.svg >/dev/null 2>&1 && ls "$D/MetaPost/"*-1.svg >/dev/null 2>&1; then pass "html/figures-drawn"; else fail "html/figures-drawn" "$(ls "$D")"; fi
 resolves "html/images-resolve" "$D/note.html"
 if [ ! -s "$D/err.txt" ]; then pass "html/no-warnings"; else fail "html/no-warnings" "$(cat "$D/err.txt")"; fi
+hasnt "html/no-refusal-style" "$D/note.html" '.jmd-refused'
 
 # --- LaTeX: MetaPost's figure a PDF, through the library's TeX -----------------------------------------
 wasm "$D" wasm process note.md --to latex -o note.tex

@@ -140,6 +140,13 @@ assert_absent "off/tex/no-marker" out.tex "jmd-refused"
 assert_absent "off/tex/no-script-output" out.tex "SCRIPT-OUTPUT"
 assert_contains "off/tex/warns" tex.log 'Load javascript not run — "Run note code" is off'
 
+# A full page with a refusal carries the marker's quiet style (html-template.js),
+# the same for every refusal: note code here, a figure under strict wasm.
+node "$JMD" process doc.md -o page.html >page.log 2>&1 || {
+	echo "FAIL  note-code: jmarkdown exited non-zero (off, full page)"; sed 's/^/    | /' page.log; exit 1
+}
+assert_contains "off/page/refusal-style" page.html '.jmd-refused {'
+
 # --- on (the default) --------------------------------------------------------
 
 ON="$SCRATCH/on"
@@ -164,6 +171,10 @@ assert_contains "on/func-output" out.html "Inline FUNC-OUTPUT here."
 assert_contains "on/extension" out.html 'class="shout"'
 assert_absent "on/no-marker" out.html "jmd-refused"
 assert_contains "on/throw-shown-in-place" out.html "Math.nonesuch is not a function"
+node "$JMD" process doc.md -o page.html >page.log 2>&1 || {
+	echo "FAIL  note-code: jmarkdown exited non-zero (on, full page)"; sed 's/^/    | /' page.log; exit 1
+}
+assert_absent "on/page/no-refusal-style" page.html '.jmd-refused'
 
 echo "note-code: $passed passed, $failed failed"
 [ "$failed" -eq 0 ]

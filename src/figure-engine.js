@@ -67,16 +67,21 @@ function setting() {
 	decided: tikz.js's compile and metapost.js's renderers ask
 	figureToolsRefused() first, and a figure the library did not draw becomes
 	refuseFigure(name) — a `jmd-refused` marker naming it in HTML, as note code
-	refused is (note-code.js), nothing in LaTeX, and a warning.
+	refused is (note-code.js), nothing in LaTeX, and a warning. The marker's
+	words are for a reader ("[TiKZ figure not drawn]"); the reason is the
+	warning's, for the author.
 */
 export function figureToolsRefused() {
 	return setting() === 'wasm';
 }
 
+// How a reader is told which kind of figure is missing.
+const FIGURE_WORDS = { TiKZ: 'TiKZ', metapost: 'MetaPost' };
+
 export function refuseFigure(name) {
 	warnOnce(`${name} not drawn — \`Figure engine: wasm\` never runs the installed tools`);
 	if (global.isLatex) return '';
-	return `<div class="jmd-error jmd-refused" data-jmd-refused="${name}">[${name} not drawn: the figure engine is wasm, which never runs the installed tools]</div>\n`;
+	return `<div class="jmd-error jmd-refused" data-jmd-refused="${name}">[${FIGURE_WORDS[name] ?? name} figure not drawn]</div>\n`;
 }
 
 // What the engine falls back to when the library cannot draw: the tools, or
