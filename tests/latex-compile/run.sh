@@ -223,10 +223,11 @@ done
 # stopped the build. A <style> block printed its CSS; a list item's `&`
 # stopped the build too, and its inline `#` printed as `\#`; so did a `&` in
 # the paragraphs after an inline tag left open, and in a block nested in a
-# list item. The fixtures are
+# list item. A document with a Title header and a title of its own in the body
+# printed both, \maketitle above the body's. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested; do
+	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -268,6 +269,11 @@ if command -v pdftotext >/dev/null 2>&1; then
 			grep -q 'Theorem prose & a hash #.' "$work/doc.txt" || problems="$problems nested-theorem"
 			grep -q 'Aside prose & a hash #.' "$work/doc.txt" || problems="$problems nested-generic"
 			grep -qF '\#' "$work/doc.txt" && problems="$problems backslash-printed"
+		fi
+		# One title on the page, the body's: no \maketitle above it.
+		if [ "$name" = title-page-body ]; then
+			grep -q 'Body Title' "$work/doc.txt" || problems="$problems body-title-missing"
+			grep -q 'Header Title' "$work/doc.txt" && problems="$problems maketitle-printed"
 		fi
 		# Text after an inline tag left open is escaped like any other.
 		if [ "$name" = unclosed-tag ]; then

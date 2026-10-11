@@ -390,7 +390,17 @@ byte-identical to their colon twins where one exists:
   stylesheet sizes it, `@today` its text. HTML unchanged. Fixtures:
   `at-directives/at-feedback`, `at-sources-targets-moves`,
   `at-markdown-demo-types`, `at-title-box-forms`, `at-title-page-lines`, and .tex
-  goldens on the older at-* fixtures.
+  goldens on the older at-* fixtures. **One title (the owner, 2026-10-11, "match
+  the HTML"):** a full LaTeX document whose body prints its own title (any form of
+  the title directive) gets no `\maketitle` — the HTML shows a `Title` header only
+  as the page's `<title>`, so it showed one title where the PDF showed two.
+  `\title`/`\author`/`\date` and the PDF metadata stay; a book's master too; a
+  header-only document is unchanged. `bodyPrintsTitle(body)`
+  (additional-directives.js) answers from the finished body — the title lines
+  rendered this build that are IN it — so a title dropped from LaTeX (inside
+  `@begin(HTML)`) doesn't count and nothing carries between builds. Fixtures:
+  `tests/latex-document/title-page-body`, `title-page-dropped` (latex-compile
+  reads the PDF: one title).
 
   **Still to do:** the `:`→`@` **content codemod** + converting docs/fixtures (Slice B);
   **deleting `extended-directives.js`** and all colon wiring (Slice C — needs the book

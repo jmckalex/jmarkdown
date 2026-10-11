@@ -1,0 +1,10 @@
+---
+Title: Header Title
+Author: Header Author
+---
+
+@begin(HTML)
+@title+[Web Only Title]
+@end(HTML)
+
+The document's prose.

@@ -117,6 +117,26 @@ if render frontmatter-escape; then
 	want "escape/author" "$TEX" '\author{A \& B}'
 fi
 
+# --- title-page-body.jmd: a Title header AND a title of the body's own
+#     (@title+). The HTML shows the body's title alone (the header is the
+#     page's <title>), so LaTeX leaves out \maketitle and prints one title;
+#     \title, \author, \date and the PDF's metadata stay. ---
+if render title-page-body; then
+	want   "own-title/title"      "$TEX" '\title{Header Title}'
+	want   "own-title/author"     "$TEX" '\author{Header Author}'
+	want   "own-title/date"       "$TEX" '\date{October 2026}'
+	want   "own-title/pdftitle"   "$TEX" 'pdftitle={Header Title}'
+	want   "own-title/body title" "$TEX" '{\noindent\LARGE\bfseries Body Title\par}'
+	absent "own-title/no maketitle" "$TEX" '\maketitle'
+fi
+
+# --- title-page-dropped.jmd: a body title that LaTeX never prints (inside
+#     @begin(HTML)) is no title of the body's: \maketitle stays. ---
+if render title-page-dropped; then
+	want   "dropped-title/maketitle" "$TEX" '\maketitle'
+	absent "dropped-title/not printed" "$TEX" 'Web Only Title'
+fi
+
 # --- cref-fullwords.jmd: a figure + :cref pulls cleveref AND the \crefname
 #     overrides that make LaTeX spell floats out ("figure 1", not "fig. 1"),
 #     matching the HTML cross-ref wording. ---

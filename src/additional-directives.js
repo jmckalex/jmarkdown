@@ -57,11 +57,16 @@ export function renderHTMLEnv(innerHtml) {
 	it does not (escapeLatexText, as prose is escaped), an institution's line
 	breaks as \\, and today's date as the same text.
 
-	A document's `Title`/`Author`/`Date` header keys still give \maketitle in a
-	full LaTeX document, as before; these are separate, in the body.
+	A document's `Title`/`Author`/`Date` header keys give \maketitle in a full
+	LaTeX document, except when the body prints its own title (bodyPrintsTitle,
+	below).
 */
 const titlePageLatex = {
-	title:       (content) => `{\\noindent\\LARGE\\bfseries ${content.trim()}\\par}\n\n`,
+	title:       (content) => {
+		const line = `{\\noindent\\LARGE\\bfseries ${content.trim()}\\par}`;
+		latexTitles.add(line);
+		return `${line}\n\n`;
+	},
 	subtitle:    (content) => `{\\noindent ${content.trim()}\\par}\n\n`,
 	author:      (content) => `{\\noindent\\large ${content.trim()}\\par}\n\n`,
 	institution: (content) => `{\\noindent ${content.trim()}\\par}\n\n`,
@@ -69,6 +74,27 @@ const titlePageLatex = {
 	// the margin the next paragraph has in the HTML.
 	date:        (content) => `{\\noindent\\large ${content.trim()}\\par}\\medskip\n\n`
 };
+
+/*
+	Whether a full LaTeX document's body prints its own title — a `@title+`,
+	`::title` or any other form of the title directive — so that \maketitle
+	would give it two. The HTML shows a `Title` header only in the page's
+	<title>, so such a document shows one title there; latex-template.js asks
+	this and, when it is so, leaves out \maketitle (the owner, 2026-10-11:
+	"match the HTML").
+
+	Asked of the finished body, not answered by a flag: a title rendered and
+	then dropped (inside @begin(HTML), say) is not in the body, and nor is a
+	title from an earlier build in the same process. The lines are forgotten
+	once asked.
+*/
+const latexTitles = new Set();
+
+export function bodyPrintsTitle(body) {
+	const found = [...latexTitles].some((line) => body.includes(line));
+	latexTitles.clear();
+	return found;
+}
 
 // The date `today` prints: "11 October 2026".
 function todayText() {

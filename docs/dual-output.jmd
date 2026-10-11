@@ -136,7 +136,9 @@ into the class, the preamble, and the page setup.
 
 `Title`, `Author`, and `Date` are not LaTeX-specific — they feed `\maketitle` in
 print and the document header on the web — but they belong in the same header and
-are what populate the PDF metadata.
+are what populate the PDF metadata. A document that prints a title of its own in
+the body (`@title+[…]`) gets no `\maketitle`, so the PDF shows that one title, as
+the web page does; the header still names the PDF.
 
 ### A worked metadata header
 

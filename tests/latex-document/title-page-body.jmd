@@ -1,0 +1,15 @@
+---
+Title: Header Title
+Author: Header Author
+Date: October 2026
+---
+
+@title+[Body Title]
+
+@subtitle+[A Subtitle]
+
+@author+[Body Author]
+
+@date+[11 October 2026]
+
+The document's prose.

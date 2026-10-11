@@ -160,7 +160,9 @@ A single paragraph of prose.
 </table>
 <p><code>Title</code>, <code>Author</code>, and <code>Date</code> are not LaTeX-specific — they feed <code>\maketitle</code> in
   print and the document header on the web — but they belong in the same header and
-  are what populate the PDF metadata.</p>
+  are what populate the PDF metadata. A document that prints a title of its own in
+  the body (<code>@title+[…]</code>) gets no <code>\maketitle</code>, so the PDF shows that one title, as
+  the web page does; the header still names the PDF.</p>
 <h3 id="toc-a-worked-metadata-header">A worked metadata header</h3>
 <p>Here is a header that exercises most of the keys at once:</p>
 <pre><code class="hljs">---

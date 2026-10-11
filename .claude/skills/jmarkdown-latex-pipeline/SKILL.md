@@ -23,7 +23,8 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   `Header`, `Footer` (fancyhdr), `Heading base`. `hyperref` is auto-loaded for
   every full document (clickable refs/ToC + PDF bookmarks) with
   `\hypersetup{pdftitle,pdfauthor}` from `Title`/`Author`; `\maketitle` from
-  `Title`/`Author`/`Date`.
+  `Title`/`Author`/`Date`, left out when the body prints its own title
+  (`@title+`; `bodyPrintsTitle`, additional-directives.js).
 - **Preamble manager** (`preamble.js`): usage-driven. Features call
   `requirePackage(name, opts)` as they render, so the preamble contains only
   what's used. `addPreamble` (raw lines, e.g. `\newtheorem`/`\usetikzlibrary`),
