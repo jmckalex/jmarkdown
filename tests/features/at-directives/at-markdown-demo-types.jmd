@@ -1,0 +1,15 @@
+Before the demo.
+
+@begin(markdown-demo)
+Some *emphasis*, a formula $x^2$, and a fence:
+
+```js
+const x = 1;
+```
+@end(markdown-demo)
+
+@begin(markdown-demo){type=latex}
+The sum $a + b$ & more.
+@end(markdown-demo)
+
+After the demo.
