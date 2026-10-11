@@ -1,0 +1,51 @@
+<p>Markdown tables cannot hold code blocks; targets put them there.</p>
+<table>
+  <thead>
+    <tr>
+      <th>JavaScript</th>
+      <th>Python</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <div><pre><code class="hljs language-js"><span class="hljs-keyword">let</span> x = <span class="hljs-number">1</span>;
+</code></pre>
+        </div>
+      </td>
+      <td>
+        <div>
+          <p>First a paragraph.</p>
+          <pre><code class="hljs language-python">x = <span class="hljs-number">1</span>
+</code></pre>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>The same source three times, in a table with no header row:</p>
+<table>
+  <tbody>
+    <tr>
+      <td>
+        <div><pre><code class="hljs language-js"><span class="hljs-keyword">let</span> x = <span class="hljs-number">1</span>;
+</code></pre>
+        </div>
+      </td>
+      <td>
+        <div><pre><code class="hljs language-js"><span class="hljs-keyword">let</span> x = <span class="hljs-number">1</span>;
+</code></pre>
+        </div>
+      </td>
+      <td>
+        <div>
+          <p>just <strong>words</strong></p>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>And in running text, a one-line source stays inline:
+<div>
+  <p>just <strong>words</strong></p>
+</div>.</p>

@@ -88,7 +88,9 @@ below.
 > **LaTeX output too.** In HTML the splice runs in the cheerio post-processing
 > stage. LaTeX output has no such stage, so the engine makes the same move as it
 > writes the `.tex`: each target is written with its source's content, and the
-> source writes nothing where it stands. The rules below hold in both outputs.
+> source writes nothing where it stands. The rules below hold in both outputs. In
+> a table cell, a source's code block or paragraphs are set in a box an equal
+> share of the line wide, since a LaTeX table cell cannot hold them directly.
 
 ## Syntax
 

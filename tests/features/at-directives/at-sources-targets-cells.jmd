@@ -1,0 +1,29 @@
+Markdown tables cannot hold code blocks; targets put them there.
+
+| JavaScript | Python |
+|---|---|
+| @target[js] | @target[py] |
+
+The same source three times, in a table with no header row:
+
+| @target[js] | @target[js] | 🎯short |
+
+And in running text, a one-line source stays inline: @target[short].
+
+@begin(source){target=js}
+```js
+let x = 1;
+```
+@end(source)
+
+@begin(source){target=py}
+First a paragraph.
+
+```python
+x = 1
+```
+@end(source)
+
+@begin(source){target=short}
+just *words*
+@end(source)

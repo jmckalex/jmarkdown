@@ -106,9 +106,10 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		indexing)          extra='\usepackage{imakeidx}\makeindex\makeindex[name=authors, title={Author Index}]\usepackage{minted}'; needs='imakeidx.sty minted.sty' ;;
 		# at-directives: inline code (\mintinline), links, a cross-reference,
 		# images (draft: their files are not in the tree), title-box's
-		# tcolorbox, and the generic environments the fixtures name, given the
-		# no-op definitions a full document auto-provides.
-		at-directives)     extra='\usepackage[draft]{graphicx}\usepackage{minted}\usepackage{hyperref}\usepackage{cleveref}\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\newenvironment{note}{}{}\newenvironment{thing}{}{}\newenvironment{myblock}{}{}\newenvironment{my-block}{}{}'; needs='minted.sty cleveref.sty tcolorbox.sty' ;;
+		# tcolorbox, the tables sources fill (booktabs), and the generic
+		# environments the fixtures name, given the no-op definitions a full
+		# document auto-provides.
+		at-directives)     extra='\usepackage[draft]{graphicx}\usepackage{minted}\usepackage{hyperref}\usepackage{cleveref}\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\usepackage{booktabs}\newenvironment{note}{}{}\newenvironment{thing}{}{}\newenvironment{myblock}{}{}\newenvironment{my-block}{}{}'; needs='minted.sty cleveref.sty tcolorbox.sty booktabs.sty' ;;
 		# media: images in draft (figs/*.png are not in the tree), links,
 		# inline code, and video's embed (media9) and attach (attachfile2);
 		# tiny.mp4 and frame.png ARE in the tree, found through TEXINPUTS.

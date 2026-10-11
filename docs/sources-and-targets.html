@@ -110,7 +110,9 @@ def foo():
   <p><span class="intense">LaTeX output too.</span> In HTML the splice runs in the cheerio post-processing
     stage. LaTeX output has no such stage, so the engine makes the same move as it
     writes the <code>.tex</code>: each target is written with its source's content, and the
-    source writes nothing where it stands. The rules below hold in both outputs.</p>
+    source writes nothing where it stands. The rules below hold in both outputs. In
+    a table cell, a source's code block or paragraphs are set in a box an equal
+    share of the line wide, since a LaTeX table cell cannot hold them directly.</p>
 </blockquote>
 <h2 id="toc-syntax">Syntax</h2>
 <p>There are two ways to write a target and one way to write a source.</p>

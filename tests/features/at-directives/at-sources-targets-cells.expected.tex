@@ -1,0 +1,38 @@
+Markdown tables cannot hold code blocks; targets put them there.
+
+\begin{tabular}{ll}
+\toprule
+JavaScript & Python \\
+\midrule
+\begin{minipage}[t]{\dimexpr\linewidth/2-2\tabcolsep\relax}
+\begin{minted}{js}
+let x = 1;
+\end{minted}
+\end{minipage} & \begin{minipage}[t]{\dimexpr\linewidth/2-2\tabcolsep\relax}
+First a paragraph.
+
+\begin{minted}{python}
+x = 1
+\end{minted}
+\end{minipage} \\
+\bottomrule
+\end{tabular}
+
+The same source three times, in a table with no header row:
+
+\begin{tabular}{lll}
+\toprule
+\begin{minipage}[t]{\dimexpr\linewidth/3-2\tabcolsep\relax}
+\begin{minted}{js}
+let x = 1;
+\end{minted}
+\end{minipage} & \begin{minipage}[t]{\dimexpr\linewidth/3-2\tabcolsep\relax}
+\begin{minted}{js}
+let x = 1;
+\end{minted}
+\end{minipage} & just \textbf{words} \\
+\bottomrule
+\end{tabular}
+
+And in running text, a one-line source stays inline: just \textbf{words}.
+
