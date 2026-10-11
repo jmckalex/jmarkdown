@@ -140,7 +140,12 @@ function createTiKZ(marker) {
 				const job = token.figureJob = { kind: 'tikz', doc: file_contents, dir: TiKZ_directory };
 				job.use = (tex) => { token['file name'] = tex; job.done = true; };
 				job.fail = (log) => { token['has_error'] = true; token['error_log'] = log; job.done = true; };
-				job.external = () => { compileTikzExternal(token, file_contents, TiKZ_directory, hash); job.done = true; };
+				// The tools' run; what failed (their log or error), or null when drawn.
+				job.external = () => {
+					compileTikzExternal(token, file_contents, TiKZ_directory, hash);
+					job.done = true;
+					return token['has_error'] ? (token['error_log'] || 'failed') : null;
+				};
 				return token;
 			}
 			compileTikzExternal(token, file_contents, TiKZ_directory, hash);

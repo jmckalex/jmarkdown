@@ -174,6 +174,18 @@ const MISSING_FILE = /! LaTeX Error: File `([^']+)' not found/;
 
 // --- the jobs --------------------------------------------------------------------
 
+// A TiKZ figure sent to the installed tools under `auto`, and a warning that
+// says what came of it. The tools can fail too — a font no installed TeX has,
+// or no lualatex at all — and the page then shows an error box, which a
+// warning saying "drawn by the installed tools" used to sit above.
+function toTools(job, why) {
+	const failure = job.external();
+	const outcome = failure === null ? 'drawn by the installed tools instead'
+		: /\bENOENT\b/.test(failure) ? 'and the installed tools are not available, so it is not drawn (see the error box)'
+		: 'and the installed tools could not draw it either (see the error box)';
+	addWarning(`Figure engine: ${why} — ${outcome}`);
+}
+
 const hash = (kind, text) => crypto.createHash('md5').update(`${fingerprint()}|${kind}|${text}`).digest('hex');
 
 // A TiKZ figure: one SVG, `<hash>.svg` in its cache folder.
@@ -190,13 +202,11 @@ async function fillTikz(job) {
 		dvisvgmArgs: ['--no-fonts=1', ...(optimise ? [`--optimize=${optimise}`] : [])],
 	}));
 	if (setting() === 'auto' && FONT_MISS.test(r.texLog || '')) {
-		addWarning('Figure engine: a TiKZ figure names a font mp-tikz-wasm could not resolve — drawn by the installed tools instead');
-		return job.external();
+		return toTools(job, 'a TiKZ figure names a font mp-tikz-wasm could not resolve');
 	}
 	const missing = MISSING_FILE.exec(r.texLog || '');
 	if (setting() === 'auto' && missing) {
-		addWarning(`Figure engine: a TiKZ figure needs \`${missing[1]}\`, which mp-tikz-wasm does not have — drawn by the installed tools instead`);
-		return job.external();
+		return toTools(job, `a TiKZ figure needs \`${missing[1]}\`, which mp-tikz-wasm does not have`);
 	}
 	const made = r.pages?.length && r.status !== 'error' && r.status !== 'fatal';
 	// Under `wasm` nothing falls back, and a face the library cannot resolve

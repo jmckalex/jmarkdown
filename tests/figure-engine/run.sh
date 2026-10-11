@@ -121,6 +121,8 @@ if [ -f "/System/Library/Fonts/Supplemental/Times New Roman.ttf" ]; then
 fi
 
 # --- a font no folder holds: under auto, that figure goes to the installed tools, with a warning ------
+# No installed TeX has this family either, so the tools fail too: the warning says
+# so (it used to say "drawn by the installed tools instead" above the error box).
 if command -v lualatex >/dev/null 2>&1; then
 	M="$SCRATCH/miss"
 	mkdir -p "$M/.jmarkdown"
@@ -128,8 +130,19 @@ if command -v lualatex >/dev/null 2>&1; then
 	printf -- '---\nTitle: Miss\n---\n\n:::TiKZ\n\\node {text};\n:::\n' >"$M/note.md"
 	(cd "$M" && HOME="$SCRATCH/home" "$NODE" "$JMD" process note.md --fragment -o note.html --figure-engine auto --mp-tikz-dist "$DIST" >/dev/null 2>err.txt; echo $? >exit.txt)
 	has "font-miss/exit-0" "$M/exit.txt" '0'
-	has "font-miss/warned" "$M/err.txt" 'a TiKZ figure names a font mp-tikz-wasm could not resolve — drawn by the installed tools instead'
+	has "font-miss/warned" "$M/err.txt" 'a TiKZ figure names a font mp-tikz-wasm could not resolve — and the installed tools could not draw it either (see the error box)'
+	has "font-miss/error-box" "$M/note.html" 'tikz-error'
 fi
+
+# --- the same with no tools on PATH: the warning says they are not there -------------------------------
+T="$SCRATCH/notools"
+mkdir -p "$T/.jmarkdown"
+printf '{ "LaTeX preamble": ["\\\\usepackage{fontspec}", "\\\\setmainfont{NoSuchFamilyAnywhere}"] }\n' >"$T/.jmarkdown/config.json"
+printf -- '---\nTitle: No tools\n---\n\n:::TiKZ\n\\node {text};\n:::\n' >"$T/note.md"
+wasm "$T" auto process note.md --fragment -o note.html
+has   "no-tools/exit-0" "$T/exit.txt" '0'
+has   "no-tools/warned" "$T/err.txt" 'a TiKZ figure names a font mp-tikz-wasm could not resolve — and the installed tools are not available, so it is not drawn (see the error box)'
+hasnt "no-tools/not-claimed-drawn" "$T/err.txt" 'drawn by the installed tools instead'
 
 # --- a package the library's bundles leave out (siunitx): under auto, the installed tools draw it ---------
 if command -v lualatex >/dev/null 2>&1 && kpsewhich siunitx.sty >/dev/null 2>&1; then
