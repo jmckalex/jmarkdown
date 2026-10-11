@@ -27,10 +27,11 @@
 	output never mixes with the tools' and a new release re-renders cleanly.
 	Fonts: a preamble's \setmainfont{Optima} and the like are found in the
 	system's font folders and handed to the library (addFiles); a face it still
-	cannot resolve shows in its TeX log, and under `auto` that figure is drawn by
-	the tools instead, with a warning. So is a figure whose TeX needs a file the
-	library's bundles leave out (a package such as siunitx or tikz-feynman): the
-	installed TeX has it.
+	cannot resolve shows in its TeX log: under `auto` that figure is drawn by the
+	tools instead, and under `wasm` it is drawn without that face; a warning
+	either way. Under `auto` a figure whose TeX needs a file the library's
+	bundles leave out (a package such as siunitx or tikz-feynman) goes to the
+	tools too: the installed TeX has it.
 */
 
 import fs from 'fs';
@@ -197,7 +198,15 @@ async function fillTikz(job) {
 		addWarning(`Figure engine: a TiKZ figure needs \`${missing[1]}\`, which mp-tikz-wasm does not have — drawn by the installed tools instead`);
 		return job.external();
 	}
-	if (!r.pages?.length || r.status === 'error' || r.status === 'fatal') {
+	const made = r.pages?.length && r.status !== 'error' && r.status !== 'fatal';
+	// Under `wasm` nothing falls back, and a face the library cannot resolve
+	// used to pass in silence: the figure's bold and italic came out regular.
+	if (setting() === 'wasm' && FONT_MISS.test(r.texLog || '')) {
+		const faces = [...new Set([...(r.texLog || '').matchAll(/Could not resolve font "([^"]+)"/g)].map((m) => m[1]))];
+		const named = faces.length ? ` (${faces.join(', ')})` : '';
+		addWarning(`Figure engine: a TiKZ figure names a font mp-tikz-wasm could not resolve${named} — ${made ? 'drawn without it' : 'not drawn (see the error box)'}`);
+	}
+	if (!made) {
 		return job.fail(r.texLog || r.log || r.diagnostics?.map((d) => d.message).join('\n') || 'mp-tikz-wasm made no figure');
 	}
 	compileInRunDir(job.dir, (run) => { fs.writeFileSync(path.join(run, `${name}.svg`), r.pages[0]); return [`${name}.svg`]; });

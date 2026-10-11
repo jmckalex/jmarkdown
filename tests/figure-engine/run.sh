@@ -106,6 +106,20 @@ if [ -f /System/Library/Fonts/Optima.ttc ]; then
 	if ls "$F/TiKZ/"*.svg >/dev/null 2>&1; then pass "fonts/drawn"; else fail "fonts/drawn" "no SVG"; fi
 fi
 
+# --- under wasm, a face the library cannot resolve is warned (bold and italic came out regular, unsaid) ----
+# Times New Roman's faces are separate files; the folder search hands over the regular one alone.
+if [ -f "/System/Library/Fonts/Supplemental/Times New Roman.ttf" ]; then
+	R="$SCRATCH/face"
+	mkdir -p "$R/.jmarkdown"
+	printf '{ "LaTeX preamble": ["\\\\usepackage{fontspec}", "\\\\setmainfont{Times New Roman}"] }\n' >"$R/.jmarkdown/config.json"
+	printf -- '---\nTitle: Face\n---\n\n:::TiKZ\n\\node {Regular \\textbf{Bold}};\n:::\n' >"$R/note.md"
+	wasm "$R" wasm process note.md --fragment -o note.html
+	has      "face-miss/exit-0" "$R/exit.txt" '0'
+	has      "face-miss/warned" "$R/err.txt" 'a TiKZ figure names a font mp-tikz-wasm could not resolve (Times New Roman/'
+	has      "face-miss/drawn-without" "$R/err.txt" '— drawn without it'
+	resolves "face-miss/drawn" "$R/note.html"
+fi
+
 # --- a font no folder holds: under auto, that figure goes to the installed tools, with a warning ------
 if command -v lualatex >/dev/null 2>&1; then
 	M="$SCRATCH/miss"
