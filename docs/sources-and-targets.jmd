@@ -85,10 +85,10 @@ Because the source is *cloned* per target, a single source can fill any number o
 targets — see [Reusing one source for many targets](#reusing-one-source-for-many-targets)
 below.
 
-> **HTML output only.** The splice runs in the cheerio post-processing stage, and
-> that stage runs only on the HTML path. In LaTeX output there is no
-> post-processing, so sources and targets are not rewritten. Reach for this feature
-> for web output; for print, write the content where it belongs.
+> **LaTeX output too.** In HTML the splice runs in the cheerio post-processing
+> stage. LaTeX output has no such stage, so the engine makes the same move as it
+> writes the `.tex`: each target is written with its source's content, and the
+> source writes nothing where it stands. The rules below hold in both outputs.
 
 ## Syntax
 
@@ -210,7 +210,7 @@ corner cases will save you a confusing afternoon.
 | One source, several targets (same id) | Each target replaced by an independent clone |
 | Target with no source | Empty invisible span left in place |
 | Source with no target | Source removed from the output entirely |
-| LaTeX output | No splicing — feature is HTML-only |
+| LaTeX output | The same: each target gets the first source's content |
 
 ## See also
 

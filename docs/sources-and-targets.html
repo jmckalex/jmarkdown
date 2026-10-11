@@ -107,10 +107,10 @@ def foo():
   targets — see <a href="#reusing-one-source-for-many-targets">Reusing one source for many targets</a>
   below.</p>
 <blockquote>
-  <p><span class="intense">HTML output only.</span> The splice runs in the cheerio post-processing stage, and
-    that stage runs only on the HTML path. In LaTeX output there is no
-    post-processing, so sources and targets are not rewritten. Reach for this feature
-    for web output; for print, write the content where it belongs.</p>
+  <p><span class="intense">LaTeX output too.</span> In HTML the splice runs in the cheerio post-processing
+    stage. LaTeX output has no such stage, so the engine makes the same move as it
+    writes the <code>.tex</code>: each target is written with its source's content, and the
+    source writes nothing where it stands. The rules below hold in both outputs.</p>
 </blockquote>
 <h2 id="toc-syntax">Syntax</h2>
 <p>There are two ways to write a target and one way to write a source.</p>
@@ -309,7 +309,7 @@ The <span class="hljs-strong">**same**</span> source, cloned into every matching
     </tr>
     <tr>
       <td>LaTeX output</td>
-      <td>No splicing — feature is HTML-only</td>
+      <td>The same: each target gets the first source's content</td>
     </tr>
   </tbody>
 </table>

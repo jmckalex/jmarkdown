@@ -277,7 +277,8 @@ including its counter. Either way the HTML side is unchanged.
 A handful of names are predefined so that `@begin(x)` matches its corresponding
 container directive exactly:
 
-- `abstract` and `feedback` — styled containers for the web;
+- `abstract` and `feedback` — labelled containers (in LaTeX, the standard
+  `abstract` environment, and a bold "Feedback" line over the body);
 - `TeX` — raw LaTeX, passed through verbatim and emitted only in LaTeX output;
 - `HTML` — markdown prose emitted only in HTML output;
 - `comment` (and any names you declare under `Optionals`) — hidden by default,
