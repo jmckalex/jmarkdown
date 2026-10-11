@@ -54,7 +54,8 @@
 
 	Left alone: the metadata header, fenced code, inline code, maths ($…$, $$…$$,
 	\(…\), \[…\]), HTML comments, the inline comment (`%` to the end of the line,
-	or the header's `Inline comment` marker — so Obsidian's one-line `%% … %%`), <script>/<style> blocks, raw HTML tags, URLs,
+	or the header's `Inline comment` marker — in a document that has a header,
+	as the engine installs it only then), <script>/<style> blocks, raw HTML tags, URLs,
 	link destinations, and the bodies of verbatim environments (TeX, TiKZ,
 	mermaid, Mathematica, game, metapost, tabbing). A second run changes nothing.
 
@@ -120,7 +121,10 @@ export function convertColonDirectives(source, options = {}) {
 		optionals: new Set(),
 		loaded: new Set(options.customDirectives || []),
 		keep: new Set(options.keep || []),
-		comment: '%',
+		// The inline comment exists only in a document WITH a metadata header:
+		// metadata-header.js installs it (default `%`) while reading one. Without
+		// a header `%` is ordinary text, and a directive after it was read.
+		comment: header ? '%' : null,
 		loadsAll: false
 	};
 	readHeader(header, ctx);

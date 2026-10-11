@@ -76,8 +76,10 @@ check('header', 'Title: a :ref[x]\n---\n:ref[y]', 'Title: a :ref[x]\n---\n@ref[y
 check('fenced code', '```\n:::note\n:ref[x]\n```\n:ref[y]', '```\n:::note\n:ref[x]\n```\n@ref[y]', 'same');
 check('inline code and maths', '`:ref[x]` and $a:b[1]$ and \\(f:x[1]\\) and :ref[y]', '`:ref[x]` and $a:b[1]$ and \\(f:x[1]\\) and @ref[y]', 'same');
 check('HTML comments and tags', '<!-- :ref[x] -->\n<span style="a:b[1]">:ref[y]</span>', '<!-- :ref[x] -->\n<span style="a:b[1]">@ref[y]</span>', 'same');
-check('the inline comment', '\nSee :ref[a]. % a note :ref[b] and Meta:x\nThen :ref[c] %% kanban:settings %%',
-	'\nSee @ref[a]. % a note :ref[b] and Meta:x\nThen @ref[c] %% kanban:settings %%', 'same,same');
+check('the inline comment, in a document with a header', 'Title: t\n---\nSee :ref[a]. % a note :ref[b] and Meta:x\nThen :ref[c] %% kanban:settings %%',
+	'Title: t\n---\nSee @ref[a]. % a note :ref[b] and Meta:x\nThen @ref[c] %% kanban:settings %%', 'same,same');
+check('no header, no inline comment', '\nSee :ref[a]. % then :ref[b] and kanban:settings',
+	'\nSee @ref[a]. % then @ref[b] and kanban:settings', 'same,same,prose');
 check('a header sets the comment marker', 'Inline comment: ## true\n---\nA :ref[a] ## :ref[b]\n50% :ref[c]',
 	'Inline comment: ## true\n---\nA @ref[a] ## :ref[b]\n50% @ref[c]', 'same,same');
 check('a multi-line comment', '<!--\n:::note\nx\n:::\n-->', '<!--\n:::note\nx\n:::\n-->', '');
