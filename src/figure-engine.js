@@ -206,6 +206,15 @@ const FONT_MISS = /Could not resolve font|Font shape [^\n]* undefined/;
 // not found.` (its bundles hold a selection of TeX Live, the tools all of it).
 const MISSING_FILE = /! LaTeX Error: File `([^']+)' not found/;
 
+// TeX breaks its log at 79 columns, mid-word, so a long file or font name
+// arrives in pieces: a line of exactly 79 characters runs on into the next
+// (a missing `/private/tmp/…/outside.txt` was named with a newline inside
+// it). The lines are joined before a name is read out of the log.
+function unwrapTexLog(log) {
+	const lines = String(log || '').split('\n');
+	return lines.map((line, i) => line + (line.length === 79 && i < lines.length - 1 ? '' : '\n')).join('');
+}
+
 // --- the jobs --------------------------------------------------------------------
 
 // A TiKZ figure sent to the installed tools under `auto`, and a warning that
@@ -235,18 +244,19 @@ async function fillTikz(job) {
 		engine: 'lualatex', bbox: 'min',
 		dvisvgmArgs: ['--no-fonts=1', ...(optimise ? [`--optimize=${optimise}`] : [])],
 	}));
-	if (setting() === 'auto' && FONT_MISS.test(r.texLog || '')) {
+	const log = unwrapTexLog(r.texLog);
+	if (setting() === 'auto' && FONT_MISS.test(log)) {
 		return toTools(job, 'a TiKZ figure names a font mp-tikz-wasm could not resolve');
 	}
-	const missing = MISSING_FILE.exec(r.texLog || '');
+	const missing = MISSING_FILE.exec(log);
 	if (setting() === 'auto' && missing) {
 		return toTools(job, `a TiKZ figure needs \`${missing[1]}\`, which mp-tikz-wasm does not have`);
 	}
 	const made = r.pages?.length && r.status !== 'error' && r.status !== 'fatal';
 	// Under `wasm` nothing falls back, and a face the library cannot resolve
 	// used to pass in silence: the figure's bold and italic came out regular.
-	if (setting() === 'wasm' && FONT_MISS.test(r.texLog || '')) {
-		const faces = [...new Set([...(r.texLog || '').matchAll(/Could not resolve font "([^"]+)"/g)].map((m) => m[1]))];
+	if (setting() === 'wasm' && FONT_MISS.test(log)) {
+		const faces = [...new Set([...log.matchAll(/Could not resolve font "([^"]+)"/g)].map((m) => m[1]))];
 		const named = faces.length ? ` (${faces.join(', ')})` : '';
 		addWarning(`Figure engine: a TiKZ figure names a font mp-tikz-wasm could not resolve${named} — ${made ? 'drawn without it' : 'not drawn (see the error box)'}`);
 	}

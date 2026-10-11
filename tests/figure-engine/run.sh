@@ -233,6 +233,15 @@ if command -v lualatex >/dev/null 2>&1 && kpsewhich siunitx.sty >/dev/null 2>&1;
 	resolves "missing-file/drawn" "$P/note.html"
 fi
 
+# --- a missing file whose name TeX's log wraps at 79 columns: named whole, on one line ---------------------
+L="$SCRATCH/long-name"
+mkdir -p "$L/.jmarkdown"
+printf '{ "LaTeX preamble": ["\\\\usepackage{a-package-name-that-is-long-enough-to-wrap-past-the-seventy-nine-col}"] }\n' >"$L/.jmarkdown/config.json"
+printf -- '---\nTitle: Long name\n---\n\n:::TiKZ\n\\node {x};\n:::\n' >"$L/note.md"
+wasm "$L" auto process note.md --fragment -o note.html
+has "long-name/exit-0" "$L/exit.txt" '0'
+has "long-name/named-whole" "$L/err.txt" 'a TiKZ figure needs `a-package-name-that-is-long-enough-to-wrap-past-the-seventy-nine-col.sty`, which mp-tikz-wasm does not have'
+
 # --- a TikZ error: the error box, a clean exit (process.exitCode untouched) ---------------------------
 E="$SCRATCH/error"
 mkdir -p "$E"
