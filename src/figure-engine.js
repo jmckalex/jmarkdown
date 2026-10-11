@@ -7,7 +7,9 @@
 	  `Figure engine`: external (the default: the installed tools, as always) |
 	                   auto (the library; per figure, the tools when a font the
 	                   figure needs cannot be resolved, or a file its TeX does
-	                   not have) | wasm (the library only)
+	                   not have) | wasm (the library only: the tools are never
+	                   run, on any path — a figure the library does not draw
+	                   is refused by name instead)
 	  `MP-TikZ dist`:  the path to a release's dist/ folder (mp-tikz-wasm is no
 	                   npm package; its release tarball holds dist/)
 	— processFile's `figureEngine` / `mpTikzDist`, the CLI's --figure-engine /
@@ -56,6 +58,33 @@ function setting() {
 	return v === 'auto' || v === 'wasm' ? v : 'external';
 }
 
+/*
+	`wasm` is the library ALONE: the installed lualatex, dvisvgm, mpost and
+	mptopdf are never run, on any path — no dist, a library that will not load,
+	a library call that throws, a figure no walk filled. A host relies on it
+	(Clew's restricted vaults: the installed TeX reads any file the user can).
+	It is enforced where the tools are called, not where the fallbacks are
+	decided: tikz.js's compile and metapost.js's renderers ask
+	figureToolsRefused() first, and a figure the library did not draw becomes
+	refuseFigure(name) — a `jmd-refused` marker naming it in HTML, as note code
+	refused is (note-code.js), nothing in LaTeX, and a warning.
+*/
+export function figureToolsRefused() {
+	return setting() === 'wasm';
+}
+
+export function refuseFigure(name) {
+	warnOnce(`${name} not drawn — \`Figure engine: wasm\` never runs the installed tools`);
+	if (global.isLatex) return '';
+	return `<div class="jmd-error jmd-refused" data-jmd-refused="${name}">[${name} not drawn: the figure engine is wasm, which never runs the installed tools]</div>\n`;
+}
+
+// What the engine falls back to when the library cannot draw: the tools, or
+// under `wasm` nothing.
+const fallback = () => (setting() === 'wasm'
+	? 'no figure is drawn (`wasm` never runs the installed tools)'
+	: 'the installed tools are used');
+
 function distDir() {
 	const d = configManager.get('MP-TikZ dist');
 	return d ? path.resolve(process.cwd(), String(d)) : null;
@@ -69,7 +98,7 @@ function distDir() {
 export function figureEngineWanted() {
 	if (setting() === 'external') return false;
 	if (!distDir()) {
-		warnOnce(`Figure engine: ${setting()} needs \`MP-TikZ dist\` (a path to mp-tikz-wasm's dist/) — the installed tools are used`);
+		warnOnce(`Figure engine: ${setting()} needs \`MP-TikZ dist\` (a path to mp-tikz-wasm's dist/) — ${fallback()}`);
 		return false;
 	}
 	return true;
@@ -112,7 +141,7 @@ async function instance() {
 		return mp;
 	} catch (error) {
 		lib = false;
-		warnOnce(`Figure engine: mp-tikz-wasm would not load from ${distDir()} (${String(error?.message ?? error).split('\n')[0]}) — the installed tools are used`);
+		warnOnce(`Figure engine: mp-tikz-wasm would not load from ${distDir()} (${String(error?.message ?? error).split('\n')[0]}) — ${fallback()}`);
 		return null;
 	}
 }
@@ -276,7 +305,7 @@ async function runAll() {
 			if (job.kind === 'tikz') await fillTikz(job);
 			else await fillMetapost(job);
 		} catch (error) {
-			warnOnce(`Figure engine: mp-tikz-wasm failed (${String(error?.message ?? error).split('\n')[0]}) — the installed tools are used`);
+			warnOnce(`Figure engine: mp-tikz-wasm failed (${String(error?.message ?? error).split('\n')[0]}) — ${fallback()}`);
 			job.external();
 		}
 	}

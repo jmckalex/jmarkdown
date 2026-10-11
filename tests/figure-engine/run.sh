@@ -5,8 +5,9 @@
 # /usr/bin:/bin, so no lualatex, dvisvgm, mpost or mptopdf can be reached: what
 # they draw, the library drew.
 #
-# Needs a release: MP_TIKZ_DIST=<…/mp-tikz-wasm-0.4.0/dist>. Without one every
-# case is SKIPPED (not failed), as the diagrams suite skips missing tools.
+# Needs a release: MP_TIKZ_DIST=<…/mp-tikz-wasm-0.4.0/dist>. Without one the
+# library cases are SKIPPED (not failed), as the diagrams suite skips missing
+# tools; the strict-wasm cases, which need no library, run regardless.
 # HOME is a scratch folder, so a global config plays no part.
 #
 # Usage:  MP_TIKZ_DIST=/path/to/dist sh tests/figure-engine/run.sh
@@ -22,13 +23,6 @@ echo "=========================================="
 echo "figure-engine"
 echo "=========================================="
 
-DIST=${MP_TIKZ_DIST:-}
-if [ -z "$DIST" ] || [ ! -f "$DIST/index.js" ]; then
-	echo "SKIP  figure-engine/*  (no MP_TIKZ_DIST pointing at an mp-tikz-wasm release dist/)"
-	echo "figure-engine: 0 passed, 0 failed, 1 skipped"
-	exit 0
-fi
-
 SCRATCH=$(mktemp -d -t jmd-figure-engine.XXXXXX)
 trap 'rm -rf "$SCRATCH"' EXIT INT TERM
 mkdir -p "$SCRATCH/home"
@@ -39,6 +33,77 @@ pass() { printf 'PASS  figure-engine/%s\n' "$1"; passed=$((passed + 1)); }
 fail() { printf 'FAIL  figure-engine/%s\n' "$1"; shift; for line in "$@"; do printf '    | %s\n' "$line"; done; failed=$((failed + 1)); }
 has()   { if grep -qF -- "$3" "$2"; then pass "$1"; else fail "$1" "expected: $3"; fi; }
 hasnt() { if grep -qF -- "$3" "$2"; then fail "$1" "unexpected: $(grep -F -- "$3" "$2" | head -2)"; else pass "$1"; fi; }
+
+# --- strict wasm never runs the installed tools, on any path (no release needed) ---------------------------
+# Stand-ins for lualatex, dvisvgm, mpost and mptopdf come first on PATH and log
+# every run; two fake dists cover the library failing to load and a library
+# call that throws. Under wasm no stand-in may run, and each figure is refused
+# by name; under auto the same failure reaches them (the control).
+STANDINS="$SCRATCH/standins"
+mkdir -p "$STANDINS"
+for tool in lualatex dvisvgm mpost mptopdf; do
+	printf '#!/bin/sh\necho "%s $*" >>"%s/ran.txt"\nexit 1\n' "$tool" "$SCRATCH" >"$STANDINS/$tool"
+	chmod +x "$STANDINS/$tool"
+done
+mkdir -p "$SCRATCH/dist-broken" "$SCRATCH/dist-throws"
+printf "throw new Error('will not load');\n" >"$SCRATCH/dist-broken/index.js"
+cat >"$SCRATCH/dist-throws/index.js" <<'EOF'
+export const DEFAULT_BUNDLES = [];
+export const MetaPost = { async create() { return {
+	async addFiles() {}, dispose() {},
+	async latex() { throw new Error('latex throws'); },
+	async run() { throw new Error('run throws'); },
+}; } };
+EOF
+# guarded DIR ARGS… — a build whose only TeX tools are the stand-ins
+guarded() {
+	dir=$1; shift
+	(cd "$dir" && env -i HOME="$SCRATCH/home" PATH="$STANDINS:/usr/bin:/bin" "$NODE" "$JMD" "$@" >/dev/null 2>err.txt; echo $? >exit.txt)
+}
+figures() { printf -- '---\nTitle: Strict\n---\n\n:::TiKZ\n\\draw (0,0) -- (1,1);\n:::\n\n@begin(metapost)\ndraw unitsquare scaled 1cm;\n@end(metapost)\n\nAfter them.\n' >"$1/note.md"; }
+strict() {
+	label=$1; shift
+	W="$SCRATCH/strict-$label"
+	mkdir -p "$W"
+	figures "$W"
+	rm -f "$SCRATCH/ran.txt"
+	guarded "$W" process note.md --fragment -o note.html --figure-engine wasm "$@"
+	has   "strict/$label/exit-0" "$W/exit.txt" '0'
+	if [ -s "$SCRATCH/ran.txt" ]; then fail "strict/$label/no-tool-run" "$(cat "$SCRATCH/ran.txt")"; else pass "strict/$label/no-tool-run"; fi
+	has   "strict/$label/tikz-refused" "$W/note.html" 'data-jmd-refused="TiKZ"'
+	has   "strict/$label/metapost-refused" "$W/note.html" 'data-jmd-refused="metapost"'
+	has   "strict/$label/rest-renders" "$W/note.html" 'After them.'
+	has   "strict/$label/warned" "$W/err.txt" 'not drawn — `Figure engine: wasm` never runs the installed tools'
+	hasnt "strict/$label/no-tools-claimed" "$W/err.txt" 'the installed tools are used'
+}
+strict no-dist
+strict will-not-load --mp-tikz-dist "$SCRATCH/dist-broken"
+strict throws --mp-tikz-dist "$SCRATCH/dist-throws"
+# LaTeX: MetaPost's PDF is refused (TiKZ is written natively, no tool involved).
+W="$SCRATCH/strict-latex"
+mkdir -p "$W"
+figures "$W"
+rm -f "$SCRATCH/ran.txt"
+guarded "$W" process note.md --to latex -o note.tex --figure-engine wasm --mp-tikz-dist "$SCRATCH/dist-broken"
+has   "strict/latex/exit-0" "$W/exit.txt" '0'
+if [ -s "$SCRATCH/ran.txt" ]; then fail "strict/latex/no-tool-run" "$(cat "$SCRATCH/ran.txt")"; else pass "strict/latex/no-tool-run"; fi
+hasnt "strict/latex/no-metapost-pdf" "$W/note.tex" 'MetaPost/'
+has   "strict/latex/tikz-native" "$W/note.tex" '\begin{tikzpicture}'
+# The control: auto, the same library failure, and the stand-ins are reached.
+W="$SCRATCH/strict-control"
+mkdir -p "$W"
+figures "$W"
+rm -f "$SCRATCH/ran.txt"
+guarded "$W" process note.md --fragment -o note.html --figure-engine auto --mp-tikz-dist "$SCRATCH/dist-broken"
+if grep -q lualatex "$SCRATCH/ran.txt" 2>/dev/null && grep -q mpost "$SCRATCH/ran.txt"; then pass "strict/control/auto-runs-the-tools"; else fail "strict/control/auto-runs-the-tools" "the stand-ins were not reached"; fi
+
+DIST=${MP_TIKZ_DIST:-}
+if [ -z "$DIST" ] || [ ! -f "$DIST/index.js" ]; then
+	echo "SKIP  figure-engine/* library cases  (no MP_TIKZ_DIST pointing at an mp-tikz-wasm release dist/)"
+	echo "figure-engine: $passed passed, $failed failed, 1 skipped"
+	[ "$failed" -eq 0 ]
+	exit
+fi
 
 # wasm DIR ENGINE ARGS… — a build with no TeX tools reachable; stderr to DIR/err.txt, exit code to DIR/exit.txt
 wasm() {

@@ -119,7 +119,7 @@ echo
 
 # 14. figure-engine — TikZ and MetaPost drawn by mp-tikz-wasm (only when asked),
 #     with no TeX tools on PATH. Needs MP_TIKZ_DIST (a release's dist/);
-#     without it the suite skips. Gates CI.
+#     without it the library cases skip (strict wasm's run). Gates CI.
 echo "------ figure-engine ------"
 sh "$REPO/tests/figure-engine/run.sh"
 figure_engine_status=$?
