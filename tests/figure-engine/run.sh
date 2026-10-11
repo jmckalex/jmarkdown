@@ -117,6 +117,19 @@ if command -v lualatex >/dev/null 2>&1; then
 	has "font-miss/warned" "$M/err.txt" 'a TiKZ figure names a font mp-tikz-wasm could not resolve — drawn by the installed tools instead'
 fi
 
+# --- a package the library's bundles leave out (siunitx): under auto, the installed tools draw it ---------
+if command -v lualatex >/dev/null 2>&1 && kpsewhich siunitx.sty >/dev/null 2>&1; then
+	P="$SCRATCH/package"
+	mkdir -p "$P/.jmarkdown"
+	printf '{ "LaTeX preamble": ["\\\\usepackage{siunitx}"] }\n' >"$P/.jmarkdown/config.json"
+	printf -- '---\nTitle: Package\n---\n\n:::TiKZ\n\\node {\\SI{3}{\\metre}};\n:::\n' >"$P/note.md"
+	(cd "$P" && HOME="$SCRATCH/home" "$NODE" "$JMD" process note.md --fragment -o note.html --figure-engine auto --mp-tikz-dist "$DIST" >/dev/null 2>err.txt; echo $? >exit.txt)
+	has      "missing-file/exit-0" "$P/exit.txt" '0'
+	has      "missing-file/warned" "$P/err.txt" 'a TiKZ figure needs `siunitx.sty`, which mp-tikz-wasm does not have — drawn by the installed tools instead'
+	hasnt    "missing-file/no-error-box" "$P/note.html" 'tikz-error'
+	resolves "missing-file/drawn" "$P/note.html"
+fi
+
 # --- a TikZ error: the error box, a clean exit (process.exitCode untouched) ---------------------------
 E="$SCRATCH/error"
 mkdir -p "$E"

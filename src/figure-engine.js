@@ -6,7 +6,8 @@
 	OFF unless the config or a host asks, and then only with a library to load:
 	  `Figure engine`: external (the default: the installed tools, as always) |
 	                   auto (the library; per figure, the tools when a font the
-	                   figure needs cannot be resolved) | wasm (the library only)
+	                   figure needs cannot be resolved, or a file its TeX does
+	                   not have) | wasm (the library only)
 	  `MP-TikZ dist`:  the path to a release's dist/ folder (mp-tikz-wasm is no
 	                   npm package; its release tarball holds dist/)
 	— processFile's `figureEngine` / `mpTikzDist`, the CLI's --figure-engine /
@@ -27,7 +28,9 @@
 	Fonts: a preamble's \setmainfont{Optima} and the like are found in the
 	system's font folders and handed to the library (addFiles); a face it still
 	cannot resolve shows in its TeX log, and under `auto` that figure is drawn by
-	the tools instead, with a warning.
+	the tools instead, with a warning. So is a figure whose TeX needs a file the
+	library's bundles leave out (a package such as siunitx or tikz-feynman): the
+	installed TeX has it.
 */
 
 import fs from 'fs';
@@ -164,6 +167,10 @@ async function giveFonts(engine, source) {
 
 const FONT_MISS = /Could not resolve font|Font shape [^\n]* undefined/;
 
+// A file the library's TeX does not have: `! LaTeX Error: File `siunitx.sty'
+// not found.` (its bundles hold a selection of TeX Live, the tools all of it).
+const MISSING_FILE = /! LaTeX Error: File `([^']+)' not found/;
+
 // --- the jobs --------------------------------------------------------------------
 
 const hash = (kind, text) => crypto.createHash('md5').update(`${fingerprint()}|${kind}|${text}`).digest('hex');
@@ -183,6 +190,11 @@ async function fillTikz(job) {
 	}));
 	if (setting() === 'auto' && FONT_MISS.test(r.texLog || '')) {
 		addWarning('Figure engine: a TiKZ figure names a font mp-tikz-wasm could not resolve — drawn by the installed tools instead');
+		return job.external();
+	}
+	const missing = MISSING_FILE.exec(r.texLog || '');
+	if (setting() === 'auto' && missing) {
+		addWarning(`Figure engine: a TiKZ figure needs \`${missing[1]}\`, which mp-tikz-wasm does not have — drawn by the installed tools instead`);
 		return job.external();
 	}
 	if (!r.pages?.length || r.status === 'error' || r.status === 'fatal') {
