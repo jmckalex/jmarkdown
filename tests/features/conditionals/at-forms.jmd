@@ -1,0 +1,15 @@
+Before the conditional parts.
+
+A sentence with @print[a print-only phrase] and @web[a web-only phrase] in the middle of it, which stays one paragraph.
+
+@print+[A print-only block line.]
+
+@begin(print)
+A print-only paragraph.
+@end(print)
+
+@begin(web)
+A web-only paragraph.
+@end(web)
+
+After the conditional parts.
