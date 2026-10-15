@@ -26,7 +26,8 @@
 
 	Cache: the same folders (figure-cache.js cacheDir) and references, but a
 	library render is keyed by its source AND the library's fingerprint, so its
-	output never mixes with the tools' and a new release re-renders cleanly.
+	output never mixes with the tools' and a new release re-renders cleanly
+	(and, given `figureFonts`, by the host's font files, below).
 	Fonts: a preamble's \setmainfont{Optima} and the like are found in the
 	system's font folders and handed to the library (addFiles) — or in the
 	host's own font index, when it passes processFile's `figureFonts` (below);
@@ -250,24 +251,33 @@ function folderSearch(name, why) {
 
 /**
  * With `figureFonts`: the files the host gives for the families a source
- * names, as `{ files }`. Without it: null, and the hand-over is as it always
- * was.
+ * names, as `{ files, stamp }` — `stamp` goes into the figure's cache key, so
+ * a render made with other files (a regular face alone, before the host's
+ * fonts were given) is never reused. A family the folder search answered for
+ * adds nothing to it: the same file as without the option, so the same
+ * render, under the same key.
+ * Without it: null, and the key and the hand-over are as they always were.
  */
 async function hostFontsFor(source) {
 	if (hostFontsMalformed) warnOnce('Figure engine: `figureFonts` is a function or an object (family → files) — ignored, so the font folders are searched');
 	if (!hostFonts) return null;
 	const files = [];
+	const stamp = [];
 	for (const name of namedFonts(source)) {
 		const answer = await hostFamilyFiles(name);
+		const given = [];
 		for (const file of answer.files) {
-			try { fs.statSync(file); } catch {
+			let size;
+			try { size = fs.statSync(file).size; } catch {
 				warnOnce(`Figure engine: the host's \`figureFonts\` gave \`${file}\` for \`${name}\`, which cannot be read — left out`);
 				continue;
 			}
+			given.push(`${path.basename(file)}:${size}`);
 			if (!files.includes(file)) files.push(file);
 		}
+		if (answer.host) stamp.push(`${name}=${given.join(',')}`);
 	}
-	return { files };
+	return { files, stamp: stamp.length ? `\n%figure-fonts ${stamp.join(';')}` : '' };
 }
 
 async function giveFonts(engine, source, host) {
@@ -326,7 +336,7 @@ const hash = (kind, text) => crypto.createHash('md5').update(`${fingerprint()}|$
 // A TiKZ figure: one SVG, `<hash>.svg` in its cache folder.
 async function fillTikz(job) {
 	const host = await hostFontsFor(job.doc);
-	const name = hash('tikz', job.doc);
+	const name = hash('tikz', job.doc + (host?.stamp ?? ''));
 	const out = path.join(job.dir, `${name}.svg`);
 	if (fs.existsSync(out)) return job.use(path.join(job.dir, `${name}.tex`));
 	const engine = await instance();

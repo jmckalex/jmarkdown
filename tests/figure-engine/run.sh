@@ -208,7 +208,7 @@ if [ -f "$TNR.ttf" ] && [ -f "$TNR Bold.ttf" ] && [ -f "$TNR Italic.ttf" ] && [ 
 	printf -- '---\nTitle: Host fonts\n---\n\n:::TiKZ\n\\node {Regular \\textbf{Bold} \\textit{Italic}};\n:::\n' >"$O/note.md"
 	# host NAME PATH OPTIONS RESOLVER — one processFile call in $O; NAME.html, NAME.err, NAME.exit
 	host() {
-		(cd "$O" && env -i HOME="$SCRATCH/home" PATH="$2" "$NODE" --input-type=module -e "
+		(cd "${HOSTDIR:-$O}" && env -i HOME="$SCRATCH/home" PATH="$2" "$NODE" --input-type=module -e "
 			import { processFile } from '$JMD';
 			import fs from 'fs';
 			const TNR = '$TNR';
@@ -217,7 +217,7 @@ if [ -f "$TNR.ttf" ] && [ -f "$TNR Bold.ttf" ] && [ -f "$TNR Italic.ttf" ] && [ 
 			await processFile('note.md', { to: 'html', fragment: true, output: '$1.html', $3 figureFonts });
 		" >/dev/null 2>"$1.err"; echo $? >"$1.exit")
 	}
-	svg() { ls "$O/cache-$1/TiKZ/"*.svg 2>/dev/null | head -1; }
+	svg() { ls "${HOSTDIR:-$O}/cache-$1/TiKZ/"*.svg 2>/dev/null | head -1; }
 	same() {   # same LABEL A B — the two builds drew the same SVG, under the same name
 		a=$(svg "$2"); b=$(svg "$3")
 		if [ -n "$a" ] && [ "$(basename "$a")" = "$(basename "${b:-none}")" ] && cmp -s "$a" "$b"; then pass "$1"
@@ -263,6 +263,25 @@ if [ -f "$TNR.ttf" ] && [ -f "$TNR Bold.ttf" ] && [ -f "$TNR Italic.ttf" ] && [ 
 	has "host-fonts/unreadable/exit-0" "$O/unreadable.exit" '0'
 	has "host-fonts/unreadable/warned" "$O/unreadable.err" "gave \`$SCRATCH/no-such-font.ttf\` for \`Times New Roman\`, which cannot be read — left out"
 	hasnt "host-fonts/unreadable/rest-given" "$O/unreadable.err" 'could not resolve'
+
+	# The cache key: a render made with the regular face alone is not reused once
+	# the host's fonts are given, and theirs is reused while they stay the same.
+	host key-without /usr/bin:/bin "$WASM cacheDir: 'cache-key'," "const figureFonts = undefined;"
+	host key-with    /usr/bin:/bin "$WASM cacheDir: 'cache-key'," "const figureFonts = () => FOUR;"
+	host key-again   /usr/bin:/bin "$WASM cacheDir: 'cache-key'," "const figureFonts = () => FOUR;"
+	count=$(ls "$O/cache-key/TiKZ/"*.svg 2>/dev/null | wc -l | tr -d ' ')
+	if [ "$count" = 2 ]; then pass "host-fonts/key/own-render"; else fail "host-fonts/key/own-render" "$count SVG(s) in the cache, not 2"; fi
+	if [ ! -s "$O/key-with.err" ] && [ "$(srcs "$O/key-with.html")" != "$(srcs "$O/key-without.html")" ]; then pass "host-fonts/key/not-the-regular-render"
+	else fail "host-fonts/key/not-the-regular-render" "$(srcs "$O/key-with.html")"; fi
+	if [ "$(srcs "$O/key-again.html")" = "$(srcs "$O/key-with.html")" ]; then pass "host-fonts/key/reused"; else fail "host-fonts/key/reused" "$(srcs "$O/key-again.html")"; fi
+	# A figure that names no family keeps its key whatever the host gives.
+	HOSTDIR="$SCRATCH/host-fonts-plain"
+	mkdir -p "$HOSTDIR"
+	printf -- '---\nTitle: Plain\n---\n\n:::TiKZ\n\\draw (0,0) -- (1,1);\n:::\n' >"$HOSTDIR/note.md"
+	host plain-without /usr/bin:/bin "$WASM cacheDir: 'cache-plain-without'," "const figureFonts = undefined;"
+	host plain-with    /usr/bin:/bin "$WASM cacheDir: 'cache-plain-with',"    "const figureFonts = () => FOUR;"
+	same "host-fonts/key/no-family-unchanged" plain-without plain-with
+	HOSTDIR=
 
 	# Under external the option does nothing: never called, and the same page.
 	if command -v lualatex >/dev/null 2>&1; then
