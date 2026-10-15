@@ -196,6 +196,99 @@ if [ -f "/System/Library/Fonts/Supplemental/Times New Roman.ttf" ]; then
 	resolves "face-miss/drawn" "$R/note.html"
 fi
 
+# --- the host's own font index (processFile's figureFonts): whole families, a face per file included ------
+# The folder search hands over Times New Roman's regular file alone (face-miss,
+# above); a host that gives the family's four files gets the real faces. One
+# build per process (processFile's design), so one call each.
+TNR="/System/Library/Fonts/Supplemental/Times New Roman"
+if [ -f "$TNR.ttf" ] && [ -f "$TNR Bold.ttf" ] && [ -f "$TNR Italic.ttf" ] && [ -f "$TNR Bold Italic.ttf" ]; then
+	O="$SCRATCH/host-fonts"
+	mkdir -p "$O/.jmarkdown"
+	printf '{ "LaTeX preamble": ["\\\\usepackage{fontspec}", "\\\\setmainfont{Times New Roman}"] }\n' >"$O/.jmarkdown/config.json"
+	printf -- '---\nTitle: Host fonts\n---\n\n:::TiKZ\n\\node {Regular \\textbf{Bold} \\textit{Italic}};\n:::\n' >"$O/note.md"
+	# host NAME PATH OPTIONS RESOLVER — one processFile call in $O; NAME.html, NAME.err, NAME.exit
+	host() {
+		(cd "$O" && env -i HOME="$SCRATCH/home" PATH="$2" "$NODE" --input-type=module -e "
+			import { processFile } from '$JMD';
+			import fs from 'fs';
+			const TNR = '$TNR';
+			const FOUR = [TNR + '.ttf', TNR + ' Bold.ttf', TNR + ' Italic.ttf', TNR + ' Bold Italic.ttf'];
+			$4
+			await processFile('note.md', { to: 'html', fragment: true, output: '$1.html', $3 figureFonts });
+		" >/dev/null 2>"$1.err"; echo $? >"$1.exit")
+	}
+	svg() { ls "$O/cache-$1/TiKZ/"*.svg 2>/dev/null | head -1; }
+	same() {   # same LABEL A B — the two builds drew the same SVG, under the same name
+		a=$(svg "$2"); b=$(svg "$3")
+		if [ -n "$a" ] && [ "$(basename "$a")" = "$(basename "${b:-none}")" ] && cmp -s "$a" "$b"; then pass "$1"
+		else fail "$1" "$2: $(basename "${a:-none}"), $3: $(basename "${b:-none}")"; fi
+	}
+	WASM="figureEngine: 'wasm', mpTikzDist: '$DIST',"
+	host none /usr/bin:/bin "$WASM cacheDir: 'cache-none'," "const figureFonts = undefined;"
+	host fn   /usr/bin:/bin "$WASM cacheDir: 'cache-fn',"   "const figureFonts = (family) => family === 'Times New Roman' ? FOUR : [];"
+	host obj  /usr/bin:/bin "$WASM cacheDir: 'cache-obj',"  "const figureFonts = { 'times new roman': FOUR };"
+	host auto /usr/bin:/bin "figureEngine: 'auto', mpTikzDist: '$DIST', cacheDir: 'cache-auto'," "const figureFonts = async () => FOUR;"
+	has "host-fonts/none/regular-only" "$O/none.err" 'could not resolve (Times New Roman/'
+	has "host-fonts/function/exit-0" "$O/fn.exit" '0'
+	if [ ! -s "$O/fn.err" ]; then pass "host-fonts/function/every-face-resolved"; else fail "host-fonts/function/every-face-resolved" "$(cat "$O/fn.err")"; fi
+	if [ -n "$(svg fn)" ] && [ -n "$(svg none)" ] && ! cmp -s "$(svg fn)" "$(svg none)"; then pass "host-fonts/function/real-faces-drawn"
+	else fail "host-fonts/function/real-faces-drawn" "the same drawing as the regular face alone"; fi
+	if [ -n "$(svg obj)" ] && cmp -s "$(svg fn)" "$(svg obj)" && [ ! -s "$O/obj.err" ]; then pass "host-fonts/object-any-case"
+	else fail "host-fonts/object-any-case" "$(cat "$O/obj.err")"; fi
+	# auto with every face resolved: the library draws it (no tools are on PATH), unwarned
+	if [ -n "$(svg auto)" ] && cmp -s "$(svg fn)" "$(svg auto)" && [ ! -s "$O/auto.err" ]; then pass "host-fonts/auto-library-draws"
+	else fail "host-fonts/auto-library-draws" "$(cat "$O/auto.err")"; fi
+
+	# A host that fails to answer: the folder search, as without the option, and a warning.
+	host throws    /usr/bin:/bin "$WASM cacheDir: 'cache-throws',"    "const figureFonts = () => { throw new Error('index broke'); };"
+	host nothing   /usr/bin:/bin "$WASM cacheDir: 'cache-nothing',"   "const figureFonts = () => undefined;"
+	host malformed /usr/bin:/bin "$WASM cacheDir: 'cache-malformed'," "const figureFonts = 42;"
+	for v in throws nothing malformed; do
+		has  "host-fonts/$v/exit-0" "$O/$v.exit" '0'
+		same "host-fonts/$v/as-without" none "$v"
+		has  "host-fonts/$v/face-miss-still-warned" "$O/$v.err" 'could not resolve (Times New Roman/'
+	done
+	has "host-fonts/throws/warned" "$O/throws.err" "the host's \`figureFonts\` threw (index broke) for \`Times New Roman\` — the font folders' Times New Roman.ttf is used"
+	has "host-fonts/nothing/warned" "$O/nothing.err" "the host's \`figureFonts\` gave no list of files for \`Times New Roman\`"
+	has "host-fonts/malformed/warned" "$O/malformed.err" '`figureFonts` is a function or an object (family → files) — ignored'
+	# An empty list is the host's answer — none — and stands (its size cap): nothing is handed over.
+	host empty /usr/bin:/bin "$WASM cacheDir: 'cache-empty'," "const figureFonts = () => [];"
+	has   "host-fonts/empty/exit-0" "$O/empty.exit" '0'
+	hasnt "host-fonts/empty/no-folder-search" "$O/empty.err" "the host's"
+	has   "host-fonts/empty/face-miss-warned" "$O/empty.err" 'could not resolve (Times New Roman/'
+	# (no regular face either, which the folder search would have found)
+	has   "host-fonts/empty/nothing-handed-over" "$O/empty.err" '— not drawn (see the error box)'
+	# A file that cannot be read is left out, warned; the rest are handed over.
+	host unreadable /usr/bin:/bin "$WASM cacheDir: 'cache-unreadable'," "const figureFonts = () => ['$SCRATCH/no-such-font.ttf', ...FOUR];"
+	has "host-fonts/unreadable/exit-0" "$O/unreadable.exit" '0'
+	has "host-fonts/unreadable/warned" "$O/unreadable.err" "gave \`$SCRATCH/no-such-font.ttf\` for \`Times New Roman\`, which cannot be read — left out"
+	hasnt "host-fonts/unreadable/rest-given" "$O/unreadable.err" 'could not resolve'
+
+	# Under external the option does nothing: never called, and the same page.
+	if command -v lualatex >/dev/null 2>&1; then
+		host ext-none "$PATH" "cacheDir: 'cache-ext-none'," "const figureFonts = undefined;"
+		host ext-host "$PATH" "cacheDir: 'cache-ext-host'," "const figureFonts = () => { fs.writeFileSync('called.txt', 'called'); return FOUR; };"
+		if [ ! -e "$O/called.txt" ]; then pass "host-fonts/external/never-called"; else fail "host-fonts/external/never-called" "the resolver ran"; fi
+		same "host-fonts/external/same-figure" ext-none ext-host
+		if [ "$(sed 's/cache-ext-[a-z]*/CACHE/g' "$O/ext-none.html")" = "$(sed 's/cache-ext-[a-z]*/CACHE/g' "$O/ext-host.html")" ]; then pass "host-fonts/external/same-page"
+		else fail "host-fonts/external/same-page" "the pages differ"; fi
+		# (dvisvgm prints its own timing: "1 of 1 page converted in 0.35 seconds")
+		if [ "$(sed -E 's/ in [0-9.]+ seconds//' "$O/ext-none.err")" = "$(sed -E 's/ in [0-9.]+ seconds//' "$O/ext-host.err")" ]; then pass "host-fonts/external/same-stderr"
+		else fail "host-fonts/external/same-stderr" "$(cat "$O/ext-host.err")"; fi
+	fi
+
+	# No route but processFile's option: a header, a folder's config and the global config of that name do nothing.
+	Q="$SCRATCH/host-fonts-config"
+	mkdir -p "$Q/.jmarkdown" "$Q/home/.jmarkdown"
+	FONTS_JSON="{ \"Times New Roman\": [\"$TNR.ttf\", \"$TNR Bold.ttf\", \"$TNR Italic.ttf\", \"$TNR Bold Italic.ttf\"] }"
+	printf '{ "LaTeX preamble": ["\\\\usepackage{fontspec}", "\\\\setmainfont{Times New Roman}"], "figureFonts": %s, "Figure fonts": %s }\n' "$FONTS_JSON" "$FONTS_JSON" >"$Q/.jmarkdown/config.json"
+	printf '{ "figureFonts": %s, "Figure fonts": %s }\n' "$FONTS_JSON" "$FONTS_JSON" >"$Q/home/.jmarkdown/config.json"
+	printf -- '---\nTitle: Not here\nfigureFonts: %s Bold.ttf\nFigure fonts: %s Bold.ttf\n---\n\n:::TiKZ\n\\node {Regular \\textbf{Bold}};\n:::\n' "$TNR" "$TNR" >"$Q/note.md"
+	(cd "$Q" && env -i HOME="$Q/home" PATH=/usr/bin:/bin "$NODE" "$JMD" process note.md --fragment -o note.html --figure-engine wasm --mp-tikz-dist "$DIST" >/dev/null 2>err.txt; echo $? >exit.txt)
+	has "host-fonts/config-and-header/exit-0" "$Q/exit.txt" '0'
+	has "host-fonts/config-and-header/ignored" "$Q/err.txt" 'could not resolve (Times New Roman/'
+fi
+
 # --- a font no folder holds: under auto, that figure goes to the installed tools, with a warning ------
 # No installed TeX has this family either, so the tools fail too: the warning says
 # so (it used to say "drawn by the installed tools instead" above the error box).
