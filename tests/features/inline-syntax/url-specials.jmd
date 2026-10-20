@@ -1,0 +1,20 @@
+---
+Title: underscores and tildes in addresses, and a percent in a link's URL
+---
+
+A bare address prints its underscores and tildes: https://example.com/a_b_c and
+https://example.com/~me/page, <https://example.com/x_y~z> in angle brackets,
+and www.example.com/w_x with no scheme.
+
+A link written out keeps its URL's percent sign inside a footnote,[^note] in bold,
+*[the bold link](https://example.com/u%20v)*, in bold italics,
+**[the other](https://example.com/w%20x)**, and in a heading:
+
+[^note]: See https://example.com/n_o~p and [the page](https://example.com/q%20r).
+
+## Heading [linked](https://example.com/h%20i) and https://example.com/j_k
+
+- https://example.com/l_m~n in a list
+
+A written-out link's underscore and tilde are as they were:
+[text](https://example.com/a_b~c).

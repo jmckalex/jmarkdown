@@ -1,0 +1,12 @@
+---
+Title: Addresses
+---
+
+See https://example.com/a_b_c and https://example.com/~me/page here, and a
+link in a note.[^n]
+
+[^n]: In the note, [the page](https://example.com/q%20r) and https://example.com/n_o~p.
+
+## Heading [linked](https://example.com/h%20i)
+
+The paragraph after them prints.

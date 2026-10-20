@@ -13,5 +13,5 @@ In a footnote,[fn: at https://example.com/g%20h in a note.] in bold,
 
 ## Heading https://example.com/m%20n
 
-Unchanged: an address with no percent, https://example.com/p#q, and a link
-written out, [the site](https://example.com/r%20s).
+An address with no percent, https://example.com/p#q, and a link written out,
+[the site](https://example.com/r%20s), whose URL's percent sign is escaped too.

@@ -74,6 +74,9 @@ function isBareAddress(token) {
 	return typeof token.text === 'string' && (token.raw === token.text || token.raw === `<${token.text}>`);
 }
 
+// How a bare address prints the characters prose treats as syntax.
+const ADDRESS_TEXT = { '%': '\\%', '_': '\\_', '~': '\\textasciitilde{}' };
+
 // A <style> element is the page's CSS, with nothing to print.
 const STYLE_ELEMENT = /<style\b[^>]*>[\s\S]*?<\/style>[ \t]*\n?/gi;
 
@@ -179,17 +182,17 @@ const latexRenderer = {
 	link(token) {
 		requirePackage('hyperref');
 		const text = this.parser.parseInline(token.tokens);
-		const href = escapeLatex(token.href);
-		// A bare web address (`https://…`, `www.…`, `<…>`) prints itself, so
-		// its `%` — a percent-encoding, not a comment — reached the .tex raw
-		// and ended the line, link and all. Escaped in both arguments: hyperref
-		// writes `\%` into the link as `%`, at the top level and inside another
-		// command's argument (a footnote, a heading) alike.
-		if (isBareAddress(token)) return `\\href{${href.replaceAll('%', '\\%')}}{${text.replaceAll('%', '\\%')}}`;
-		// In a macro's argument (a title-block line under `LaTeX maketitle`,
-		// additional-directives.js) a `%` in the URL is read as a comment before
-		// \href can read it as a character: escaped there too.
-		if (token.jmdArgument) return `\\href{${href.replaceAll('%', '\\%')}}{${text}}`;
+		// A `%` in the URL — a percent-encoding — is written `\%`, as `&` and `#`
+		// always were: \href reads it as itself at the top level, but inside
+		// another command's argument (a footnote, emphasis, a heading, a title)
+		// it is a comment before \href can read it, and the line was lost.
+		// hyperref writes `\%` into the link as `%`. `_` and `~` it reads as
+		// themselves everywhere.
+		const href = escapeLatex(token.href).replaceAll('%', '\\%');
+		// A bare web address (`https://…`, `www.…`, `<…>`) also PRINTS itself,
+		// where `%` is a comment, `_` a subscript (outside maths, an error) and
+		// `~` a space.
+		if (isBareAddress(token)) return `\\href{${href}}{${text.replace(/[%_~]/g, (c) => ADDRESS_TEXT[c])}}`;
 		return `\\href{${href}}{${text}}`;
 	},
 

@@ -282,6 +282,19 @@ if render url-percent; then
 	absent "url-percent/no-raw"   "$TEX" 'a%20b'
 fi
 
+# --- url-specials.jmd: a bare address prints `_` and `~` as written (`_`
+#     stopped the build, "Missing $"; `~` printed as a space), and a link
+#     written out keeps its URL's `%` inside another command's argument (a
+#     footnote, a heading), where a raw `%` was a comment. ---
+if render url-specials; then
+	want   "url-specials/underscore" "$TEX" '\href{https://example.com/a_b_c}{https://example.com/a\_b\_c}'
+	want   "url-specials/tilde"      "$TEX" '\href{https://example.com/~me/page}{https://example.com/\textasciitilde{}me/page}'
+	want   "url-specials/note link"  "$TEX" '\href{https://example.com/q\%20r}{the page}'
+	want   "url-specials/note bare"  "$TEX" '\href{https://example.com/n_o~p}{https://example.com/n\_o\textasciitilde{}p}'
+	want   "url-specials/heading"    "$TEX" '\subsection{Heading \href{https://example.com/h\%20i}{linked}}'
+	absent "url-specials/no raw %"   "$TEX" 'q%20r'
+fi
+
 # --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
 if render page-setup; then
 	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'

@@ -233,10 +233,11 @@ done
 # printed both, \maketitle above the body's; under `LaTeX maketitle` the
 # body's block is the title page, once, and with no Title header its title
 # is the PDF's (pdfinfo, where installed). A bare address with a `%`
-# commented out the rest of its line. The fixtures are
+# commented out the rest of its line, one with `_` stopped the build and a
+# `~` printed as a space; a link's `%` in a note or heading lost the line. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body title-maketitle title-maketitle-header title-maketitle-pdftitle url-percent; do
+	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body title-maketitle title-maketitle-header title-maketitle-pdftitle url-percent url-specials; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -313,6 +314,14 @@ if command -v pdftotext >/dev/null 2>&1; then
 			grep -q 'Heading https://example.com/m%20n' "$work/doc.txt" || problems="$problems heading"
 			grep -q 'The paragraph after them prints.' "$work/doc.txt" || problems="$problems after"
 			grep -qF '\%' "$work/doc.txt" && problems="$problems backslash-printed"
+		fi
+		# A bare address prints its `_` and `~`; a link's `%` in a note and a heading
+		# keeps the line.
+		if [ "$name" = url-specials ]; then
+			grep -q 'See https://example.com/a_b_c and https://example.com/~me/page here' "$work/doc.txt" || problems="$problems bare"
+			grep -q 'In the note, the page and https://example.com/n_o~p.' "$work/doc.txt" || problems="$problems note"
+			grep -q 'Heading linked' "$work/doc.txt" || problems="$problems heading"
+			grep -q 'The paragraph after them prints.' "$work/doc.txt" || problems="$problems after"
 		fi
 		# Text after an inline tag left open is escaped like any other.
 		if [ "$name" = unclosed-tag ]; then

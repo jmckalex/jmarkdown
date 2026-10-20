@@ -109,9 +109,10 @@ const titlePageLatex = Object.fromEntries(Object.keys(TITLE_PAGE_LINES).map((kin
 
 	The run is found before anything renders (a processAllTokens hook); each line
 	then renders its content as always, and the last one writes the block. Every
-	part is a macro's argument, so the lines' inline code and links are marked as
-	a heading's are (token.jmdArgument, latex-renderer.js): \mintinline's
-	delimiters and a `%` in a URL break there. A paragraph break, which \title
+	part is a macro's argument, so the lines' inline code is marked as a
+	heading's is (token.jmdArgument, latex-renderer.js): \mintinline's
+	delimiters break there. (A link's URL is safe in any argument: its `%` is
+	always written `\%`.) A paragraph break, which \title
 	cannot hold (an @begin(title) of two paragraphs), becomes \\.
 */
 function latexMaketitle() {
@@ -141,7 +142,7 @@ function titleLinesIn(token) {
 
 function markArgumentTokens(tokens) {
 	for (const token of tokens ?? []) {
-		if (token.type === 'codespan' || token.type === 'link') token.jmdArgument = true;
+		if (token.type === 'codespan') token.jmdArgument = true;
 		markArgumentTokens(token.tokens);
 	}
 }
