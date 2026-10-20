@@ -162,6 +162,34 @@ if command -v pdflatex >/dev/null 2>&1; then
 	else fail "latex/compiles" "$(grep -m3 '^!' "$D/note.log")"; fi
 fi
 
+# --- a host's own library (setFigureLibrary): the iPad's worker has no dist/ to load or fingerprint. The
+#     same library under the dist's fingerprint draws the same figures under the same keys; under a
+#     fingerprint of its own, keys of its own; a malformed one is warned and ignored. ------------------
+L="$SCRATCH/hostlib"
+for route in path host host-default bad; do
+	mkdir -p "$L/$route"
+	cp "$D/note.md" "$L/$route/"
+	(cd "$L/$route" && env -i HOME="$SCRATCH/home" PATH=/usr/bin:/bin "$NODE" "$HERE/host-library.mjs" "$REPO" "$route" "$DIST" note.md note.html html >/dev/null 2>err.txt; echo $? >exit.txt
+	 env -i HOME="$SCRATCH/home" PATH=/usr/bin:/bin "$NODE" "$HERE/host-library.mjs" "$REPO" "$route" "$DIST" note.md note.tex latex >/dev/null 2>>err.txt; echo $? >>exit.txt)
+done
+if [ "$(cat "$L/host/exit.txt" "$L/path/exit.txt" | tr -d '\n')" = 0000 ] && [ ! -s "$L/host/err.txt" ] && [ ! -s "$L/path/err.txt" ]; then pass "host-library/builds"
+else fail "host-library/builds" "$(cat "$L/path/err.txt" "$L/host/err.txt")"; fi
+# (The page's inverse-search script names the note's own folder.)
+sed "s#$L/path/#FOLDER/#g" "$L/path/note.html" >"$L/path.html"
+sed "s#$L/host/#FOLDER/#g" "$L/host/note.html" >"$L/host.html"
+if cmp -s "$L/path.html" "$L/host.html" && cmp -s "$L/path/note.tex" "$L/host/note.tex"; then pass "host-library/same-output"
+else fail "host-library/same-output" "$(diff "$L/path.html" "$L/host.html" | head -4)" "$(diff "$L/path/note.tex" "$L/host/note.tex" | head -4)"; fi
+if [ "$(cd "$L/path" && ls TiKZ MetaPost)" = "$(cd "$L/host" && ls TiKZ MetaPost)" ] && [ -n "$(ls "$L/host/TiKZ")" ]; then pass "host-library/same-keys"
+else fail "host-library/same-keys" "path: $(cd "$L/path" && ls TiKZ MetaPost | tr '\n' ' ')" "host: $(cd "$L/host" && ls TiKZ MetaPost | tr '\n' ' ')"; fi
+if diff -r "$L/path/TiKZ" "$L/host/TiKZ" >/dev/null && cmp -s "$L/path/MetaPost/$(cd "$L/path/MetaPost" && ls *.svg | head -1)" "$L/host/MetaPost/$(cd "$L/host/MetaPost" && ls *.svg | head -1)"; then pass "host-library/same-figures"
+else fail "host-library/same-figures" "the SVGs differ"; fi
+if [ "$(tr -d '\n' <"$L/host-default/exit.txt")" = 00 ] && [ ! -s "$L/host-default/err.txt" ] && ls "$L/host-default/TiKZ/"*.svg >/dev/null 2>&1; then pass "host-library/default-bundles"
+else fail "host-library/default-bundles" "$(cat "$L/host-default/err.txt")"; fi
+if [ "$(cd "$L/host-default" && ls TiKZ)" != "$(cd "$L/path" && ls TiKZ)" ]; then pass "host-library/own-fingerprint-own-keys"
+else fail "host-library/own-fingerprint-own-keys" "the same keys under another fingerprint"; fi
+has   "host-library/bad-warned" "$L/bad/err.txt" '`figureLibrary` is { load: a function, fingerprint: a string, bundles?: names } — ignored'
+has   "host-library/bad-refused" "$L/bad/note.html" 'data-jmd-refused="TiKZ"'
+
 # --- the library's renders never mix with the tools': keyed by the library too ------------------------
 ext=$(cd "$D" && ls TiKZ/*.svg | wc -l | tr -d ' ')
 (cd "$D" && HOME="$SCRATCH/home" "$NODE" "$JMD" process note.md -o tools.html >/dev/null 2>&1)
