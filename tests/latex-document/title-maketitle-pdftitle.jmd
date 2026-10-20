@@ -1,0 +1,13 @@
+---
+LaTeX maketitle: true
+---
+
+@begin(title)
+A *Study* of `x & {y}` & [Links](https://example.com/a%20b) with $x^2$, \_under[fn: A note on the title.]
+@end(title)
+
+@subtitle+[The Subtitle]
+
+@author+[Body Author]
+
+The document's prose, after the title page.

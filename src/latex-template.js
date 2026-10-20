@@ -21,7 +21,7 @@ import { assemblePreamble, requirePackage, addPreamble, addLatePreamble, require
 import { checkMathPackages } from './latex-lint.js';
 import { getBook, bookPreamble, warnPreambleClashes } from './book.js';
 import { escapeLatexText } from './latex-escape.js';
-import { bodyPrintsTitle } from './additional-directives.js';
+import { bodyPrintsTitle, bodyTitleBlockText } from './additional-directives.js';
 
 // Metadata values arrive as single-element arrays (from the metadata-header
 // parser) or as strings (from config files / DEFAULT_CONFIG). Coerce to a
@@ -103,9 +103,12 @@ export function processLatexTemplate(content) {
 
 	// hyperref for every full document: clickable refs/ToC + PDF bookmarks, plus
 	// PDF metadata from Title/Author. (cleveref, when used, still loads after it.)
+	// Under `LaTeX maketitle`, a header with no Title takes the body's title
+	// block's, as text (the owner, 2026-10-20).
 	requirePackage('hyperref');
 	const pdf = [];
-	if (title) pdf.push(`pdftitle={${title}}`);
+	const pdfTitle = title || (configManager.get('LaTeX maketitle') === true ? bodyTitleBlockText(content) : '');
+	if (pdfTitle) pdf.push(`pdftitle={${pdfTitle}}`);
 	if (author) pdf.push(`pdfauthor={${author}}`);
 	if (pdf.length) addLatePreamble(`\\hypersetup{${pdf.join(', ')}}`, 'hyperref');
 

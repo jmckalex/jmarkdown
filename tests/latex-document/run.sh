@@ -158,6 +158,20 @@ if render title-maketitle-header; then
 	want   "maketitle-header/maketitle" "$TEX" '\maketitle'
 fi
 
+# --- title-maketitle-pdftitle.jmd: under the key, a header with no Title
+#     takes the PDF's Title from the body's block — its title's text, without
+#     formatting, the note or the subtitle (a header Title wins: title-maketitle
+#     above). Off, there is none. ---
+if render title-maketitle-pdftitle; then
+	want   "maketitle-pdftitle/text" "$TEX" 'pdftitle={A Study of x \& \{y\} \& Links with x\^{}2, \_under}'
+fi
+sed 's/^LaTeX maketitle: true$/LaTeX maketitle: false/' "$HERE/title-maketitle-pdftitle.jmd" > "$SCRATCH/pdftitle-off.jmd"
+if node "$JMD" process "$SCRATCH/pdftitle-off.jmd" --to latex -o "$SCRATCH/pdftitle-off.tex" >/dev/null 2>&1; then
+	absent "maketitle-pdftitle/off" "$SCRATCH/pdftitle-off.tex" 'pdftitle='
+else
+	echo "FAIL  maketitle-pdftitle/off  (jmarkdown exited non-zero)"; fail=$((fail + 1))
+fi
+
 # --- The key from a project config, as a host sets it; a header's `false`
 #     wins over it; off, nothing changes (title-page-body above). A header
 #     with a Date keeps it. ---

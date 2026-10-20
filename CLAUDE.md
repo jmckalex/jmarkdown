@@ -415,10 +415,14 @@ byte-identical to their colon twins where one exists:
   once), a block with no title, one nested in a container, a book chapter's
   (book.js's `jmdChapter` edges). Inline code and links in the block are marked
   `jmdArgument`, so latex-renderer.js sets them as in a heading (`headingCode`;
-  `\%` in the URL). Off: byte-identical. Fixtures:
-  `at-directives/at-title-page-maketitle`, `tests/latex-document/title-maketitle`
-  and `title-maketitle-header` (latex-compile reads the PDFs), and the book
-  suite's `maketitle/*`.
+  `\%` in the URL). A header with no `Title` takes the PDF's Title
+  (`pdftitle`) from the block (the owner, 2026-10-20): the title's text,
+  without formatting, notes or the subtitle (`pdfTitleText`, from the tokens:
+  hyperref reads `\mintinline` as letters); `pdfauthor` stays the header's.
+  Off: byte-identical. Fixtures:
+  `at-directives/at-title-page-maketitle`, `tests/latex-document/title-maketitle`,
+  `title-maketitle-header` and `title-maketitle-pdftitle` (latex-compile reads
+  the PDFs, and pdfinfo's Title), and the book suite's `maketitle/*`.
 
   **Still to do:** the `:`→`@` **content codemod** + converting docs/fixtures (Slice B);
   **deleting `extended-directives.js`** and all colon wiring (Slice C — needs the book

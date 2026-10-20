@@ -727,6 +727,18 @@ printf -- '---\nTitle: The Book\nLaTeX maketitle: true\n---\n\nThe master'"'"'s 
 has   "maketitle/chapter-block-stays-lines" "$T/header-only.tex" '{\noindent\LARGE\bfseries A Title Line in Chapter One\par}'
 hasnt "maketitle/chapter-block-no-title" "$T/header-only.tex" '\title{A Title Line'
 hasnt "maketitle/chapter-block-no-author" "$T/header-only.tex" '\author{Chapter Author}'
+# The PDF's Title: the header's when it names one; else the master's block's, in either layout;
+# never a chapter's lines.
+has   "maketitle/pdftitle-header" "$T/single.tex" 'pdftitle={The Book}'
+sed '/^Title: The Book$/d' "$T/master.md" >"$T/no-title.md"
+sed '/^Title: The Book$/d' "$T/header-only.md" >"$T/no-title-lines.md"
+(cd "$T" && HOME="$SCRATCH/home" node "$JMD" process no-title.md --to latex -o no-title.tex >/dev/null 2>no-title.err \
+	&& HOME="$SCRATCH/home" node "$JMD" process no-title.md --to latex --latex-layout include -o no-title-incl.tex >/dev/null 2>>no-title.err \
+	&& HOME="$SCRATCH/home" node "$JMD" process no-title-lines.md --to latex -o no-title-lines.tex >/dev/null 2>>no-title.err) \
+	|| fail "maketitle/pdftitle-exit" "$(cat "$T/no-title.err")"
+has   "maketitle/pdftitle-block" "$T/no-title.tex" 'pdftitle={The Book Title}'
+has   "maketitle/pdftitle-block-include" "$T/no-title-incl.tex" 'pdftitle={The Book Title}'
+hasnt "maketitle/pdftitle-not-chapter" "$T/no-title-lines.tex" 'pdftitle='
 
 # --- not a book: nothing changes ------------------------------------------------------------------
 

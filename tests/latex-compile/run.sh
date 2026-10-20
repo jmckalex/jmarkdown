@@ -225,11 +225,12 @@ done
 # the paragraphs after an inline tag left open, and in a block nested in a
 # list item. A document with a Title header and a title of its own in the body
 # printed both, \maketitle above the body's; under `LaTeX maketitle` the
-# body's block is the title page, once. A bare address with a `%`
+# body's block is the title page, once, and with no Title header its title
+# is the PDF's (pdfinfo, where installed). A bare address with a `%`
 # commented out the rest of its line. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body title-maketitle title-maketitle-header url-percent; do
+	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body title-maketitle title-maketitle-header title-maketitle-pdftitle url-percent; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -290,6 +291,13 @@ if command -v pdftotext >/dev/null 2>&1; then
 		if [ "$name" = title-maketitle-header ]; then
 			grep -q 'Header Title' "$work/doc.txt" || problems="$problems title"
 			grep -q '20[0-9][0-9]' "$work/doc.txt" && problems="$problems date-printed"
+		fi
+		# With no header Title, the PDF's Title is the body block's title, as text.
+		if [ "$name" = title-maketitle-pdftitle ]; then
+			grep -q 'A Study of x & {y} & Links with x2, _under' "$work/doc.txt" || problems="$problems title"
+			if command -v pdfinfo >/dev/null 2>&1; then
+				pdfinfo "$work/doc.pdf" | grep -qx 'Title: *A Study of x & {y} & Links with x^2, _under' || problems="$problems pdfinfo-title"
+			fi
 		fi
 		# A bare address with a `%` prints whole, and the text after it too.
 		if [ "$name" = url-percent ]; then
