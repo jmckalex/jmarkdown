@@ -23,6 +23,7 @@ import { getBook, bookPreamble, warnPreambleClashes } from './book.js';
 import { escapeArgumentPercent, escapeLatexText } from './latex-escape.js';
 import { bodyPrintsTitle, bodyTitleBlockText } from './additional-directives.js';
 import { highlightsCode, mintedListingFloat } from './latex-highlight.js';
+import { addWarning } from './warnings.js';
 
 // Metadata values arrive as single-element arrays (from the metadata-header
 // parser) or as strings (from config files / DEFAULT_CONFIG). Coerce to a
@@ -37,6 +38,24 @@ function asList(v) {
 	if (v == null) return [];
 	if (Array.isArray(v)) return v;
 	return [v];
+}
+
+/*
+	`LaTeX T1 fonts` (config or host only, default off; the owner, 2026-10-20 —
+	Clew's iPad, whose TeX has no cm-super): `lmodern` loads lmodern after a
+	pdfLaTeX document's \usepackage[T1]{fontenc}, so its text is set in Latin
+	Modern's Type 1 fonts rather than the EC fonts, which without cm-super
+	come out as bitmaps (Type 3). The Unicode engines (fontspec) are not
+	touched; nor is a document that loads lmodern itself (preamble.js). Any
+	other value is warned and ignored. A header's is ignored (config-manager.js
+	mergeMetadata): it can neither set the key nor clear it.
+*/
+function t1Fonts() {
+	const value = configManager.get('LaTeX T1 fonts');
+	if (value == null || value === false || String(value).trim() === '') return null;
+	if (String(value).trim().toLowerCase() === 'lmodern') return 'lmodern';
+	addWarning(`LaTeX T1 fonts: "${value}" is not lmodern — ignored`);
+	return null;
 }
 
 export function processLatexTemplate(content) {
@@ -137,7 +156,7 @@ export function processLatexTemplate(content) {
 	// needs one it won't (latex-lint.js).
 	checkMathPackages(requiredPackageNames());
 
-	const preamble = assemblePreamble({ engine, userPackages, userPreamble });
+	const preamble = assemblePreamble({ engine, userPackages, userPreamble, t1Fonts: t1Fonts() });
 
 	// Frontmatter — no Title → no \maketitle. A body that prints its own title
 	// (`@title+`, additional-directives.js) gets no \maketitle either, as the

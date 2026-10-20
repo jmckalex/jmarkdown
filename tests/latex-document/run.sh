@@ -449,6 +449,72 @@ if render entities-all; then
 	want   "entities-all/caption"   "$TEX" '\caption{Caption \& \textless{}'
 fi
 
+# --- t1-fonts.jmd: `LaTeX T1 fonts: lmodern` (config or host only) loads
+#     lmodern right after a pdfLaTeX document's \usepackage[T1]{fontenc}, so its
+#     text is Latin Modern's Type 1 fonts, not cm-super's (bitmaps on a TeX
+#     without cm-super). Off — absent, null, or a config of {} — the .tex is
+#     byte-identical. A header neither sets nor clears it (warned); LuaLaTeX
+#     (fontspec) is untouched; a document that loads lmodern itself keeps its
+#     own line, once; another value is warned and ignored. latex-compile reads
+#     the PDF's fonts. ---
+t1() { # t1 <name> <config JSON or -> <fixture> — build in a folder of its own
+	mkdir -p "$SCRATCH/t1-$1/.jmarkdown"
+	[ "$2" = - ] || printf '%s\n' "$2" > "$SCRATCH/t1-$1/.jmarkdown/config.json"
+	(cd "$SCRATCH/t1-$1" && node "$JMD" process "$3" --to latex -o doc.tex >/dev/null 2>stderr.txt) \
+		|| { echo "FAIL  t1-fonts/$1  (jmarkdown exited non-zero)"; fail=$((fail + 1)); }
+}
+lm_after_fontenc() { # the line after fontenc is lmodern
+	if grep -A1 -xF '\usepackage[T1]{fontenc}' "$SCRATCH/t1-$2/doc.tex" | tail -n 1 | grep -qxF '\usepackage{lmodern}'; then
+		echo "PASS  t1-fonts/$1"; pass=$((pass + 1))
+	else
+		echo "FAIL  t1-fonts/$1  (no \usepackage{lmodern} after fontenc)"; fail=$((fail + 1))
+	fi
+}
+same() { # same <label> <a> <b> — byte-identical .tex
+	if cmp -s "$SCRATCH/t1-$2/doc.tex" "$SCRATCH/t1-$3/doc.tex"; then
+		echo "PASS  t1-fonts/$1"; pass=$((pass + 1))
+	else
+		echo "FAIL  t1-fonts/$1  ($2 and $3 differ)"; fail=$((fail + 1))
+	fi
+}
+lm_count() { # lm_count <label> <name> <n> — lines loading lmodern
+	n=$(grep -c 'usepackage.*{lmodern}' "$SCRATCH/t1-$2/doc.tex")
+	if [ "$n" = "$3" ]; then echo "PASS  t1-fonts/$1"; pass=$((pass + 1)); else echo "FAIL  t1-fonts/$1  ($n lmodern lines, want $3)"; fail=$((fail + 1)); fi
+}
+src="$HERE/t1-fonts.jmd"
+t1 none - "$src"
+t1 empty '{}' "$src"
+t1 null '{ "LaTeX T1 fonts": null }' "$src"
+t1 on '{ "LaTeX T1 fonts": "lmodern" }' "$src"
+lm_after_fontenc "on: lmodern after fontenc" on
+lm_count "on: once" on 1
+same "off: no config = {}" none empty
+same "off: no config = null" none null
+sed 's/^LaTeX highlighter: highlight.js$/LaTeX highlighter: highlight.js\nLaTeX T1 fonts: lmodern/' "$src" > "$SCRATCH/t1-header-on.jmd"
+t1 header-on - "$SCRATCH/t1-header-on.jmd"
+lm_count "header cannot set it" header-on 0
+want "t1-fonts/header warned" "$SCRATCH/t1-header-on/stderr.txt" 'LaTeX T1 fonts: the fonts for T1 text are set in .jmarkdown/config.json or by the host, not in a document header — ignored'
+sed 's/^LaTeX highlighter: highlight.js$/LaTeX highlighter: highlight.js\nLaTeX T1 fonts: none/' "$src" > "$SCRATCH/t1-header-off.jmd"
+t1 header-off '{ "LaTeX T1 fonts": "lmodern" }' "$SCRATCH/t1-header-off.jmd"
+lm_after_fontenc "header cannot clear it" header-off
+sed 's/^LaTeX highlighter: highlight.js$/LaTeX highlighter: highlight.js\nLaTeX engine: lualatex/' "$src" > "$SCRATCH/t1-lua.jmd"
+t1 lua-on '{ "LaTeX T1 fonts": "lmodern" }' "$SCRATCH/t1-lua.jmd"
+t1 lua-off - "$SCRATCH/t1-lua.jmd"
+same "lualatex: untouched" lua-off lua-on
+sed 's/^LaTeX highlighter: highlight.js$/LaTeX highlighter: highlight.js\nPackages: lmodern/' "$src" > "$SCRATCH/t1-pkg.jmd"
+t1 pkg-on '{ "LaTeX T1 fonts": "lmodern" }' "$SCRATCH/t1-pkg.jmd"
+t1 pkg-off - "$SCRATCH/t1-pkg.jmd"
+same "Packages: lmodern — as without the key" pkg-off pkg-on
+lm_count "Packages: lmodern — once" pkg-on 1
+sed 's/^LaTeX highlighter: highlight.js$/LaTeX highlighter: highlight.js\nLaTeX preamble: \\usepackage[variablett]{lmodern}/' "$src" > "$SCRATCH/t1-pre.jmd"
+t1 pre-on '{ "LaTeX T1 fonts": "lmodern" }' "$SCRATCH/t1-pre.jmd"
+t1 pre-off - "$SCRATCH/t1-pre.jmd"
+same "LaTeX preamble loads it — as without the key" pre-off pre-on
+lm_count "LaTeX preamble loads it — once" pre-on 1
+t1 bad '{ "LaTeX T1 fonts": "cm-super" }' "$src"
+same "another value: ignored" none bad
+want "t1-fonts/another value warned" "$SCRATCH/t1-bad/stderr.txt" 'LaTeX T1 fonts: "cm-super" is not lmodern — ignored'
+
 echo
 echo "latex-document: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -1,0 +1,11 @@
+---
+Title: Fonts for T1 text
+LaTeX highlighter: highlight.js
+---
+
+# A heading in bold
+
+Prose in roman, *bold*, /italic/, `typewriter` code, accents é ü ñ ç, and
+maths $x^2 + \alpha$.[fn: A note, smaller.]
+
+The paragraph after them prints.

@@ -18,7 +18,8 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   body in `\documentclass` + assembled preamble + frontmatter + `\end{document}`.
   All user-overridable, nothing baked in. Metadata keys (`Capitalised Words`):
   `Document class` (default `article`), `Class options`, `LaTeX engine` (default
-  `pdflatex` — tunes `inputenc`/`fontenc` vs `fontspec`), `Packages`,
+  `pdflatex` — tunes `inputenc`/`fontenc` vs `fontspec`; config or host only,
+  `LaTeX T1 fonts: lmodern` adds lmodern after fontenc), `Packages`,
   `LaTeX preamble`, `Geometry`, `Line spacing` (single/onehalf/double/n),
   `Header`, `Footer` (fancyhdr), `Heading base`. `hyperref` is auto-loaded for
   every full document (clickable refs/ToC + PDF bookmarks) with

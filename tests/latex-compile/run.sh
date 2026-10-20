@@ -541,6 +541,53 @@ if command -v pdftotext >/dev/null 2>&1; then
 	done
 fi
 
+# `LaTeX T1 fonts: lmodern` (config or host only): a pdfLaTeX document — roman,
+# bold, italic, typewriter (`LaTeX highlighter: highlight.js`), maths, a note —
+# is set in Latin Modern's Type 1 fonts alone: no Type 3 bitmaps, which a TeX
+# without cm-super makes of the EC fonts, and no cm-super (SF…). Off, it
+# compiles as always (latex-document checks its .tex is byte-identical). The
+# fixture is tests/latex-document's.
+if command -v pdffonts >/dev/null 2>&1; then
+	for variant in on off; do
+		label="full-document/t1-fonts [$variant]"
+		work="$SCRATCH/t1-fonts-$variant"
+		mkdir -p "$work/.jmarkdown"
+		[ "$variant" = on ] && printf '{ "LaTeX T1 fonts": "lmodern" }\n' > "$work/.jmarkdown/config.json"
+		if ! (cd "$work" && HOME="$work" node "$REPO/src/index.js" process "$REPO/tests/latex-document/t1-fonts.jmd" --to latex -o doc.tex >/dev/null 2>build.log); then
+			echo "FAIL  $label  (jmarkdown exited non-zero)"
+			sed 's/^/    | /' "$work/build.log"
+			fail=$((fail + 1))
+			continue
+		fi
+		if ! (cd "$work" && pdflatex -no-shell-escape -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+			echo "FAIL  $label"
+			grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
+			fail=$((fail + 1))
+			continue
+		fi
+		problems=''
+		if [ "$variant" = on ]; then
+			pdffonts "$work/doc.pdf" | tail -n +3 > "$work/fonts.txt"
+			[ -s "$work/fonts.txt" ] || problems="$problems no-fonts"
+			grep -q 'Type 3' "$work/fonts.txt" && problems="$problems type3"
+			grep -q '+SF' "$work/fonts.txt" && problems="$problems cm-super"
+			grep -v '+LM' "$work/fonts.txt" | grep -q . && problems="$problems not-lm"
+		fi
+		pdftotext "$work/doc.pdf" - | grep -q 'The paragraph after them prints.' || problems="$problems text"
+		if [ -z "$problems" ]; then
+			echo "PASS  $label [fonts]"
+			pass=$((pass + 1))
+		else
+			echo "FAIL  $label [fonts]  (found:$problems)"
+			sed 's/^/    | /' "$work/fonts.txt" 2>/dev/null
+			fail=$((fail + 1))
+		fi
+	done
+else
+	echo "SKIP  full-document/t1-fonts  (pdffonts not installed)"
+	skip=$((skip + 1))
+fi
+
 echo
 echo "latex-compile: $pass passed, $fail failed, $skip skipped"
 [ "$fail" -eq 0 ]
