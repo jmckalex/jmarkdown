@@ -391,5 +391,55 @@ printf -- '---\nTitle: No mmdc\n---\n\n@begin(mermaid)\ngraph TD\n  A --> B\n@en
 has   "no-mmdc/warned" "$M/err.txt" 'mermaid: "graph TD" left out of the LaTeX — mermaid-cli (mmdc) was not found'
 hasnt "no-mmdc/left-out" "$M/note.tex" 'includegraphics'
 
+# --- Mathematica: a run that fails caches nothing ------------------------------------------------
+# wolframscript writes its result straight into the cache (Mathematica/<hash>.txt),
+# so a run that failed — a licence refused under load exits 255 or 40, with
+# nothing or a fragment on stdout — left that behind, and every later build took
+# it for the result, empty, and never asked again. A stand-in wolframscript on
+# PATH fails like that, then answers: the failed build shows its error and
+# caches nothing; the next asks again and caches the answer; the one after uses
+# the cache. Block (:::Mathematica) and inline (⟦…⟧) forms.
+
+W="$SCRATCH/wolfram"
+mkdir -p "$W/bin"
+cat >"$W/bin/wolframscript" <<'STANDIN'
+#!/bin/sh
+echo "$*" >>"$WL_LOG"
+# fail: every call; fail-second: from the second call on (the inline form asks
+# twice — what the result is, then for it into the cache).
+if [ "${WL_MODE:-ok}" = fail ] || { [ "${WL_MODE:-ok}" = fail-second ] && [ "$(wc -l <"$WL_LOG")" -ge 2 ]; }; then
+	printf 'Connection closed by Wolf'
+	echo 'Your Wolfram product is not activated or is experiencing a license-related problem.' >&2
+	exit 255
+fi
+echo 2
+STANDIN
+chmod +x "$W/bin/wolframscript"
+wl() {   # wl MODE NAME — build W/NAME/note.md to HTML with the stand-in in MODE
+	(cd "$W/$2" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_MODE=$1 WL_LOG="$W/$2/calls.log" "$NODE" "$JMD" process note.md -o note.html >/dev/null 2>err.txt)
+}
+cached() { ls "$W/$1/Mathematica" 2>/dev/null | grep -E '\.(txt|svg)$'; }
+calls() { wc -l <"$W/$1/calls.log" 2>/dev/null | tr -d ' '; }
+
+mkdir -p "$W/block"
+printf ':::Mathematica\n1 + 1\n:::\n\nThe paragraph after it.\n' >"$W/block/note.md"
+wl fail block
+has   "mathematica/block-failed-shows-error" "$W/block/note.html" 'class="tikz-error-message"'
+if [ -z "$(cached block)" ]; then pass "mathematica/block-failed-caches-nothing"; else fail "mathematica/block-failed-caches-nothing" "cached: $(cached block)"; fi
+wl ok block || fail "mathematica/block-retry-exit" "$(cat "$W/block/err.txt")"
+if [ "$(calls block)" = 2 ]; then pass "mathematica/block-retry-asks-again"; else fail "mathematica/block-retry-asks-again" "calls: $(calls block)"; fi
+has   "mathematica/block-retry-result" "$W/block/note.html" 'class="mathematica txt ">2'
+hasnt "mathematica/block-retry-no-error" "$W/block/note.html" 'class="tikz-error-message"'
+wl ok block || fail "mathematica/block-cached-exit" "$(cat "$W/block/err.txt")"
+if [ "$(calls block)" = 2 ]; then pass "mathematica/block-then-cached"; else fail "mathematica/block-then-cached" "calls: $(calls block)"; fi
+
+mkdir -p "$W/inline"
+printf 'Inline ⟦1 + 1⟧ here.\n' >"$W/inline/note.md"
+wl fail-second inline
+if [ -z "$(cached inline)" ]; then pass "mathematica/inline-failed-caches-nothing"; else fail "mathematica/inline-failed-caches-nothing" "cached: $(cached inline)"; fi
+n=$(calls inline)
+wl ok inline || fail "mathematica/inline-retry-exit" "$(cat "$W/inline/err.txt")"
+if [ "$(calls inline)" -gt "$n" ] && [ -n "$(cached inline)" ]; then pass "mathematica/inline-retry-asks-again"; else fail "mathematica/inline-retry-asks-again" "calls $n → $(calls inline); cached: $(cached inline)"; fi
+
 echo "diagrams: $passed passed, $failed failed, $skipped skipped"
 [ "$failed" -eq 0 ]
