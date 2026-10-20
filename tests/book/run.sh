@@ -718,6 +718,15 @@ has   "maketitle/chapter-author-line" "$T/single.tex" '{\noindent\large Chapter 
 count "maketitle/include-master" "$T/incl.tex" '\maketitle' 1
 has   "maketitle/include-chapter-line" "$T/incl-ch-1.tex" '{\noindent\LARGE\bfseries A Title Line in Chapter One\par}'
 hasnt "maketitle/include-chapter-none" "$T/incl-ch-1.tex" '\maketitle'
+# A master with no block of its own: the first block is a chapter's, which stays lines. (Its title
+# line also counts as the body's own title, so the header's \maketitle is left out — as with the key
+# off, today.)
+printf -- '---\nTitle: The Book\nLaTeX maketitle: true\n---\n\nThe master'"'"'s text.\n\n@chapter+(one.md)\n@chapter+(two.md)\n' >"$T/header-only.md"
+(cd "$T" && HOME="$SCRATCH/home" node "$JMD" process header-only.md --to latex -o header-only.tex >/dev/null 2>header-only.err) \
+	|| fail "maketitle/header-only-exit" "$(cat "$T/header-only.err")"
+has   "maketitle/chapter-block-stays-lines" "$T/header-only.tex" '{\noindent\LARGE\bfseries A Title Line in Chapter One\par}'
+hasnt "maketitle/chapter-block-no-title" "$T/header-only.tex" '\title{A Title Line'
+hasnt "maketitle/chapter-block-no-author" "$T/header-only.tex" '\author{Chapter Author}'
 
 # --- not a book: nothing changes ------------------------------------------------------------------
 
