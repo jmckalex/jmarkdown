@@ -1,0 +1,36 @@
+A multi-paragraph inline note in fenced code is the code's text, and a
+markdown-demo's code pane shows its notes as written; both showed a marker
+where the note had been lifted out.
+
+\begin{minted}{markdown}
+The claim[fn: First paragraph.
+
+    Second paragraph.
+] is followed by more text, and a labelled one[^b: One.
+
+    Two.
+].
+\end{minted}
+
+A real one outside the code still works.\footnote{Its first paragraph.
+
+    Its second.}
+
+\par\medskip\noindent\textbf{Markdown code}\par\nopagebreak
+\begin{minted}{markdown}
+The standard account is incomplete[^acct:
+
+    The first objection.
+
+    The second.
+] in two ways.
+\end{minted}
+
+\noindent\textbf{Markdown output}\par\nopagebreak
+The standard account is incomplete\footnote{The first objection.
+
+    The second.} in two ways.
+\par\medskip
+
+The paragraph after them prints.\footnote{A single-paragraph note.}
+

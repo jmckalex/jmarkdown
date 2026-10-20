@@ -142,6 +142,8 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# tree — draft still stops on an extension it cannot read, which the
 		# links replace. Both engines.
 		images)            extra='\usepackage[draft]{graphicx}\usepackage{hyperref}'; needs='hyperref.sty' ;;
+		# footnotes: in-code's fenced block and markdown-demo are minted.
+		footnotes)         extra='\usepackage{minted}'; needs='minted.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -158,7 +160,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "obsidian" ] || [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ] || [ "$category" = "at-directives" ] || [ "$category" = "indexing" ] || [ "$category" = "media" ] || [ "$category" = "entities" ]; then
+	if [ "$category" = "obsidian" ] || [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ] || [ "$category" = "at-directives" ] || [ "$category" = "indexing" ] || [ "$category" = "media" ] || [ "$category" = "entities" ] || [ "$category" = "footnotes" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))

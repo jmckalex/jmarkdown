@@ -182,7 +182,7 @@ const ALL_GROUPS = '\uFDD2ALL';
 
 let autoLabelCounter = 0;                // for anonymous [fn: ...] footnotes
 const footnoteEntries = [];              // collected notes: { group, n, label, content }
-const footnoteStore = new Map();         // label → { body, indent, group }
+const footnoteStore = new Map();         // label → { body, indent, group, source }
 const groupCounters = new Map();         // group → running per-group number
 const groupOrder = [];                   // groups in first-appearance (numbering) order
 const placements = [];                   // @endnotes markers in document order: { id, group, title }
@@ -317,6 +317,45 @@ function resolveAmbientGroups(src) {
 	return lines.join('\n');
 }
 
+/*
+	The character ranges of fenced code blocks (``` or ~~~, the delimiter lines
+	included), found as Pass A finds them: line by line, a fence closed by one
+	of the same character, and in a book none running past its chapter.
+*/
+function fencedRanges(src) {
+	const ranges = [];
+	const inBook = getBook() !== null;
+	let open = -1;
+	let fenceMarker = '';
+	let at = 0;
+	for (const line of src.split('\n')) {
+		const next = at + line.length + 1;
+		if (inBook && hasChapterMarker(line)) {
+			if (open !== -1) ranges.push([open, at]);
+			open = -1;
+			fenceMarker = '';
+		} else {
+			const fence = /^(\s*)(`{3,}|~{3,})/.exec(line);
+			if (fence && open === -1) { open = at; fenceMarker = fence[2][0]; }
+			else if (fence && fence[2][0] === fenceMarker) { ranges.push([open, next]); open = -1; fenceMarker = ''; }
+		}
+		at = next;
+	}
+	if (open !== -1) ranges.push([open, src.length]);
+	return ranges;
+}
+
+/**
+ * The source as written, each multi-paragraph note's marker replaced by the
+ * note it stands for (preprocessFootnotes). For markdown-demo's code pane:
+ * the demo shows its source and renders it, and the source it is given has
+ * been through the preprocess like the rest of the document.
+ */
+export function restoreFootnoteSource(text) {
+	const marker = new RegExp(escapeForRegExp(FN_MARKER_PREFIX) + '([^' + escapeForRegExp(FN_MARKER_SUFFIX) + ']+)' + escapeForRegExp(FN_MARKER_SUFFIX), 'g');
+	return String(text).replace(marker, (m, label) => footnoteStore.get(label)?.source ?? m);
+}
+
 /**
  * Preprocess the source to resolve ambient endnote groups and to extract
  * multi-paragraph inline footnotes.
@@ -332,6 +371,11 @@ export function preprocessFootnotes(src) {
 	src = resolveAmbientGroups(src);
 
 	// Pass B: extract multi-paragraph bodies (unchanged in spirit; now group-aware).
+	// A note inside fenced code is the code's text, as Pass A takes it: lifting
+	// it out left the marker in the code block, and the note nowhere. Such a note
+	// is still read here — its label numbered, its group noted — only not lifted
+	// out, so every other note keeps its id.
+	const fenced = fencedRanges(src);
 	const result = [];
 	let i = 0;
 
@@ -395,9 +439,11 @@ export function preprocessFootnotes(src) {
 			continue;
 		}
 		const hasBlankLines = /\n[ \t]*\n/.test(footnoteSlice);
+		const inFence = fenced.some(([start, end]) => idx >= start && idx < end);
 
-		if (!hasBlankLines) {
-			// Single-paragraph footnote — leave for the inline extension
+		if (!hasBlankLines || inFence) {
+			// Single-paragraph footnote — leave for the inline extension (or, in
+			// fenced code, as the code's text)
 			result.push(src.slice(i, closingPos));
 			i = closingPos;
 			continue;
@@ -430,7 +476,9 @@ export function preprocessFootnotes(src) {
 			return line.trimStart();
 		}).join('\n').trim();
 
-		footnoteStore.set(label, { body: dedented, indent, group });
+		// `source`: the note as written, for markdown-demo's code pane
+		// (restoreFootnoteSource), which shows the source, marker and all.
+		footnoteStore.set(label, { body: dedented, indent, group, source: src.slice(idx, closingPos) });
 
 		// Replace the whole [...] with a marker
 		result.push(src.slice(i, idx) + makeFnMarker(label));

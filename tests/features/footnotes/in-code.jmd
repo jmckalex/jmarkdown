@@ -1,0 +1,29 @@
+A multi-paragraph inline note in fenced code is the code's text, and a
+markdown-demo's code pane shows its notes as written; both showed a marker
+where the note had been lifted out.
+
+```markdown
+The claim[fn: First paragraph.
+
+    Second paragraph.
+] is followed by more text, and a labelled one[^b: One.
+
+    Two.
+].
+```
+
+A real one outside the code still works.[fn: Its first paragraph.
+
+    Its second.
+]
+
+:::markdown-demo
+The standard account is incomplete[^acct:
+
+    The first objection.
+
+    The second.
+] in two ways.
+:::
+
+The paragraph after them prints.[fn: A single-paragraph note.]

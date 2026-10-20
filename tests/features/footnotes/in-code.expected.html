@@ -1,0 +1,46 @@
+<p>A multi-paragraph inline note in fenced code is the code's text, and a
+  markdown-demo's code pane shows its notes as written; both showed a marker
+  where the note had been lifted out.</p>
+<pre><code class="hljs language-markdown">The claim[fn: First paragraph.
+
+<span class="hljs-code">    Second paragraph.
+] is followed by more text, and a labelled one[^b: One.
+</span>
+<span class="hljs-code">    Two.
+].</span>
+</code></pre>
+<p>A real one outside the code still works.<sup class="footnote-ref"><a href="#fn-_auto2" id="fnref-_auto2">1</a></sup></p>
+<div class="markdown-demo-container">
+  <div class="markdown-demo-code-label">Markdown code</div>
+  <div class="markdown-demo-output-label">Markdown output</div>
+  <div class="markdown-demo-markdown">
+    <pre><code class="hljs language-markdown">The standard account is incomplete[^acct:
+
+<span class="hljs-code">    The first objection.
+</span>
+<span class="hljs-code">    The second.
+] in two ways.</span></code></pre>
+  </div>
+  <div class="markdown-demo-parsed">
+    <p>The standard account is incomplete<sup class="footnote-ref"><a href="#fn-acct" id="fnref-acct">2</a></sup> in two ways.</p>
+
+  </div>
+</div>
+<p>The paragraph after them prints.<sup class="footnote-ref"><a href="#fn-_auto4" id="fnref-_auto4">3</a></sup></p>
+
+<section class="footnotes">
+  <h1 class="endnotes-heading">Endnotes</h1>
+  <ol>
+    <li id="fn-_auto2">
+      <p>Its first paragraph.</p>
+      <p> Its second. <a href="#fnref-_auto2" class="footnote-backref">↩</a></p>
+    </li>
+    <li id="fn-acct">
+      <p>The first objection.</p>
+      <p> The second. <a href="#fnref-acct" class="footnote-backref">↩</a></p>
+    </li>
+    <li id="fn-_auto4">
+      <p>A single-paragraph note. <a href="#fnref-_auto4" class="footnote-backref">↩</a></p>
+    </li>
+  </ol>
+</section>
