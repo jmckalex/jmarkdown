@@ -1,0 +1,7 @@
+---
+Title: Header Title
+Author: Header Author
+LaTeX maketitle: true
+---
+
+A header title with no date, and no title in the body.

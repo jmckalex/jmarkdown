@@ -130,6 +130,53 @@ if render title-page-body; then
 	absent "own-title/no maketitle" "$TEX" '\maketitle'
 fi
 
+# --- title-maketitle.jmd: `LaTeX maketitle: true` makes the body's first
+#     title block LaTeX's own — \title, \author, \date, then \maketitle where
+#     it stands — and the header's \maketitle is left out, as before. A
+#     subtitle is a smaller line in \title, an institution goes under its
+#     author, authors are set apart with \and, and a missing date is \date{}.
+#     Inline code and a link's URL are set to survive being an argument, as in
+#     a heading. A second block prints as lines. ---
+if render title-maketitle; then
+	want   "maketitle/title"       "$TEX" '\title{Body Title: \mintinline{text}{x = y}, \texttt{50\% off}, \texttt{\#1}, \texttt{a\{b}, \texttt{\textbackslash{}section} and $x^2_1$\\{\large A Subtitle at \href{https://example.com/a\%20b\#part}{https://example.com/a\%20b\#part}}}'
+	want   "maketitle/author"      "$TEX" '\author{Body Author \& Co.\\A Department\\A University \and Second Author}'
+	want   "maketitle/no date"     "$TEX" '\date{}'
+	want   "maketitle/pdftitle"    "$TEX" 'pdftitle={Header Title}'
+	want   "maketitle/second block" "$TEX" '{\noindent\LARGE\bfseries A Second Title\par}'
+	absent "maketitle/no title line" "$TEX" '{\noindent\LARGE\bfseries Body'
+	if [ "$(grep -c '^\\maketitle$' "$TEX")" = 1 ] && grep -A1 '^\\date{}$' "$TEX" | grep -q '^\\maketitle$'; then
+		echo "PASS  maketitle/one, after the block"; pass=$((pass + 1))
+	else
+		echo "FAIL  maketitle/one, after the block"; fail=$((fail + 1))
+	fi
+fi
+
+# --- title-maketitle-header.jmd: under the key, a header Title with no Date
+#     gets \date{} (LaTeX would print today's date; the HTML shows none). ---
+if render title-maketitle-header; then
+	want   "maketitle-header/date"      "$TEX" '\date{}'
+	want   "maketitle-header/maketitle" "$TEX" '\maketitle'
+fi
+
+# --- The key from a project config, as a host sets it; a header's `false`
+#     wins over it; off, nothing changes (title-page-body above). A header
+#     with a Date keeps it. ---
+mkdir -p "$SCRATCH/mt/.jmarkdown"
+printf '{ "LaTeX maketitle": true }\n' > "$SCRATCH/mt/.jmarkdown/config.json"
+sed 's/^Date: October 2026$/Date: October 2026\nLaTeX maketitle: false/' "$HERE/title-page-body.jmd" > "$SCRATCH/mt/header-off.jmd"
+if (cd "$SCRATCH/mt" && node "$JMD" process "$HERE/title-page-body.jmd" --to latex -o "$SCRATCH/mt-on.tex" >/dev/null 2>&1 \
+	&& node "$JMD" process header-off.jmd --to latex -o "$SCRATCH/mt-header-off.tex" >/dev/null 2>&1 \
+	&& node "$JMD" process "$HERE/article.jmd" --to latex -o "$SCRATCH/mt-header-only.tex" >/dev/null 2>&1); then
+	want   "maketitle-config/on"              "$SCRATCH/mt-on.tex" '\title{Body Title\\{\large A Subtitle}}'
+	want   "maketitle-config/header off"      "$SCRATCH/mt-header-off.tex" '{\noindent\LARGE\bfseries Body Title\par}'
+	absent "maketitle-config/header off, none" "$SCRATCH/mt-header-off.tex" '\maketitle'
+	want   "maketitle-config/header date"     "$SCRATCH/mt-header-only.tex" '\date{June 2026}'
+	absent "maketitle-config/no empty date"   "$SCRATCH/mt-header-only.tex" '\date{}'
+else
+	echo "FAIL  maketitle-config  (jmarkdown exited non-zero)"
+	fail=$((fail + 1))
+fi
+
 # --- title-page-dropped.jmd: a body title that LaTeX never prints (inside
 #     @begin(HTML)) is no title of the body's: \maketitle stays. ---
 if render title-page-dropped; then

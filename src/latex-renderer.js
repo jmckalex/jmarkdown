@@ -148,7 +148,9 @@ const latexRenderer = {
 	codespan(token) {
 		const lang = mintedLanguage(configManager.get('Code language'));
 		const code = token.text;
-		if (inHeading) return headingCode(lang, code);
+		// A heading's text, and a title-block line's under `LaTeX maketitle`
+		// (token.jmdArgument, additional-directives.js), is a macro's argument.
+		if (inHeading || token.jmdArgument) return headingCode(lang, code);
 		requirePackage('minted');
 		// Use a delimiter the code doesn't contain. The brace form
 		// \mintinline{lang}{code} breaks on a literal `}` in the code (the group
@@ -179,6 +181,10 @@ const latexRenderer = {
 		// writes `\%` into the link as `%`, at the top level and inside another
 		// command's argument (a footnote, a heading) alike.
 		if (isBareAddress(token)) return `\\href{${href.replaceAll('%', '\\%')}}{${text.replaceAll('%', '\\%')}}`;
+		// In a macro's argument (a title-block line under `LaTeX maketitle`,
+		// additional-directives.js) a `%` in the URL is read as a comment before
+		// \href can read it as a character: escaped there too.
+		if (token.jmdArgument) return `\\href{${href.replaceAll('%', '\\%')}}{${text}}`;
 		return `\\href{${href}}{${text}}`;
 	},
 

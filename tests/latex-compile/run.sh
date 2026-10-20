@@ -224,11 +224,12 @@ done
 # stopped the build too, and its inline `#` printed as `\#`; so did a `&` in
 # the paragraphs after an inline tag left open, and in a block nested in a
 # list item. A document with a Title header and a title of its own in the body
-# printed both, \maketitle above the body's. A bare address with a `%`
+# printed both, \maketitle above the body's; under `LaTeX maketitle` the
+# body's block is the title page, once. A bare address with a `%`
 # commented out the rest of its line. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body url-percent; do
+	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body title-maketitle title-maketitle-header url-percent; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -275,6 +276,20 @@ if command -v pdftotext >/dev/null 2>&1; then
 		if [ "$name" = title-page-body ]; then
 			grep -q 'Body Title' "$work/doc.txt" || problems="$problems body-title-missing"
 			grep -q 'Header Title' "$work/doc.txt" && problems="$problems maketitle-printed"
+		fi
+		# Under `LaTeX maketitle` the body's block is the title page, printed once;
+		# the second block is lines, and a missing date prints no date.
+		if [ "$name" = title-maketitle ]; then
+			grep -q 'Body Title: x = y, 50% off, #1, a{b, \\section' "$work/doc.txt" || problems="$problems title"
+			grep -q 'A Subtitle at https://example.com/a%20b#part' "$work/doc.txt" || problems="$problems subtitle"
+			grep -q 'Body Author & Co.' "$work/doc.txt" || problems="$problems author"
+			grep -q 'A Second Title' "$work/doc.txt" || problems="$problems second-block"
+			grep -q 'Header Title' "$work/doc.txt" && problems="$problems header-title-printed"
+			grep -q 'October 2026' "$work/doc.txt" && problems="$problems date-printed"
+		fi
+		if [ "$name" = title-maketitle-header ]; then
+			grep -q 'Header Title' "$work/doc.txt" || problems="$problems title"
+			grep -q '20[0-9][0-9]' "$work/doc.txt" && problems="$problems date-printed"
 		fi
 		# A bare address with a `%` prints whole, and the text after it too.
 		if [ "$name" = url-percent ]; then

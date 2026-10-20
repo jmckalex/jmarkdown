@@ -402,6 +402,24 @@ byte-identical to their colon twins where one exists:
   `tests/latex-document/title-page-body`, `title-page-dropped` (latex-compile
   reads the PDF: one title).
 
+  **`LaTeX maketitle`** (config key, default off; the owner, 2026-10-20 — Clew
+  turns it on): the body's FIRST title block — title-page lines one after
+  another, blank lines allowed, at the document's top level, holding a title —
+  becomes `\title{…}` `\author{…}` `\date{…}` and `\maketitle` where it stands.
+  A subtitle is a `{\large …}` line in `\title`, an institution goes under its
+  author, authors are joined with `\and`, and a part the block lacks is written
+  empty (`\author{}`, `\date{}`: the HTML shows none); a header `Title` with no
+  `Date` gets `\date{}` too. `markTitleRun` (a processAllTokens hook) finds the
+  block before anything renders; its last line writes it, the others nothing.
+  Every other title line stays a line: a second block (`\maketitle` works
+  once), a block with no title, one nested in a container, a book chapter's
+  (book.js's `jmdChapter` edges). Inline code and links in the block are marked
+  `jmdArgument`, so latex-renderer.js sets them as in a heading (`headingCode`;
+  `\%` in the URL). Off: byte-identical. Fixtures:
+  `at-directives/at-title-page-maketitle`, `tests/latex-document/title-maketitle`
+  and `title-maketitle-header` (latex-compile reads the PDFs), and the book
+  suite's `maketitle/*`.
+
   **Still to do:** the `:`→`@` **content codemod** + converting docs/fixtures (Slice B);
   **deleting `extended-directives.js`** and all colon wiring (Slice C — needs the book
   converted first; also drops the dead, uninstalled `plaintext`/`pass_through`).

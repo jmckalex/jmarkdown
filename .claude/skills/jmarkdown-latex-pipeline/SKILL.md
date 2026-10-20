@@ -24,7 +24,9 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   every full document (clickable refs/ToC + PDF bookmarks) with
   `\hypersetup{pdftitle,pdfauthor}` from `Title`/`Author`; `\maketitle` from
   `Title`/`Author`/`Date`, left out when the body prints its own title
-  (`@title+`; `bodyPrintsTitle`, additional-directives.js).
+  (`@title+`; `bodyPrintsTitle`, additional-directives.js). Under `LaTeX
+  maketitle` (default off) the body's first title block is `\title`/`\author`/
+  `\date` + `\maketitle` itself, where it stands.
 - **Preamble manager** (`preamble.js`): usage-driven. Features call
   `requirePackage(name, opts)` as they render, so the preamble contains only
   what's used. `addPreamble` (raw lines, e.g. `\newtheorem`/`\usetikzlibrary`),

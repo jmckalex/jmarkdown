@@ -1,0 +1,30 @@
+---
+LaTeX maketitle: true
+---
+
+@author+[Only An Author]
+@date+[1 January 2026]
+
+A block with no title stays lines, under `LaTeX maketitle` too.
+
+@title+[Review of “Resonance & Continuation”, with *emphasis* and `x = y`]
+@subtitle+[Code no argument carries verbatim: `50% off`, `#1`, `a{b`, `\section`]
+::author[A. Author]
+::institution[Department of Philosophy
+A University]
+
+@author+[B. Author]
+
+@date+[17 July 2025]
+
+The body, after the title page.
+
+@title+[A Second Title]
+
+A second block stays lines: there is one title page.
+
+@begin(center)
+@title+[A Nested Title]
+@end(center)
+
+So does a block inside another.

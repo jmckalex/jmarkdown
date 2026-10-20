@@ -699,6 +699,26 @@ has   "warn/missing-citation" "$W/html.err" 'a.md:13: citation: no bibliography 
 sed -n '/data-file="b.md"/,$p' "$W/html.out" >"$W/b.part"
 has   "warn/later-chapter-lines" "$W/b.part" '<h1 data-source-line="1"'
 
+# --- `LaTeX maketitle`: the master's title block is the book's title page; a chapter's title lines
+#     stay lines (a book has one title page), in the single .tex and the include layout alike. ------
+
+T="$SCRATCH/maketitle"
+mkdir -p "$T"
+printf -- '---\nTitle: The Book\nLaTeX maketitle: true\n---\n\n@title+[The Book Title]\n@author+[Book Author]\n\nThe master'"'"'s text.\n\n@chapter+(one.md)\n@chapter+(two.md)\n' >"$T/master.md"
+printf -- '# Chapter One\n\n@title+[A Title Line in Chapter One]\n@author+[Chapter Author]\n\nChapter one'"'"'s text.\n' >"$T/one.md"
+printf -- '# Chapter Two\n\nChapter two'"'"'s text.\n' >"$T/two.md"
+(cd "$T" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o single.tex >/dev/null 2>single.err \
+	&& HOME="$SCRATCH/home" node "$JMD" process master.md --to latex --latex-layout include -o incl.tex >/dev/null 2>incl.err) \
+	|| fail "maketitle/exit" "$(cat "$T/single.err" "$T/incl.err" 2>/dev/null)"
+has   "maketitle/title" "$T/single.tex" '\title{The Book Title}'
+has   "maketitle/author" "$T/single.tex" '\author{Book Author}'
+count "maketitle/once" "$T/single.tex" '\maketitle' 1
+has   "maketitle/chapter-line" "$T/single.tex" '{\noindent\LARGE\bfseries A Title Line in Chapter One\par}'
+has   "maketitle/chapter-author-line" "$T/single.tex" '{\noindent\large Chapter Author\par}'
+count "maketitle/include-master" "$T/incl.tex" '\maketitle' 1
+has   "maketitle/include-chapter-line" "$T/incl-ch-1.tex" '{\noindent\LARGE\bfseries A Title Line in Chapter One\par}'
+hasnt "maketitle/include-chapter-none" "$T/incl-ch-1.tex" '\maketitle'
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"

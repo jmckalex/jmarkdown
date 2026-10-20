@@ -1,0 +1,23 @@
+---
+Title: Header Title
+Author: Header Author
+Date: October 2026
+LaTeX maketitle: true
+---
+
+@title+[Body Title: `x = y`, `50% off`, `#1`, `a{b`, `\section` and $x^2_1$]
+
+@subtitle+[A Subtitle at <https://example.com/a%20b#part>]
+
+@author+[Body Author & Co.]
+
+@institution+[A Department
+A University]
+
+@author+[Second Author]
+
+The document's prose, after the title page.
+
+@title+[A Second Title]
+
+A second block prints as lines.
