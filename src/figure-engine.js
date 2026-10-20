@@ -115,6 +115,16 @@ let hostLibrary = null;
 let hostLibraryMalformed = false;
 
 export function setFigureLibrary(option) {
+	// What came from the library before — its module, a live instance, the
+	// fingerprint its keys carry, the fonts and files handed to it — is
+	// forgotten, so whatever loads next is this call's: the host's, or with
+	// null the dist's. Before any build, there is nothing to forget.
+	if (mp) { mp.dispose(); mp = null; }
+	lib = null;
+	compiles = 0;
+	fingerprintCache = null;
+	fontsGiven.clear();
+	filesGiven.clear();
 	hostLibrary = null;
 	hostLibraryMalformed = false;
 	if (option == null) return;

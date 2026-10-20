@@ -166,7 +166,7 @@ fi
 #     same library under the dist's fingerprint draws the same figures under the same keys; under a
 #     fingerprint of its own, keys of its own; a malformed one is warned and ignored. ------------------
 L="$SCRATCH/hostlib"
-for route in path host host-default bad; do
+for route in path host host-default bad switch unset; do
 	mkdir -p "$L/$route"
 	cp "$D/note.md" "$L/$route/"
 	(cd "$L/$route" && env -i HOME="$SCRATCH/home" PATH=/usr/bin:/bin "$NODE" "$HERE/host-library.mjs" "$REPO" "$route" "$DIST" note.md note.html html >/dev/null 2>err.txt; echo $? >exit.txt
@@ -188,6 +188,14 @@ else fail "host-library/default-bundles" "$(cat "$L/host-default/err.txt")"; fi
 if [ "$(cd "$L/host-default" && ls TiKZ)" != "$(cd "$L/path" && ls TiKZ)" ]; then pass "host-library/own-fingerprint-own-keys"
 else fail "host-library/own-fingerprint-own-keys" "the same keys under another fingerprint"; fi
 has   "host-library/bad-warned" "$L/bad/err.txt" '`figureLibrary` is { load: a function, fingerprint: a string, bundles?: names } — ignored'
+# The library set last is the build's (each call forgets the one before); null, the dist's.
+for route in switch unset; do
+	sed "s#$L/$route/#FOLDER/#g" "$L/$route/note.html" >"$L/$route.html"
+	if [ "$(tr -d '\n' <"$L/$route/exit.txt")" = 00 ] && [ ! -s "$L/$route/err.txt" ] && cmp -s "$L/path.html" "$L/$route.html" \
+		&& cmp -s "$L/path/note.tex" "$L/$route/note.tex" && [ "$(cd "$L/path" && ls TiKZ MetaPost)" = "$(cd "$L/$route" && ls TiKZ MetaPost)" ]; then
+		pass "host-library/$route-last-set-wins"
+	else fail "host-library/$route-last-set-wins" "$(cat "$L/$route/err.txt")" "$(cd "$L/$route" && ls TiKZ MetaPost | tr '\n' ' ')"; fi
+done
 has   "host-library/bad-refused" "$L/bad/note.html" 'data-jmd-refused="TiKZ"'
 
 # --- the library's renders never mix with the tools': keyed by the library too ------------------------
