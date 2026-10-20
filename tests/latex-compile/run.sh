@@ -341,6 +341,64 @@ else
 	skip=$((skip + 1))
 fi
 
+# A `%` in what jmarkdown writes into \title, \author, \date, pdftitle and
+# pdfauthor — from a header (title-percent) or, under `LaTeX maketitle`, from
+# the body's block in a document with no header (title-percent-block; the key
+# from a project config, as a host sets it) — was a comment that swallowed the
+# closing brace, and the build stopped. Both engines; the PDF's text, and its
+# Title and Author (pdfinfo, where installed). The fixtures are
+# tests/latex-document's.
+if command -v pdftotext >/dev/null 2>&1; then
+	for name in title-percent title-percent-block; do
+		for engine in pdflatex lualatex; do
+			label="full-document/$name [$engine]"
+			if ! command -v "$engine" >/dev/null 2>&1; then
+				echo "SKIP  $label  ($engine not installed)"
+				skip=$((skip + 1))
+				continue
+			fi
+			work="$SCRATCH/full-$name-$engine"
+			mkdir -p "$work/.jmarkdown"
+			[ "$name" = title-percent-block ] && printf '{ "LaTeX maketitle": true }\n' > "$work/.jmarkdown/config.json"
+			if ! (cd "$work" && HOME="$work" node "$REPO/src/index.js" process "$REPO/tests/latex-document/$name.jmd" --to latex -o doc.tex >/dev/null 2>build.log); then
+				echo "FAIL  $label  (jmarkdown exited non-zero)"
+				sed 's/^/    | /' "$work/build.log"
+				fail=$((fail + 1))
+				continue
+			fi
+			if ! (cd "$work" && $engine -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+				echo "FAIL  $label"
+				grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
+				fail=$((fail + 1))
+				continue
+			fi
+			pdftotext "$work/doc.pdf" "$work/doc.txt"
+			problems=''
+			if [ "$name" = title-percent ]; then
+				grep -q 'Up 50% and 25% Today' "$work/doc.txt" || problems="$problems title"
+				want_title='Up 50% and 25% Today'
+			else
+				grep -q 'Up 50% Today' "$work/doc.txt" || problems="$problems title"
+				want_title='Up 50% Today'
+			fi
+			grep -q 'Ann 50% Bo' "$work/doc.txt" || problems="$problems author"
+			grep -q '50% May' "$work/doc.txt" || problems="$problems date"
+			grep -q 'The prose after the title.' "$work/doc.txt" || problems="$problems prose"
+			if command -v pdfinfo >/dev/null 2>&1; then
+				pdfinfo "$work/doc.pdf" | grep -qx "Title: *$want_title" || problems="$problems pdfinfo-title"
+				[ "$name" = title-percent ] && ! pdfinfo "$work/doc.pdf" | grep -qx 'Author: *Ann 50% Bo' && problems="$problems pdfinfo-author"
+			fi
+			if [ -z "$problems" ]; then
+				echo "PASS  $label [pdf text]"
+				pass=$((pass + 1))
+			else
+				echo "FAIL  $label [pdf text]  (found:$problems)"
+				fail=$((fail + 1))
+			fi
+		done
+	done
+fi
+
 # `LaTeX highlighter: highlight.js`: a full document of code — blocks, inline
 # code in a heading and a note, a listing float and {{LOL}}, code in a callout
 # — compiles with NO shell escape (a TeX with no Python, as on the iPad), by

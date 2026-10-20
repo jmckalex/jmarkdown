@@ -172,6 +172,35 @@ else
 	echo "FAIL  maketitle-pdftitle/off  (jmarkdown exited non-zero)"; fail=$((fail + 1))
 fi
 
+# --- title-percent.jmd: a `%` in a header's Title, Author or Date — not
+#     markdown, so never jmarkdown's comment — is written `\%` in \title,
+#     \author, \date, pdftitle and pdfauthor: raw, it was a comment that
+#     swallowed the closing brace, and the build stopped. An author's `\%`
+#     stays as written. ---
+if render title-percent; then
+	want   "title-percent/title"     "$TEX" '\title{Up 50\% and 25\% Today}'
+	want   "title-percent/author"    "$TEX" '\author{Ann 50\% Bo}'
+	want   "title-percent/date"      "$TEX" '\date{50\% May}'
+	want   "title-percent/pdftitle"  "$TEX" 'pdftitle={Up 50\% and 25\% Today}'
+	want   "title-percent/pdfauthor" "$TEX" 'pdfauthor={Ann 50\% Bo}'
+	absent "title-percent/no doubled backslash" "$TEX" '\\%'
+fi
+
+# --- title-percent-block.jmd: no header, so no inline comment (metadata-header.js
+#     installs it only with one) and its `%` is text, as the HTML shows it;
+#     under `LaTeX maketitle`, from a project config as a host sets it, the
+#     block's parts and the PDF's Title write it `\%`. ---
+mkdir -p "$SCRATCH/pct/.jmarkdown"
+printf '{ "LaTeX maketitle": true }\n' > "$SCRATCH/pct/.jmarkdown/config.json"
+if (cd "$SCRATCH/pct" && node "$JMD" process "$HERE/title-percent-block.jmd" --to latex -o "$SCRATCH/pct/doc.tex" >/dev/null 2>&1); then
+	want   "title-percent-block/title"    "$SCRATCH/pct/doc.tex" '\title{Up 50\% Today}'
+	want   "title-percent-block/author"   "$SCRATCH/pct/doc.tex" '\author{Ann 50\% Bo}'
+	want   "title-percent-block/date"     "$SCRATCH/pct/doc.tex" '\date{50\% May}'
+	want   "title-percent-block/pdftitle" "$SCRATCH/pct/doc.tex" 'pdftitle={Up 50\% Today}'
+else
+	echo "FAIL  title-percent-block  (jmarkdown exited non-zero)"; fail=$((fail + 1))
+fi
+
 # --- The key from a project config, as a host sets it; a header's `false`
 #     wins over it; off, nothing changes (title-page-body above). A header
 #     with a Date keeps it. ---

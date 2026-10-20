@@ -20,7 +20,7 @@ import { configManager } from './config-manager.js';
 import { assemblePreamble, requirePackage, addPreamble, addLatePreamble, requiredPackageNames, dropPackage } from './preamble.js';
 import { checkMathPackages } from './latex-lint.js';
 import { getBook, bookPreamble, warnPreambleClashes } from './book.js';
-import { escapeLatexText } from './latex-escape.js';
+import { escapeArgumentPercent, escapeLatexText } from './latex-escape.js';
 import { bodyPrintsTitle, bodyTitleBlockText } from './additional-directives.js';
 import { highlightsCode, mintedListingFloat } from './latex-highlight.js';
 
@@ -57,10 +57,11 @@ export function processLatexTemplate(content) {
 		: `\\documentclass{${docClass}}`;
 
 	// Title / Author / Date — plain-text metadata (not markdown-parsed), so escape
-	// the prose specials &/# before they hit \title{} / \hypersetup{}.
-	const title = escapeLatexText(asString(meta('Title')));
-	const author = escapeLatexText(asString(meta('Author')));
-	const date = escapeLatexText(asString(meta('Date')));
+	// the prose specials &/# before they hit \title{} / \hypersetup{}, and a
+	// `%`, which in those arguments was a comment and stopped the build.
+	const title = escapeArgumentPercent(escapeLatexText(asString(meta('Title'))));
+	const author = escapeArgumentPercent(escapeLatexText(asString(meta('Author'))));
+	const date = escapeArgumentPercent(escapeLatexText(asString(meta('Date'))));
 
 	// --- Page setup (metadata → preamble); registered before assembly ---
 	// Geometry (margins / paper): raw geometry options, e.g. "margin=1in".

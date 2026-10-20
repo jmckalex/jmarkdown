@@ -25,6 +25,23 @@ export function escapeLatexText(text) {
 	return String(text).replace(/&/g, '\\&').replace(/#/g, '\\#');
 }
 
+/*
+	A `%` no backslash escapes, written `\%`: for what jmarkdown writes into a
+	macro's argument — \title, \author, \date, hyperref's pdftitle and
+	pdfauthor. There TeX reads a raw `%` as a comment, which swallows the
+	argument's closing brace, and the build stops ("Paragraph ended before
+	\title was complete", "File ended while scanning use of \kvsetkeys"). A
+	`%` reaches these as text: a header's value is not markdown, so jmarkdown's
+	inline comment never reads it, and in the body that comment is installed
+	only in a document with a header (metadata-header.js) — where it is, it has
+	taken the `%` and the rest of the line before anything renders. Either way
+	the HTML shows the `%`. An author's `\%` is left as it is; `\\%` (a line
+	break, then a percent) gets its `%` escaped.
+*/
+export function escapeArgumentPercent(text) {
+	return String(text ?? '').replace(/(?<!\\)((?:\\\\)*)%/g, '$1\\%');
+}
+
 /**
  * Plain text for TeX — every special character escaped. For text that is NOT
  * markdown, where the prose rules above (which leave `_ % $` alone) do not

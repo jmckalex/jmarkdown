@@ -47,7 +47,7 @@ All source lives in `src/`. Key files:
 | `html-template.js` | HTML full-document assembly (Mustache + config merge); peer of `latex-template.js` |
 | `default-template.tex.mustache` | The `.tex` document skeleton (triple-brace; peer of `default-template.html.mustache`) |
 | `preamble.js` | Usage-driven package manager: `requirePackage` / `addPreamble` / `addLatePreamble` / `crefName`; `assemblePreamble()` |
-| `latex-escape.js` | Shared `&`/`#` prose escaping (`escapeLatexText`); `escapeTexText` escapes everything |
+| `latex-escape.js` | Shared `&`/`#` prose escaping (`escapeLatexText`); `escapeTexText` escapes everything; `escapeArgumentPercent` writes `\%` for a `%` no backslash escapes in what goes into `\title`, `\author`, `\date`, pdftitle and pdfauthor — a header's values (not markdown: jmarkdown's `%` comment never reads them) and `LaTeX maketitle`'s parts (in the body the comment exists only in a document with a header) — where it was a TeX comment that swallowed the closing brace and stopped the build (fixed 2026-10-20) |
 | `latex-lint.js` | The LaTeX-export lint: build warnings (every build, HTML too) for what renders in HTML but breaks a LaTeX export — codes `dollars`, `display-math`, `mathjax-only`, `package`, `backslash`, `braces`, silenced by `Silence warnings`. See "LaTeX-export lint" |
 | `math-packages.js` | GENERATED (`scripts/latex-math-packages.mjs`, by TeX itself): the maths commands amsmath / amsfonts / amssymb / latexsym / mathtools define that LaTeX does not; an environment as `end<name>` |
 | `escapes.js` | A backslash-escaped character (`\$`, `\_`, `\{`, `\\`) prints as itself: a renderer for marked's `escape` tokens — `escapeTexText` in LaTeX (they used to reach the .tex bare: `\$5` started maths, `\_` was a subscript error), and in HTML an escaped `$` wrapped in `<span class="escaped">` so MathJax cannot pair it with the next `$`. Registered in index.js. Also `imageAltText`: marked v16 writes an image's alt UNESCAPED (`![a "b" c](x)` broke the attribute; a quote let an `on…` attribute in), so the alt is escaped once here and marked's own image renderer does the rest (HTML only; registered at module scope) |
@@ -420,6 +420,7 @@ byte-identical to their colon twins where one exists:
   (`pdftitle`) from the block (the owner, 2026-10-20): the title's text,
   without formatting, notes or the subtitle (`pdfTitleText`, from the tokens:
   hyperref reads `\mintinline` as letters); `pdfauthor` stays the header's.
+  A `%` in the block's parts is written `\%` (`escapeArgumentPercent`).
   Off: byte-identical. Fixtures:
   `at-directives/at-title-page-maketitle`, `tests/latex-document/title-maketitle`,
   `title-maketitle-header` and `title-maketitle-pdftitle` (latex-compile reads
