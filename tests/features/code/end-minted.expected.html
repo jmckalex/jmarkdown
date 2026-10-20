@@ -1,0 +1,25 @@
+<p>Code that shows <code>\end{minted}</code> — on a line of its own, indented, or after
+  other text — printed only up to it in LaTeX, and stopped the build.</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{minted}{js}<span class="hljs-string">
+const greet = (name) =&gt; `Hello, ${name}!`;
+</span><span class="hljs-keyword">\end</span>{minted}
+</code></pre>
+<p>The same language again:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\begin</span>{listing}[htbp]
+<span class="hljs-keyword">\begin</span>{minted}{python}<span class="hljs-string">
+print("hello, world")
+  </span><span class="hljs-keyword">\end</span>{minted}
+<span class="hljs-keyword">\caption</span>{A hello-world program}
+<span class="hljs-keyword">\end</span>{listing}
+</code></pre>
+<p>No language, and the end after other text:</p>
+<pre><code class="hljs">see \end{minted} here
+</code></pre>
+<p>One that shows its own environment's end as well:</p>
+<pre><code class="hljs language-latex"><span class="hljs-keyword">\end</span>{minted}
+<span class="hljs-keyword">\end</span>{jmdmintedlatex}
+</code></pre>
+<p>An ordinary block is as it was:</p>
+<pre><code class="hljs language-python"><span class="hljs-built_in">print</span>(<span class="hljs-string">"unchanged"</span>)
+</code></pre>
+<p>The paragraph after them prints.</p>

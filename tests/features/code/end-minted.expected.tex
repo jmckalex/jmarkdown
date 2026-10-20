@@ -1,0 +1,45 @@
+Code that shows \mintinline{text}|\end{minted}| — on a line of its own, indented, or after
+other text — printed only up to it in LaTeX, and stopped the build.
+
+\ifcsname jmdmintedlatex\endcsname\else\newminted[jmdmintedlatex]{latex}{}\fi
+\begin{jmdmintedlatex}
+\begin{minted}{js}
+const greet = (name) => `Hello, ${name}!`;
+\end{minted}
+\end{jmdmintedlatex}
+
+The same language again:
+
+\ifcsname jmdmintedlatex\endcsname\else\newminted[jmdmintedlatex]{latex}{}\fi
+\begin{jmdmintedlatex}
+\begin{listing}[htbp]
+\begin{minted}{python}
+print("hello, world")
+  \end{minted}
+\caption{A hello-world program}
+\end{listing}
+\end{jmdmintedlatex}
+
+No language, and the end after other text:
+
+\ifcsname jmdmintedtext\endcsname\else\newminted[jmdmintedtext]{text}{}\fi
+\begin{jmdmintedtext}
+see \end{minted} here
+\end{jmdmintedtext}
+
+One that shows its own environment's end as well:
+
+\ifcsname jmdmintedlatexx\endcsname\else\newminted[jmdmintedlatexx]{latex}{}\fi
+\begin{jmdmintedlatexx}
+\end{minted}
+\end{jmdmintedlatex}
+\end{jmdmintedlatexx}
+
+An ordinary block is as it was:
+
+\begin{minted}{python}
+print("unchanged")
+\end{minted}
+
+The paragraph after them prints.
+

@@ -1,0 +1,40 @@
+Code that shows `\end{minted}` — on a line of its own, indented, or after
+other text — printed only up to it in LaTeX, and stopped the build.
+
+```latex
+\begin{minted}{js}
+const greet = (name) => `Hello, ${name}!`;
+\end{minted}
+```
+
+The same language again:
+
+```latex
+\begin{listing}[htbp]
+\begin{minted}{python}
+print("hello, world")
+  \end{minted}
+\caption{A hello-world program}
+\end{listing}
+```
+
+No language, and the end after other text:
+
+```
+see \end{minted} here
+```
+
+One that shows its own environment's end as well:
+
+```latex
+\end{minted}
+\end{jmdmintedlatex}
+```
+
+An ordinary block is as it was:
+
+```python
+print("unchanged")
+```
+
+The paragraph after them prints.

@@ -198,7 +198,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		} >"$work/doc.tex"
 	fi
 
-	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ] || [ "$category" = "entities" ] || [ "$category" = "images" ]; } && command -v lualatex >/dev/null 2>&1; then
+	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ] || [ "$category" = "entities" ] || [ "$category" = "images" ] || [ "$label" = "code/end-minted" ]; } && command -v lualatex >/dev/null 2>&1; then
 		engines='pdflatex lualatex'
 	fi
 	for engine in $engines; do

@@ -105,6 +105,15 @@ const blockText = {
 };
 marked.use({ extensions: [blockText] });
 
+// The environment a code block holding `\end{minted}` is set in (code(),
+// below): `jmdminted` and the language in letters only — an environment's name
+// fancyvrb can look for — lengthened until the code holds no end for it.
+function mintedEnvironment(lang, code) {
+	let name = 'jmdminted' + lang.replace(/[^A-Za-z]/g, (c) => 'Q' + c.charCodeAt(0).toString(16).replace(/[0-9]/g, (d) => 'ghijklmnop'[d]));
+	while (code.includes(`\\end{${name}}`)) name += 'x';
+	return name;
+}
+
 const latexRenderer = {
 
 	// Raw HTML reaches the .tex as written (marked's own rule), but for its
@@ -176,6 +185,15 @@ const latexRenderer = {
 		if (highlightsCode()) return codeBlockLatex(token.text, token.lang);
 		requirePackage('minted');
 		const lang = mintedLanguage(token.lang);
+		// A line holding `\end{minted}`, anywhere on it, ends minted's environment
+		// there (fancyvrb), so code that shows one — a LaTeX example — stopped
+		// the build. Such a block gets an environment of its own: minted's
+		// \newminted for its language, under a name the code holds no end for,
+		// defined where it is used, once, so a fragment carries it too.
+		if (token.text.includes('\\end{minted}')) {
+			const env = mintedEnvironment(lang, token.text);
+			return `\\ifcsname ${env}\\endcsname\\else\\newminted[${env}]{${lang}}{}\\fi\n\\begin{${env}}\n${token.text}\n\\end{${env}}\n\n`;
+		}
 		return `\\begin{minted}{${lang}}\n${token.text}\n\\end{minted}\n\n`;
 	},
 
