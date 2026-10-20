@@ -1,0 +1,10 @@
+---
+Title: Addresses
+---
+
+See https://example.com/a%20b for more, <https://example.com/c%2Fd#part> in
+angle brackets, and one in a footnote.[fn: at https://example.com/g%20h in a note.]
+
+## Heading https://example.com/m%20n
+
+The paragraph after them prints.

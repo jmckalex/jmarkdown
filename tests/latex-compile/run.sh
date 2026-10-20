@@ -224,10 +224,11 @@ done
 # stopped the build too, and its inline `#` printed as `\#`; so did a `&` in
 # the paragraphs after an inline tag left open, and in a block nested in a
 # list item. A document with a Title header and a title of its own in the body
-# printed both, \maketitle above the body's. The fixtures are
+# printed both, \maketitle above the body's. A bare address with a `%`
+# commented out the rest of its line. The fixtures are
 # tests/latex-document's.
 if command -v pdftotext >/dev/null 2>&1; then
-	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body; do
+	for name in cref-unused cref-used style-block list-specials unclosed-tag list-nested title-page-body url-percent; do
 		label="full-document/$name"
 		work="$SCRATCH/full-$name"
 		mkdir -p "$work"
@@ -274,6 +275,15 @@ if command -v pdftotext >/dev/null 2>&1; then
 		if [ "$name" = title-page-body ]; then
 			grep -q 'Body Title' "$work/doc.txt" || problems="$problems body-title-missing"
 			grep -q 'Header Title' "$work/doc.txt" && problems="$problems maketitle-printed"
+		fi
+		# A bare address with a `%` prints whole, and the text after it too.
+		if [ "$name" = url-percent ]; then
+			grep -q 'See https://example.com/a%20b for more' "$work/doc.txt" || problems="$problems plain"
+			grep -q 'https://example.com/c%2Fd#part' "$work/doc.txt" || problems="$problems angle"
+			grep -q 'at https://example.com/g%20h in a note.' "$work/doc.txt" || problems="$problems footnote"
+			grep -q 'Heading https://example.com/m%20n' "$work/doc.txt" || problems="$problems heading"
+			grep -q 'The paragraph after them prints.' "$work/doc.txt" || problems="$problems after"
+			grep -qF '\%' "$work/doc.txt" && problems="$problems backslash-printed"
 		fi
 		# Text after an inline tag left open is escaped like any other.
 		if [ "$name" = unclosed-tag ]; then

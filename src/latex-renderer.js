@@ -66,6 +66,13 @@ function headingCode(lang, code) {
 	return `\\texttt{${escapeTexText(code)}}`;
 }
 
+// A link marked made from a bare address — GFM's `https://…` / `www.…` or an
+// autolink `<…>` — rather than from `[text](href)`: its source is the address
+// as printed, with or without the angle brackets.
+function isBareAddress(token) {
+	return typeof token.text === 'string' && (token.raw === token.text || token.raw === `<${token.text}>`);
+}
+
 // A <style> element is the page's CSS, with nothing to print.
 const STYLE_ELEMENT = /<style\b[^>]*>[\s\S]*?<\/style>[ \t]*\n?/gi;
 
@@ -165,7 +172,14 @@ const latexRenderer = {
 	link(token) {
 		requirePackage('hyperref');
 		const text = this.parser.parseInline(token.tokens);
-		return `\\href{${escapeLatex(token.href)}}{${text}}`;
+		const href = escapeLatex(token.href);
+		// A bare web address (`https://…`, `www.…`, `<…>`) prints itself, so
+		// its `%` — a percent-encoding, not a comment — reached the .tex raw
+		// and ended the line, link and all. Escaped in both arguments: hyperref
+		// writes `\%` into the link as `%`, at the top level and inside another
+		// command's argument (a footnote, a heading) alike.
+		if (isBareAddress(token)) return `\\href{${href.replaceAll('%', '\\%')}}{${text.replaceAll('%', '\\%')}}`;
+		return `\\href{${href}}{${text}}`;
 	},
 
 	image(token) {

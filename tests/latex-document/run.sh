@@ -210,6 +210,17 @@ if render list-nested; then
 	absent "nested/no-double"  "$TEX" '\\&'
 fi
 
+# --- url-percent.jmd: a bare address prints itself, so its `%` (a
+#     percent-encoding) reached the .tex raw and commented out the rest of
+#     the line, the link's closing brace with it. Escaped in both arguments. ---
+if render url-percent; then
+	want   "url-percent/plain"    "$TEX" '\href{https://example.com/a\%20b}{https://example.com/a\%20b}'
+	want   "url-percent/angle"    "$TEX" '\href{https://example.com/c\%2Fd\#part}{https://example.com/c\%2Fd\#part}'
+	want   "url-percent/footnote" "$TEX" '\footnote{at \href{https://example.com/g\%20h}{https://example.com/g\%20h} in a note.}'
+	want   "url-percent/heading"  "$TEX" '\subsection{Heading \href{https://example.com/m\%20n}{https://example.com/m\%20n}}'
+	absent "url-percent/no-raw"   "$TEX" 'a%20b'
+fi
+
 # --- page-setup.jmd: geometry / line spacing / header / hyperref + PDF meta ---
 if render page-setup; then
 	want "page/geometry"   "$TEX" '\usepackage[margin=1in]{geometry}'

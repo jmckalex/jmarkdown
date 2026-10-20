@@ -1,0 +1,17 @@
+---
+Title: a percent in a bare address
+---
+
+A percent-encoded address prints as written: see https://example.com/a%20b for
+more, and <https://example.com/c%2Fd#part> in angle brackets, and
+www.example.com/e%41 with no scheme.
+
+In a footnote,[fn: at https://example.com/g%20h in a note.] in bold,
+**https://example.com/i%20j**, and in a list:
+
+- https://example.com/k%20l
+
+## Heading https://example.com/m%20n
+
+Unchanged: an address with no percent, https://example.com/p#q, and a link
+written out, [the site](https://example.com/r%20s).
