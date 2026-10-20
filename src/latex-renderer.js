@@ -15,7 +15,7 @@ import { requirePackage } from './preamble.js';
 import { latexGraphic } from './latex-graphics.js';
 import { PYGMENTS_LEXERS } from './pygments-lexers.js';
 import { addWarning, getWarnings } from './warnings.js';
-import { escapeLatexText as escapeLatex, escapeTexText } from './latex-escape.js';
+import { escapeLatexText as escapeLatex, escapeLatexUrl, escapeTexText } from './latex-escape.js';
 import { commandForDepth } from './sectioning.js';
 import { marked } from './utils.js';
 import { highlightsCode, codeBlockLatex, inlineCodeLatex } from './latex-highlight.js';
@@ -188,7 +188,7 @@ const latexRenderer = {
 		// it is a comment before \href can read it, and the line was lost.
 		// hyperref writes `\%` into the link as `%`. `_` and `~` it reads as
 		// themselves everywhere.
-		const href = escapeLatex(token.href).replaceAll('%', '\\%');
+		const href = escapeLatexUrl(token.href).replaceAll('%', '\\%');
 		// A bare web address (`https://…`, `www.…`, `<…>`) also PRINTS itself,
 		// where `%` is a comment, `_` a subscript (outside maths, an error) and
 		// `~` a space.

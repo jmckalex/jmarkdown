@@ -429,6 +429,26 @@ else
 	echo "FAIL  highlightjs-off/bad/config  (jmarkdown exited non-zero)"; fail=$((fail + 1))
 fi
 
+# --- entities-all.jmd: every HTML entity escapeLatexText writes as its
+#     character (PROSE_ENTITIES, src/latex-escape.js) — a header's Title and
+#     Author, a heading, a note, a caption, and one to an item — is written as
+#     the list writes it, none left as `\&name;`; and the fixture names every
+#     entity on the list (entities-check.mjs). latex-compile compiles it. ---
+if render entities-all; then
+	if out=$(node "$HERE/entities-check.mjs" tex "$HERE/entities-all.jmd" "$TEX" 2>&1); then
+		echo "PASS  entities-all/every entity"; pass=$((pass + 1))
+	else
+		echo "FAIL  entities-all/every entity  ($out)"; fail=$((fail + 1))
+	fi
+	want   "entities-all/title"     "$TEX" '\title{Every entity: \& \textless{} \textgreater{} \# / * \textquotesingle{} \nobreakspace{} \- \, \textendash{} \textemdash{} \textellipsis{}'
+	want   "entities-all/pdftitle"  "$TEX" 'pdftitle={Every entity: \& \textless{} \textgreater{} \# / *'
+	want   "entities-all/author"    "$TEX" '\author{Ann \& Bo \textemdash{} \& \textless{}'
+	want   "entities-all/date"      "$TEX" '\date{Spring \textendash{} 2026}'
+	want   "entities-all/heading"   "$TEX" '\section{Heading \& \textless{}'
+	want   "entities-all/note"      "$TEX" '\footnote{Note \& \textless{}'
+	want   "entities-all/caption"   "$TEX" '\caption{Caption \& \textless{}'
+fi
+
 echo
 echo "latex-document: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -132,6 +132,11 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		begin-end)         extra='\usepackage{sgame}\usepackage{minted}\newcommand{\custom}[1]{}\newtheorem{theorem}{Theorem}\NewDocumentEnvironment{callout}{m o}{}{}\newenvironment{warning}{}{}\newenvironment{sidebar}[1][]{}{}\newenvironment{aside}{}{}\newenvironment{note}{}{}\newenvironment{subnote}{}{}\newenvironment{panel}{}{}\newenvironment{pull-quote}{}{}\newenvironment{side-bar}{}{}\newenvironment{outerblock}{}{}\newenvironment{middleblock}{}{}\newenvironment{innerblock}{}{}'; needs='sgame.sty minted.sty' ;;
 		# obsidian: ![[embeds]] are real images (frame.png beside the fixture).
 		obsidian)          extra='\usepackage{graphicx}\usepackage{minted}'; needs='graphicx.sty minted.sty' ;;
+		# entities: each prose path an entity takes — a theorem note, a callout's
+		# title (tcolorbox, TikZ), a table (booktabs), links, inline code and a
+		# block (minted). No fontenc, so pdfLaTeX's is OT1: an entity's
+		# character must print without T1 (latex-escape.js); LuaLaTeX too.
+		entities)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\usepackage{graphicx}\usepackage{tikz}\usetikzlibrary{svg.path}\usepackage{booktabs}\usepackage{minted}\usepackage{hyperref}'; needs='thmtools.sty tcolorbox.sty tikz.sty booktabs.sty minted.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -148,7 +153,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 
 	# minted additionally needs Pygments and -shell-escape.
 	shellesc=''
-	if [ "$category" = "obsidian" ] || [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ] || [ "$category" = "at-directives" ] || [ "$category" = "indexing" ] || [ "$category" = "media" ]; then
+	if [ "$category" = "obsidian" ] || [ "$category" = "code" ] || [ "$category" = "listings" ] || [ "$category" = "typography" ] || [ "$category" = "begin-end" ] || [ "$category" = "contents" ] || [ "$category" = "description-lists" ] || [ "$category" = "callouts" ] || [ "$category" = "scripting" ] || [ "$category" = "headings" ] || [ "$category" = "citations" ] || [ "$category" = "tabbing" ] || [ "$category" = "at-directives" ] || [ "$category" = "indexing" ] || [ "$category" = "media" ] || [ "$category" = "entities" ]; then
 		if ! command -v pygmentize >/dev/null 2>&1; then
 			echo "SKIP  $label  (Pygments/pygmentize not installed)"
 			skip=$((skip + 1))
@@ -186,7 +191,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		} >"$work/doc.tex"
 	fi
 
-	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ]; } && command -v lualatex >/dev/null 2>&1; then
+	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ] || [ "$category" = "entities" ]; } && command -v lualatex >/dev/null 2>&1; then
 		engines='pdflatex lualatex'
 	fi
 	for engine in $engines; do
@@ -456,6 +461,76 @@ if command -v pdftotext >/dev/null 2>&1; then
 			pass=$((pass + 1))
 		else
 			echo "FAIL  $label [no shell escape]  (found:$problems)"
+			fail=$((fail + 1))
+		fi
+	done
+fi
+
+# Every HTML entity escapeLatexText writes as its character (PROSE_ENTITIES,
+# src/latex-escape.js), in a header's Title and Author, a heading, a note, a
+# caption and a list: a full document under pdfLaTeX (T1), LuaLaTeX and
+# LuaLaTeX with fontspec, and the --fragment in a plain document, whose
+# pdfLaTeX font encoding is OT1. The PDF's text prints each one as the browser
+# shows it (entities-check.mjs), and its Title holds them. The fixture is
+# tests/latex-document's.
+if command -v pdftotext >/dev/null 2>&1; then
+	src="$REPO/tests/latex-document/entities-all.jmd"
+	for variant in pdflatex lualatex fontspec fragment; do
+		engine=$variant
+		[ "$variant" = fontspec ] && engine=lualatex
+		[ "$variant" = fragment ] && engine=pdflatex
+		label="full-document/entities-all [$variant]"
+		[ "$variant" = fragment ] && label="entities-all [fragment, OT1]"
+		if ! command -v "$engine" >/dev/null 2>&1; then
+			echo "SKIP  $label  ($engine not installed)"
+			skip=$((skip + 1))
+			continue
+		fi
+		work="$SCRATCH/entities-all-$variant"
+		mkdir -p "$work"
+		if [ "$variant" = fontspec ]; then
+			{ head -n 1 "$src"; echo 'LaTeX engine: lualatex'; tail -n +2 "$src"; } >"$work/doc.jmd"
+		else
+			cp "$src" "$work/doc.jmd"
+		fi
+		frag=''
+		[ "$variant" = fragment ] && frag='--fragment'
+		if ! HOME="$work" node "$REPO/src/index.js" process "$work/doc.jmd" --to latex $frag -o "$work/body.tex" >/dev/null 2>"$work/build.log"; then
+			echo "FAIL  $label  (jmarkdown exited non-zero)"
+			sed 's/^/    | /' "$work/build.log"
+			fail=$((fail + 1))
+			continue
+		fi
+		if [ "$variant" = fragment ]; then
+			{
+				printf '\\documentclass{report}\n\\begin{document}\n'
+				cat "$work/body.tex"
+				printf '\n\\end{document}\n'
+			} >"$work/doc.tex"
+		else
+			mv "$work/body.tex" "$work/doc.tex"
+		fi
+		if ! (cd "$work" && $engine -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+			echo "FAIL  $label"
+			grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
+			fail=$((fail + 1))
+			continue
+		fi
+		pdftotext -enc UTF-8 "$work/doc.pdf" "$work/doc.txt"
+		problems=''
+		missing=$(node "$REPO/tests/latex-document/entities-check.mjs" pdf "$src" "$work/doc.txt" 2>&1) || problems="$problems text($missing)"
+		grep -q 'Missing character' "$work/doc.log" && problems="$problems missing-glyph"
+		grep -q 'The paragraph after them prints.' "$work/doc.txt" || problems="$problems after"
+		if [ "$variant" != fragment ] && command -v pdfinfo >/dev/null 2>&1; then
+			pdfinfo "$work/doc.pdf" | grep -q '^Title: *Every entity: & < > # / \* ' || problems="$problems pdfinfo-title"
+			pdfinfo "$work/doc.pdf" | grep -q '^Title:.*– — … ‘ ’ “ ”' || problems="$problems pdfinfo-title-dashes"
+			pdfinfo "$work/doc.pdf" | grep -q '^Author: *Ann & Bo — ' || problems="$problems pdfinfo-author"
+		fi
+		if [ -z "$problems" ]; then
+			echo "PASS  $label [pdf text]"
+			pass=$((pass + 1))
+		else
+			echo "FAIL  $label [pdf text]  (found:$problems)"
 			fail=$((fail + 1))
 		fi
 	done

@@ -126,7 +126,8 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   TikZ emits native `tikzpicture` (preamble auto-loads tikz + libraries); Mermaid
   rasterises to a cached PDF via `mmdc` (optional — skipped with a hint if absent).
 - **Math passthrough**: inline/display `$…$`/`$$…$$` pass through verbatim; escaping
-  touches only `&`/`#` (see `latex-escape.js` + the reserved-chars memory). The
+  touches only `&`/`#` (see `latex-escape.js` + the reserved-chars memory), and
+  writes the HTML entities on `PROSE_ENTITIES` as their characters. The
   inline `latex` extension protects inline `$…$`/`\(…\)`; a **block-level**
   `mathBlock` extension (`syntax-enhancements.js`, registered after the list
   extensions so marked tries it first) claims whole display blocks — `$$…$$`,

@@ -1,0 +1,45 @@
+An HTML entity in prose prints as its character in LaTeX, as the browser
+shows it, on every path prose takes. The HTML is unchanged.
+
+Body: 2024&ndash;25, a pause&mdash;then more&hellip; caf&eacute; &copy; &sect;&nbsp;3.
+
+# Heading: &Eacute;tude &para; one
+
+A classic note.[^classic] An inline note.[fn: Inline: &plusmn;&thinsp;2 &deg;C]
+
+[^classic]: Classic: &ldquo;quoted&rdquo; &amp; &lt;angled&gt;
+
+@begin(figure)[Caption: &frac12; &times; &frac34;]{id=fig:entities}
+Figure body.
+@end(figure)
+
+@begin(theorem)[Note: &Dagger;]
+Theorem body: &rarr; &larr;.
+@end(theorem)
+
+- List item: &bull; one &middot; two
+- Hyphen&shy;ation and &apos;single&apos;
+
+| Cell &euro; | Cell &pound; |
+|---|---|
+| &yen; | &cent; |
+
+> Quote: &lsquo;yes&rsquo; &szlig;
+
+> [!note] Callout &mdash; title
+> Callout body &hellip;
+
+*Strong &trade;* and /italic &reg;/ and [link &lt;text&gt;](https://example.com/?a=1&amp;b=2) and https://example.com/a&amp;b.
+
+@title+[Title line &ndash; one]
+@author+[Ann &amp; Bo]
+@institution+[Dept &mdash; LSE]
+
+Code is code: `&mdash;` and
+
+```text
+&hellip; stays
+```
+
+Left as they always were: Q&A; and R&D; &hearts; &laquo;x&raquo; &quot;q&quot;
+&#39; &#x2014; &Mdash; &mdash (no semicolon), &amp;mdash; (an escaped one), &bogus;.
