@@ -17,11 +17,12 @@ import Mustache from 'mustache';
 import fs from 'fs';
 import path from 'path';
 import { configManager } from './config-manager.js';
-import { assemblePreamble, requirePackage, addPreamble, addLatePreamble, requiredPackageNames } from './preamble.js';
+import { assemblePreamble, requirePackage, addPreamble, addLatePreamble, requiredPackageNames, dropPackage } from './preamble.js';
 import { checkMathPackages } from './latex-lint.js';
 import { getBook, bookPreamble, warnPreambleClashes } from './book.js';
 import { escapeLatexText } from './latex-escape.js';
 import { bodyPrintsTitle, bodyTitleBlockText } from './additional-directives.js';
+import { highlightsCode, mintedListingFloat } from './latex-highlight.js';
 
 // Metadata values arrive as single-element arrays (from the metadata-header
 // parser) or as strings (from config files / DEFAULT_CONFIG). Coerce to a
@@ -125,6 +126,11 @@ export function processLatexTemplate(content) {
 	} else if (book) {
 		addPreamble('\\AtBeginDocument{\\ifcsname c@listing\\endcsname\\counterwithin{listing}{chapter}\\fi}');
 	}
+
+	// `LaTeX highlighter: highlight.js` loads no minted, which needs a shell:
+	// what a document asked minted for besides its code — @begin(listing)'s
+	// float, {{LOL}}'s \listoflistings — comes from minted's own definitions.
+	if (highlightsCode() && dropPackage('minted')) mintedListingFloat();
 
 	// Every package the document will load is known now: warn for maths that
 	// needs one it won't (latex-lint.js).

@@ -37,6 +37,13 @@ export function requirePackage(name, options = '') {
 	}
 }
 
+// Withdraw a required package: whether it had been required. For a package
+// whose services a document gets otherwise (latex-template.js: minted, under
+// `LaTeX highlighter: highlight.js`).
+export function dropPackage(name) {
+	return requiredPackages.delete(name);
+}
+
 // The packages required so far, by name — what the assembled preamble will
 // load (latex-lint.js asks before warning that a package is missing).
 export function requiredPackageNames() {

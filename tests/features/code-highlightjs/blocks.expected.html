@@ -1,0 +1,42 @@
+<p>Code blocks coloured by highlight.js in Pygments' default colours, set in
+  fvextra's Verbatim: no minted, no shell escape.</p>
+<pre><code class="hljs language-python"><span class="hljs-meta">@decorator</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">foo</span>(<span class="hljs-params">x, y=<span class="hljs-number">1</span></span>):
+    <span class="hljs-string">"""A docstring."""</span>
+    <span class="hljs-keyword">if</span> x <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">and</span> y <span class="hljs-keyword">in</span> [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>]:
+        <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.x + <span class="hljs-number">2</span> * <span class="hljs-built_in">len</span>(<span class="hljs-string">"a\n%s"</span> % y)  <span class="hljs-comment"># a comment</span>
+
+	<span class="hljs-built_in">print</span>(<span class="hljs-string">f"v=<span class="hljs-subst">{x!r}</span>"</span>, <span class="hljs-literal">True</span>)
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">Bar</span>(<span class="hljs-title class_ inherited__">object</span>): <span class="hljs-keyword">pass</span>
+</code></pre><pre><code class="hljs language-js"><span class="hljs-comment">// A comment</span>
+<span class="hljs-keyword">const</span> re = <span class="hljs-regexp">/ab+c/g</span>, s = <span class="hljs-string">`t <span class="hljs-subst">${x + <span class="hljs-number">1</span>}</span>`</span>;
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">foo</span>(<span class="hljs-params">a, b = <span class="hljs-number">2</span></span>) { <span class="hljs-keyword">return</span> <span class="hljs-keyword">typeof</span> a === <span class="hljs-string">'string'</span> ? <span class="hljs-variable language_">this</span>.<span class="hljs-property">x</span> : <span class="hljs-keyword">new</span> <span class="hljs-title class_">Map</span>(); }
+<span class="hljs-comment">/* A comment
+   over two lines */</span> obj.<span class="hljs-property">prop</span>?.<span class="hljs-title function_">call</span>({ <span class="hljs-attr">k</span>: [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>] });
+</code></pre><pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"key"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">"v\\n"</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"n"</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1.5</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"b"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"z"</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">}</span>
+</code></pre><pre><code class="hljs language-html"><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-keyword">html</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">"x"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'y'</span>&gt;</span>Text <span class="hljs-symbol">&amp;amp;</span> <span class="hljs-tag">&lt;<span class="hljs-name">b</span>&gt;</span>bold<span class="hljs-tag">&lt;/<span class="hljs-name">b</span>&gt;</span><span class="hljs-comment">&lt;!-- c --&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+</code></pre><pre><code class="hljs language-css"><span class="hljs-selector-class">.cls</span> <span class="hljs-selector-id">#id</span> <span class="hljs-selector-tag">a</span><span class="hljs-selector-pseudo">:hover</span> { <span class="hljs-attribute">color</span>: <span class="hljs-number">#fff</span>; <span class="hljs-attribute">margin</span>: <span class="hljs-number">0</span> <span class="hljs-number">1px</span> <span class="hljs-meta">!important</span>; }
+</code></pre><pre><code class="hljs language-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-keyword">for</span> f <span class="hljs-keyword">in</span> *.md; <span class="hljs-keyword">do</span> <span class="hljs-built_in">echo</span> <span class="hljs-string">"<span class="hljs-variable">$f</span> <span class="hljs-variable">${HOME}</span>"</span> | grep -v <span class="hljs-string">'x'</span> &gt; /dev/null; <span class="hljs-keyword">done</span>
+</code></pre><pre><code class="hljs language-latex"><span class="hljs-keyword">\documentclass</span>{article} <span class="hljs-comment">% a comment</span>
+<span class="hljs-keyword">\begin</span>{document} <span class="hljs-built_in">$</span>x<span class="hljs-built_in">^</span>2<span class="hljs-built_in">_</span>1<span class="hljs-built_in">$</span> <span class="hljs-keyword">\textbf</span>{b} <span class="hljs-keyword">\end</span>{document}
+</code></pre><pre><code class="hljs language-markdown"><span class="hljs-section"># A heading</span>
+<span class="hljs-bullet">*</span> An item, <span class="hljs-emphasis">*emphasis*</span>, <span class="hljs-strong">**strong**</span>, <span class="hljs-code">`code`</span> and [<span class="hljs-string">a link</span>](<span class="hljs-link">http://example.com</span>)
+</code></pre><pre><code class="hljs language-yaml"><span class="hljs-attr">key:</span> <span class="hljs-string">value</span> <span class="hljs-comment"># a comment</span>
+<span class="hljs-attr">quoted:</span> <span class="hljs-string">"a string"</span>
+<span class="hljs-attr">flag:</span> <span class="hljs-literal">true</span>
+</code></pre><pre><code class="hljs language-c"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">(<span class="hljs-type">void</span>)</span> { <span class="hljs-type">char</span> *s = <span class="hljs-string">"x\n"</span>; <span class="hljs-keyword">return</span> <span class="hljs-built_in">printf</span>(<span class="hljs-string">"%d"</span>, <span class="hljs-number">1</span>) &gt; <span class="hljs-number">0</span>; }
+</code></pre>
+<p>A language highlight.js does not know, and none, print as written:</p>
+<pre><code class="hljs language-dataview">TABLE file.name FROM "x"
+</code></pre><pre><code class="hljs">{braces} \backslash %percent #hash $dollar ~tilde ^caret _under &amp;amp
+</code></pre>
+<ul>
+  <li>
+    <p>A list item, with a block:</p>
+    <pre><code class="hljs language-python">x = {<span class="hljs-string">"a"</span>: <span class="hljs-number">1</span>}
+</code></pre>
+  </li>
+</ul>

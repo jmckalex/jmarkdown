@@ -1,0 +1,6 @@
+---
+LaTeX highlighter: highlight.js
+---
+
+Inline code in the default `Code language`, text, is set as written, with no
+colour: `def f(x): return x % 2`, `{a} \b`, `'q' a--b`.

@@ -113,6 +113,11 @@ records them in `crossref.js`; the parse hook in `index.js` handles the
   with no listings present; HTML generated lists) and
   `{{frontmatter}}`/`{{mainmatter}}`/`{{backmatter}}`/`{{appendix}}`
   (LaTeX commands; HTML strips them — HTML appendix lettering not yet done).
+- **Code**: minted (Pygments, run by LaTeX: shell escape, or TeX Live's
+  restricted list) — unless `LaTeX highlighter: highlight.js`
+  (`latex-highlight.js`), which colours code in the build and sets it with
+  fvextra, so no shell escape is needed; minted's listing float then comes
+  from the float package.
 - **Other**: GFM alerts → `tcolorbox` (`alerts.js`); description lists →
   `description` env; tables rule with booktabs (`\toprule`/`\midrule`/
   `\bottomrule`, auto-`requirePackage('booktabs')` — both the extension path

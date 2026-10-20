@@ -740,6 +740,27 @@ has   "maketitle/pdftitle-block" "$T/no-title.tex" 'pdftitle={The Book Title}'
 has   "maketitle/pdftitle-block-include" "$T/no-title-incl.tex" 'pdftitle={The Book Title}'
 hasnt "maketitle/pdftitle-not-chapter" "$T/no-title-lines.tex" 'pdftitle='
 
+# --- `LaTeX highlighter: highlight.js` in a book: no minted; the listing float is minted's own,
+#     its counter within the chapter as before; with pdflatex, a PDF with no shell escape. --------
+
+H="$SCRATCH/highlightjs"
+mkdir -p "$H"
+printf -- '---\nTitle: A Book\nLaTeX highlighter: highlight.js\n---\n\n{{LOL}}\n\n@chapter+(one.md)\n@chapter+(two.md)\n' >"$H/master.md"
+printf -- '# One\n\n@begin(listing)[First]{id=lst:a}\n```python\nx = 1\n```\n@end(listing)\n\nSee @cref[lst:a] and `inline`.\n' >"$H/one.md"
+printf -- '# Two\n\n@begin(listing)[Second]{id=lst:b}\n```js\nlet y = 2;\n```\n@end(listing)\n\nSee @cref[lst:b].\n' >"$H/two.md"
+(cd "$H" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o book.tex >/dev/null 2>book.err) \
+	|| fail "highlightjs/exit" "$(cat "$H/book.err")"
+hasnt "highlightjs/no-minted" "$H/book.tex" 'minted'
+has   "highlightjs/float" "$H/book.tex" '\newfloat{listing}{tbp}{lol}'
+has   "highlightjs/within-chapter" "$H/book.tex" '\AtBeginDocument{\ifcsname c@listing\endcsname\counterwithin{listing}{chapter}\fi}'
+if command -v pdflatex >/dev/null 2>&1 && command -v pdftotext >/dev/null 2>&1; then
+	(cd "$H" && pdflatex -no-shell-escape -interaction=nonstopmode -halt-on-error book.tex >/dev/null 2>&1 \
+		&& pdflatex -no-shell-escape -interaction=nonstopmode -halt-on-error book.tex >/dev/null 2>&1 \
+		&& pdftotext book.pdf book.txt) || fail "highlightjs/pdf" "$(grep -E '^!' "$H/book.log" | head -3)"
+	has   "highlightjs/pdf-numbered" "$H/book.txt" 'Listing 2.1: Second'
+	has   "highlightjs/pdf-cref" "$H/book.txt" 'See listing 2.1.'
+fi
+
 # --- not a book: nothing changes ------------------------------------------------------------------
 
 printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.md"

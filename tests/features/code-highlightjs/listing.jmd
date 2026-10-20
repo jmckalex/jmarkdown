@@ -1,0 +1,13 @@
+---
+LaTeX highlighter: highlight.js
+---
+
+{{LOL}}
+
+@begin(listing)[A listing]{id=lst:hello}
+```python
+print("hello")
+```
+@end(listing)
+
+See @cref[lst:hello].

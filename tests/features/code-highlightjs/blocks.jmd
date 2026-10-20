@@ -1,0 +1,80 @@
+---
+LaTeX highlighter: highlight.js
+---
+
+Code blocks coloured by highlight.js in Pygments' default colours, set in
+fvextra's Verbatim: no minted, no shell escape.
+
+```python
+@decorator
+def foo(x, y=1):
+    """A docstring."""
+    if x is not None and y in [1, 2]:
+        return self.x + 2 * len("a\n%s" % y)  # a comment
+
+	print(f"v={x!r}", True)
+class Bar(object): pass
+```
+
+```js
+// A comment
+const re = /ab+c/g, s = `t ${x + 1}`;
+function foo(a, b = 2) { return typeof a === 'string' ? this.x : new Map(); }
+/* A comment
+   over two lines */ obj.prop?.call({ k: [1, 2] });
+```
+
+```json
+{"key": "v\\n", "n": 1.5, "b": true, "z": null}
+```
+
+```html
+<!DOCTYPE html>
+<div class="x" id='y'>Text &amp; <b>bold</b><!-- c --></div>
+```
+
+```css
+.cls #id a:hover { color: #fff; margin: 0 1px !important; }
+```
+
+```bash
+#!/bin/bash
+for f in *.md; do echo "$f ${HOME}" | grep -v 'x' > /dev/null; done
+```
+
+```latex
+\documentclass{article} % a comment
+\begin{document} $x^2_1$ \textbf{b} \end{document}
+```
+
+```markdown
+# A heading
+* An item, *emphasis*, **strong**, `code` and [a link](http://example.com)
+```
+
+```yaml
+key: value # a comment
+quoted: "a string"
+flag: true
+```
+
+```c
+#include <stdio.h>
+int main(void) { char *s = "x\n"; return printf("%d", 1) > 0; }
+```
+
+A language highlight.js does not know, and none, print as written:
+
+```dataview
+TABLE file.name FROM "x"
+```
+
+```
+{braces} \backslash %percent #hash $dollar ~tilde ^caret _under &amp
+```
+
+- A list item, with a block:
+
+  ```python
+  x = {"a": 1}
+  ```

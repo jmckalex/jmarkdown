@@ -67,6 +67,11 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		headings)          extra='\usepackage{minted}\usepackage{hyperref}'; needs='minted.sty hyperref.sty' ;;
 		# code: minted, and booktabs for html-specials' table of code spans.
 		code)              extra='\usepackage{minted}\usepackage{booktabs}'; needs='minted.sty booktabs.sty' ;;
+		# code-highlightjs: `LaTeX highlighter: highlight.js` — what a full
+		# document then loads in minted's place (fvextra, xcolor, and minted's
+		# listing float through the float package), T1 as a full pdfLaTeX
+		# document has it; compiled with NO shell escape, by both engines.
+		code-highlightjs)  extra='\usepackage[T1]{fontenc}\usepackage{xcolor}\usepackage{fvextra}\usepackage{float}\newfloat{listing}{tbp}{lol}\newcommand{\listingscaption}{Listing}\floatname{listing}{\listingscaption}\newcommand{\listoflistingscaption}{List of Listings}\providecommand{\listoflistings}{\listof{listing}{\listoflistingscaption}}\usepackage{hyperref}\usepackage{cleveref}'; needs='fvextra.sty xcolor.sty float.sty cleveref.sty' ;;
 		math|conditionals) extra='\usepackage{amsmath}';                  needs='amsmath.sty' ;;
 		# crossref: label-in-env labels theorem-like environments, so the
 		# wrapper declares the two kinds that fixture uses (shared counter,
@@ -151,6 +156,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		fi
 		shellesc='-shell-escape'
 	fi
+	[ "$category" = code-highlightjs ] && shellesc='-no-shell-escape'
 
 	work="$SCRATCH/$category-$name"
 	mkdir -p "$work"
@@ -180,7 +186,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		} >"$work/doc.tex"
 	fi
 
-	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ]; } && command -v lualatex >/dev/null 2>&1; then
+	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ]; } && command -v lualatex >/dev/null 2>&1; then
 		engines='pdflatex lualatex'
 	fi
 	for engine in $engines; do
@@ -324,6 +330,68 @@ if command -v pdftotext >/dev/null 2>&1; then
 else
 	echo "SKIP  full-document/*  (pdftotext not installed)"
 	skip=$((skip + 1))
+fi
+
+# `LaTeX highlighter: highlight.js`: a full document of code — blocks, inline
+# code in a heading and a note, a listing float and {{LOL}}, code in a callout
+# — compiles with NO shell escape (a TeX with no Python, as on the iPad), by
+# pdfLaTeX, by LuaLaTeX, and by LuaLaTeX under `LaTeX engine: lualatex`
+# (fontspec); it loads no minted and runs no Pygments. The fixture is
+# tests/latex-document's.
+if command -v pdftotext >/dev/null 2>&1; then
+	for variant in pdflatex lualatex fontspec; do
+		engine=$variant
+		[ "$variant" = fontspec ] && engine=lualatex
+		if ! command -v "$engine" >/dev/null 2>&1; then
+			echo "SKIP  full-document/code-highlightjs [$variant]  ($engine not installed)"
+			skip=$((skip + 1))
+			continue
+		fi
+		label="full-document/code-highlightjs [$variant]"
+		work="$SCRATCH/full-code-highlightjs-$variant"
+		mkdir -p "$work"
+		src="$REPO/tests/latex-document/code-highlightjs.jmd"
+		if [ "$variant" = fontspec ]; then
+			{ head -n 1 "$src"; echo 'LaTeX engine: lualatex'; tail -n +2 "$src"; } >"$work/doc.jmd"
+		else
+			cp "$src" "$work/doc.jmd"
+		fi
+		if ! HOME="$work" node "$REPO/src/index.js" process "$work/doc.jmd" --to latex -o "$work/doc.tex" >/dev/null 2>"$work/build.log"; then
+			echo "FAIL  $label  (jmarkdown exited non-zero)"
+			sed 's/^/    | /' "$work/build.log"
+			fail=$((fail + 1))
+			continue
+		fi
+		if ! (cd "$work" && $engine -no-shell-escape -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1 \
+			&& $engine -no-shell-escape -interaction=nonstopmode -halt-on-error doc.tex >compile.log 2>&1); then
+			echo "FAIL  $label"
+			grep -E '^!|^l\.[0-9]' "$work/compile.log" | head -10 | sed 's/^/    | /'
+			fail=$((fail + 1))
+			continue
+		fi
+		pdftotext "$work/doc.pdf" "$work/doc.txt"
+		problems=''
+		grep -q 'minted' "$work/doc.tex" && problems="$problems minted-in-tex"
+		grep -qi 'minted\|pygments' "$work/doc.log" && problems="$problems minted-in-log"
+		grep -q 'def greet(name):' "$work/doc.txt" || problems="$problems block"
+		# (pdftotext breaks lines where the colour changes.)
+		grep -q 'return f"Hello, {name}!"' "$work/doc.txt" || problems="$problems block-string"
+		grep -q '# 100% friendly' "$work/doc.txt" || problems="$problems block-comment"
+		grep -q 'Code with x = {a} in a heading' "$work/doc.txt" || problems="$problems heading"
+		grep -q 'A note with a_b' "$work/doc.txt" || problems="$problems note"
+		grep -q '^& c.$' "$work/doc.txt" || problems="$problems note-ampersand"
+		grep -q 'Listing 1: A listing' "$work/doc.txt" || problems="$problems listing"
+		grep -q 'See listing 1.' "$work/doc.txt" || problems="$problems cref"
+		grep -q 'echo "$HOME" | grep -v x' "$work/doc.txt" || problems="$problems callout"
+		grep -q 'The paragraph after them prints.' "$work/doc.txt" || problems="$problems after"
+		if [ -z "$problems" ]; then
+			echo "PASS  $label [no shell escape]"
+			pass=$((pass + 1))
+		else
+			echo "FAIL  $label [no shell escape]  (found:$problems)"
+			fail=$((fail + 1))
+		fi
+	done
 fi
 
 echo

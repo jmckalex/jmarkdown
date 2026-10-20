@@ -351,6 +351,42 @@ if render generic-env; then
 	absent "generic-env/no guard for registered" "$TEX" '\ifcsname print'
 fi
 
+# --- code-highlightjs.jmd: `LaTeX highlighter: highlight.js` sets code with
+#     fvextra, coloured by the build, and loads no minted: the listing float
+#     and \listoflistings are minted's own definitions, through the float
+#     package. Default (minted): as always. An unknown value is minted, warned.
+#     The key from a project config, as a host sets it. ---
+if render code-highlightjs; then
+	want   "highlightjs/fvextra"     "$TEX" '\usepackage{fvextra}'
+	want   "highlightjs/xcolor"      "$TEX" '\usepackage{xcolor}'
+	want   "highlightjs/float"       "$TEX" '\usepackage{float}'
+	want   "highlightjs/newfloat"    "$TEX" '\newfloat{listing}{tbp}{lol}'
+	want   "highlightjs/listof"      "$TEX" '\providecommand{\listoflistings}{\listof{listing}{\listoflistingscaption}}'
+	want   "highlightjs/block"       "$TEX" '\begin{Verbatim}[commandchars=\\\{\}]'
+	want   "highlightjs/keyword"     "$TEX" '\textcolor[HTML]{008000}{\textbf{def}}'
+	want   "highlightjs/heading"     "$TEX" '\section{Code with \texttt{x = \{a\}} in a heading}'
+	absent "highlightjs/no minted"   "$TEX" 'minted'
+	absent "highlightjs/no warning"  "$SCRATCH/code-highlightjs.stderr" 'LaTeX highlighter'
+fi
+sed '/^LaTeX highlighter: highlight.js$/d' "$HERE/code-highlightjs.jmd" > "$SCRATCH/hl-off.jmd"
+sed 's/^LaTeX highlighter: highlight.js$/LaTeX highlighter: pygments/' "$HERE/code-highlightjs.jmd" > "$SCRATCH/hl-bad.jmd"
+mkdir -p "$SCRATCH/hl/.jmarkdown"
+printf '{ "LaTeX highlighter": "highlight.js" }\n' > "$SCRATCH/hl/.jmarkdown/config.json"
+cp "$SCRATCH/hl-off.jmd" "$SCRATCH/hl/doc.jmd"
+if node "$JMD" process "$SCRATCH/hl-off.jmd" --to latex -o "$SCRATCH/hl-off.tex" >/dev/null 2>&1 \
+	&& node "$JMD" process "$SCRATCH/hl-bad.jmd" --to latex -o "$SCRATCH/hl-bad.tex" >/dev/null 2>"$SCRATCH/hl-bad.stderr" \
+	&& (cd "$SCRATCH/hl" && node "$JMD" process doc.jmd --to latex -o doc.tex >/dev/null 2>&1); then
+	want   "highlightjs-off/minted"     "$SCRATCH/hl-off.tex" '\usepackage{minted}'
+	want   "highlightjs-off/block"      "$SCRATCH/hl-off.tex" '\begin{minted}{python}'
+	absent "highlightjs-off/no fvextra" "$SCRATCH/hl-off.tex" 'fvextra'
+	want   "highlightjs-bad/minted"     "$SCRATCH/hl-bad.tex" '\usepackage{minted}'
+	want   "highlightjs-bad/warning"    "$SCRATCH/hl-bad.stderr" 'LaTeX highlighter: "pygments" is not one of minted, highlight.js'
+	want   "highlightjs-config/fvextra" "$SCRATCH/hl/doc.tex" '\usepackage{fvextra}'
+	absent "highlightjs-config/no minted" "$SCRATCH/hl/doc.tex" 'minted'
+else
+	echo "FAIL  highlightjs-off/bad/config  (jmarkdown exited non-zero)"; fail=$((fail + 1))
+fi
+
 echo
 echo "latex-document: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

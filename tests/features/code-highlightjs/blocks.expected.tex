@@ -1,0 +1,79 @@
+Code blocks coloured by highlight.js in Pygments' default colours, set in
+fvextra's Verbatim: no minted, no shell escape.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{AA22FF}{@decorator}
+\textcolor[HTML]{008000}{\textbf{def}} \textcolor[HTML]{0000FF}{foo}(x, y\textcolor[HTML]{666666}{=}\textcolor[HTML]{666666}{1}):
+    \textcolor[HTML]{BA2121}{\textit{"""A docstring."""}}
+    \textcolor[HTML]{008000}{\textbf{if}} x \textcolor[HTML]{AA22FF}{\textbf{is}} \textcolor[HTML]{AA22FF}{\textbf{not}} \textcolor[HTML]{008000}{\textbf{None}} \textcolor[HTML]{AA22FF}{\textbf{and}} y \textcolor[HTML]{AA22FF}{\textbf{in}} [\textcolor[HTML]{666666}{1}, \textcolor[HTML]{666666}{2}]:
+        \textcolor[HTML]{008000}{\textbf{return}} \textcolor[HTML]{008000}{self}\textcolor[HTML]{666666}{.}x \textcolor[HTML]{666666}{+} \textcolor[HTML]{666666}{2} \textcolor[HTML]{666666}{*} \textcolor[HTML]{008000}{len}(\textcolor[HTML]{BA2121}{"a\char92{}n%s"} \textcolor[HTML]{666666}{%} y)  \textcolor[HTML]{3D7B7B}{\textit{# a comment}}
+
+	\textcolor[HTML]{008000}{print}(\textcolor[HTML]{BA2121}{f"v=}\char123{}x\textcolor[HTML]{666666}{!}r\char125{}\textcolor[HTML]{BA2121}{"}, \textcolor[HTML]{008000}{\textbf{True}})
+\textcolor[HTML]{008000}{\textbf{class}} \textcolor[HTML]{0000FF}{\textbf{Bar}}(object): \textcolor[HTML]{008000}{\textbf{pass}}
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{3D7B7B}{\textit{// A comment}}
+\textcolor[HTML]{008000}{\textbf{const}} re \textcolor[HTML]{666666}{=} \textcolor[HTML]{A45A77}{/ab+c/g}, s \textcolor[HTML]{666666}{=} \textcolor[HTML]{BA2121}{`t }$\char123{}x \textcolor[HTML]{666666}{+} \textcolor[HTML]{666666}{1}\char125{}\textcolor[HTML]{BA2121}{`};
+\textcolor[HTML]{008000}{\textbf{function}} foo(a, b \textcolor[HTML]{666666}{=} \textcolor[HTML]{666666}{2}) \char123{} \textcolor[HTML]{008000}{\textbf{return}} \textcolor[HTML]{AA22FF}{\textbf{typeof}} a \textcolor[HTML]{666666}{===} \textcolor[HTML]{BA2121}{'string'} \textcolor[HTML]{666666}{?} \textcolor[HTML]{008000}{this}.x \textcolor[HTML]{666666}{:} \textcolor[HTML]{AA22FF}{\textbf{new}} Map(); \char125{}
+\textcolor[HTML]{3D7B7B}{\textit{/* A comment}}
+\textcolor[HTML]{3D7B7B}{\textit{   over two lines */}} obj.prop\textcolor[HTML]{666666}{?}.call(\char123{} k\textcolor[HTML]{666666}{:} [\textcolor[HTML]{666666}{1}, \textcolor[HTML]{666666}{2}] \char125{});
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\char123{}\textcolor[HTML]{008000}{\textbf{"key"}}: \textcolor[HTML]{BA2121}{"v\char92{}\char92{}n"}, \textcolor[HTML]{008000}{\textbf{"n"}}: \textcolor[HTML]{666666}{1.5}, \textcolor[HTML]{008000}{\textbf{"b"}}: \textcolor[HTML]{008000}{\textbf{true}}, \textcolor[HTML]{008000}{\textbf{"z"}}: \textcolor[HTML]{008000}{\textbf{null}}\char125{}
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{9C6500}{\textit{<!DOCTYPE html>}}
+<\textcolor[HTML]{008000}{\textbf{div}} \textcolor[HTML]{687822}{class}=\textcolor[HTML]{BA2121}{"x"} \textcolor[HTML]{687822}{id}=\textcolor[HTML]{BA2121}{'y'}>Text \textcolor[HTML]{717171}{\textbf{&amp;}} <\textcolor[HTML]{008000}{\textbf{b}}>bold</\textcolor[HTML]{008000}{\textbf{b}}>\textcolor[HTML]{3D7B7B}{\textit{<!-- c -->}}</\textcolor[HTML]{008000}{\textbf{div}}>
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{0000FF}{\textbf{.cls}} \textcolor[HTML]{0000FF}{\textbf{#id}} \textcolor[HTML]{008000}{\textbf{a}}\textcolor[HTML]{AA22FF}{:hover} \char123{} \textcolor[HTML]{687822}{color}: \textcolor[HTML]{666666}{#fff}; \textcolor[HTML]{687822}{margin}: \textcolor[HTML]{666666}{0} \textcolor[HTML]{666666}{1px} \textcolor[HTML]{9C6500}{\textit{!important}}; \char125{}
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{3D7B7B}{\textit{#!/bin/bash}}
+\textcolor[HTML]{008000}{\textbf{for}} f \textcolor[HTML]{008000}{\textbf{in}} *.md; \textcolor[HTML]{008000}{\textbf{do}} \textcolor[HTML]{008000}{echo} \textcolor[HTML]{BA2121}{"}\textcolor[HTML]{19177C}{$f}\textcolor[HTML]{BA2121}{ }\textcolor[HTML]{19177C}{$\char123{}HOME\char125{}}\textcolor[HTML]{BA2121}{"} | grep -v \textcolor[HTML]{BA2121}{'x'} > /dev/null; \textcolor[HTML]{008000}{\textbf{done}}
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{008000}{\textbf{\char92{}documentclass}}\char123{}article\char125{} \textcolor[HTML]{3D7B7B}{\textit{% a comment}}
+\textcolor[HTML]{008000}{\textbf{\char92{}begin}}\char123{}document\char125{} \textcolor[HTML]{008000}{$}x\textcolor[HTML]{008000}{^}2\textcolor[HTML]{008000}{_}1\textcolor[HTML]{008000}{$} \textcolor[HTML]{008000}{\textbf{\char92{}textbf}}\char123{}b\char125{} \textcolor[HTML]{008000}{\textbf{\char92{}end}}\char123{}document\char125{}
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{000080}{\textbf{# A heading}}
+\textcolor[HTML]{008000}{\textbf{*}} An item, \textit{*emphasis*}, \textbf{**strong**}, \textcolor[HTML]{BA2121}{`code`} and [\textcolor[HTML]{008000}{\textbf{a link}}](\textcolor[HTML]{687822}{http://example.com})
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{008000}{\textbf{key:}} value \textcolor[HTML]{3D7B7B}{\textit{# a comment}}
+\textcolor[HTML]{008000}{\textbf{quoted:}} \textcolor[HTML]{BA2121}{"a string"}
+\textcolor[HTML]{008000}{\textbf{flag:}} \textcolor[HTML]{008000}{\textbf{true}}
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\textcolor[HTML]{9C6500}{\textit{#include }}\textcolor[HTML]{3D7B7B}{\textit{<stdio.h>}}
+\textcolor[HTML]{B00040}{\textbf{int}} \textcolor[HTML]{0000FF}{main}(\textcolor[HTML]{B00040}{\textbf{void}}) \char123{} \textcolor[HTML]{B00040}{\textbf{char}} \textcolor[HTML]{666666}{*}s \textcolor[HTML]{666666}{=} \textcolor[HTML]{BA2121}{"x\char92{}n"}; \textcolor[HTML]{008000}{\textbf{return}} printf(\textcolor[HTML]{BA2121}{"%d"}, \textcolor[HTML]{666666}{1}) \textcolor[HTML]{666666}{>} \textcolor[HTML]{666666}{0}; \char125{}
+\end{Verbatim}
+
+A language highlight.js does not know, and none, print as written:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+TABLE file.name FROM "x"
+\end{Verbatim}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\char123{}braces\char125{} \char92{}backslash %percent #hash $dollar ~tilde ^caret _under &amp
+\end{Verbatim}
+
+\begin{itemize}
+\item A list item, with a block:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+x \textcolor[HTML]{666666}{=} \char123{}\textcolor[HTML]{BA2121}{"a"}: \textcolor[HTML]{666666}{1}\char125{}
+\end{Verbatim}
+\end{itemize}
+

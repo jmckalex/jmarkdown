@@ -18,6 +18,7 @@ import { addWarning, getWarnings } from './warnings.js';
 import { escapeLatexText as escapeLatex, escapeTexText } from './latex-escape.js';
 import { commandForDepth } from './sectioning.js';
 import { marked } from './utils.js';
+import { highlightsCode, codeBlockLatex, inlineCodeLatex } from './latex-highlight.js';
 
 // Candidate \mintinline delimiters, tried in order. \mintinline takes its code
 // verbatim between a delimiter pair (like \verb), so the delimiter just has to
@@ -146,6 +147,8 @@ const latexRenderer = {
 	},
 
 	codespan(token) {
+		// `LaTeX highlighter: highlight.js`: no minted (latex-highlight.js).
+		if (highlightsCode()) return inlineCodeLatex(token.text, configManager.get('Code language'));
 		const lang = mintedLanguage(configManager.get('Code language'));
 		const code = token.text;
 		// A heading's text, and a title-block line's under `LaTeX maketitle`
@@ -166,6 +169,8 @@ const latexRenderer = {
 		// Prefer the fence's named language (```javascript) over the
 		// document-wide default. Requires \usepackage{minted} in the
 		// preamble (declared here) and pdflatex -shell-escape at compile time.
+		// `LaTeX highlighter: highlight.js`: neither (latex-highlight.js).
+		if (highlightsCode()) return codeBlockLatex(token.text, token.lang);
 		requirePackage('minted');
 		const lang = mintedLanguage(token.lang);
 		return `\\begin{minted}{${lang}}\n${token.text}\n\\end{minted}\n\n`;

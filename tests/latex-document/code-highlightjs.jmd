@@ -1,0 +1,32 @@
+---
+LaTeX highlighter: highlight.js
+---
+
+{{LOL}}
+
+# Code with `x = {a}` in a heading
+
+Prose with `print("hi") # 50%` and a note.[^1]
+
+[^1]: A note with `a_b & c`.
+
+```python
+def greet(name):
+    """Say hello."""
+    return f"Hello, {name}!"  # 100% friendly
+```
+
+@begin(listing)[A listing]{id=lst:hello}
+```js
+const s = `t ${x + 1}`; // a comment
+```
+@end(listing)
+
+See @cref[lst:hello].
+
+> [!note]
+> ```bash
+> echo "$HOME" | grep -v x
+> ```
+
+The paragraph after them prints.

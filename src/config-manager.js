@@ -102,6 +102,10 @@ export const DEFAULT_CONFIG = {
 	// header's Title with no Date gets \date{} (additional-directives.js,
 	// latex-template.js). Off: the title lines as they always were.
 	'LaTeX maketitle': false,
+	// How LaTeX sets code: `minted` (Pygments, which LaTeX runs while it
+	// compiles) or `highlight.js` (coloured by the build in Pygments' default
+	// colours, set with fvextra — no shell escape; src/latex-highlight.js).
+	'LaTeX highlighter': 'minted',
 	// Custom Obsidian callout types (src/callouts.js): a list of
 	// { "name", "title"?, "icon"?, "color"?, "aliases"? } — `[!name]` with
 	// that title, a Font Awesome icon by name ("lightbulb", "regular:circle",
@@ -364,6 +368,10 @@ class ConfigManager {
 				// latex-template.js.
 				str = value[0].trim().toLowerCase();
 				this.config["LaTeX maketitle"] = (str == "true");
+				break;
+			case "LaTeX_highlighter":
+				// Space-keyed, read at render time by latex-highlight.js.
+				this.config["LaTeX highlighter"] = value[0].trim().toLowerCase();
 				break;
 			case "Code_language":
 				// Space-keyed, like Block_elements: latex-renderer.js reads

@@ -1,0 +1,14 @@
+---
+LaTeX highlighter: highlight.js
+Code language: python
+---
+
+# A heading with `len(x) % 2` and `a_b`
+
+Specials `\section{x} #1 & $5 ~ ^ _ % | < >`, quotes `'q' "d"` and `` `b` ``,
+no ligatures in `a--b ,,c <<d>> !x`, two spaces kept in `a  b`, a note[^1],
+[a `link`](https://example.com), and *emphasis with `print("hi")`*.
+
+[^1]: A note with `f(x)  # a comment`.
+
+- A list item with `x = 1`.
