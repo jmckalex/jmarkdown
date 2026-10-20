@@ -1,0 +1,17 @@
+<p>An image that pdfLaTeX and LuaLaTeX cannot read becomes a link to the file in
+  LaTeX, with a warning naming it, as an SVG always has; the HTML is unchanged.
+  Markdown images, one of each type:</p>
+<p><img src="anim.gif" alt="a GIF"> <img src="photo.webp" alt="a WebP"> <img src="scan.bmp" alt="a BMP"> <img src="photo.avif" alt="an AVIF">
+  <img src="move.apng" alt="an APNG"> <img src="scan.tif" alt="a TIFF"> <img src="scan.tiff" alt="a TIFF"> <img src="favicon.ico" alt="an icon">
+  <img src="photo.heic" alt="a HEIC"> <img src="photo.heif" alt="a HEIF"> <img src="photo.jxl" alt="a JPEG XL"> <img src="ANIM.GIF" alt="upper case">
+</p>
+<p>An SVG, as before: <img src="drawing.svg" alt="an SVG"></p>
+<p>Obsidian embeds: <img src="anim.gif" alt="anim.gif"> <img src="photo.webp" alt="photo.webp" width="200"> <img src="scan.bmp" alt="scan.bmp"> <img src="photo.avif" alt="photo.avif"></p>
+<p>The image directive: <img src="anim.gif" alt="an inline GIF">, and a block:</p>
+<img src="photo.webp" alt="a block WebP" style="width: 50%; display: block">
+<p>With a PNG beside it, the PNG is included: <img src="frame.gif" alt="a GIF with a PNG"></p>
+<p>A video's GIF poster (still.gif, a real file) leaves the link its caption: <video src="clip.mp4" controls="" poster="still.gif" aria-label="a clip"><a href="clip.mp4">a clip</a></video></p>
+<p>What LaTeX reads is unchanged: <img src="frame.png" alt="a PNG"> <img src="photo.jpg" alt="a JPEG">
+  <img src="photo.jpeg" alt="a JPEG"> <img src="figure.pdf" alt="a PDF"> <img src="figure.eps" alt="an EPS">
+</p>
+<p>The paragraph after them prints.</p>

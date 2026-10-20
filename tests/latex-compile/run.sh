@@ -137,6 +137,11 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# block (minted). No fontenc, so pdfLaTeX's is OT1: an entity's
 		# character must print without T1 (latex-escape.js); LuaLaTeX too.
 		entities)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\usepackage{graphicx}\usepackage{tikz}\usetikzlibrary{svg.path}\usepackage{booktabs}\usepackage{minted}\usepackage{hyperref}'; needs='thmtools.sty tcolorbox.sty tikz.sty booktabs.sty minted.sty' ;;
+		# images: what LaTeX cannot read is a link (hyperref); what it can is
+		# \includegraphics, in draft, since the fixture's files are not in the
+		# tree — draft still stops on an extension it cannot read, which the
+		# links replace. Both engines.
+		images)            extra='\usepackage[draft]{graphicx}\usepackage{hyperref}'; needs='hyperref.sty' ;;
 		*)                 extra='';                                      needs='' ;;
 	esac
 
@@ -191,7 +196,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		} >"$work/doc.tex"
 	fi
 
-	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ] || [ "$category" = "entities" ]; } && command -v lualatex >/dev/null 2>&1; then
+	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ] || [ "$category" = "entities" ] || [ "$category" = "images" ]; } && command -v lualatex >/dev/null 2>&1; then
 		engines='pdflatex lualatex'
 	fi
 	for engine in $engines; do

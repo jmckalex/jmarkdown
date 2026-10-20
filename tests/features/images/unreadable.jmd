@@ -1,0 +1,28 @@
+---
+Obsidian links: true
+---
+
+An image that pdfLaTeX and LuaLaTeX cannot read becomes a link to the file in
+LaTeX, with a warning naming it, as an SVG always has; the HTML is unchanged.
+Markdown images, one of each type:
+
+![a GIF](anim.gif) ![a WebP](photo.webp) ![a BMP](scan.bmp) ![an AVIF](photo.avif)
+![an APNG](move.apng) ![a TIFF](scan.tif) ![a TIFF](scan.tiff) ![an icon](favicon.ico)
+![a HEIC](photo.heic) ![a HEIF](photo.heif) ![a JPEG XL](photo.jxl) ![upper case](ANIM.GIF)
+
+An SVG, as before: ![an SVG](drawing.svg)
+
+Obsidian embeds: ![[anim.gif]] ![[photo.webp|200]] ![[scan.bmp]] ![[photo.avif]]
+
+The image directive: @image(anim.gif)[an inline GIF], and a block:
+
+@image+(photo.webp)[a block WebP]{width=0.5}
+
+With a PNG beside it, the PNG is included: ![a GIF with a PNG](frame.gif)
+
+A video's GIF poster (still.gif, a real file) leaves the link its caption: @video(clip.mp4)[a clip]{poster=still.gif}
+
+What LaTeX reads is unchanged: ![a PNG](frame.png) ![a JPEG](photo.jpg)
+![a JPEG](photo.jpeg) ![a PDF](figure.pdf) ![an EPS](figure.eps)
+
+The paragraph after them prints.

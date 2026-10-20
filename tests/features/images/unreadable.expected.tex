@@ -1,0 +1,26 @@
+An image that pdfLaTeX and LuaLaTeX cannot read becomes a link to the file in
+LaTeX, with a warning naming it, as an SVG always has; the HTML is unchanged.
+Markdown images, one of each type:
+
+\href{run:anim.gif}{a GIF} \href{run:photo.webp}{a WebP} \href{run:scan.bmp}{a BMP} \href{run:photo.avif}{an AVIF}
+\href{run:move.apng}{an APNG} \href{run:scan.tif}{a TIFF} \href{run:scan.tiff}{a TIFF} \href{run:favicon.ico}{an icon}
+\href{run:photo.heic}{a HEIC} \href{run:photo.heif}{a HEIF} \href{run:photo.jxl}{a JPEG XL} \href{run:ANIM.GIF}{upper case}
+
+An SVG, as before: \href{run:drawing.svg}{an SVG}
+
+Obsidian embeds: \href{run:anim.gif}{anim.gif} \href{run:photo.webp}{photo.webp} \href{run:scan.bmp}{scan.bmp} \href{run:photo.avif}{photo.avif}
+
+The image directive: \href{run:anim.gif}{an inline GIF}, and a block:
+
+% alt: a block WebP
+\href{run:photo.webp}{a block WebP}
+
+With a PNG beside it, the PNG is included: \includegraphics[width=\textwidth]{frame.png}
+
+A video's GIF poster (still.gif, a real file) leaves the link its caption: \href{run:clip.mp4}{a clip}
+
+What LaTeX reads is unchanged: \includegraphics[width=\textwidth]{frame.png} \includegraphics[width=\textwidth]{photo.jpg}
+\includegraphics[width=\textwidth]{photo.jpeg} \includegraphics[width=\textwidth]{figure.pdf} \includegraphics[width=\textwidth]{figure.eps}
+
+The paragraph after them prints.
+
