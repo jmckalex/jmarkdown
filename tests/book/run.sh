@@ -768,5 +768,26 @@ printf -- '---\nTitle: plain\n---\n\n# Plain\n\nNo chapters here.\n' >"$B/plain.
 hasnt "plain/no-section" "$B/plain.out" 'jmd-chapter'
 hasnt "plain/no-source-lines" "$B/plain.out" 'data-source-line'
 
+# --- lines after a multi-paragraph inline note -------------------------------------------
+# Its preprocess (inline-footnotes.js) lifts the note out of the text and leaves
+# a one-line marker, and a chapter's lines were counted in what was left: every
+# block after the note, and a warning's chapter:line, came out early by the
+# note's lines. The lifts are recorded (line-shifts.js) and put back, each
+# chapter counting only its own.
+
+L="$SCRATCH/lines-book"
+mkdir -p "$L/chapters"
+printf -- '---\nTitle: Lines\n---\n\n@chapter+(chapters/a.md)\n@chapter+(chapters/b.md)\n' >"$L/master.md"
+printf '# Chapter A\n\nA claim.[fn: Its first paragraph.\n\n    Its second paragraph.\n] More.\n\nLine 8 of a.md, after the note.\n' >"$L/chapters/a.md"
+printf '# Chapter B\n\nLine 3 of b.md, before its note.\n\nA claim.[fn: B first.\n\n    B second.\n] More.\n\nLine 10 of b.md, citing @ref[nosuch].\n\n```nosuchlang\nx\n```\n' >"$L/chapters/b.md"
+(cd "$L" && HOME="$SCRATCH/home" node "$JMD" process master.md -o lines.html >/dev/null 2>lines.err) || fail "note-lines/exit" "$(cat "$L/lines.err")"
+(cd "$L" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o lines.tex >/dev/null 2>lines-tex.err) || fail "note-lines/latex-exit" "$(cat "$L/lines-tex.err")"
+has   "note-lines/after-note" "$L/lines.html" 'data-source-line="8">Line 8 of a.md, after the note.'
+has   "note-lines/next-chapter-unmoved" "$L/lines.html" 'data-source-line="3">Line 3 of b.md, before its note.'
+has   "note-lines/own-note" "$L/lines.html" 'data-source-line="5">A claim.'
+has   "note-lines/after-own-note" "$L/lines.html" 'data-source-line="10">Line 10 of b.md'
+has   "note-lines/warning" "$L/lines.err" "chapters/b.md:10: unresolved reference 'nosuch'"
+has   "note-lines/render-warning" "$L/lines-tex.err" 'chapters/b.md:12: code: minted has no Pygments lexer for "nosuchlang"'
+
 echo "book: $passed passed, $failed failed"
 [ "$failed" -eq 0 ]
