@@ -777,9 +777,12 @@ hasnt "plain/no-source-lines" "$B/plain.out" 'data-source-line'
 
 L="$SCRATCH/lines-book"
 mkdir -p "$L/chapters"
-printf -- '---\nTitle: Lines\n---\n\n@chapter+(chapters/a.md)\n@chapter+(chapters/b.md)\n' >"$L/master.md"
+printf -- '---\nTitle: Lines\n---\n\n@chapter+(chapters/a.md)\n@chapter+(chapters/b.md)\n@chapter+(chapters/c.md)\n' >"$L/master.md"
 printf '# Chapter A\n\nA claim.[fn: Its first paragraph.\n\n    Its second paragraph.\n] More.\n\nLine 8 of a.md, after the note.\n' >"$L/chapters/a.md"
 printf '# Chapter B\n\nLine 3 of b.md, before its note.\n\nA claim.[fn: B first.\n\n    B second.\n] More.\n\nLine 10 of b.md, citing @ref[nosuch].\n\n```nosuchlang\nx\n```\n' >"$L/chapters/b.md"
+# c.md's note is on the chapter's FIRST line (text before its `#`, kept where it
+# stands and warned), where the lifted lines are counted from.
+printf 'A first-line claim.[fn: C first.\n\n    C second.\n] More.\n\n# Chapter C\n\nLine 8 of c.md, citing @ref[nosuch2].\n' >"$L/chapters/c.md"
 (cd "$L" && HOME="$SCRATCH/home" node "$JMD" process master.md -o lines.html >/dev/null 2>lines.err) || fail "note-lines/exit" "$(cat "$L/lines.err")"
 (cd "$L" && HOME="$SCRATCH/home" node "$JMD" process master.md --to latex -o lines.tex >/dev/null 2>lines-tex.err) || fail "note-lines/latex-exit" "$(cat "$L/lines-tex.err")"
 has   "note-lines/after-note" "$L/lines.html" 'data-source-line="8">Line 8 of a.md, after the note.'
@@ -788,6 +791,9 @@ has   "note-lines/own-note" "$L/lines.html" 'data-source-line="5">A claim.'
 has   "note-lines/after-own-note" "$L/lines.html" 'data-source-line="10">Line 10 of b.md'
 has   "note-lines/warning" "$L/lines.err" "chapters/b.md:10: unresolved reference 'nosuch'"
 has   "note-lines/render-warning" "$L/lines-tex.err" 'chapters/b.md:12: code: minted has no Pygments lexer for "nosuchlang"'
+has   "note-lines/first-line-heading" "$L/lines.html" 'data-source-line="6" id="toc-chapter-c">Chapter C'
+has   "note-lines/first-line-after" "$L/lines.html" 'data-source-line="8">Line 8 of c.md'
+has   "note-lines/first-line-warning" "$L/lines.err" "chapters/c.md:8: unresolved reference 'nosuch2'"
 
 echo "book: $passed passed, $failed failed"
 [ "$failed" -eq 0 ]
