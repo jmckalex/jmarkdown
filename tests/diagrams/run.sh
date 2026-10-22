@@ -435,11 +435,43 @@ if [ "$(calls block)" = 2 ]; then pass "mathematica/block-then-cached"; else fai
 
 mkdir -p "$W/inline"
 printf 'Inline ⟦1 + 1⟧ here.\n' >"$W/inline/note.md"
-wl fail-second inline
+# A failed inline run used to stop the build. Now it is marked where it stands
+# (note-code.js noteCodeError: a span, so the paragraph stays whole), warned,
+# and the page names none of the user's folders (execFileSync's message did).
+# Here the second call fails (into the cache: its stderr goes to the console);
+# below, the first (its stderr is the message's).
+wl fail-second inline || fail "mathematica/inline-failed-exit" "$(cat "$W/inline/err.txt")"
+has   "mathematica/inline-failed-shows-error" "$W/inline/note.html" 'Inline <span class="jmd-error" data-jmd-error="Mathematica">[Mathematica failed: wolframscript exited with status 255]</span> here.</p>'
+hasnt "mathematica/inline-failed-no-folders" "$W/inline/note.html" "/inline/Mathematica/"
+has   "mathematica/inline-failed-warned" "$W/inline/err.txt" 'Mathematica failed: wolframscript exited with status 255'
+# The marker is drawn as a box by a style added to that page alone
+# (html-template.js ERROR_CSS); a page with none is as it was.
+has   "mathematica/inline-failed-box-style" "$W/inline/note.html" '.jmd-error[data-jmd-error] {'
+hasnt "mathematica/inline-failed-no-refusal-style" "$W/inline/note.html" '.jmd-refused {'
 if [ -z "$(cached inline)" ]; then pass "mathematica/inline-failed-caches-nothing"; else fail "mathematica/inline-failed-caches-nothing" "cached: $(cached inline)"; fi
+mkdir -p "$W/inline-first"
+printf 'Inline ⟦1 + 1⟧ here.\n' >"$W/inline-first/note.md"
+wl fail inline-first || fail "mathematica/inline-first-failed-exit" "$(cat "$W/inline-first/err.txt")"
+has   "mathematica/inline-first-failed-says-why" "$W/inline-first/note.html" '[Mathematica failed: wolframscript exited with status 255: Your Wolfram product is not activated or is experiencing a license-related problem.]</span> here.</p>'
+hasnt "mathematica/inline-first-failed-no-folders" "$W/inline-first/note.html" "/inline-first/Mathematica/"
+if [ -z "$(cached inline-first)" ]; then pass "mathematica/inline-first-failed-caches-nothing"; else fail "mathematica/inline-first-failed-caches-nothing" "cached: $(cached inline-first)"; fi
+(cd "$W/inline-first" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_MODE=fail WL_LOG="$W/inline-first/calls.log" "$NODE" "$JMD" process note.md --to latex -o note.tex >/dev/null 2>err-tex.txt) \
+	|| fail "mathematica/inline-failed-latex-exit" "$(cat "$W/inline-first/err-tex.txt")"
+has   "mathematica/inline-failed-latex-nothing" "$W/inline-first/note.tex" 'Inline  here.'
+has   "mathematica/inline-failed-latex-warned" "$W/inline-first/err-tex.txt" 'Mathematica failed: wolframscript exited with status 255'
 n=$(calls inline)
 wl ok inline || fail "mathematica/inline-retry-exit" "$(cat "$W/inline/err.txt")"
 if [ "$(calls inline)" -gt "$n" ] && [ -n "$(cached inline)" ]; then pass "mathematica/inline-retry-asks-again"; else fail "mathematica/inline-retry-asks-again" "calls $n → $(calls inline); cached: $(cached inline)"; fi
+hasnt "mathematica/inline-retry-no-box-style" "$W/inline/note.html" '.jmd-error[data-jmd-error]'
+# A refusal is a `jmd-error` too (data-jmd-refused): its page keeps its own
+# style and gains no box.
+mkdir -p "$W/refused/.jmarkdown"
+printf '{ "Run note code": false }\n' >"$W/refused/.jmarkdown/config.json"
+printf 'Inline ⟦1 + 1⟧ here.\n' >"$W/refused/note.md"
+wl ok refused || fail "mathematica/inline-refused-exit" "$(cat "$W/refused/err.txt")"
+has   "mathematica/inline-refused-marker" "$W/refused/note.html" 'data-jmd-refused="Mathematica"'
+has   "mathematica/inline-refused-own-style" "$W/refused/note.html" '.jmd-refused {'
+hasnt "mathematica/inline-refused-no-box-style" "$W/refused/note.html" '.jmd-error[data-jmd-error]'
 
 # --- Mathematica: a folder named with `.m` ----------------------------------------------------------
 # The cache's files are named from <hash>.m by changing the extension at the

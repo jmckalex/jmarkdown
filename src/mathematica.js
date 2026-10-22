@@ -8,7 +8,7 @@ import { configManager } from './config-manager.js';
 import { registerBlockEnvironment } from './begin-end-core.js';
 import { htmlCachePath, cacheDir } from './figure-cache.js';
 import Mustache from 'mustache';
-import { noteCodeAllowed, refuseNoteCode } from './note-code.js';
+import { noteCodeAllowed, refuseNoteCode, noteCodeError } from './note-code.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,6 +54,21 @@ function wolframscript(args, { cwd, outFile } = {}) {
 		// error still reaches the caller, as before.
 		if (failed) fs.rmSync(outFile, { force: true });
 	}
+}
+
+/*
+	What a failed inline run says, in the page and in the build warning. Not
+	execFileSync's message: that is the command line, whose file sits in the
+	cache folder, and it would have put the user's own folders into the page.
+*/
+function failureMessage(error) {
+	if (error?.code === 'ENOENT' && error?.syscall?.startsWith('spawn')) return 'wolframscript was not found';
+	if (typeof error?.status === 'number') {
+		const said = error.stderr?.toString().trim().split('\n')[0];
+		return `wolframscript exited with status ${error.status}${said ? `: ${said}` : ''}`;
+	}
+	if (error?.signal) return `wolframscript was stopped (${error.signal})`;
+	return error?.code ?? 'unknown error';
 }
 
 function generateHash(string) {
@@ -385,20 +400,36 @@ export const inlineMathematica = {
 			//send_code_to_mathematica(code_to_evaluate);
 			console.log(code_to_evaluate);
 			console.log(`Attempting to write file ${file_name} to disk`);
-			fs.writeFileSync(file_name, code_to_evaluate);
+			// A run that fails no longer stops the build: the result is marked
+			// where it stands (the renderer's noteCodeError), as a failed block
+			// shows its error box, and nothing is cached, so the next build asks
+			// again.
+			try {
+				fs.writeFileSync(file_name, code_to_evaluate);
 
-			const output = wolframscript(['-f', file_name, '-print']).toString();
-			console.log(output);
-			if (output.includes("-Graphics-") || output.includes("-Graphics3D-") ) {
-				console.log("Attempting to generate SVG output for inline Mathematica code.");
-				wolframscript(['-f', file_name, '-print', '-format', 'SVG'], { cwd: opts.cwd, outFile: svg_name });
-				output_file = `${hash}.svg`;
+				const output = wolframscript(['-f', file_name, '-print']).toString();
+				console.log(output);
+				if (output.includes("-Graphics-") || output.includes("-Graphics3D-") ) {
+					console.log("Attempting to generate SVG output for inline Mathematica code.");
+					wolframscript(['-f', file_name, '-print', '-format', 'SVG'], { cwd: opts.cwd, outFile: svg_name });
+					output_file = `${hash}.svg`;
+				}
+				else {
+					wolframscript(['-f', file_name, '-print'], { cwd: opts.cwd, outFile: txt_name });
+					output_file = `${hash}.txt`;
+				}
 			}
-			else {
-				wolframscript(['-f', file_name, '-print'], { cwd: opts.cwd, outFile: txt_name });
-				output_file = `${hash}.txt`;
+			catch (error) {
+				console.error(`Error processing Mathematica: ${error.message}`);
+				return {
+					type: 'inlineMathematica',
+					raw: match[0],
+					code: match[1],
+					failed: failureMessage(error),
+					text: ''
+				};
 			}
-			
+
 			const token = {
                 type: 'inlineMathematica',
                 raw: match[0],
@@ -411,6 +442,7 @@ export const inlineMathematica = {
 	},
 	renderer(token) {
 		if (token.refused) return refuseNoteCode('Mathematica');
+		if (token.failed) return noteCodeError('Mathematica', token.failed);
 		if (token.code.includes("InlineMath")) {
 			return "$" + fs.readFileSync(token.include, 'utf8') + "$";	
 		}
