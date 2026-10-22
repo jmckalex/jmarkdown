@@ -1,0 +1,35 @@
+A percent sign in a document with no header is text in both outputs. The
+HTML shows it, and so does the PDF. It rose by 50% in a year, and the
+rest of that source line prints too.
+
+# Heading up 50% today
+
+A *bold 20% claim*, **strong 30% claim**, and a [link to 40% off](https://example.com/sale).
+
+A footnote.[fn: Up 10% since 2020.] A classic note.[^c]
+
+[^c]: Classic 15% note.
+
+- List item 60% done
+- Second item
+
+| Item | Share |
+|---|---|
+| A | 70% |
+
+> Quoted 80% of the time.
+
+> [!note] Callout 85% title
+> Callout body 88% here.
+
+@begin(figure)[Caption share up 90%]{id=fig:pct}
+Figure body.
+@end(figure)
+
+@begin(theorem)[Note 95% sure]
+Theorem body.
+@end(theorem)
+
+An escaped \% stays one percent, and so does 100\%.
+
+A bare address https://example.com/a%20b keeps its percent.

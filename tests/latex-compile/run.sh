@@ -142,6 +142,13 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# tree — draft still stops on an extension it cannot read, which the
 		# links replace. Both engines.
 		images)            extra='\usepackage[draft]{graphicx}\usepackage{hyperref}'; needs='hyperref.sty' ;;
+		# percent: a `%` on each prose path in a document with no header — a
+		# heading, emphasis, a link, both kinds of note, a list, a table, a
+		# quote, a callout, a caption, a theorem's note — and the paths a
+		# header's comment does not reach. Both engines; the PDF's text is read
+		# against <name>.pdf-text, since a `%` TeX took as its comment still
+		# compiled where it lost the rest of its line.
+		percent)           extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}\usepackage{graphicx}\usepackage{tikz}\usetikzlibrary{svg.path}\usepackage{booktabs}\usepackage{hyperref}'; needs='thmtools.sty tcolorbox.sty tikz.sty booktabs.sty hyperref.sty' ;;
 		# footnotes: in-code's fenced block and markdown-demo are minted.
 		footnotes)         extra='\usepackage{minted}'; needs='minted.sty' ;;
 		*)                 extra='';                                      needs='' ;;
@@ -198,7 +205,7 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		} >"$work/doc.tex"
 	fi
 
-	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ] || [ "$category" = "entities" ] || [ "$category" = "images" ] || [ "$label" = "code/end-minted" ]; } && command -v lualatex >/dev/null 2>&1; then
+	if { [ "$category" = "callouts" ] || [ "$category" = "alerts" ] || [ "$category" = "tabbing" ] || [ "$category" = "code-highlightjs" ] || [ "$category" = "entities" ] || [ "$category" = "images" ] || [ "$category" = "percent" ] || [ "$label" = "code/end-minted" ]; } && command -v lualatex >/dev/null 2>&1; then
 		engines='pdflatex lualatex'
 	fi
 	for engine in $engines; do
@@ -222,6 +229,30 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 					echo "FAIL  $label$suffix [pages]"
 					sed 's/^/    | /' "$work/pages.log"
 					fail=$((fail + 1))
+				fi
+			fi
+			# percent: the PDF shows what the HTML shows. Each line of
+			# <name>.pdf-text must be in its text; a line starting `!` must not.
+			if [ "$category" = "percent" ]; then
+				if ! command -v pdftotext >/dev/null 2>&1; then
+					echo "SKIP  $label$suffix [text]  (pdftotext not installed)"
+				else
+					pdftotext -q "$work/doc.pdf" "$work/doc.txt"
+					text=$(tr '\n' ' ' <"$work/doc.txt" | tr -s ' ')
+					problems=''
+					while IFS= read -r want; do
+						case "$want" in
+							'!'*) case "$text" in *"${want#!}"*) problems="$problems [shown: ${want#!}]" ;; esac ;;
+							*) case "$text" in *"$want"*) ;; *) problems="$problems [missing: $want]" ;; esac ;;
+						esac
+					done <"${tex%.expected.tex}.pdf-text"
+					if [ -z "$problems" ]; then
+						echo "PASS  $label$suffix [text]"
+						pass=$((pass + 1))
+					else
+						echo "FAIL  $label$suffix [text]$problems"
+						fail=$((fail + 1))
+					fi
 				fi
 			fi
 		else
