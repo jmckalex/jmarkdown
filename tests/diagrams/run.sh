@@ -412,7 +412,16 @@ if [ "${WL_MODE:-ok}" = fail ] || { [ "${WL_MODE:-ok}" = fail-second ] && [ "$(w
 	echo 'Your Wolfram product is not activated or is experiencing a license-related problem.' >&2
 	exit 255
 fi
-echo 2
+# The answer, by what the file (after -f) asks: a plot is a graphic (-print
+# says so; -format SVG draws it), InlineMath[x^2] is TeX, Sup[x] text holding
+# markup and maths (as StringJoin["$$", …, "$$"] gives), anything else 2. Every file starts with jmarkdown's
+# header, which names InlineMath and DisplayMath, so the call is matched.
+file=; prev=; for a in "$@"; do [ "$prev" = -f ] && file=$a; prev=$a; done
+case "$*" in *'-format SVG'*) echo '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>'; exit 0;; esac
+if grep -q 'Plot\[' "$file"; then echo '-Graphics-'
+elif grep -q 'Math\[x' "$file"; then echo 'x^{2}'
+elif grep -q 'Sup\[' "$file"; then echo '<sup>2</sup> $$ 2^{100} $$'
+else echo 2; fi
 STANDIN
 chmod +x "$W/bin/wolframscript"
 wl() {   # wl MODE NAME — build W/NAME/note.md to HTML with the stand-in in MODE
@@ -472,6 +481,44 @@ wl ok refused || fail "mathematica/inline-refused-exit" "$(cat "$W/refused/err.t
 has   "mathematica/inline-refused-marker" "$W/refused/note.html" 'data-jmd-refused="Mathematica"'
 has   "mathematica/inline-refused-own-style" "$W/refused/note.html" '.jmd-refused {'
 hasnt "mathematica/inline-refused-no-box-style" "$W/refused/note.html" '.jmd-error[data-jmd-error]'
+
+# --- Mathematica: what an inline result shows ---------------------------------------------------
+# The inline renderer took the cached result by its file NAME: a text result
+# became <img src='Mathematica/<hash>.txt'>, a broken image; a graphic's src
+# was `Mathematica/…`, right only for a page written beside the note; and
+# InlineMath / DisplayMath read the name in the working folder, so they stopped
+# the build. Now a text result is printed as the block form prints its own (as
+# it stands: a result can be markup or maths), a graphic's src is the cache
+# path the block form's is (figure-cache.js htmlCachePath), and the maths are
+# read from the cache. LaTeX is as it was: maths printed, the rest left out.
+mkdir -p "$W/results" "$W/pages"
+printf 'Text ⟦1 + 1⟧ here.\n\nSource ⟦Sup[x]⟧ here.\n\nGraphic ⟦Plot[x, {x, 0, 1}]⟧ here.\n' >"$W/results/note.md"
+wl ok results || fail "mathematica/inline-results-exit" "$(cat "$W/results/err.txt")"
+has   "mathematica/inline-text-is-text" "$W/results/note.html" 'Text <span class="mathematica txt">2</span> here.'
+hasnt "mathematica/inline-text-no-image" "$W/results/note.html" '.txt"'
+has   "mathematica/inline-text-as-block" "$W/results/note.html" 'Source <span class="mathematica txt"><sup>2</sup> $$ 2^{100} $$</span> here.'
+svg=$(cached results | grep '\.svg$')
+has   "mathematica/inline-graphic-beside" "$W/results/note.html" "Graphic <img class=\"mathematica svg\" src=\"Mathematica/$svg\"> here."
+cp "$W/results/note.html" "$W/results/first.html"
+n=$(calls results)
+wl ok results || fail "mathematica/inline-results-cached-exit" "$(cat "$W/results/err.txt")"
+if [ "$(calls results)" = "$n" ] && cmp -s "$W/results/first.html" "$W/results/note.html"; then pass "mathematica/inline-results-cached-same"; else fail "mathematica/inline-results-cached-same" "calls $n → $(calls results)" "$(diff "$W/results/first.html" "$W/results/note.html" | head -4)"; fi
+(cd "$W/results" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_LOG="$W/results/calls.log" "$NODE" "$JMD" process note.md -o ../pages/note.html >/dev/null 2>err-pages.txt) \
+	|| fail "mathematica/inline-graphic-elsewhere-exit" "$(cat "$W/results/err-pages.txt")"
+has   "mathematica/inline-graphic-elsewhere-src" "$W/pages/note.html" "src=\"../results/Mathematica/$svg\""
+src=$(grep -o 'class="mathematica svg" src="[^"]*"' "$W/pages/note.html" | sed 's/.*src="//; s/"$//')
+if [ -n "$src" ] && [ -f "$W/pages/$src" ]; then pass "mathematica/inline-graphic-elsewhere-resolves"; else fail "mathematica/inline-graphic-elsewhere-resolves" "src: $src"; fi
+(cd "$W/results" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_LOG="$W/results/calls.log" "$NODE" "$JMD" process note.md --to latex -o note.tex >/dev/null 2>err-tex.txt) \
+	|| fail "mathematica/inline-results-latex-exit" "$(cat "$W/results/err-tex.txt")"
+has   "mathematica/inline-results-latex-as-before" "$W/results/note.tex" 'Text  here.'
+mkdir -p "$W/maths"
+printf 'Maths ⟦InlineMath[x^2]⟧ here.\n\nDisplay ⟦DisplayMath[x^2]⟧ here.\n' >"$W/maths/note.md"
+wl ok maths || fail "mathematica/inline-maths-exit" "$(cat "$W/maths/err.txt")"
+has   "mathematica/inline-maths-inline" "$W/maths/note.html" 'Maths $x^{2}'
+has   "mathematica/inline-maths-display" "$W/maths/note.html" 'Display $$x^{2}'
+(cd "$W/maths" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_LOG="$W/maths/calls.log" "$NODE" "$JMD" process note.md --to latex -o note.tex >/dev/null 2>err-tex.txt) \
+	|| fail "mathematica/inline-maths-latex-exit" "$(cat "$W/maths/err-tex.txt")"
+has   "mathematica/inline-maths-latex" "$W/maths/note.tex" 'Maths $x^{2}'
 
 # --- Mathematica: a folder named with `.m` ----------------------------------------------------------
 # The cache's files are named from <hash>.m by changing the extension at the

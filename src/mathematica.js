@@ -443,18 +443,30 @@ export const inlineMathematica = {
 	renderer(token) {
 		if (token.refused) return refuseNoteCode('Mathematica');
 		if (token.failed) return noteCodeError('Mathematica', token.failed);
+		// `include` is the cached result's file NAME, so it is read, and
+		// referred to, in the cache folder, as the block form's results are.
+		// Read by its name alone it was looked for in the working folder, and
+		// InlineMath and DisplayMath stopped the build; an <img> of
+		// `Mathematica/<name>` held only for a page written beside the note.
+		const cached = path.join(cacheDir('Mathematica'), token.include);
 		if (token.code.includes("InlineMath")) {
-			return "$" + fs.readFileSync(token.include, 'utf8') + "$";	
+			return "$" + fs.readFileSync(cached, 'utf8') + "$";
 		}
 		else if (token.code.includes("DisplayMath")) {
-			return "$$" + fs.readFileSync(token.include, 'utf8') + "$$";
+			return "$$" + fs.readFileSync(cached, 'utf8') + "$$";
 		}
 		else {
 			// Embedding SVG code from mathematica is generally a bad idea
 			// as it doesn't generate unique IDs for the output
 			if (global.isLatex) return '';
 			console.log(token.include);
-			return `<img class='mathematica svg' src='Mathematica/${token.include}'>`;
+			// A text result is printed as the block form prints its own — as
+			// it stands, so a result can be source too (`$$…$$` for MathJax) —
+			// where it was an <img> of the .txt file, a broken image.
+			if (token.include.endsWith('.txt')) {
+				return `<span class='mathematica txt'>${fs.readFileSync(cached, 'utf8').replace(/\n+$/, '')}</span>`;
+			}
+			return `<img class='mathematica svg' src='${htmlCachePath(cached)}'>`;
 			//return fs.readFileSync(token.include, 'utf8');
 		}
 
