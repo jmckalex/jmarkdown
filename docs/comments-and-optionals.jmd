@@ -123,7 +123,8 @@ Visible after the notes.
 For a short note at the end of a line — too small to be worth a whole
 environment — JMarkdown provides an inline comment marker. By default it is the
 `%` character, exactly as in TeX: everything from the marker to the end of the
-line is removed.
+line is removed. The marker comes with the metadata header: a document that has
+a header has it (this page does), and a document without one has none.
 
 :::markdown-demo
 This sentence is visible. %but this trailing note is stripped from the output
@@ -155,17 +156,21 @@ Inline comment: <character> [true|false]
   the comments are review notes you want to read in the page source.
 
 For example, `Inline comment: ## true` makes `##` the marker *and* preserves the
-commented text in the output. If the key is absent, JMarkdown behaves as though
-you had written `Inline comment: % false`.
+commented text in the output. If the header has no `Inline comment` key,
+JMarkdown behaves as though you had written `Inline comment: % false`. A document
+with no metadata header at all has no inline comment: its `%` is an ordinary
+character, and prints as itself in both the HTML and the PDF.
 
 ### A note on `%` and mathematics
 
-Because `%` is the TeX comment character and JMarkdown treats it the same way,
-take care if your prose contains literal percent signs — `50% off` would lose
-everything after the `%`. Two facts soften this:
+In a document with a header, `%` is the TeX comment character and JMarkdown
+treats it the same way, so take care if your prose contains literal percent
+signs — `50% off` would lose everything after the `%`. A few facts soften this:
 
 - Inside math, `%` is safe. Math spans such as `$50\%$` are passed through
   untouched, so the marker only fires in ordinary prose.
+- A backslash makes it a percent sign: `50\% off` prints `50% off`, in the HTML
+  and the PDF alike.
 - If your text uses percent signs heavily, change the marker to something you
   never type at the start of a comment (for instance `Inline comment: ;;`).
 
@@ -297,7 +302,8 @@ name and needs no counting.
 
 | Metadata line | Marker | Comment text in output |
 |---|---|---|
-| *(none)* | `%` | replaced by `<!-- Markdown source commented out -->` |
+| *(no header at all)* | none | — (`%` prints as itself, in HTML and PDF) |
+| *(a header, no `Inline comment` line)* | `%` | replaced by `<!-- Markdown source commented out -->` |
 | `Inline comment: #` | `#` | replaced by the generic placeholder |
 | `Inline comment: % true` | `%` | preserved as `<!-- the actual text -->` |
 | `Inline comment: ;; false` | `;;` | replaced by the generic placeholder |

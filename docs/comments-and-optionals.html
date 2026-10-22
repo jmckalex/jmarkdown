@@ -118,7 +118,8 @@ Visible after the notes.</code></pre>
 <p>For a short note at the end of a line — too small to be worth a whole
   environment — JMarkdown provides an inline comment marker. By default it is the
   <code>%</code> character, exactly as in TeX: everything from the marker to the end of the
-  line is removed.
+  line is removed. The marker comes with the metadata header: a document that has
+  a header has it (this page does), and a document without one has none.
 </p>
 <div class="markdown-demo-container">
   <div class="markdown-demo-code-label">Markdown code</div>
@@ -154,15 +155,19 @@ The next line continues normally.</code></pre>
   </li>
 </ul>
 <p>For example, <code>Inline comment: ## true</code> makes <code>##</code> the marker <strong>and</strong> preserves the
-  commented text in the output. If the key is absent, JMarkdown behaves as though
-  you had written <code>Inline comment: % false</code>.</p>
+  commented text in the output. If the header has no <code>Inline comment</code> key,
+  JMarkdown behaves as though you had written <code>Inline comment: % false</code>. A document
+  with no metadata header at all has no inline comment: its <code>%</code> is an ordinary
+  character, and prints as itself in both the HTML and the PDF.</p>
 <h3 id="toc-a-note-on--and-mathematics">A note on <code>%</code> and mathematics</h3>
-<p>Because <code>%</code> is the TeX comment character and JMarkdown treats it the same way,
-  take care if your prose contains literal percent signs — <code>50% off</code> would lose
-  everything after the <code>%</code>. Two facts soften this:</p>
+<p>In a document with a header, <code>%</code> is the TeX comment character and JMarkdown
+  treats it the same way, so take care if your prose contains literal percent
+  signs — <code>50% off</code> would lose everything after the <code>%</code>. A few facts soften this:</p>
 <ul>
   <li>Inside math, <code>%</code> is safe. Math spans such as <code>$50\%$</code> are passed through
     untouched, so the marker only fires in ordinary prose.</li>
+  <li>A backslash makes it a percent sign: <code>50\% off</code> prints <code>50% off</code>, in the HTML
+    and the PDF alike.</li>
   <li>If your text uses percent signs heavily, change the marker to something you
     never type at the start of a comment (for instance <code>Inline comment: ;;</code>).</li>
 </ul>
@@ -319,7 +324,12 @@ The next line continues normally.</code></pre>
   </thead>
   <tbody>
     <tr>
-      <td><strong>(none)</strong></td>
+      <td><strong>(no header at all)</strong></td>
+      <td>none</td>
+      <td>— (<code>%</code> prints as itself, in HTML and PDF)</td>
+    </tr>
+    <tr>
+      <td><strong>(a header, no <code>Inline comment</code> line)</strong></td>
       <td><code>%</code></td>
       <td>replaced by <code>&lt;!-- Markdown source commented out --&gt;</code></td>
     </tr>
