@@ -441,5 +441,21 @@ n=$(calls inline)
 wl ok inline || fail "mathematica/inline-retry-exit" "$(cat "$W/inline/err.txt")"
 if [ "$(calls inline)" -gt "$n" ] && [ -n "$(cached inline)" ]; then pass "mathematica/inline-retry-asks-again"; else fail "mathematica/inline-retry-asks-again" "calls $n → $(calls inline); cached: $(cached inline)"; fi
 
+# --- Mathematica: a folder named with `.m` ----------------------------------------------------------
+# The cache's files are named from <hash>.m by changing the extension at the
+# end. Replacing the FIRST `.m` instead changed a folder on the way — `my.math
+# notes` became `my.txtath notes`, which does not exist: the block form showed
+# its error box on every build and the inline form stopped the build. (mktemp's
+# scratch name does it too, now and then: jmd-diagrams.XXXXXX.m….)
+mkdir -p "$W/my.math notes"
+printf ':::Mathematica\n1 + 1\n:::\n\nInline ⟦2 + 0⟧ here.\n' >"$W/my.math notes/note.md"
+wl ok "my.math notes" || fail "mathematica/dot-m-folder-exit" "$(cat "$W/my.math notes/err.txt")"
+has   "mathematica/dot-m-folder-block-result" "$W/my.math notes/note.html" 'class="mathematica txt ">2'
+hasnt "mathematica/dot-m-folder-no-error" "$W/my.math notes/note.html" 'class="tikz-error-message"'
+if [ "$(cached "my.math notes" | grep -c '\.txt$')" = 2 ]; then pass "mathematica/dot-m-folder-cached"; else fail "mathematica/dot-m-folder-cached" "cached: $(cached "my.math notes")"; fi
+n=$(calls "my.math notes")
+wl ok "my.math notes" || fail "mathematica/dot-m-folder-cached-exit" "$(cat "$W/my.math notes/err.txt")"
+if [ "$(calls "my.math notes")" = "$n" ]; then pass "mathematica/dot-m-folder-then-cached"; else fail "mathematica/dot-m-folder-then-cached" "calls $n → $(calls "my.math notes")"; fi
+
 echo "diagrams: $passed passed, $failed failed, $skipped skipped"
 [ "$failed" -eq 0 ]
