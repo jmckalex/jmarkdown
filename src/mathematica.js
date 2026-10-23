@@ -10,6 +10,7 @@ import { htmlCachePath, cacheDir } from './figure-cache.js';
 import Mustache from 'mustache';
 import { noteCodeAllowed, refuseNoteCode, noteCodeError } from './note-code.js';
 import { escapeTexText } from './latex-escape.js';
+import { addWarning } from './warnings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -206,6 +207,8 @@ export function createMathematica(marker) {
 				}
 				catch (error) {
 					token['has_error'] = true;
+					// What the build warning says (failureMessage: no folders).
+					token['failed'] = failureMessage(error);
 					// Try to read the log file
 					try {
 						const log_name = file_name.replace(/\.m$/, '.log');
@@ -227,6 +230,10 @@ export function createMathematica(marker) {
 		renderer(token) {
 			if (token.meta.name === "Mathematica") {
 				if (token['refused']) return refuseNoteCode('Mathematica', { block: true });
+				// A failed run is warned, in the inline form's words (noteCodeError),
+				// in both outputs: the HTML shows its error box, but LaTeX leaves
+				// the block out, and the PDF lost it with nothing said.
+				if (token['has_error']) addWarning(`Mathematica failed: ${token['failed']}`);
 				// In LaTeX a text result prints, as the inline form's does
 				// (blockLaTeX); a graphic or a failed run is left out, rather
 				// than leaking its <img>/<div> into the .tex.

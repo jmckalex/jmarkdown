@@ -445,6 +445,11 @@ has   "mathematica/block-failed-names-mathematica" "$W/block/note.html" '<p clas
 has   "mathematica/block-failed-own-log" "$W/block/note.html" "window.open('', 'Mathematica Error Log'"
 hasnt "mathematica/block-failed-not-tikz" "$W/block/note.html" 'Error processing TikZ'
 hasnt "mathematica/block-failed-no-tikz-log" "$W/block/note.html" 'TikZ Error Log'
+# It is warned, once, in the inline form's words (no folders), and the page
+# shows the box alone, as before: no failure marker of the inline kind.
+count "mathematica/block-failed-warned" "$W/block/err.txt" '- Mathematica failed: wolframscript exited with status 255' 1
+hasnt "mathematica/block-failed-no-folders-warned" "$W/block/err.txt" '- Mathematica failed: Command failed'
+hasnt "mathematica/block-failed-page-as-before" "$W/block/note.html" 'Mathematica failed'
 if [ -z "$(cached block)" ]; then pass "mathematica/block-failed-caches-nothing"; else fail "mathematica/block-failed-caches-nothing" "cached: $(cached block)"; fi
 wl ok block || fail "mathematica/block-retry-exit" "$(cat "$W/block/err.txt")"
 if [ "$(calls block)" = 2 ]; then pass "mathematica/block-retry-asks-again"; else fail "mathematica/block-retry-asks-again" "calls: $(calls block)"; fi
@@ -578,6 +583,8 @@ printf 'Before.\n\n:::Mathematica\nSpecials[x]\n:::\n\nAfter.\n' >"$W/block-late
 	|| fail "mathematica/block-latex-failed-exit" "$(cat "$W/block-latex-failed/err-tex.txt")"
 has   "mathematica/block-latex-failed-after" "$W/block-latex-failed/note.tex" 'After.'
 hasnt "mathematica/block-latex-failed-nothing" "$W/block-latex-failed/note.tex" 'costs'
+# Left out of the PDF, it is warned there too: it was left out unsaid.
+count "mathematica/block-latex-failed-warned" "$W/block-latex-failed/err-tex.txt" '- Mathematica failed: wolframscript exited with status 255' 1
 mkdir -p "$W/maths"
 printf 'Maths ⟦InlineMath[x^2]⟧ here.\n\nDisplay ⟦DisplayMath[x^2]⟧ here.\n\nLess ⟦InlineMath[a<b]⟧ here.\n' >"$W/maths/note.md"
 wl ok maths || fail "mathematica/inline-maths-exit" "$(cat "$W/maths/err.txt")"
