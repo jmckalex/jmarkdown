@@ -80,9 +80,10 @@ function failureMessage(error) {
 	what MathJax finds in the page: `$…$`, `$$…$$`, `\(…\)`, `\[…\]`; the
 	owner's notes build `$$…$$` strings — passes through as written, and the
 	rest is escaped as plain text (escapeTexText), so the PDF shows what the
-	page does and a `_` or `#` in it cannot stop the build.
+	page does and a `_` or `#` in it cannot stop the build. A `\$` outside
+	maths is a dollar, as MathJax reads it (processEscapes), and opens none.
 */
-const RESULT_MATHS = /\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$]+?\$/g;
+const RESULT_MATHS = /\\\$|\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$]+?\$/g;
 
 function resultHTML(text) {
 	return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -96,6 +97,25 @@ function resultLaTeX(text) {
 		at = maths.index + maths[0].length;
 	}
 	return latex + escapeTexText(text.slice(at));
+}
+
+/*
+	A block's result in LaTeX, a paragraph of its own: a text result as the
+	page shows it (resultLaTeX), DisplayMath's and InlineMath's TeX as written,
+	as the page's MathJax reads them (the owner, 2026-10-23: "a text result
+	also prints in LaTeX/PDF, as it does in HTML"). A graphic (output=svg, png,
+	jpg) and a failed run are left out, as before; so is a result missing
+	from the cache.
+*/
+function blockLaTeX(token) {
+	const output = token.attrs?.output?.toLowerCase();
+	if (token['has_error'] || ['svg', 'png', 'jpg', 'jpeg'].includes(output)) return '';
+	const file = path.join(cacheDir('Mathematica'), path.basename(token['file name']).replace(/\.m$/, '.txt'));
+	if (!fs.existsSync(file)) return '';
+	const text = fs.readFileSync(file, 'utf8');
+	if (token['DisplayMath']) return `$$${text}$$\n\n`;
+	if (token['InlineMath']) return `$${text}$\n\n`;
+	return `${resultLaTeX(text.replace(/\n+$/, ''))}\n\n`;
 }
 
 function generateHash(string) {
@@ -207,9 +227,10 @@ export function createMathematica(marker) {
 		renderer(token) {
 			if (token.meta.name === "Mathematica") {
 				if (token['refused']) return refuseNoteCode('Mathematica', { block: true });
-				// The Mathematica directive emits an SVG <img>/<div>; suppress
-				// it in LaTeX mode rather than leaking raw HTML into the .tex.
-				if (global.isLatex) return '';
+				// In LaTeX a text result prints, as the inline form's does
+				// (blockLaTeX); a graphic or a failed run is left out, rather
+				// than leaking its <img>/<div> into the .tex.
+				if (global.isLatex) return blockLaTeX(token);
 				if (token['has_error']) {
 					// Create a button that opens the error log. The box is TikZ's
 					// (tikz.js), and kept its class for its style; it was copied with

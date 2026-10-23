@@ -425,6 +425,7 @@ elif grep -q 'Math\[x' "$file"; then echo 'x^{2}'
 elif grep -q 'Math\[a<b' "$file"; then echo 'a<b'
 elif grep -q 'Sup\[' "$file"; then echo '<sup>2</sup> $$ 2^{100} $$'
 elif grep -q 'Amp\[' "$file"; then printf '%s\n' 'a & b_1 #2 50% {c} ~x^y \ok <i>z</i> $$ a_{1} $$'
+elif grep -q 'Specials\[' "$file"; then printf '%s\n' 'a\b \$5 & 50% #1 x_1 {c} ~ ^ $$ a_{1} $$ costs 5$'
 else echo 2; fi
 STANDIN
 chmod +x "$W/bin/wolframscript"
@@ -546,6 +547,37 @@ printf ':::Mathematica\nSup[x]\n:::\n' >"$W/block-text/note.md"
 wl ok block-text || fail "mathematica/block-text-exit" "$(cat "$W/block-text/err.txt")"
 has   "mathematica/block-text-escaped" "$W/block-text/note.html" 'class="mathematica txt ">&lt;sup&gt;2&lt;/sup&gt; $$ 2^{100} $$'
 hasnt "mathematica/block-text-no-markup" "$W/block-text/note.html" '<sup>2</sup>'
+# A block's text result prints in LaTeX too, a paragraph of its own, as the
+# page shows it: maths as written, the rest escaped, `\$` a dollar (MathJax's
+# reading); DisplayMath's TeX as written; a graphic, and a failed run, left
+# out. @begin(Mathematica) shares the renderer.
+mkdir -p "$W/block-latex" "$W/block-latex-failed"
+printf ':::Mathematica\nSpecials[x]\n:::\n\n:::Mathematica\nDisplayMath[x^2]\n:::\n\n:::Mathematica{output=svg}\nPlot[x, {x, 0, 1}]\n:::\n\n@begin(Mathematica)\nSup[x]\n@end(Mathematica)\n\nAfter.\n' >"$W/block-latex/note.md"
+wl ok block-latex || fail "mathematica/block-latex-html-exit" "$(cat "$W/block-latex/err.txt")"
+has   "mathematica/block-latex-html-escaped" "$W/block-latex/note.html" 'a\b \$5 &amp; 50% #1 x_1 {c} ~ ^ $$ a_{1} $$ costs 5$'
+(cd "$W/block-latex" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_LOG="$W/block-latex/calls.log" "$NODE" "$JMD" process note.md --to latex -o note.tex >/dev/null 2>err-tex.txt) \
+	|| fail "mathematica/block-latex-exit" "$(cat "$W/block-latex/err-tex.txt")"
+has   "mathematica/block-latex-text" "$W/block-latex/note.tex" 'a\textbackslash{}b \$5 \& 50\% \#1 x\_1 \{c\} \~{} \^{} $$ a_{1} $$ costs 5\$'
+has   "mathematica/block-latex-display" "$W/block-latex/note.tex" '$$x^{2}'
+hasnt "mathematica/block-latex-graphic-out" "$W/block-latex/note.tex" '.svg'
+has   "mathematica/block-latex-at-begin" "$W/block-latex/note.tex" '\textless{}sup\textgreater{}2\textless{}/sup\textgreater{} $$ 2^{100} $$'
+has   "mathematica/block-latex-after" "$W/block-latex/note.tex" 'After.'
+if [ "$have_tex" = yes ] && command -v pdftotext >/dev/null 2>&1; then
+	if (cd "$W/block-latex" && pdflatex -interaction=nonstopmode -halt-on-error note.tex >/dev/null 2>&1 && pdftotext note.pdf note.txt); then
+		pass "mathematica/block-latex-compiles"
+		has   "mathematica/block-latex-pdf-shows-text" "$W/block-latex/note.txt" 'a\b $5 & 50% #1 x_1 {c}'
+		has   "mathematica/block-latex-pdf-dollar" "$W/block-latex/note.txt" 'costs 5$'
+	else
+		fail "mathematica/block-latex-compiles" "$(tail -5 "$W/block-latex/note.log")"
+	fi
+else
+	skip "mathematica/block-latex-compiles" "no pdflatex or no pdftotext"
+fi
+printf 'Before.\n\n:::Mathematica\nSpecials[x]\n:::\n\nAfter.\n' >"$W/block-latex-failed/note.md"
+(cd "$W/block-latex-failed" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_MODE=fail WL_LOG="$W/block-latex-failed/calls.log" "$NODE" "$JMD" process note.md --to latex -o note.tex >/dev/null 2>err-tex.txt) \
+	|| fail "mathematica/block-latex-failed-exit" "$(cat "$W/block-latex-failed/err-tex.txt")"
+has   "mathematica/block-latex-failed-after" "$W/block-latex-failed/note.tex" 'After.'
+hasnt "mathematica/block-latex-failed-nothing" "$W/block-latex-failed/note.tex" 'costs'
 mkdir -p "$W/maths"
 printf 'Maths ⟦InlineMath[x^2]⟧ here.\n\nDisplay ⟦DisplayMath[x^2]⟧ here.\n\nLess ⟦InlineMath[a<b]⟧ here.\n' >"$W/maths/note.md"
 wl ok maths || fail "mathematica/inline-maths-exit" "$(cat "$W/maths/err.txt")"
