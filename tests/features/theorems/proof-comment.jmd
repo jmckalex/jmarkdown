@@ -1,0 +1,14 @@
+@begin(proof)
+A comment on the line after the last paragraph.
+<!-- a note to self -->
+@end(proof)
+
+After one.
+
+@begin(proof)
+A comment after a blank line.
+
+<!-- a note to self -->
+@end(proof)
+
+After two.

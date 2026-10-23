@@ -79,7 +79,8 @@ for tex in $(find "$REPO/tests/features" "$REPO/tests/callouts" -name '*.expecte
 		# endnote counter, as a full document's late preamble does.
 		crossref)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[style=definition,sibling=theorem]{definition}\usepackage{cleveref}\crefname{jmdendnote}{footnote}{footnotes}'; needs='thmtools.sty cleveref.sty' ;;
 		floats)            extra='\usepackage[draft]{graphicx}\usepackage{subcaption}\usepackage{booktabs}\usepackage{cleveref}'; needs='subcaption.sty cleveref.sty booktabs.sty' ;;
-		theorems)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[sibling=theorem]{lemma}\declaretheorem[sibling=theorem]{corollary}\declaretheorem[sibling=theorem]{proposition}\declaretheorem[style=definition,sibling=theorem]{definition}\declaretheorem[style=definition,sibling=theorem]{example}\declaretheorem[style=remark,sibling=theorem]{remark}\usepackage{cleveref}'; needs='thmtools.sty cleveref.sty' ;;
+		# theorems: minted for proof-ends' proof that ends in a code block.
+		theorems)          extra='\usepackage{amsthm}\usepackage{thmtools}\declaretheorem{theorem}\declaretheorem[sibling=theorem]{lemma}\declaretheorem[sibling=theorem]{corollary}\declaretheorem[sibling=theorem]{proposition}\declaretheorem[style=definition,sibling=theorem]{definition}\declaretheorem[style=definition,sibling=theorem]{example}\declaretheorem[style=remark,sibling=theorem]{remark}\usepackage{cleveref}\usepackage{minted}'; needs='thmtools.sty cleveref.sty minted.sty' ;;
 		equations)         extra='\usepackage{amsmath}\usepackage{cleveref}'; needs='cleveref.sty' ;;
 		listings)          extra='\usepackage{minted}\usepackage{cleveref}'; needs='minted.sty cleveref.sty' ;;
 		contents)          extra='\usepackage[draft]{graphicx}\usepackage{booktabs}\usepackage{minted}'; needs='booktabs.sty minted.sty' ;;
