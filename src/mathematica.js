@@ -9,6 +9,7 @@ import { registerBlockEnvironment } from './begin-end-core.js';
 import { htmlCachePath, cacheDir } from './figure-cache.js';
 import Mustache from 'mustache';
 import { noteCodeAllowed, refuseNoteCode, noteCodeError } from './note-code.js';
+import { escapeTexText } from './latex-escape.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,32 @@ function failureMessage(error) {
 	}
 	if (error?.signal) return `wolframscript was stopped (${error.signal})`;
 	return error?.code ?? 'unknown error';
+}
+
+/*
+	A result's text is Wolfram Language's output, not HTML or markdown, so it
+	prints as text (the owner, 2026-10-23). In HTML its `&`, `<` and `>` are
+	escaped: `x<y` showed as `x` and a broken tag. Maths in it is unchanged,
+	since MathJax reads the text the browser shows. In LaTeX, maths in it —
+	what MathJax finds in the page: `$…$`, `$$…$$`, `\(…\)`, `\[…\]`; the
+	owner's notes build `$$…$$` strings — passes through as written, and the
+	rest is escaped as plain text (escapeTexText), so the PDF shows what the
+	page does and a `_` or `#` in it cannot stop the build.
+*/
+const RESULT_MATHS = /\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|\$[^$]+?\$/g;
+
+function resultHTML(text) {
+	return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function resultLaTeX(text) {
+	let latex = '';
+	let at = 0;
+	for (const maths of text.matchAll(RESULT_MATHS)) {
+		latex += escapeTexText(text.slice(at, maths.index)) + maths[0];
+		at = maths.index + maths[0].length;
+	}
+	return latex + escapeTexText(text.slice(at));
 }
 
 function generateHash(string) {
@@ -290,7 +317,8 @@ export function createMathematica(marker) {
 						}
 					}
 					else {
-						obj = fs.readFileSync(svg_full_path.replace(/\.svg$/, '.txt'), 'utf8');
+						// Text, escaped (resultHTML): it was printed as markup.
+						obj = resultHTML(fs.readFileSync(svg_full_path.replace(/\.svg$/, '.txt'), 'utf8'));
 					}
 
 					if (token['DisplayMath'] == true) {
@@ -453,22 +481,30 @@ export const inlineMathematica = {
 		// InlineMath and DisplayMath stopped the build; an <img> of
 		// `Mathematica/<name>` held only for a page written beside the note.
 		const cached = path.join(cacheDir('Mathematica'), token.include);
+		// The maths is TeX: as it is in LaTeX, escaped in HTML (resultHTML).
+		const tex = () => {
+			const text = fs.readFileSync(cached, 'utf8');
+			return global.isLatex ? text : resultHTML(text);
+		};
 		if (token.code.includes("InlineMath")) {
-			return "$" + fs.readFileSync(cached, 'utf8') + "$";
+			return "$" + tex() + "$";
 		}
 		else if (token.code.includes("DisplayMath")) {
-			return "$$" + fs.readFileSync(cached, 'utf8') + "$$";
+			return "$$" + tex() + "$$";
 		}
 		else {
 			// Embedding SVG code from mathematica is generally a bad idea
 			// as it doesn't generate unique IDs for the output
-			if (global.isLatex) return '';
+			const text = token.include.endsWith('.txt') ? fs.readFileSync(cached, 'utf8').replace(/\n+$/, '') : null;
+			// A text result prints in LaTeX too, as the page shows it
+			// (resultLaTeX); a graphic is still left out.
+			if (global.isLatex) return text === null ? '' : resultLaTeX(text);
 			console.log(token.include);
-			// A text result is printed as the block form prints its own — as
-			// it stands, so a result can be source too (`$$…$$` for MathJax) —
-			// where it was an <img> of the .txt file, a broken image.
-			if (token.include.endsWith('.txt')) {
-				return `<span class='mathematica txt'>${fs.readFileSync(cached, 'utf8').replace(/\n+$/, '')}</span>`;
+			// A text result is printed as the block form prints its own, as
+			// text (resultHTML), where it was an <img> of the .txt file, a
+			// broken image.
+			if (text !== null) {
+				return `<span class='mathematica txt'>${resultHTML(text)}</span>`;
 			}
 			return `<img class='mathematica svg' src='${htmlCachePath(cached)}'>`;
 			//return fs.readFileSync(token.include, 'utf8');
