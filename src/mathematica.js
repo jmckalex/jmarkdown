@@ -73,6 +73,18 @@ function failureMessage(error) {
 	return error?.code ?? 'unknown error';
 }
 
+// A run's log text with its cache folder written `<cache>`, in either spelling
+// (as given, and real: /var/… is /private/var/… on macOS), the longer first,
+// so the page names none of the user's folders.
+function withoutCacheFolder(text, folder) {
+	let real = folder;
+	try { real = fs.realpathSync(folder); } catch {}
+	for (const spelling of [...new Set([real, folder])].sort((a, b) => b.length - a.length)) {
+		text = text.split(spelling).join('<cache>');
+	}
+	return text;
+}
+
 /*
 	A result's text is Wolfram Language's output, not HTML or markdown, so it
 	prints as text (the owner, 2026-10-23). In HTML its `&`, `<` and `>` are
@@ -209,16 +221,19 @@ export function createMathematica(marker) {
 					token['has_error'] = true;
 					// What the build warning says (failureMessage: no folders).
 					token['failed'] = failureMessage(error);
-					// Try to read the log file
+					// The error box's log says the same, then the run's log file if
+					// one was written, its cache folder written `<cache>`. It held
+					// execFileSync's message — the command line, whose .m file sits
+					// in the cache folder — which put the user's folders, base64,
+					// into the page.
+					token['error_log'] = token['failed'];
 					try {
 						const log_name = file_name.replace(/\.m$/, '.log');
 						if (fs.existsSync(log_name)) {
-							token['error_log'] = fs.readFileSync(log_name, 'utf8');
-						} else {
-							token['error_log'] = error.message || 'Unknown error';
+							token['error_log'] += '\n\n' + withoutCacheFolder(fs.readFileSync(log_name, 'utf8'), mathematica_directory);
 						}
 					} catch (logError) {
-						token['error_log'] = error.message || 'Unknown error, unable to read log file';
+						// The log could not be read: the message stands alone.
 					}
 
 					console.error(`Error processing Mathematica: ${error.message}`);

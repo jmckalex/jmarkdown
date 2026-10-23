@@ -410,6 +410,11 @@ echo "$*" >>"$WL_LOG"
 if [ "${WL_MODE:-ok}" = fail ] || { [ "${WL_MODE:-ok}" = fail-second ] && [ "$(wc -l <"$WL_LOG")" -ge 2 ]; }; then
 	printf 'Connection closed by Wolf'
 	echo 'Your Wolfram product is not activated or is experiencing a license-related problem.' >&2
+	# WL_LOGFILE: a log beside the .m file, naming it, as a run's own log might.
+	if [ -n "${WL_LOGFILE:-}" ]; then
+		f=; p=; for a in "$@"; do [ "$p" = -f ] && f=$a; p=$a; done
+		echo "Syntax error in $f, line 1" >"${f%.m}.log"
+	fi
 	exit 255
 fi
 # The answer, by what the file (after -f) asks: a plot is a graphic (-print
@@ -450,6 +455,21 @@ hasnt "mathematica/block-failed-no-tikz-log" "$W/block/note.html" 'TikZ Error Lo
 count "mathematica/block-failed-warned" "$W/block/err.txt" '- Mathematica failed: wolframscript exited with status 255' 1
 hasnt "mathematica/block-failed-no-folders-warned" "$W/block/err.txt" '- Mathematica failed: Command failed'
 hasnt "mathematica/block-failed-page-as-before" "$W/block/note.html" 'Mathematica failed'
+# Its log (the box's button: data-log, base64) says why and names no folder.
+# It held execFileSync's message, the command line, with the cache folder in it.
+decoded_log() { "$NODE" -e 'const m = require("fs").readFileSync(process.argv[1], "utf8").match(/data-log="([^"]*)"/); process.stdout.write(m ? Buffer.from(m[1], "base64").toString() : "")' "$1"; }
+decoded_log "$W/block/note.html" >"$W/block/log.txt"
+has   "mathematica/block-failed-log-says-why" "$W/block/log.txt" 'wolframscript exited with status 255'
+hasnt "mathematica/block-failed-log-no-folders" "$W/block/log.txt" "$(basename "$SCRATCH")"
+hasnt "mathematica/block-failed-log-no-command" "$W/block/log.txt" 'Command failed'
+# A run's own log file, when one is written, follows, its cache folder `<cache>`.
+mkdir -p "$W/block-log"
+printf ':::Mathematica\n1 + 1\n:::\n' >"$W/block-log/note.md"
+(cd "$W/block-log" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_MODE=fail WL_LOGFILE=1 WL_LOG="$W/block-log/calls.log" "$NODE" "$JMD" process note.md -o note.html >/dev/null 2>err.txt)
+decoded_log "$W/block-log/note.html" >"$W/block-log/log.txt"
+has   "mathematica/block-log-file-says-why" "$W/block-log/log.txt" 'wolframscript exited with status 255'
+has   "mathematica/block-log-file-follows" "$W/block-log/log.txt" 'Syntax error in <cache>/'
+hasnt "mathematica/block-log-file-no-folders" "$W/block-log/log.txt" "$(basename "$SCRATCH")"
 if [ -z "$(cached block)" ]; then pass "mathematica/block-failed-caches-nothing"; else fail "mathematica/block-failed-caches-nothing" "cached: $(cached block)"; fi
 wl ok block || fail "mathematica/block-retry-exit" "$(cat "$W/block/err.txt")"
 if [ "$(calls block)" = 2 ]; then pass "mathematica/block-retry-asks-again"; else fail "mathematica/block-retry-asks-again" "calls: $(calls block)"; fi
