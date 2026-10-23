@@ -434,6 +434,12 @@ mkdir -p "$W/block"
 printf ':::Mathematica\n1 + 1\n:::\n\nThe paragraph after it.\n' >"$W/block/note.md"
 wl fail block
 has   "mathematica/block-failed-shows-error" "$W/block/note.html" 'class="tikz-error-message"'
+# The box is TikZ's, and was copied with TikZ's words: it names Mathematica now,
+# and opens its log under that name.
+has   "mathematica/block-failed-names-mathematica" "$W/block/note.html" '<p class="tikz-error-message">Error processing Mathematica</p>'
+has   "mathematica/block-failed-own-log" "$W/block/note.html" "window.open('', 'Mathematica Error Log'"
+hasnt "mathematica/block-failed-not-tikz" "$W/block/note.html" 'Error processing TikZ'
+hasnt "mathematica/block-failed-no-tikz-log" "$W/block/note.html" 'TikZ Error Log'
 if [ -z "$(cached block)" ]; then pass "mathematica/block-failed-caches-nothing"; else fail "mathematica/block-failed-caches-nothing" "cached: $(cached block)"; fi
 wl ok block || fail "mathematica/block-retry-exit" "$(cat "$W/block/err.txt")"
 if [ "$(calls block)" = 2 ]; then pass "mathematica/block-retry-asks-again"; else fail "mathematica/block-retry-asks-again" "calls: $(calls block)"; fi

@@ -184,21 +184,25 @@ export function createMathematica(marker) {
 				// it in LaTeX mode rather than leaking raw HTML into the .tex.
 				if (global.isLatex) return '';
 				if (token['has_error']) {
-					// Create a button that opens the error log
+					// Create a button that opens the error log. The box is TikZ's
+					// (tikz.js), and kept its class for its style; it was copied with
+					// TikZ's words too, and named TikZ. Its log opens through a handler
+					// of its own, so on a page that also has a failed TikZ diagram each
+					// log opens under its own name.
 					const errorLogBase64 = Buffer.from(token['error_log']).toString('base64');
-					const errorLogId = `tikz-error-${Math.random().toString(36).substring(2, 9)}`;
+					const errorLogId = `mathematica-error-${Math.random().toString(36).substring(2, 9)}`;
 
 					return `<div class="tikz-error">
-				        <p class="tikz-error-message">Error processing TikZ diagram</p>
-				        <button onclick="showTikzError('${errorLogId}')">Show Error Log</button>
+				        <p class="tikz-error-message">Error processing Mathematica</p>
+				        <button onclick="showMathematicaError('${errorLogId}')">Show Error Log</button>
 				        <script>
-				            if (!window.tikzErrorHandlerAdded) {
-				            window.tikzErrorHandlerAdded = true;
-				            window.showTikzError = function(id) {
+				            if (!window.mathematicaErrorHandlerAdded) {
+				            window.mathematicaErrorHandlerAdded = true;
+				            window.showMathematicaError = function(id) {
 				                const logData = document.getElementById(id).dataset.log;
 				                const logContent = atob(logData);
-				                const errorWindow = window.open('', 'TikZ Error Log', 'width=800,height=600');
-				                errorWindow.document.write('<html><head><title>TikZ Error Log</title>');
+				                const errorWindow = window.open('', 'Mathematica Error Log', 'width=800,height=600');
+				                errorWindow.document.write('<html><head><title>Mathematica Error Log</title>');
 				                errorWindow.document.write('<style>body { font-family: monospace; white-space: pre; }</style>');
 				                errorWindow.document.write('</head><body>');
 				                errorWindow.document.write(logContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
