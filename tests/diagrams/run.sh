@@ -589,6 +589,23 @@ has   "mathematica/inline-maths-escaped" "$W/maths/note.html" 'Less $a&lt;b'
 has   "mathematica/inline-maths-latex" "$W/maths/note.tex" 'Maths $x^{2}'
 has   "mathematica/inline-maths-latex-as-written" "$W/maths/note.tex" 'Less $a<b'
 
+# --- Mathematica: stdout ----------------------------------------------------------------------------
+# Built from stdin to stdout, the page is all that reaches stdout: index.js
+# sends console.log to stderr while it writes there, so the inline tokenizer's
+# progress lines (the code, "Attempting to write …") go to stderr. Written to a
+# file, the inline renderer printed its result's file name on stdout, for every
+# result on every build; it prints nothing now.
+mkdir -p "$W/stdout"
+printf 'Inline ⟦3 + 0⟧ here.\n' >"$W/stdout/note.md"
+(cd "$W/stdout" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_LOG="$W/stdout/calls.log" "$NODE" "$JMD" process - <note.md >out.html 2>err.txt) \
+	|| fail "mathematica/stdout-exit" "$(cat "$W/stdout/err.txt")"
+(cd "$W/stdout" && HOME="$SCRATCH/home" PATH="$W/bin:$PATH" WL_LOG="$W/stdout/calls.log" "$NODE" "$JMD" process - -o file.html <note.md >file-stdout.txt 2>file-err.txt) \
+	|| fail "mathematica/stdout-file-exit" "$(cat "$W/stdout/file-err.txt")"
+if [ -s "$W/stdout/out.html" ] && cmp -s "$W/stdout/out.html" "$W/stdout/file.html"; then pass "mathematica/stdout-is-the-page"; else fail "mathematica/stdout-is-the-page" "$(diff "$W/stdout/file.html" "$W/stdout/out.html" | head -4)"; fi
+has   "mathematica/stdout-result" "$W/stdout/out.html" 'Inline <span class="mathematica txt">2</span> here.'
+has   "mathematica/stdout-progress-on-stderr" "$W/stdout/err.txt" 'Attempting to write file'
+if [ ! -s "$W/stdout/file-stdout.txt" ]; then pass "mathematica/file-build-stdout-quiet"; else fail "mathematica/file-build-stdout-quiet" "$(head -3 "$W/stdout/file-stdout.txt")"; fi
+
 # --- Mathematica: a folder named with `.m` ----------------------------------------------------------
 # The cache's files are named from <hash>.m by changing the extension at the
 # end. Replacing the FIRST `.m` instead changed a folder on the way — `my.math

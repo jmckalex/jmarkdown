@@ -520,7 +520,6 @@ export const inlineMathematica = {
 			// A text result prints in LaTeX too, as the page shows it
 			// (resultLaTeX); a graphic is still left out.
 			if (global.isLatex) return text === null ? '' : resultLaTeX(text);
-			console.log(token.include);
 			// A text result is printed as the block form prints its own, as
 			// text (resultHTML), where it was an <img> of the .txt file, a
 			// broken image.
